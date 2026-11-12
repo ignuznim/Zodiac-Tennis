@@ -187,18 +187,18 @@ function tone(freq, dur, type = 'square', vol = 0.3, delay = 0, slide = 0) {
 
 // ---- The twelve animals -----------------------------------------------------------------
 const ANIMALS = [
-  { id: 'rat', ko: '쥐', c: '#b9bcc9', d: '#f4a9b8', l: '#f3f1f5', note: '작고 날쌘 손목, 어디든 닿는다' },
-  { id: 'ox', ko: '소', c: '#b98562', d: '#fff1d6', l: '#f1d3b8', note: '묵직한 한 방과 지치지 않는 체력' },
+  { id: 'rat', ko: '쥐', c: '#b9bcc9', d: '#f4a9b8', l: '#f3f1f5', note: '어디든 닿는 날쌘 손' },
+  { id: 'ox', ko: '소', c: '#b98562', d: '#fff1d6', l: '#f1d3b8', note: '지치지 않는 체력의 묵직한 한 방' },
   { id: 'tiger', ko: '호랑이', c: '#ffa94d', d: '#5b4038', l: '#fff3e0', note: '코트를 찢는 강타' },
   { id: 'rabbit', ko: '토끼', c: '#fdfbf7', d: '#f7b4c6', l: '#ffffff', note: '누구보다 빠른 발' },
   { id: 'dragon', ko: '용', c: '#7fd1a3', d: '#ffd166', l: '#d9f5e3', note: '휘감기는 스핀, 짧은 호흡' },
   { id: 'snake', ko: '뱀', c: '#b6dd6a', d: '#6fa23c', l: '#f0f9c9', note: '뚝 떨어지는 드롭샷의 명수' },
   { id: 'horse', ko: '말', c: '#c98f5f', d: '#6b4630', l: '#f3ddc7', note: '끝없이 달리는 다리' },
-  { id: 'sheep', ko: '양', c: '#fbf4e6', d: '#5d5560', l: '#ffffff', note: '오래 버티며 실수를 기다린다' },
+  { id: 'sheep', ko: '양', c: '#fbf4e6', d: '#5d5560', l: '#ffffff', note: '실수를 기다리는 끈질긴 랠리' },
   { id: 'monkey', ko: '원숭이', c: '#a9744f', d: '#f6d3b0', l: '#f6d3b0', note: '번개 같은 반응 속도' },
   { id: 'rooster', ko: '닭', c: '#fffaf0', d: '#f25f5c', l: '#ffd166', note: '빈틈없는 만능 선수' },
-  { id: 'dog', ko: '개', c: '#f0c98d', d: '#a5673f', l: '#fff3dc', note: '성실하게 뛰고 또 뛴다' },
-  { id: 'pig', ko: '돼지', c: '#f9b7c4', d: '#e98aa0', l: '#ffdbe3', note: '든든한 체력과 힘' },
+  { id: 'dog', ko: '개', c: '#f0c98d', d: '#a5673f', l: '#fff3dc', note: '뛰고 또 뛰는 집념' },
+  { id: 'pig', ko: '돼지', c: '#f9b7c4', d: '#e98aa0', l: '#ffdbe3', note: '든든한 체력, 묵직한 힘' },
 ];
 const STATS = ['power', 'stamina', 'spin', 'reflex', 'speed'], STAT_KO = ['파워', '스태미너', '스핀', '순발력', '스피드'];
 // Each animal has a court it loves (its signature stat a little higher) and one it dislikes (a little lower)
@@ -418,7 +418,7 @@ function ridge(base, amp, f, ph, col, bottom) {
   for (let x = 0; x <= W; x += 12) ctx.lineTo(x, base - Math.abs(Math.sin(x * f + ph)) * amp - Math.sin(x * f * 2.7 + ph) * amp * 0.25);
   ctx.lineTo(W, bottom); ctx.fill();
 }
-function gardenBack(hb) { // the menus: sky, painted clouds, mountains, a tiled wall; hb is where it meets the ground
+function gardenBack(hb, wall) { // the menus: sky, painted clouds, mountains, a tiled wall; hb is where it meets the ground
   const g = ctx.createLinearGradient(0, 0, 0, hb); g.addColorStop(0, '#fff3dc'); g.addColorStop(1, '#ffdcd2');
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, hb);
   ctx.fillStyle = 'rgba(255,211,107,0.5)'; ctx.beginPath(); ctx.arc(600, Math.max(150, hb * 0.42), 44, 0, 7); ctx.fill();
@@ -426,14 +426,19 @@ function gardenBack(hb) { // the menus: sky, painted clouds, mountains, a tiled 
   for (let i = 0; i < 3; i++) { const x = ((i * 290 + now() * (7 + i * 3)) % (W + 300)) - 160; tradCloud(x, top + span * [0.05, 0.6, 0.3][i], 0.95 - i * 0.12); }
   const k = Math.max(1, (hb - 120) / 112);
   ridge(hb - 54, 70 * k, 0.009, 0.4, '#d8c7ea', hb); ridge(hb - 36, 44 * k, 0.014, 2.1, '#c3d9cf', hb);
-  const wy = hb - 36; // the wall: dark roof tiles over cream plaster
+  const wy = hb - 36; // the wall: dark roof tiles over cream plaster; on a wide screen the hills fade instead, the menu over them
+  if (!wall) { const f = ctx.createLinearGradient(0, hb - 70, 0, hb); f.addColorStop(0, 'rgba(143,211,184,0)'); f.addColorStop(1, '#8fd3b8'); ctx.fillStyle = f; ctx.fillRect(0, hb - 70, W, 70); }
+  else {
   ctx.fillStyle = '#f6ead4'; ctx.fillRect(0, wy + 8, W, 30);
   ctx.strokeStyle = 'rgba(107,85,96,0.25)'; ctx.lineWidth = 1.5; for (let x = 0; x < W; x += 60) ctx.strokeRect(x + 8, wy + 16, 44, 14);
   ctx.fillStyle = '#5b5263'; ctx.fillRect(0, wy, W, 10);
   for (let x = -10; x < W + 20; x += 20) { ctx.beginPath(); ctx.arc(x, wy + 10, 10, 0, Math.PI); ctx.fill(); }
   ctx.strokeStyle = OUT; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, wy); ctx.lineTo(W, wy); ctx.stroke();
+  }
+  if (wall) { // the lanterns only where the menu sits below the garden, never behind a title
   ctx.strokeStyle = OUT; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, 46); ctx.quadraticCurveTo(W / 2, 106, W, 46); ctx.stroke();
   for (let i = 1; i < 8; i++) { const u = i / 8; lantern(u * W, 46 + 60 * 2 * u * (1 - u) + 12); }
+  }
 }
 function stands(y0, rows, seats, rowH = 15) { // tiers of seats, a crowd on them that stirs now and then
   for (let r = 0; r < rows; r++) {
@@ -468,22 +473,22 @@ function stadium(court) { // each court its own grounds, after the three great o
     ctx.fillStyle = '#eef2f0'; ctx.fillRect(0, 96, W, 16); ctx.strokeStyle = '#a8b5ae'; ctx.lineWidth = 2;
     ctx.beginPath(); for (let x = 0; x < W + 24; x += 24) { ctx.moveTo(x, 96); ctx.lineTo(x + 12, 112); ctx.lineTo(x + 24, 96); } ctx.stroke();
     ctx.beginPath(); ctx.moveTo(0, 96); ctx.lineTo(W, 96); ctx.moveTo(0, 112); ctx.lineTo(W, 112); ctx.stroke();
-    stands(112, 6, ['#1f4d34', '#255a3d'], 14);
+    stands(112, 6, ['#43925a', '#4a9b61'], 14);
     ctx.fillStyle = '#5b3f86'; ctx.fillRect(0, 194, W, 5);
-    boards(199, 33, '#1e4a32', '#2a6244', 'rgba(255,255,255,0.75)');
+    boards(199, 33, '#2f7a45', '#3f8a52', 'rgba(255,255,255,0.8)');
     ctx.fillStyle = '#5b3f86'; ctx.fillRect(0, 229, W, 3);
   } else { // Roland-Garros: trees and a far tower, pale stands with green seats, bottle-green walls, clay all round
     const tx = 468; ctx.fillStyle = '#c3cfdc'; ctx.beginPath(); ctx.moveTo(tx - 3, 24); ctx.lineTo(tx + 3, 24); ctx.quadraticCurveTo(tx + 6, 80, tx + 22, 112); ctx.lineTo(tx - 22, 112); ctx.quadraticCurveTo(tx - 6, 80, tx - 3, 24); ctx.fill(); // the tower, far away
     ctx.fillRect(tx - 1, 12, 2, 12); ctx.fillStyle = sky[1]; ctx.beginPath(); ctx.arc(tx, 112, 11, Math.PI, 0); ctx.fill(); ctx.fillStyle = '#c3cfdc'; ctx.fillRect(tx - 12, 70, 24, 4);
     for (let i = 0; i < 13; i++) { const x = i * 58, h = hash(i + 21); ctx.fillStyle = h > 0.5 ? '#6fae6c' : '#5f9f5d'; ctx.beginPath(); ctx.arc(x, 112 - h * 16, 30 + h * 12, 0, 7); ctx.fill(); }
     ctx.fillStyle = '#e8e0d2'; ctx.fillRect(0, 106, W, 10); ctx.fillStyle = '#1f5a3a'; ctx.fillRect(0, 104, W, 4);
-    stands(116, 5, ['#2c6342', '#336d49'], 15);
+    stands(116, 5, ['#c25a2c', '#c9643a'], 15);
     ctx.fillStyle = '#e4dccd'; for (let x = 58; x < W; x += 150) ctx.fillRect(x, 116, 10, 75); // concrete stair aisles
     boards(191, 41, '#1f5a3a', '#256b45', 'rgba(255,255,255,0.85)');
   }
 }
-function drawBackdrop(ground = '#7fc9ae', hb = 232) {
-  if ((scene === 'play' || scene === 'pause' || scene === 'help') && m) stadium(m.court); else gardenBack(hb);
+function drawBackdrop(ground = '#7fc9ae', hb = 232, wall = true) {
+  if ((scene === 'play' || scene === 'pause' || scene === 'help') && m) stadium(m.court); else gardenBack(hb, wall);
   ctx.fillStyle = ground; ctx.fillRect(0, hb, W, H - hb);
 }
 function drawCourt() {
@@ -1196,15 +1201,15 @@ function cloud(x, y, k) {
   ctx.fillStyle = 'rgba(255,255,255,0.8)';
   for (const [dx, dy, r] of [[0, 0, 22], [24, -10, 26], [50, 0, 20], [24, 6, 22]]) { ctx.beginPath(); ctx.arc(x + dx * k, y + dy * k, r * k, 0, 7); ctx.fill(); }
 }
-function drawTitleShow(t) {
-  ctx.save(); ctx.translate(0, -OY); // the sky belongs to the screen, not to the menu box
-  ctx.restore();
+function drawTitleShow(t, ly = 136, gy = 412) { // ly: the name's line, gy: the little court's ground line
+  ctx.save(); ctx.translate(0, ly - 136);
   // the name: each letter bobs in turn
   ctx.font = `84px ${F_T}`; const chars = [...TITLE], ws = chars.map(c => ctx.measureText(c).width), total = ws.reduce((a, b) => a + b, 0);
   let x = W / 2 - total / 2;
   chars.forEach((c, i) => { const hop = Math.max(0, Math.sin(t * 3.2 - i * 0.55)) * 12; text(c, x + ws[i] / 2, 136 - hop, 84, CORAL, 'center', OUT, F_T); x += ws[i]; });
   for (let i = 0; i < 5; i++) { const a = (Math.sin(t * 2.4 + i * 1.7) + 1) / 2; ctx.globalAlpha = 0.35 + 0.65 * a; star([92, 640, 610, 120, 360][i], [96, 84, 176, 186, 66][i], 6 + a * 7, i % 2 ? CREAM : BALL); ctx.globalAlpha = 1; }
   text('열두 동물, 진짜 테니스 승부', W / 2, 212, 30, INK, 'center', CREAM, F_H);
+  ctx.restore(); ctx.save(); ctx.translate(0, gy - 412);
   // a little court and a rally that never ends; the pair changes every few shots
   const leg = 1.05, n = Math.floor(t / leg), u = (t % leg) / leg, pair = Math.floor(n / 4) % 6, L = [pair * 2, pair * 2 + 1];
   rr(56, 382, 608, 46, 23, '#4a9d5c', OUT, 2.6);
@@ -1228,6 +1233,7 @@ function drawTitleShow(t) {
   ctx.fillStyle = 'rgba(40,70,50,0.3)'; ctx.beginPath(); ctx.ellipse(bx, 412, 9, 3, 0, 0, 7); ctx.fill();
   ctx.lineWidth = 2.4; ctx.strokeStyle = OUT; E(bx, by, 11, 11, BALL);
   text(`${ANIMALS[L[0]].ko}  vs  ${ANIMALS[L[1]].ko}`, W / 2, 302, 23, '#4f6f63', 'center', CREAM, F_H);
+  ctx.restore();
 }
 
 // ---- Help: two pages over the match, controls then rules ----
@@ -1252,17 +1258,27 @@ function reset() {
 function goHome() { netClose(); scene = 'title'; }
 // One layout for every menu page, in the 720 x 900 box: the same side margins, the title row,
 // where the content starts, and one bottom row of buttons (the side button left, the main one right)
-const LY = { m: 40, w: 640, top: 112, bot: 752, btnH: 68, side: 200, gap: 16, pad: 24, titleY: 56, foot: 866 };
+const LY = { m: 40, w: 640, btnH: 68, side: 200, gap: 16, pad: 24 };
+const LAYOUT = (params.get('layout') || 'c').toLowerCase(); // a: stretch, b: low, c: balanced (a phone's tall screen)
+function computeLayout() { // where the garden ends, the title row, the content and the bottom row, for this screen's height
+  const ex = H - 900;
+  if (ex < 140 || COVER) { Object.assign(LY, { tall: false, sb: 232, titleY: 56, top: 112, bot: 744, foot: 856, copy: 892 }); return; } // a wide screen: the garden sits behind
+  LY.tall = true; LY.copy = H - 30; LY.foot = H - 78; LY.bot = LY.foot - 116;
+  const nat = 608, end = LY.bot - LY.gap * 2, room = end - (232 + 110);
+  const cont = LAYOUT === 'a' ? end - (clamp(232 + ex * 0.12, 232, 330) + 110) : LAYOUT === 'b' ? nat : clamp(room, nat, nat * 1.3);
+  LY.top = end - cont; LY.titleY = LY.top - 58; LY.sb = LY.titleY - 54;
+}
 function menuBegin(title, home) {
-  OY = Math.round((H - 900) / 2);
-  const hb = clamp(OY + 14, 232, 420); // on a tall screen the garden grows down to meet the menu
-  drawBackdrop('#8fd3b8', hb);
-  for (let i = 0; i * 56 < H - hb; i++) { ctx.fillStyle = i % 2 ? '#a2e3c8' : '#aeead2'; ctx.fillRect(0, hb + i * 56, W, 56); } ctx.save(); ctx.translate(0, OY);
+  OY = 0; computeLayout();
+  drawBackdrop('#8fd3b8', LY.sb, LY.tall);
+  for (let i = 0; i * 56 < H - LY.sb; i++) { ctx.fillStyle = i % 2 ? '#a2e3c8' : '#aeead2'; ctx.fillRect(0, LY.sb + i * 56, W, 56); }
+  ctx.save();
   if (title) text(title, W / 2, LY.titleY, 40, INK, 'center', CREAM, F_T);
   if (home) iconBtn(LY.m, LY.titleY - 27, 'home', goHome);
 }
 function menuEnd(foot) { if (foot) text(foot, W / 2, LY.foot, 20, '#4f6f63', 'center', null, F_B); ctx.restore(); OY = 0; }
-const cardH = n => (LY.bot - LY.gap * 2 - LY.top - LY.gap * (n - 1)) / n; // n cards filling the content area
+const contentEnd = () => LY.bot - LY.gap * 2;
+const cardH = n => (contentEnd() - LY.top - LY.gap * (n - 1)) / n; // n cards filling the content area
 function panel(x, y, w, h) { rr(x, y, w, h, 24, 'rgba(255,248,231,0.96)', OUT); }
 function card(x, y, w, h, fn, on) { const over = btn(x, y, w, h, fn); rr(x, y + 5, w, h, 20, OUT, null); rr(x, y, w, h, 20, on ? '#fff3c4' : over ? '#fffdf3' : 'rgba(255,248,231,0.96)', on ? CORAL : OUT, on ? 5 : 3); }
 function sideBtn(label, fn) { button(label, LY.m, LY.bot, LY.side, LY.btnH, fn, { size: 28 }); }
@@ -1338,15 +1354,18 @@ const scenes = {
     update(dt) { state.t += dt; if (anyHit(...K_OK)) scene = room ? 'select' : 'format'; },
     draw() {
       menuBegin();
-      drawTitleShow(state.t);
-      const top = 450, rows = [['이동', '방향키 / WASD'], ['스트로크', 'J  (꾹 눌렀다 놓으면 파워샷)'], ['슬라이스 · 로브 · 스매시', 'K  ·  L  ·  I'], ['일시정지 · 소리 · 낙하지점', 'P  ·  M  ·  G']];
-      panel(LY.m, top, LY.w, LY.bot - LY.gap * 2 - top);
-      text('조작 방법', W / 2, top + 36, 26, INK, 'center', null, F_T);
-      rows.forEach((c, i) => { const y = top + 84 + i * 40; text(c[0], 334, y, 21, '#7a6872', 'right', null, F_B); text(c[1], 352, y, 22, INK, 'left', null, F_B); });
-      text(touchUI ? '휴대폰에서는 조이스틱과 버튼으로 해요' : '버튼은 마우스로 눌러도 돼요', W / 2, top + 84 + 4 * 40 + 6, 23, '#3d9be0', 'center', null, F_H);
+      const rows = [['이동', '방향키 / WASD'], ['스트로크', 'J  (꾹 눌렀다 놓으면 파워샷)'], ['슬라이스 · 로브 · 스매시', 'K  ·  L  ·  I'], ['일시정지 · 소리 · 낙하지점', 'P  ·  M  ·  G']];
+      const P = LY.tall ? 30 : 22, step = LY.tall ? 44 : 38, ph = P * 2 + step * 6, pt = contentEnd() - ph; // six lines, evenly spaced, the same margin above and below
+      if (LY.tall) { const r0 = LY.sb + 20, free = Math.max(0, pt - 16 - r0 - 330); drawTitleShow(state.t, r0 + 70 + free * 0.3, pt - 22 - free * 0.25); }
+      else drawTitleShow(state.t, 136, Math.min(412, pt - 30));
+      panel(LY.m, pt, LY.w, ph);
+      const ly = k => pt + P + step * (k + 0.5);
+      text('조작 방법', W / 2, ly(0), 26, INK, 'center', null, F_T);
+      rows.forEach((c, i) => { text(c[0], 334, ly(i + 1), 21, '#7a6872', 'right', null, F_B); text(c[1], 352, ly(i + 1), 22, INK, 'left', null, F_B); });
+      text(touchUI ? '휴대폰에서는 조이스틱과 버튼으로 해요' : '버튼은 마우스로 눌러도 돼요', W / 2, ly(5), 23, '#3d9be0', 'center', null, F_H);
       if (room) wideBtn('초대받은 방에 들어가기', () => { scene = 'select'; });
       else { sideBtn('랭킹', () => { scene = 'ranking'; loadRanking(); }); mainBtn('시작하기', () => { scene = 'format'; }); }
-      text('© 2026 IGNUZNIM. All rights reserved.', W / 2, 890, 16, 'rgba(59,51,64,0.6)', 'center', null, F_B);
+      text('© 2026 IGNUZNIM. All rights reserved.', W / 2, LY.copy, 16, 'rgba(59,51,64,0.6)', 'center', null, F_B);
       menuEnd('Enter 를 눌러도 시작해요');
     },
   },
@@ -1363,7 +1382,7 @@ const scenes = {
         const over = btn(x, LY.top, tw, 56, () => { if (!on) { rank.list = null; loadRanking(id); } });
         rr(x, LY.top, tw, 56, 16, on ? '#fff3c4' : over ? '#fffdf3' : 'rgba(255,248,231,0.8)', on ? CORAL : OUT, on ? 4 : 2.6);
         text(MODE_KO[id], x + tw / 2, LY.top + 29, 25, on ? INK : '#7a6872', 'center', null, F_T); });
-      const py = LY.top + 56 + LY.gap, ph = LY.bot - LY.gap * 2 - py;
+      const py = LY.top + 56 + LY.gap, ph = contentEnd() - py;
       panel(LY.m, py, LY.w, ph);
       const L = rank.list, mid = py + ph / 2;
       if (rank.loading && !L) text('불러오는 중…', W / 2, mid, 30, '#7a6872', 'center', null, F_H);
@@ -1403,24 +1422,29 @@ const scenes = {
     },
     draw() {
       menuBegin('선수를 골라 주세요', true);
-      const cw = (LY.w - LY.gap * 3) / 4, ch = 104;
+      const span = contentEnd() - LY.top, cw = (LY.w - LY.gap * 3) / 4;
+      const ch = LY.tall ? clamp((span * 0.52 - LY.gap * 3) / 3, 104, 150) : 96, k = ch / 104;
       ANIMALS.forEach((A, i) => {
         const x = LY.m + (i % 4) * (cw + LY.gap), y = LY.top + Math.floor(i / 4) * (ch + LY.gap), on = i === state.sel, cx = x + cw / 2;
         const over = btn(x, y, cw, ch, () => { if (state.sel === i) pickAnimal(); else { state.sel = i; tone(660, 0.05, 'sine', 0.15); } });
         rr(x, y, cw, ch, 16, on ? '#fff3c4' : over ? '#fffdf3' : 'rgba(255,248,231,0.92)', on ? CORAL : OUT, on ? 5 : 3);
         ctx.lineWidth = 2.6; ctx.strokeStyle = OUT;
-        drawAnimal(i, cx, y + 72, 0.42, { front: true, t: on ? state.t : 0.4, anim: on ? 'run' : 'idle', accent: on ? CORAL : '#d9cbbd' });
+        drawAnimal(i, cx, y + ch - 32 - 2 * k, 0.42 * Math.min(k, 1.3), { front: true, t: on ? state.t : 0.4, anim: on ? 'run' : 'idle', accent: on ? CORAL : '#d9cbbd' });
         text(A.ko, cx, y + ch - 15, 21, INK, 'center', on ? '#fff3c4' : CREAM, F_T);
       });
-      const a = state.sel, A = ANIMALS[a], py = LY.top + 3 * (ch + LY.gap), ph = LY.bot - LY.gap * 2 - py;
+      const a = state.sel, A = ANIMALS[a], py = LY.top + 3 * (ch + LY.gap), ph = contentEnd() - py;
       panel(LY.m, py, LY.w, ph);
-      ctx.fillStyle = 'rgba(70,90,140,0.2)'; ctx.beginPath(); ctx.ellipse(LY.m + 88, py + ph - 30, 50, 12, 0, 0, 7); ctx.fill();
+      // one block, centred both ways: the animal on the left, its name, line and stats beside it
+      ctx.font = `${Math.round(17 * 1.1)}px ${F_B}`; const dw = Math.max(...STAT_DO.map(d => ctx.measureText(d).width));
+      const aw = 132, tw = 248 + dw, bw = aw + 20 + tw, bh = 36 + 38 + 30 * 4 + 14, bx = LY.m + (LY.w - bw) / 2, by = py + (ph - bh) / 2;
+      const ax = bx + aw / 2, ay = by + bh - 4;
+      ctx.fillStyle = 'rgba(70,90,140,0.2)'; ctx.beginPath(); ctx.ellipse(ax, ay, 50, 12, 0, 0, 7); ctx.fill();
       ctx.lineWidth = 2.6; ctx.strokeStyle = OUT;
-      drawAnimal(a, LY.m + 88, py + ph - 30, 1.15, { front: true, t: state.t, accent: CORAL });
-      const tx = LY.m + 182;
-      text(A.ko, tx, py + 36, 34, INK, 'left', null, F_T);
-      text(A.note, tx, py + 72, 23, '#c0605a', 'left', null, F_H);
-      statBars(a, tx, py + 106);
+      drawAnimal(a, ax, ay, LY.tall ? 1.15 : 1.0, { front: true, t: state.t, accent: CORAL });
+      const tx = bx + aw + 20;
+      text(A.ko, tx, by + 16, 34, INK, 'left', null, F_T);
+      text(A.note, tx, by + 54, 23, '#c0605a', 'left', null, F_H);
+      statBars(a, tx, by + 90);
       sideBtn('뒤로', () => { scene = room ? 'title' : 'mode'; });
       mainBtn('이 선수로 결정', pickAnimal);
       menuEnd(room ? '초대받은 방 ' + room + ' 에 들어갑니다' : '← → ↑ ↓ 로 고르고 Enter');
@@ -1457,23 +1481,24 @@ const scenes = {
       COURT_IDS.forEach((id, i) => {
         const C = COURTS[id], y = LY.top + i * (ch + LY.gap), on = i === state.cc;
         card(LY.m, y, LY.w, ch, () => pickCourt(i), on);
-        const px = LY.m + LY.pad, pw = 190, ph = ch - LY.pad * 2;
+        const ph = ch - LY.pad * 2, pw = Math.min(200, ph * 1.3), px = LY.m + LY.pad;
         courtPic(px, y + LY.pad, pw, ph, id);
-        const tx = px + pw + 26;
-        text(C.ko, tx, y + 44, 33, INK, 'left', null, F_T);
-        text(C.sub, tx, y + 82, 20, '#7a6872', 'left', null, F_B);
-        if (af[0] === id || af[2] === id) { const good = af[0] === id, bw = 186, bx = LY.m + LY.w - LY.pad - bw;
-          rr(bx, y + 26, bw, 38, 19, good ? '#ffe1a8' : '#dbe9f7', OUT, 2.2);
-          text(`${ANIMALS[setup.animal].ko}: ${good ? '강한' : '약한'} 코트`, bx + bw / 2, y + 45, 20, good ? '#c0605a' : '#3d7fc0', 'center', null, F_T); }
+        // the text block, centred in the card: name (with the badge on the same line), its line, then two ratings
+        const tx = px + pw + 28, by = y + (ch - 150) / 2, right = LY.m + LY.w - LY.pad;
+        text(C.ko, tx, by + 18, 33, INK, 'left', null, F_T);
+        if (af[0] === id || af[2] === id) { const good = af[0] === id, bw = 150;
+          rr(right - bw, by + 1, bw, 34, 17, good ? '#ffe1a8' : '#dbe9f7', OUT, 2.2);
+          text(`${good ? '강한' : '약한'} 코트`, right - bw / 2, by + 18, 20, good ? '#c0605a' : '#3d7fc0', 'center', null, F_T); }
+        text(C.sub, tx, by + 58, 20, '#7a6872', 'left', null, F_B);
         [['바운드', tune[id + '_bounce']], ['공 빠르기', tune[id + '_pace']]].forEach((row, r) => {
-          const yy = y + ch - LY.pad - 52 + r * 40, lv = row[1] < 0.95 ? 1 : row[1] > 1.05 ? 3 : 2;
+          const yy = by + 100 + r * 36, lv = row[1] < 0.95 ? 1 : row[1] > 1.05 ? 3 : 2;
           text(row[0], tx, yy, 21, INK, 'left', null, F_T);
           for (let k = 0; k < 3; k++) rr(tx + 112 + k * 40, yy - 10, 32, 20, 6, k < lv ? (r ? SKY : CORAL) : '#eadfd2', OUT, 2.2);
           text(r ? ['느림', '보통', '빠름'][lv - 1] : ['낮음', '보통', '높음'][lv - 1], tx + 244, yy, 20, '#7a6872', 'left', null, F_B);
         });
       });
       sideBtn('뒤로', () => { scene = 'select'; });
-      menuEnd('↑ ↓ 로 고르고 Enter');
+      menuEnd(`${ANIMALS[setup.animal].ko}의 강한 코트와 약한 코트가 표시돼요 · ↑ ↓ 로 고르고 Enter`);
     },
   },
   format: {
@@ -1490,12 +1515,12 @@ const scenes = {
       const how = { flash: '10점을 먼저 따면 승리 (2점 차)', short: '4게임 먼저 · 40-40이면 한 포인트로 결정', regular: '세트 3개를 먼저 따면 승리' };
       const ch = cardH(3);
       FORMAT_IDS.forEach((id, i) => {
-        const F = FORMATS[id], y = LY.top + i * (ch + LY.gap), x = LY.m + LY.pad + 4;
+        const F = FORMATS[id], y = LY.top + i * (ch + LY.gap), x = LY.m + LY.pad + 4, by = y + (ch - 112) / 2; // three lines, centred in the card
         card(LY.m, y, LY.w, ch, () => pickFormat(i), i === state.fm);
-        text(F.ko, x, y + 54, 40, INK, 'left', null, F_T);
-        if (id === 'short') { rr(x + 150, y + 36, 88, 36, 18, CORAL, OUT, 2.2); text('추천', x + 194, y + 54, 21, CREAM, 'center', null, F_T); }
-        text(rules(id).sub, x, y + 110, 23, '#c0605a', 'left', null, F_H);
-        text(how[id], x, y + 152, 21, '#7a6872', 'left', null, F_B);
+        text(F.ko, x, by + 20, 40, INK, 'left', null, F_T);
+        if (id === 'short') { rr(x + 150, by + 2, 88, 36, 18, CORAL, OUT, 2.2); text('추천', x + 194, by + 20, 21, CREAM, 'center', null, F_T); }
+        text(rules(id).sub, x, by + 66, 23, '#c0605a', 'left', null, F_H);
+        text(how[id], x, by + 102, 21, '#7a6872', 'left', null, F_B);
       });
       sideBtn('뒤로', () => { scene = 'title'; });
       menuEnd('↑ ↓ 로 고르고 Enter · 랭킹은 경기 방식마다 따로 집계돼요');
@@ -1511,7 +1536,7 @@ const scenes = {
     },
     draw() {
       menuBegin(net && net.role === 'guest' ? '방에 들어가는 중' : '친구를 기다리는 중', true);
-      const py = LY.top, ph = LY.bot - LY.gap * 2 - py;
+      const py = LY.top, ph = contentEnd() - py;
       panel(LY.m, py, LY.w, ph);
       const dots = '.'.repeat(1 + Math.floor(state.t * 2) % 3);
       if (net && net.status === 'error') { text(net.msg, W / 2, py + 220, 23, '#e2574c', 'center', null, F_B); text('인터넷 연결을 확인하고 다시 시도해 주세요', W / 2, py + 266, 21, INK, 'center', null, F_B); }
@@ -1625,24 +1650,25 @@ const scenes = {
     draw() {
       menuBegin();
       const sc = m.sc, w = sc.winner, me = w === view, guest = net && net.role === 'guest';
-      text(me ? '승리!' : '패배', W / 2, 64, 76, me ? CORAL : '#7f8fb5', 'center', OUT, F_T);
+      text(me ? '승리!' : '패배', W / 2, LY.titleY + 8, 76, me ? CORAL : '#7f8fb5', 'center', OUT, F_T);
       const RR = rules(), fin = sc.sets[sc.sets.length - 1] || [0, 0];
-      const reg = canRank(), py = LY.top + 36, pb = LY.bot - LY.gap * 2 - (reg ? 68 + LY.gap : 0);
-      text(`${RR.ko} · ${NAME(w)} 승리 · ${RR.sets > 1 && !RR.matchTb ? `세트 ${sc.won[w]} – ${sc.won[1 - w]}` : `${fin[w]} – ${fin[1 - w]}`}`, W / 2, LY.top + 10, 28, INK, 'center', CREAM, F_H);
+      const reg = canRank(), py = LY.top + 36, pb = contentEnd() - (reg ? 68 + LY.gap : 0);
+      text(`${RR.ko} · ${NAME(w)} 승리 · ${RR.sets > 1 && !RR.matchTb ? `세트 ${sc.won[w]} – ${sc.won[1 - w]}` : `${fin[w]} – ${fin[1 - w]}`}`, W / 2, LY.top + 8, 28, INK, 'center', CREAM, F_H);
       panel(LY.m, py, LY.w, pb - py);
+      const bh = 400, by = py + (pb - py - bh) / 2; // the block of scores and stats, centred in the panel
       for (let r = 0; r < 2; r++) {
-        const i = r === 0 ? view : 1 - view, y = py + 50 + r * 66;
+        const i = r === 0 ? view : 1 - view, y = by + 24 + r * 66;
         ctx.lineWidth = 2.6; ctx.strokeStyle = OUT;
-        drawAnimal(m.P[i].a, LY.m + 48, y + 26, 0.5, { front: true, accent: i === view ? CORAL : SKY, anim: i === w ? 'cheer' : 'sad', t: state.t });
-        text(NAME(i), LY.m + 88, y, 28, INK, 'left', null, F_T);
+        drawAnimal(m.P[i].a, LY.m + 52, y + 26, 0.5, { front: true, accent: i === view ? CORAL : SKY, anim: i === w ? 'cheer' : 'sad', t: state.t });
+        text(NAME(i), LY.m + 92, y, 28, INK, 'left', null, F_T);
         sc.sets.forEach((g, n) => text('' + g[i], 400 + n * 54, y, 33, g[i] > g[1 - i] ? INK : '#b3a4ac', 'center', null, F_N));
       }
-      const S = m.stats, a = view, b = 1 - view, sy = py + 196;
+      const S = m.stats, a = view, b = 1 - view, sy = by + 170;
       text(NAME(a), 180, sy, 22, CORAL, 'center', null, F_T); text(NAME(b), 540, sy, 22, '#3d9be0', 'center', null, F_T);
-      [['딴 포인트', S.pts], ['스위트 스폿', S.sweet], ['파워샷', S.power], ['에이스', S.aces]].forEach((row, i) => { const y = sy + 46 + i * 44; text(row[0], W / 2, y, 21, '#7a6872', 'center', null, F_B); text('' + row[1][a], 180, y, 30, INK, 'center', null, F_N); text('' + row[1][b], 540, y, 30, INK, 'center', null, F_N); });
-      text(`가장 긴 랠리  ${S.longest}번`, W / 2, sy + 46 + 4 * 44 + 4, 25, '#c0605a', 'center', null, F_H);
+      [['딴 포인트', S.pts], ['스위트 스폿', S.sweet], ['파워샷', S.power], ['에이스', S.aces]].forEach((row, i) => { const y = sy + 44 + i * 40; text(row[0], W / 2, y, 21, '#7a6872', 'center', null, F_B); text('' + row[1][a], 180, y, 30, INK, 'center', null, F_N); text('' + row[1][b], 540, y, 30, INK, 'center', null, F_N); });
+      text(`가장 긴 랠리  ${S.longest}번`, W / 2, sy + 44 + 4 * 40 + 6, 25, '#c0605a', 'center', null, F_H);
       if (reg) {
-        const ry = LY.bot - LY.gap - 68;
+        const ry = contentEnd() - 68;
         if (rank.sent === m) { rr(LY.m, ry, LY.w, 68, 18, 'rgba(255,248,231,0.92)', OUT); text(rank.msg, W / 2, ry + 34, 26, '#c0605a', 'center', null, F_H); }
         else button(rank.sending ? '등록하는 중…' : '랭킹에 기록 등록하기', LY.m, ry, LY.w, 68, openNick, { size: 28, fill: '#ffe1a8' });
       }
