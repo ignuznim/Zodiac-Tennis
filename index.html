@@ -376,7 +376,7 @@ let matchCount = 0;
 function newPlayer(i, a, ctrl) {
   const max = tune.stam_base + stat(a, 'stamina') * tune.stam_per;
   return { i, side: i === 0 ? 1 : -1, a, ctrl, x: 0, y: 0, vx: 0, vy: 0, stam: max, max, sw: null, cool: 0, anim: 'idle', at: 0, hand: 1,
-    pa: false, pk: false, pl: false, ps: false, ai: { for: -1, wait: 0, tgt: null, set: 0, st: 0, q: 1 } };
+    pa: false, pk: false, pl: false, ps: false, streak: 0, ai: { for: -1, wait: 0, tgt: null, set: 0, st: 0, q: 1 } };
 }
 function newMatch() {
   let opp = setup.guestAnimal;
@@ -415,7 +415,7 @@ function setupPoint() {
   const sc = m.sc, S = m.P[sc.server], R = m.P[1 - sc.server], b = m.ball;
   const right = (sc.pts[0] + sc.pts[1]) % 2 === 0, sg = (right ? 1 : -1) * S.side;
   S.x = sg * 1.4; S.y = S.side * 12.5; R.x = -sg * 3.0; R.y = R.side * 12.3;
-  for (const p of m.P) { p.vx = p.vy = 0; p.sw = null; p.cool = 0; setAnim(p, 'idle'); p.ai.st = 0; p.ai.tgt = null; p.hand = p.side; }
+  for (const p of m.P) { p.vx = p.vy = 0; p.sw = null; p.cool = 0; p.streak = 0; setAnim(p, 'idle'); p.ai.st = 0; p.ai.tgt = null; p.hand = p.side; }
   m.boxX = -sg; m.phase = 'serve'; m.pt = 0; m.refault = false; m.rally = 0; m.mark = null; m.land = null;
   b.live = false; b.fly = false; b.bounces = 0; b.kind = ''; b.power = 0; b.last = -1; b.vx = b.vy = b.vz = 0;
 }
@@ -461,21 +461,23 @@ function bounceOf(b) { // what a bounce keeps: the shot's spin, then the court's
   else if (b.kind === 'slice') { rest = tune.slice_bounce; pace = tune.slice_pace; }
   return { rest: rest * tune[m.court + '_bounce'], pace: Math.min(0.95, pace * tune[m.court + '_pace']) };
 }
-function launch(p, kind, q, charge, aimX, aimD) {
+function launch(p, kind, q, charge, aimX, aimD, late = 0) {
   const b = m.ball, opp = -p.side, spin = stat(p.a, 'spin'), pow = stat(p.a, 'power'), fat = 1 - p.stam / p.max, g = tune.gravity;
   const fh = (b.x - p.x) * p.side >= 0; // right-handed: the ball on the racket side is a forehand
-  let v = tune.stroke_v + pow * tune.stroke_v_pow, depth = [7.4, 9.3, 10.4][aimD + 1], err = tune.err_stroke, T = 0;
+  let v = tune.stroke_v + pow * tune.stroke_v_pow, depth = [7.4, 9.3, 10.7][aimD + 1], err = tune.err_stroke, T = 0;
   if (!fh && (kind === 'stroke' || kind === 'power' || kind === 'slice')) v *= tune.backhand_pace;
-  if (kind === 'power') { v *= 1 + tune.power_bonus * charge; err *= tune.err_power; }
+  if (kind === 'power') { v *= 1 + tune.power_bonus * charge; err *= tune.err_power; depth += tune.power_overhit * charge * (1 - q); } // more power, worse timing: it flies long
   else if (kind === 'smash') { v *= 1 + tune.smash_bonus; depth = 7.6; }
   else if (kind === 'wild') { v *= 1.2; err *= tune.wild_err; }
   else if (kind === 'volley') { depth = 8.6; err *= 0.85; }
   else if (kind === 'slice') { v *= tune.slice_v; err *= 0.7; }
   else if (kind === 'drop') { v = tune.drop_v; depth = aimD > 0 ? 2.8 : 2.0; err *= 0.7; }
   else if (kind === 'lob') { depth = 10.0; err *= 1.2; T = tune.lob_time; }
-  v *= (0.8 + 0.2 * q) * (1 - tune.fatigue_pace * fat);
-  const e = err * (2.3 - 1.8 * q) * (1.3 - tune.err_spin * spin) * (1 + tune.fatigue_err * fat);
+  const perfect = q >= 0.95; p.streak = perfect ? p.streak + 1 : 0; // perfect hits in a row sharpen the next one
+  v *= (0.8 + 0.2 * q) * (1 - tune.fatigue_pace * fat) * (1 + tune.sweet_bonus * Math.min(p.streak, tune.sweet_streak_max));
+  const e = err * (tune.err_bad + (tune.err_sweet - tune.err_bad) * q) * (1.3 - tune.err_spin * spin) * (1 + tune.fatigue_err * fat);
   let tx = aimX * tune.aim_x; if (aimX === 0) tx = clamp(b.x * 0.35 + (rng() - 0.5) * 2.4, -2.2, 2.2);
+  tx += Math.sign(b.x - p.x || 1) * Math.min(2.2, late * tune.late_pull); // a late hit drags the ball wide, to the side it was struck on
   const an = rng() * 6.283, r = e * Math.sqrt(rng());
   tx += Math.cos(an) * r; const ty = opp * depth + Math.sin(an) * r * 1.3;
   const dist = Math.hypot(tx - b.x, ty - b.y);
@@ -486,7 +488,9 @@ function launch(p, kind, q, charge, aimX, aimD) {
   b.last = p.i; b.bounces = 0; b.kind = kind; b.live = true; b.fly = true; b.power = kind === 'power' ? 0.6 + 0.4 * charge : kind === 'smash' ? 0.8 : 0;
   p.stam = Math.max(0, p.stam - tune.stam_shot - (kind === 'power' ? tune.stam_power * charge : kind === 'smash' || kind === 'wild' ? 2 : 0));
   m.rally++; m.hitId++; m.mark = null; m.land = { x: tx, y: ty };
-  if (q >= 0.95) { m.stats.sweet[p.i]++; pop('딱!', b.x, b.y, b.z + 0.9, BALL); }
+  if (perfect) { m.stats.sweet[p.i]++; pop(p.streak > 1 ? '딱! ×' + Math.min(p.streak, tune.sweet_streak_max) : '딱!', b.x, b.y, b.z + 0.9, BALL); }
+  else if (late > 0.45) pop('늦었어!', b.x, b.y, b.z + 0.9, '#f25f5c');
+  else if (q <= 0.6 && p.ctrl !== 'ai') pop('빨랐어!', b.x, b.y, b.z + 0.9, '#f25f5c');
   const hand = fh ? '포핸드' : '백핸드';
   if (kind === 'power') { m.stats.power[p.i]++; pop('파워 ' + hand + '!', p.x, p.y, 3.2, CORAL); }
   else if (kind === 'smash') pop('스매시!', p.x, p.y, 3.4, CORAL);
@@ -511,9 +515,9 @@ function tryHit(p, kind, qGiven, charge, aimX, aimDy) {
   const b = m.ball, d = p.side * (b.y - p.y);
   let q = qGiven;
   if (q == null) {
-    q = 1;
-    if (p.sw.mode === 'tap' ? p.sw.t > tune.sweet_window : p.sw.t > tune.release_window * 0.6) q = 0.72; // pressed early: the buffer
-    if (d > 0.15) q -= Math.min(0.6, (d - 0.15) * 0.5);   // late: the ball is past the body
+    const tap = p.sw.mode === 'tap', t = p.sw.t; // three grades: perfect, good, and pressed too early
+    q = t <= (tap ? tune.perfect_window : tune.release_window * 0.35) ? 1 : t <= (tap ? tune.sweet_window : tune.release_window * 0.6) ? 0.85 : 0.6;
+    if (d > 0.15) q -= Math.min(0.65, (d - 0.15) * 0.6);  // late: the ball is past the body
     if (Math.abs(b.x - p.x) > 0.82 * reach(p)) q -= 0.15; // at full stretch
   } else if (d > 0.3) q -= 0.25;
   q = clamp(q, 0.15, 1);
@@ -526,7 +530,7 @@ function tryHit(p, kind, qGiven, charge, aimX, aimDy) {
   } else if (kind === 'slice') { if (aimD < 0 || Math.abs(p.y) < 6.5) k2 = 'drop'; }
   else if (kind === 'smash') { if (b.z < tune.smash_min_z) k2 = 'wild'; }
   p.hand = b.x >= p.x ? 1 : -1;
-  launch(p, k2, q, charge, Math.sign(aimX), aimD);
+  launch(p, k2, q, charge, Math.sign(aimX), aimD, Math.max(0, d - 0.15));
   setAnim(p, k2 === 'smash' || k2 === 'wild' ? 'smash' : k2 === 'volley' ? 'volley' : k2 === 'drop' || k2 === 'slice' ? 'drop' : k2 === 'lob' ? 'lob' : 'hit');
   p.sw = null; p.cool = tune.swing_cool;
   return true;
@@ -844,21 +848,23 @@ function hintText() {
   }
   return '';
 }
-function drawTouch() { // phones and tablets: a joystick on the left, the three shots on the right
+function drawTouch() { // phones and tablets: a joystick on the left, the four shots on the right, all flat
   const c = stickC();
   ctx.lineWidth = 4; ctx.strokeStyle = OUT; E(c.x, c.y, STICK_R + 14, STICK_R + 14, 'rgba(255,248,231,0.6)');
   ctx.fillStyle = 'rgba(107,85,96,0.45)';
   for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2; ctx.beginPath(); for (const q of [[STICK_R + 4, 0], [STICK_R - 16, 0.2], [STICK_R - 16, -0.2]]) ctx.lineTo(c.x + Math.cos(a + q[1]) * q[0], c.y + Math.sin(a + q[1]) * q[0]); ctx.fill(); }
-  ctx.lineWidth = 3.4; ctx.strokeStyle = OUT; E(c.x + stick.x * STICK_R * 0.7, c.y + stick.y * STICK_R * 0.7 + 4, 44, 44, OUT, 0, true);
-  E(c.x + stick.x * STICK_R * 0.7, c.y + stick.y * STICK_R * 0.7, 44, 44, stick.id !== null ? '#fff3c4' : CREAM);
-  const B = [['스트로크', 'KeyJ', W - 112, H - 138, 80, CORAL], ['슬라이스', 'KeyK', W - 270, H - 82, 52, SKY], ['로브', 'KeyL', W - 240, H - 204, 52, '#c3a6e8'], ['스매시', 'KeyI', W - 124, H - 274, 52, BALL]];
+  ctx.lineWidth = 3.4; ctx.strokeStyle = OUT; E(c.x + stick.x * STICK_R * 0.7, c.y + stick.y * STICK_R * 0.7, 44, 44, stick.id !== null ? '#fff3c4' : CREAM);
+  // the big stroke button, and the other three on one arc round it: the same gap between each
+  const sx = W - 116, sy = H - 156, R = 152, ang = [180, 225, 270];
+  const B = [['스트로크', 'KeyJ', sx, sy, 82, CORAL]];
+  [['슬라이스', 'KeyK', SKY], ['로브', 'KeyL', '#c3a6e8'], ['스매시', 'KeyI', BALL]].forEach((q, i) => { const a = ang[i] * Math.PI / 180; B.push([q[0], q[1], sx + Math.cos(a) * R, sy + Math.sin(a) * R, 50, q[2]]); });
   for (const [label, code, x, y, r, col] of B) {
-    const on = down.has(code), d = on ? 4 : 0; btn(x - r, y - r, r * 2, r * 2, null, code);
-    ctx.lineWidth = 4; ctx.strokeStyle = OUT; E(x, y + 6, r, r, OUT, 0, true); E(x, y + d, r, r, on ? '#fff3c4' : col);
-    text(label, x, y + d - (r > 60 ? 8 : 0), r > 60 ? 28 : 21, INK, 'center', null, F_T);
-    if (r > 60) text('꾹: 파워샷', x, y + d + 24, 17, INK, 'center', null, F_B);
+    const on = down.has(code); btn(x - r, y - r, r * 2, r * 2, null, code);
+    ctx.lineWidth = 4; ctx.strokeStyle = OUT; E(x, y, r, r, on ? '#fff3c4' : col);
+    text(label, x, y - (r > 60 ? 9 : 0), r > 60 ? 29 : 20, INK, 'center', null, F_T);
+    if (r > 60) text('꾹: 파워샷', x, y + 24, 17, INK, 'center', null, F_B);
   }
-  text('네트 앞: 발리 · 슬라이스 + 아래: 드롭샷', W / 2, H - 20, 16, CREAM, 'center', OUT, F_B);
+  text('네트 앞: 발리 · 슬라이스 + 아래: 드롭샷', W / 2, H - 26, 16, CREAM, 'center', OUT, F_B);
 }
 function drawMatch() {
   OY = 0;
@@ -875,7 +881,7 @@ function drawMatch() {
   const far = m.P[1 - view], near = m.P[view], b = m.ball, bv = view ? -b.y : b.y, ny = view ? -near.y : near.y;
   drawPlayer(far); if (bv < 0) drawBall(); drawNet(); if (bv >= 0 && bv < ny) drawBall();
   drawPlayer(near); if (bv >= ny) drawBall();
-  for (const q of m.pops) { const s = proj(q.x, q.y, q.z); ctx.globalAlpha = clamp((0.9 - q.t) * 4, 0, 1); text(q.s, clamp(s.x, 70, W - 70), s.y - q.t * 40, q.s === '딱!' ? 44 : 30, q.c, 'center', OUT, F_H); ctx.globalAlpha = 1; }
+  for (const q of m.pops) { const s = proj(q.x, q.y, q.z); ctx.globalAlpha = clamp((0.9 - q.t) * 4, 0, 1); text(q.s, clamp(s.x, 70, W - 70), s.y - q.t * 40, q.s.startsWith('딱') ? 44 : 30, q.c, 'center', OUT, F_H); ctx.globalAlpha = 1; }
   ctx.restore();
   drawScoreboard();
   iconBtn(W - 68, 10, 'home', () => { if (scene === 'play') scene = 'pause'; });

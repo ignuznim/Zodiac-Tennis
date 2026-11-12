@@ -58,6 +58,15 @@ window.CONFIG = {
   serve_fault_q: { value: 0.4, min: 0.1, max: 0.8, step: 0.02 }, // first serve: timing under this is a fault
   serve_fault_q2: { value: 0.2, min: 0, max: 0.6, step: 0.02 },  // second serve: a wider window
 
+  // ---- What timing does to a shot ----
+  perfect_window: { value: 0.07, min: 0.03, max: 0.16, step: 0.01 }, // s before contact that counts as perfect
+  sweet_bonus: { value: 0.08, min: 0, max: 0.2, step: 0.01 },        // speed gained per perfect hit in a row
+  sweet_streak_max: { value: 3, min: 1, max: 6, step: 1 },           // perfect hits in a row that still add speed
+  err_sweet: { value: 0.3, min: 0.1, max: 1, step: 0.05 },           // scatter factor at perfect timing
+  err_bad: { value: 2.7, min: 1.5, max: 4, step: 0.1 },              // scatter factor at the worst timing
+  late_pull: { value: 1.7, min: 0, max: 3, step: 0.1 },              // metres a late hit drags wide, per metre the ball got past
+  power_overhit: { value: 3.6, min: 0, max: 6, step: 0.2 },          // metres a full power shot flies long at the worst timing
+
   // ---- Timing ----
   tap_window: { value: 0.24, min: 0.12, max: 0.4, step: 0.01 },   // s a swing waits for the ball (the buffer)
   sweet_window: { value: 0.16, min: 0.06, max: 0.3, step: 0.01 }, // s before contact that counts as sweet
