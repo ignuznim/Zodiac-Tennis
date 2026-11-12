@@ -104,6 +104,8 @@ fit(true);
 const OUT = '#6b5560', CREAM = '#fff8e7', CORAL = '#ff8a7a', SKY = '#6ec1ff', BALL = '#ffe45c', INK = '#4a3d47';
 function clear(c) { ctx.fillStyle = c; ctx.fillRect(0, 0, W, H); }
 function text(s, x, y, size, c, align = 'center', edge, font = F_T) {
+  if (font === F_H) size = Math.round(size * 1.15); // the handwriting face draws small for its size
+  else if (font === F_B) size = Math.round(size * 1.1); // body text: read on a phone, where the page is half size
   ctx.font = font.startsWith('700') ? font.replace('1em', size + 'px') : `${size}px ${font}`; ctx.textAlign = align; ctx.textBaseline = 'middle';
   if (edge) { ctx.lineWidth = Math.max(3, size / 6); ctx.strokeStyle = edge; ctx.lineJoin = 'round'; ctx.strokeText(s, x, y); }
   ctx.fillStyle = c; ctx.fillText(s, x, y);
@@ -367,9 +369,9 @@ const COURTS = { // three surfaces, in the colours of the three great tournament
 const COURT_IDS = ['hard', 'grass', 'clay'];
 // Three ways to play, all from the ITF Rules of Tennis: a deciding match tie-break, a short set (Appendix V), the full five sets
 const FORMATS = {
-  flash: { ko: '번개전', sub: '10점 매치 타이브레이크 · 약 6~9분', sets: 1, games: 6, noAd: false, matchTb: true },
-  short: { ko: '단판전', sub: '4게임 짧은 세트 · 노애드 · 4-4 타이브레이크 · 약 10~15분', sets: 1, games: 4, noAd: true, matchTb: false },
-  regular: { ko: '정규전', sub: '5세트 3선승 · 6게임 세트 · 30분 이상', sets: 0, games: 0, noAd: false, matchTb: false },
+  flash: { ko: '번개전', sub: '매치 타이브레이크 · 약 6~9분', sets: 1, games: 6, noAd: false, matchTb: true },
+  short: { ko: '단판전', sub: '4게임 짧은 세트 · 약 10~15분', sets: 1, games: 4, noAd: true, matchTb: false },
+  regular: { ko: '정규전', sub: '5세트 3선승 · 30분 이상', sets: 0, games: 0, noAd: false, matchTb: false },
 };
 const FORMAT_IDS = ['flash', 'short', 'regular'];
 function rules(f) { // regular reads its numbers live from the tuning
@@ -909,8 +911,8 @@ function drawLegend() { // the shot keys, always on screen; each is also a butto
     rr(x, y, 168, 46, 14, on ? '#fff3c4' : over ? '#fffdf3' : 'rgba(255,248,231,0.93)', OUT, 2.6);
     keycap(x + 8, y + 6, c[0], on); text(c[1], x + 50, y + 24, 20, INK, 'left', null, F_T);
   });
-  rr(14, H - 54, W - 28, 40, 12, 'rgba(74,61,71,0.82)', null);
-  text('J 꾹: 파워샷 · 네트 앞: 발리 · 슬라이스 + ↓: 드롭샷 · G: 낙하지점 표시', W / 2, H - 33, 16, CREAM, 'center', null, F_B);
+  rr(14, H - 56, W - 28, 44, 12, 'rgba(74,61,71,0.82)', null);
+  text('J 꾹: 파워샷 · 네트 앞: 발리 · K + ↓: 드롭샷 · H: 도움말', W / 2, H - 33, 20, CREAM, 'center', null, F_B);
 }
 function hintText() {
   const srv = m.sc.server === view;
@@ -937,10 +939,10 @@ function drawTouch() { // phones and tablets: a joystick on the left, the four s
   for (const [label, code, x, y, r, col] of B) {
     const on = down.has(code); btn(x - r, y - r, r * 2, r * 2, null, code);
     ctx.lineWidth = 4; ctx.strokeStyle = OUT; E(x, y, r, r, on ? '#fff3c4' : col);
-    text(label, x, y - (r > 60 ? 9 : 0), r > 60 ? 29 : 20, INK, 'center', null, F_T);
-    if (r > 60) text(serving ? (m.phase === 'serve' ? '공 띄우기' : '꼭대기에서!') : '꾹: 파워샷', x, y + 24, 17, INK, 'center', null, F_B);
+    text(label, x, y - (r > 60 ? 9 : 0), r > 60 ? 30 : 22, INK, 'center', null, F_T);
+    if (r > 60) text(serving ? (m.phase === 'serve' ? '공 띄우기' : '꼭대기에서!') : '꾹: 파워샷', x, y + 26, 19, INK, 'center', null, F_B);
   }
-  text('네트 앞: 발리 · 슬라이스 + 아래: 드롭샷', W / 2, H - 26, 16, CREAM, 'center', OUT, F_B);
+  text('네트 앞: 발리 · 슬라이스 + 아래: 드롭샷', W / 2, H - 24, 20, CREAM, 'center', OUT, F_B);
 }
 function drawMatch() {
   OY = 0;
@@ -975,7 +977,7 @@ function drawMatch() {
     ctx.globalAlpha = 1;
   }
   const h = hintText();
-  if (h && !m.banner) { ctx.font = F_H.replace('1em', '25px'); const w = Math.min(W - 28, ctx.measureText(h).width + 48); const hy = touchUI ? 142 : H - 166; rr(W / 2 - w / 2, hy, w, 46, 23, 'rgba(255,243,196,0.96)', OUT, 2.6); text(h, W / 2, hy + 24, 25, INK, 'center', null, F_H); }
+  if (h && !m.banner) { ctx.font = F_H.replace('1em', '29px'); const w = Math.min(W - 28, ctx.measureText(h).width + 48); const hy = touchUI ? 142 : H - 166; rr(W / 2 - w / 2, hy, w, 46, 23, 'rgba(255,243,196,0.96)', OUT, 2.6); text(h, W / 2, hy + 24, 25, INK, 'center', null, F_H); }
   if (touchUI) drawTouch(); else drawLegend();
   if (net && net.msg) text(net.msg, W / 2, 170, 20, CREAM, 'center', OUT, F_B);
 }
@@ -1094,6 +1096,17 @@ nickBox.querySelector('form').onsubmit = async e => {
   rank.sending = false;
 };
 
+function courtPic(x, y, w, h, id) { // a court seen from above with its lines and the net, for the court cards
+  const C = COURTS[id]; rr(x, y, w, h, 12, C.apron, OUT, 2.6);
+  const ix = x + w * 0.12, iy = y + h * 0.09, iw = w * 0.76, ih = h * 0.82;
+  ctx.fillStyle = C.edge; ctx.fillRect(ix - 3, iy - 3, iw + 6, ih + 6);
+  for (let k = 0; k < 6; k++) { ctx.fillStyle = k % 2 ? C.b : C.a; ctx.fillRect(ix, iy + k * ih / 6, iw, ih / 6); }
+  const sx = iw * 0.125, sv = ih * 0.23;
+  ctx.strokeStyle = CREAM; ctx.lineWidth = 2.4; ctx.strokeRect(ix, iy, iw, ih); ctx.strokeRect(ix + sx, iy, iw - sx * 2, ih);
+  ctx.beginPath(); ctx.moveTo(ix + sx, iy + sv); ctx.lineTo(ix + iw - sx, iy + sv); ctx.moveTo(ix + sx, iy + ih - sv); ctx.lineTo(ix + iw - sx, iy + ih - sv);
+  ctx.moveTo(ix + iw / 2, iy + sv); ctx.lineTo(ix + iw / 2, iy + ih - sv); ctx.stroke();
+  ctx.strokeStyle = OUT; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(ix - 10, iy + ih / 2); ctx.lineTo(ix + iw + 10, iy + ih / 2); ctx.stroke(); ctx.strokeStyle = CREAM; ctx.lineWidth = 2.5; ctx.stroke();
+}
 function miniCourt(x, y, w, h, id) { // a court seen from above, small enough for a badge
   const C = COURTS[id]; rr(x, y, w, h, 7, C.apron, OUT, 2.2);
   const ix = x + w * 0.16, iy = y + h * 0.14, iw = w * 0.68, ih = h * 0.72;
@@ -1139,7 +1152,7 @@ function drawTitleShow(t) {
   const [bx, by] = ballAt(u);
   ctx.fillStyle = 'rgba(40,70,50,0.3)'; ctx.beginPath(); ctx.ellipse(bx, 412, 9, 3, 0, 0, 7); ctx.fill();
   ctx.lineWidth = 2.4; ctx.strokeStyle = OUT; E(bx, by, 11, 11, BALL);
-  text(`${ANIMALS[L[0]].ko}  vs  ${ANIMALS[L[1]].ko}`, W / 2, 300, 22, '#4f6f63', 'center', CREAM, F_H);
+  text(`${ANIMALS[L[0]].ko}  vs  ${ANIMALS[L[1]].ko}`, W / 2, 302, 23, '#4f6f63', 'center', CREAM, F_H);
 }
 
 // ---- Help: two pages over the match, controls then rules ----
@@ -1150,8 +1163,8 @@ function helpRows(rows, y0, gap, kw) { // a two-column list: the label, then wha
   rows.forEach((r, i) => {
     const y = y0 + i * gap;
     if (r[0]) { rr(76, y - 19, kw, 38, 12, r[2] || '#efe3d3', OUT, 2); text(r[0], 76 + kw / 2, y, 19, INK, 'center', null, F_T); }
-    text(r[1], 96 + kw, y - (r[3] ? 11 : 0), 19, INK, 'left', null, F_B);
-    if (r[3]) text(r[3], 96 + kw, y + 13, 16, '#7a6872', 'left', null, F_B);
+    text(r[1], 96 + kw, y - (r[3] ? 12 : 0), 21, INK, 'left', null, F_B);
+    if (r[3]) text(r[3], 96 + kw, y + 15, 18, '#7a6872', 'left', null, F_B);
   });
 }
 
@@ -1162,29 +1175,38 @@ function reset() {
   state.m = newMatch(); seenFx = 0; trail = []; hints = { hits: 0, power: 0, shots: 0 };
 }
 function goHome() { netClose(); scene = 'title'; }
+// One layout for every menu page, in the 720 x 900 box: the same side margins, the title row,
+// where the content starts, and one bottom row of buttons (the side button left, the main one right)
+const LY = { m: 40, w: 640, top: 112, bot: 770, btnH: 68, side: 200, gap: 16, pad: 24, titleY: 56, foot: 864 };
 function menuBegin(title, home) {
   OY = 0; drawBackdrop(); ctx.fillStyle = '#8fd3b8'; ctx.fillRect(0, 232, W, H - 232);
   for (let i = 0; i * 56 < H - 232; i++) { ctx.fillStyle = i % 2 ? '#a2e3c8' : '#aeead2'; ctx.fillRect(0, 232 + i * 56, W, 56); }
   OY = Math.round((H - 900) / 2); ctx.save(); ctx.translate(0, OY);
-  if (title) text(title, W / 2, 58, 40, INK, 'center', CREAM, F_T);
-  if (home) iconBtn(16, 30, 'home', goHome);
+  if (title) text(title, W / 2, LY.titleY, 40, INK, 'center', CREAM, F_T);
+  if (home) iconBtn(LY.m, LY.titleY - 27, 'home', goHome);
 }
-function menuEnd(foot) { if (foot) text(foot, W / 2, 874, 17, '#4f6f63', 'center', null, F_B); ctx.restore(); OY = 0; }
+function menuEnd(foot) { if (foot) text(foot, W / 2, LY.foot, 20, '#4f6f63', 'center', null, F_B); ctx.restore(); OY = 0; }
+const cardH = n => (LY.bot - LY.gap * 2 - LY.top - LY.gap * (n - 1)) / n; // n cards filling the content area
+function panel(x, y, w, h) { rr(x, y, w, h, 24, 'rgba(255,248,231,0.96)', OUT); }
+function card(x, y, w, h, fn, on) { const over = btn(x, y, w, h, fn); rr(x, y + 5, w, h, 20, OUT, null); rr(x, y, w, h, 20, on ? '#fff3c4' : over ? '#fffdf3' : 'rgba(255,248,231,0.96)', on ? CORAL : OUT, on ? 5 : 3); }
+function sideBtn(label, fn) { button(label, LY.m, LY.bot, LY.side, LY.btnH, fn, { size: 28 }); }
+function mainBtn(label, fn) { button(label, LY.m + LY.side + LY.gap, LY.bot, LY.w - LY.side - LY.gap, LY.btnH, fn, { size: 31, fill: '#fff3c4' }); }
+function wideBtn(label, fn) { button(label, LY.m, LY.bot, LY.w, LY.btnH, fn, { size: 31, fill: '#fff3c4' }); }
 function button(label, x, y, w, h, fn, o = {}) { // a big rounded button, for the mouse and for show
   const over = btn(x, y, w, h, fn), on = o.on;
   rr(x, y + 5, w, h, 18, OUT, null);
   rr(x, y, w, h, 18, on ? '#fff3c4' : over ? '#fffdf3' : o.fill || 'rgba(255,248,231,0.96)', on ? CORAL : OUT, on ? 5 : 3);
-  if (o.sub) { text(label, x + 28, y + h / 2 - 16, o.size || 27, INK, 'left', null, F_T); text(o.sub, x + 28, y + h / 2 + 20, 17, '#7a6872', 'left', null, F_B); }
+  if (o.sub) { text(label, x + LY.pad + 4, y + h / 2 - 18, o.size || 27, INK, 'left', null, F_T); text(o.sub, x + LY.pad + 4, y + h / 2 + 22, 21, '#7a6872', 'left', null, F_B); }
   else text(label, x + w / 2, y + h / 2 + 1, o.size || 28, o.ink || INK, 'center', null, F_T);
 }
 const STAT_COL = [CORAL, '#ffb86b', '#c3a6e8', BALL, SKY];
-const STAT_DO = ['공이 빨라져요', '오래 뛰어도 안 지쳐요', '정확하고 드롭샷이 죽어요', '빨리 돌고 멀리 닿아요', '달리기가 빨라요'];
+const STAT_DO = ['공이 빨라요', '덜 지쳐요', '정확한 샷', '넓은 수비', '빠른 발'];
 function statBars(a, x, y) {
   STATS.forEach((s, i) => {
-    const v = stat(a, s, null), yy = y + i * 34;
-    text(STAT_KO[i], x, yy, 20, INK, 'left', null, F_T);
-    for (let k = 0; k < 5; k++) rr(x + 92 + k * 30, yy - 9, 24, 18, 6, k < v ? STAT_COL[i] : '#eadfd2', OUT, 2.2);
-    text(STAT_DO[i], x + 252, yy, 16, '#7a6872', 'left', null, F_B);
+    const v = stat(a, s, null), yy = y + i * 29;
+    text(STAT_KO[i], x, yy, 22, INK, 'left', null, F_T);
+    for (let k = 0; k < 5; k++) rr(x + 100 + k * 30, yy - 10, 25, 20, 6, k < v ? STAT_COL[i] : '#eadfd2', OUT, 2.2);
+    text(STAT_DO[i], x + 262, yy, 20, '#7a6872', 'left', null, F_B);
   });
 }
 // the way in: format, then who you play, then your animal, then the court (an invited guest only picks an animal)
@@ -1241,18 +1263,15 @@ const scenes = {
     draw() {
       menuBegin();
       drawTitleShow(state.t);
-      rr(50, 446, 620, 244, 22, 'rgba(255,248,231,0.95)', OUT);
-      text('조작 방법', W / 2, 478, 24, INK, 'center', null, F_T);
-      [['이동', '방향키 / WASD'], ['스트로크', 'J  (꾹 눌렀다 놓으면 파워샷)'], ['슬라이스 · 로브 · 스매시', 'K  ·  L  ·  I'], ['일시정지 · 음소거 · 낙하지점', 'P  ·  M  ·  G']].forEach((c, i) => { const y = 518 + i * 34; text(c[0], 312, y, 18, '#7a6872', 'right', null, F_B); text(c[1], 330, y, 19, INK, 'left', null, F_B); });
-      text(touchUI ? '휴대폰에서는 조이스틱과 버튼으로 해요' : '버튼은 마우스로 눌러도 돼요', W / 2, 660, 21, '#3d9be0', 'center', null, F_H);
-      if (room) button('초대받은 방에 들어가기', 150, 706, 420, 76, () => { scene = 'select'; }, { size: 34, fill: '#fff3c4' });
-      else {
-        button('시작하기', 100, 706, 330, 76, () => { scene = 'format'; }, { size: 34, fill: '#fff3c4' });
-        button('랭킹', 446, 706, 174, 76, () => { scene = 'ranking'; loadRanking(); }, { size: 28 });
-      }
-      text('Enter 를 눌러도 시작해요', W / 2, 840, 17, '#4f6f63', 'center', null, F_B);
-      text('© 2026 IGNUZNIM. All rights reserved.', W / 2, 878, 15, 'rgba(59,51,64,0.55)', 'center', null, F_B);
-      menuEnd();
+      const top = 450, rows = [['이동', '방향키 / WASD'], ['스트로크', 'J  (꾹 눌렀다 놓으면 파워샷)'], ['슬라이스 · 로브 · 스매시', 'K  ·  L  ·  I'], ['일시정지 · 소리 · 낙하지점', 'P  ·  M  ·  G']];
+      panel(LY.m, top, LY.w, LY.bot - LY.gap * 2 - top);
+      text('조작 방법', W / 2, top + 36, 26, INK, 'center', null, F_T);
+      rows.forEach((c, i) => { const y = top + 84 + i * 40; text(c[0], 334, y, 21, '#7a6872', 'right', null, F_B); text(c[1], 352, y, 22, INK, 'left', null, F_B); });
+      text(touchUI ? '휴대폰에서는 조이스틱과 버튼으로 해요' : '버튼은 마우스로 눌러도 돼요', W / 2, top + 84 + 4 * 40 + 6, 23, '#3d9be0', 'center', null, F_H);
+      if (room) wideBtn('초대받은 방에 들어가기', () => { scene = 'select'; });
+      else { sideBtn('랭킹', () => { scene = 'ranking'; loadRanking(); }); mainBtn('시작하기', () => { scene = 'format'; }); }
+      text('© 2026 IGNUZNIM. All rights reserved.', W / 2, 890, 16, 'rgba(59,51,64,0.6)', 'center', null, F_B);
+      menuEnd('Enter 를 눌러도 시작해요');
     },
   },
   ranking: {
@@ -1263,36 +1282,38 @@ const scenes = {
     },
     draw() {
       menuBegin('랭킹 TOP 10', true);
-      FORMAT_IDS.forEach((id, i) => { const x = 40 + i * 218, on = id === rank.mode;
-        if (btn(x, 92, 204, 50, () => { if (!on) { rank.list = null; loadRanking(id); } }) && !on) rr(x, 92, 204, 50, 16, '#fffdf3', OUT, 3);
-        else rr(x, 92, 204, 50, 16, on ? '#fff3c4' : 'rgba(255,248,231,0.75)', on ? CORAL : OUT, on ? 4 : 2.6);
-        text(MODE_KO[id], x + 102, 118, 23, on ? INK : '#7a6872', 'center', null, F_T); });
-      ctx.save(); ctx.translate(0, 20);
-      rr(40, 130, 640, 600, 24, 'rgba(255,248,231,0.96)', OUT);
-      const L = rank.list;
-      if (rank.loading && !L) text('불러오는 중…', W / 2, 420, 28, '#7a6872', 'center', null, F_H);
-      else if (rank.err && !(L && L.length)) text(rank.err, W / 2, 420, 21, '#e2574c', 'center', null, F_B);
-      else if (!L || !L.length) { text('아직 기록이 없어요', W / 2, 400, 30, INK, 'center', null, F_T); text('첫 번째 주인공이 되어 보세요!', W / 2, 446, 24, '#c0605a', 'center', null, F_H); }
+      const tw = (LY.w - LY.gap * 2) / 3;
+      FORMAT_IDS.forEach((id, i) => { const x = LY.m + i * (tw + LY.gap), on = id === rank.mode;
+        const over = btn(x, LY.top, tw, 56, () => { if (!on) { rank.list = null; loadRanking(id); } });
+        rr(x, LY.top, tw, 56, 16, on ? '#fff3c4' : over ? '#fffdf3' : 'rgba(255,248,231,0.8)', on ? CORAL : OUT, on ? 4 : 2.6);
+        text(MODE_KO[id], x + tw / 2, LY.top + 29, 25, on ? INK : '#7a6872', 'center', null, F_T); });
+      const py = LY.top + 56 + LY.gap, ph = LY.bot - LY.gap * 2 - py;
+      panel(LY.m, py, LY.w, ph);
+      const L = rank.list, mid = py + ph / 2;
+      if (rank.loading && !L) text('불러오는 중…', W / 2, mid, 30, '#7a6872', 'center', null, F_H);
+      else if (rank.err && !(L && L.length)) text(rank.err, W / 2, mid, 22, '#e2574c', 'center', null, F_B);
+      else if (!L || !L.length) { text('아직 기록이 없어요', W / 2, mid - 22, 32, INK, 'center', null, F_T); text('첫 번째 주인공이 되어 보세요!', W / 2, mid + 24, 26, '#c0605a', 'center', null, F_H); }
       else {
-        text('순위', 92, 160, 16, '#7a6872', 'center', null, F_B); text('선수', 236, 160, 16, '#7a6872', 'left', null, F_B);
-        text('난이도', 470, 160, 16, '#7a6872', 'center', null, F_B); text('점수', 630, 160, 16, '#7a6872', 'right', null, F_B);
+        const hy = py + 32, x0 = LY.m + LY.pad;
+        text('순위', x0 + 28, hy, 19, '#7a6872', 'center', null, F_B); text('선수', x0 + 128, hy, 19, '#7a6872', 'left', null, F_B);
+        text('난이도', 470, hy, 19, '#7a6872', 'center', null, F_B); text('점수', LY.m + LY.w - LY.pad, hy, 19, '#7a6872', 'right', null, F_B);
+        const rh = (ph - 64 - LY.pad) / 10;
         L.forEach((r, i) => {
-          const y = 206 + i * 52;
-          if (i % 2 === 0) rr(56, y - 23, 608, 46, 12, 'rgba(234,223,210,0.45)', null);
+          const y = py + 64 + rh * i + rh / 2;
+          if (i % 2 === 0) rr(LY.m + 12, y - rh / 2 + 2, LY.w - 24, rh - 4, 12, 'rgba(234,223,210,0.45)', null);
           const medal = ['#ffd34d', '#cfd8e3', '#e6a46a'][i];
-          if (medal) { ctx.lineWidth = 2.4; ctx.strokeStyle = OUT; E(92, y, 17, 17, medal); }
-          text('' + (i + 1), 92, y + 1, 22, INK, 'center', null, F_N);
+          if (medal) { ctx.lineWidth = 2.4; ctx.strokeStyle = OUT; E(x0 + 28, y, 18, 18, medal); }
+          text('' + (i + 1), x0 + 28, y + 1, 23, INK, 'center', null, F_N);
           ctx.lineWidth = 2; ctx.strokeStyle = OUT;
-          drawAnimal(r.animal, 150, y + 18, 0.32, { front: true, t: 0.4, accent: CORAL });
-          text(r.nickname, 182, y, 24, INK, 'left', null, F_T);
-          text(LEVEL_KO[r.level] || '', 470, y, 19, ['', '#3d9be0', '#4f9a6a', '#e2574c'][r.level] || INK, 'center', null, F_T);
-          text(r.score.toLocaleString(), 630, y, 26, INK, 'right', null, F_N);
+          drawAnimal(r.animal, x0 + 88, y + 18, 0.32, { front: true, t: 0.4, accent: CORAL });
+          text(r.nickname, x0 + 128, y, 25, INK, 'left', null, F_T);
+          text(LEVEL_KO[r.level] || '', 470, y, 21, ['', '#3d9be0', '#4f9a6a', '#e2574c'][r.level] || INK, 'center', null, F_T);
+          text(r.score.toLocaleString(), LY.m + LY.w - LY.pad, y, 27, INK, 'right', null, F_N);
         });
       }
-      ctx.restore();
-      button('뒤로', 40, 772, 300, 64, () => { scene = 'title'; }, { size: 26 });
-      button(rank.loading ? '불러오는 중…' : '새로고침', 380, 772, 300, 64, () => { if (!rank.loading) loadRanking(); }, { size: 26, fill: '#fff3c4' });
-      menuEnd('컴퓨터를 이긴 기록 · 1인 최고 기록 · 점수 = 난이도 + 득실 차 × 10 + 스위트 스폿 × 2');
+      sideBtn('뒤로', () => { scene = 'title'; });
+      mainBtn(rank.loading ? '불러오는 중…' : '새로고침', () => { if (!rank.loading) loadRanking(); });
+      menuEnd('컴퓨터를 이긴 기록 · 한 사람당 최고 기록');
     },
   },
   select: {
@@ -1306,30 +1327,27 @@ const scenes = {
     },
     draw() {
       menuBegin('선수를 골라 주세요', true);
+      const cw = (LY.w - LY.gap * 3) / 4, ch = 110;
       ANIMALS.forEach((A, i) => {
-        const x = 108 + (i % 4) * 168, y = 96 + Math.floor(i / 4) * 124, on = i === state.sel;
-        const over = btn(x - 76, y, 152, 114, () => { if (state.sel === i) pickAnimal(); else { state.sel = i; tone(660, 0.05, 'sine', 0.15); } });
-        rr(x - 76, y, 152, 114, 16, on ? '#fff3c4' : over ? '#fffdf3' : 'rgba(255,248,231,0.92)', on ? CORAL : OUT, on ? 5 : 3);
+        const x = LY.m + (i % 4) * (cw + LY.gap), y = LY.top + Math.floor(i / 4) * (ch + LY.gap), on = i === state.sel, cx = x + cw / 2;
+        const over = btn(x, y, cw, ch, () => { if (state.sel === i) pickAnimal(); else { state.sel = i; tone(660, 0.05, 'sine', 0.15); } });
+        rr(x, y, cw, ch, 16, on ? '#fff3c4' : over ? '#fffdf3' : 'rgba(255,248,231,0.92)', on ? CORAL : OUT, on ? 5 : 3);
         ctx.lineWidth = 2.6; ctx.strokeStyle = OUT;
-        drawAnimal(i, x, y + 74, 0.54, { front: true, t: on ? state.t : 0.4, anim: on ? 'run' : 'idle', accent: on ? CORAL : '#d9cbbd' });
-        text(A.ko, x, y + 98, 18, INK, 'center', on ? '#fff3c4' : CREAM, F_T);
+        drawAnimal(i, cx, y + 76, 0.44, { front: true, t: on ? state.t : 0.4, anim: on ? 'run' : 'idle', accent: on ? CORAL : '#d9cbbd' });
+        text(A.ko, cx, y + ch - 15, 21, INK, 'center', on ? '#fff3c4' : CREAM, F_T);
       });
-      const a = state.sel, A = ANIMALS[a];
-      rr(24, 476, 672, 288, 22, 'rgba(255,248,231,0.96)', OUT);
-      ctx.fillStyle = 'rgba(70,90,140,0.2)'; ctx.beginPath(); ctx.ellipse(106, 730, 50, 12, 0, 0, 7); ctx.fill();
+      const a = state.sel, A = ANIMALS[a], py = LY.top + 3 * (ch + LY.gap), ph = LY.bot - LY.gap * 2 - py;
+      panel(LY.m, py, LY.w, ph);
+      ctx.fillStyle = 'rgba(70,90,140,0.2)'; ctx.beginPath(); ctx.ellipse(LY.m + 88, py + ph - 30, 50, 12, 0, 0, 7); ctx.fill();
       ctx.lineWidth = 2.6; ctx.strokeStyle = OUT;
-      drawAnimal(a, 106, 730, 1.2, { front: true, t: state.t, accent: CORAL });
-      text(A.ko, 196, 510, 34, INK, 'left', null, F_T);
-      text(A.note, 196, 546, 21, '#c0605a', 'left', null, F_H);
-      statBars(a, 196, 584);
-      const af = AFFINITY[A.id]; // its best and worst court, as two little pictures
-      [[af[0], '강', CORAL], [af[2], '약', SKY]].forEach(([c, label, col], k) => {
-        const x = 462 + k * 110; ctx.lineWidth = 2.2; ctx.strokeStyle = OUT; E(x + 15, 510, 15, 15, col); text(label, x + 15, 511, 18, CREAM, 'center', null, F_T);
-        miniCourt(x + 36, 487, 70, 46, c);
-      });
-      button('뒤로', 24, 780, 180, 64, () => { scene = room ? 'title' : 'mode'; }, { size: 24 });
-      button('이 선수로 결정', 220, 780, 476, 64, pickAnimal, { size: 28, fill: '#fff3c4' });
-      menuEnd(room ? '초대받은 방 ' + room + ' 에 들어갑니다' : '← → ↑ ↓ 로 고르고 Enter · 마우스로 눌러도 돼요');
+      drawAnimal(a, LY.m + 88, py + ph - 30, 1.15, { front: true, t: state.t, accent: CORAL });
+      const tx = LY.m + 182;
+      text(A.ko, tx, py + 36, 34, INK, 'left', null, F_T);
+      text(A.note, tx, py + 72, 23, '#c0605a', 'left', null, F_H);
+      statBars(a, tx, py + 108);
+      sideBtn('뒤로', () => { scene = room ? 'title' : 'mode'; });
+      mainBtn('이 선수로 결정', pickAnimal);
+      menuEnd(room ? '초대받은 방 ' + room + ' 에 들어갑니다' : '← → ↑ ↓ 로 고르고 Enter');
     },
   },
   mode: {
@@ -1341,13 +1359,12 @@ const scenes = {
       if (anyHit(...K_OK)) pickMode(state.cur);
     },
     draw() {
-      menuBegin('어떻게 겨룰까요?', true);
-      const rows = [['컴퓨터와 대결 · 쉬움', '받기 쉬운 공을 보내고 실수도 자주 해요'], ['컴퓨터와 대결 · 보통', '빈 곳을 노리고 가끔 변칙을 섞어요'], ['컴퓨터와 대결 · 어려움', '코너를 찌르고 드롭샷, 로브, 파워샷까지'], ['온라인 대결 · 방 만들기', '초대 링크를 보내 각자의 PC에서 겨뤄요']];
-      rows.forEach((r, i) => { const y = 104 + i * 124; button(r[0], 40, y, 640, 104, () => pickMode(i), { on: i === state.cur, sub: r[1] }); });
-      rr(140, 600, 440, 60, 30, 'rgba(255,248,231,0.9)', OUT, 2.6);
-      text(`${FORMATS[setup.format].ko} · ${{ flash: '10점 매치 타이브레이크', short: '4게임 짧은 세트', regular: '5세트 3선승' }[setup.format]}`, W / 2, 631, 24, INK, 'center', null, F_H);
-      button('뒤로', 24, 780, 180, 64, () => { scene = 'format'; }, { size: 24 });
-      menuEnd('↑ ↓ 로 고르고 Enter · 마우스로 눌러도 돼요');
+      menuBegin('누구와 겨룰까요?', true);
+      const rows = [['컴퓨터와 대결 · 쉬움', '받기 쉬운 공을 보내고 실수도 자주 해요'], ['컴퓨터와 대결 · 보통', '빈 곳을 노리고 가끔 변칙을 섞어요'], ['컴퓨터와 대결 · 어려움', '코너를 찌르고 드롭샷, 로브, 파워샷까지'], ['온라인 대결 · 방 만들기', '초대 링크를 보내 각자의 기기에서 겨뤄요']];
+      const ch = cardH(4);
+      rows.forEach((r, i) => button(r[0], LY.m, LY.top + i * (ch + LY.gap), LY.w, ch, () => pickMode(i), { on: i === state.cur, sub: r[1], size: 29 }));
+      sideBtn('뒤로', () => { scene = 'format'; });
+      menuEnd(`${FORMATS[setup.format].ko} · ${{ flash: '10점 매치 타이브레이크', short: '4게임 짧은 세트', regular: '5세트 3선승' }[setup.format]}`);
     },
   },
   court: {
@@ -1360,30 +1377,27 @@ const scenes = {
     },
     draw() {
       menuBegin('어느 코트에서 할까요?', true);
+      const ch = cardH(3), af = AFFINITY[ANIMALS[setup.animal].id];
       COURT_IDS.forEach((id, i) => {
-        const C = COURTS[id], y = 100 + i * 220, on = i === state.cc, over = btn(40, y, 640, 204, () => pickCourt(i));
-        rr(40, y + 5, 640, 204, 20, OUT, null);
-        rr(40, y, 640, 204, 20, on ? '#fff3c4' : over ? '#fffdf3' : 'rgba(255,248,231,0.96)', on ? CORAL : OUT, on ? 5 : 3);
-        // a small picture of the court
-        rr(60, y + 18, 210, 168, 12, C.apron, OUT, 2.6);
-        for (let k = 0; k < 6; k++) { ctx.fillStyle = k % 2 ? C.b : C.a; ctx.fillRect(84, y + 32 + k * 23.4, 162, 23.4); }
-        ctx.strokeStyle = CREAM; ctx.lineWidth = 2.5; ctx.strokeRect(84, y + 32, 162, 140); ctx.strokeRect(104, y + 32, 122, 140);
-        ctx.beginPath(); ctx.moveTo(104, y + 66); ctx.lineTo(226, y + 66); ctx.moveTo(104, y + 138); ctx.lineTo(226, y + 138); ctx.moveTo(165, y + 66); ctx.lineTo(165, y + 138); ctx.stroke();
-        ctx.strokeStyle = OUT; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(76, y + 102); ctx.lineTo(254, y + 102); ctx.stroke(); ctx.strokeStyle = CREAM; ctx.lineWidth = 2.5; ctx.stroke();
-        text(C.ko, 296, y + 46, 32, INK, 'left', null, F_T);
-        text(C.sub, 296, y + 84, 17, '#7a6872', 'left', null, F_B);
-        const af = AFFINITY[ANIMALS[setup.animal].id];
-        if (af[0] === id) { rr(500, y + 26, 166, 34, 17, '#ffe1a8', OUT, 2.2); text(`${ANIMALS[setup.animal].ko}: 강한 코트`, 583, y + 43, 18, '#c0605a', 'center', null, F_T); }
-        else if (af[2] === id) { rr(500, y + 26, 166, 34, 17, '#dbe9f7', OUT, 2.2); text(`${ANIMALS[setup.animal].ko}: 약한 코트`, 583, y + 43, 18, '#3d7fc0', 'center', null, F_T); }
+        const C = COURTS[id], y = LY.top + i * (ch + LY.gap), on = i === state.cc;
+        card(LY.m, y, LY.w, ch, () => pickCourt(i), on);
+        const px = LY.m + LY.pad, pw = 190, ph = ch - LY.pad * 2;
+        courtPic(px, y + LY.pad, pw, ph, id);
+        const tx = px + pw + 26;
+        text(C.ko, tx, y + 44, 33, INK, 'left', null, F_T);
+        text(C.sub, tx, y + 82, 20, '#7a6872', 'left', null, F_B);
+        if (af[0] === id || af[2] === id) { const good = af[0] === id, bw = 186, bx = LY.m + LY.w - LY.pad - bw;
+          rr(bx, y + 26, bw, 38, 19, good ? '#ffe1a8' : '#dbe9f7', OUT, 2.2);
+          text(`${ANIMALS[setup.animal].ko}: ${good ? '강한' : '약한'} 코트`, bx + bw / 2, y + 45, 20, good ? '#c0605a' : '#3d7fc0', 'center', null, F_T); }
         [['바운드', tune[id + '_bounce']], ['공 빠르기', tune[id + '_pace']]].forEach((row, r) => {
-          const yy = y + 128 + r * 36, lv = row[1] < 0.95 ? 1 : row[1] > 1.05 ? 3 : 2;
-          text(row[0], 296, yy, 19, INK, 'left', null, F_T);
-          for (let k = 0; k < 3; k++) rr(400 + k * 40, yy - 9, 32, 18, 6, k < lv ? (r ? SKY : CORAL) : '#eadfd2', OUT, 2.2);
-          text(['낮음', '보통', '높음'][lv - 1].replace('낮음', r ? '느림' : '낮음').replace('높음', r ? '빠름' : '높음'), 532, yy, 17, '#7a6872', 'left', null, F_B);
+          const yy = y + ch - LY.pad - 52 + r * 40, lv = row[1] < 0.95 ? 1 : row[1] > 1.05 ? 3 : 2;
+          text(row[0], tx, yy, 21, INK, 'left', null, F_T);
+          for (let k = 0; k < 3; k++) rr(tx + 112 + k * 40, yy - 10, 32, 20, 6, k < lv ? (r ? SKY : CORAL) : '#eadfd2', OUT, 2.2);
+          text(r ? ['느림', '보통', '빠름'][lv - 1] : ['낮음', '보통', '높음'][lv - 1], tx + 244, yy, 20, '#7a6872', 'left', null, F_B);
         });
       });
-      button('뒤로', 24, 786, 180, 60, () => { scene = 'select'; }, { size: 24 });
-      menuEnd('↑ ↓ 로 고르고 Enter · 눌러도 돼요');
+      sideBtn('뒤로', () => { scene = 'select'; });
+      menuEnd('↑ ↓ 로 고르고 Enter');
     },
   },
   format: {
@@ -1397,17 +1411,17 @@ const scenes = {
     draw() {
       if (state.fm == null) state.fm = FORMAT_IDS.indexOf(setup.format);
       menuBegin('경기 방식을 골라 주세요', true);
-      const how = { flash: '10점을 먼저 따면 승리 (2점 차) · 공식 복식의 결승 세트 방식', short: '4게임을 먼저 따면 승리 · 40-40이면 한 포인트로 결정', regular: '세트 3개를 먼저 따면 승리 · 그랜드슬램 남자 단식 방식' };
+      const how = { flash: '10점을 먼저 따면 승리 (2점 차)', short: '4게임 먼저 · 40-40이면 한 포인트로 결정', regular: '세트 3개를 먼저 따면 승리' };
+      const ch = cardH(3);
       FORMAT_IDS.forEach((id, i) => {
-        const F = FORMATS[id], y = 110 + i * 196, on = i === state.fm, over = btn(40, y, 640, 176, () => pickFormat(i));
-        rr(40, y + 5, 640, 176, 20, OUT, null);
-        rr(40, y, 640, 176, 20, on ? '#fff3c4' : over ? '#fffdf3' : 'rgba(255,248,231,0.96)', on ? CORAL : OUT, on ? 5 : 3);
-        text(F.ko, 70, y + 48, 38, INK, 'left', null, F_T);
-        if (id === 'short') { rr(220, y + 30, 82, 34, 17, CORAL, OUT, 2.2); text('추천', 261, y + 47, 19, CREAM, 'center', null, F_T); }
-        text(rules(id).sub, 70, y + 98, 19, '#c0605a', 'left', null, F_H);
-        text(how[id], 70, y + 138, 17, '#7a6872', 'left', null, F_B);
+        const F = FORMATS[id], y = LY.top + i * (ch + LY.gap), x = LY.m + LY.pad + 4;
+        card(LY.m, y, LY.w, ch, () => pickFormat(i), i === state.fm);
+        text(F.ko, x, y + 54, 40, INK, 'left', null, F_T);
+        if (id === 'short') { rr(x + 150, y + 36, 88, 36, 18, CORAL, OUT, 2.2); text('추천', x + 194, y + 54, 21, CREAM, 'center', null, F_T); }
+        text(rules(id).sub, x, y + 110, 23, '#c0605a', 'left', null, F_H);
+        text(how[id], x, y + 152, 21, '#7a6872', 'left', null, F_B);
       });
-      button('뒤로', 24, 786, 180, 60, () => { scene = 'title'; }, { size: 24 });
+      sideBtn('뒤로', () => { scene = 'title'; });
       menuEnd('↑ ↓ 로 고르고 Enter · 랭킹은 경기 방식마다 따로 집계돼요');
     },
   },
@@ -1420,30 +1434,31 @@ const scenes = {
       if (net.role === 'guest') { guestStep(); if (net.snap) { view = 1; scene = 'play'; seenFx = 0; hints = { hits: 0, power: 0, shots: 0 }; } }
     },
     draw() {
-      menuBegin(net && net.role === 'guest' ? '방에 들어가는 중' : '친구를 기다리는 중');
-      rr(30, 104, 660, 600, 24, 'rgba(255,248,231,0.96)', OUT);
+      menuBegin(net && net.role === 'guest' ? '방에 들어가는 중' : '친구를 기다리는 중', true);
+      const py = LY.top, ph = LY.bot - LY.gap * 2 - py;
+      panel(LY.m, py, LY.w, ph);
       const dots = '.'.repeat(1 + Math.floor(state.t * 2) % 3);
-      if (net && net.status === 'error') { text(net.msg, W / 2, 330, 22, '#e2574c', 'center', null, F_B); text('인터넷 연결을 확인하고 다시 시도해 주세요', W / 2, 376, 19, INK, 'center', null, F_B); }
+      if (net && net.status === 'error') { text(net.msg, W / 2, py + 220, 23, '#e2574c', 'center', null, F_B); text('인터넷 연결을 확인하고 다시 시도해 주세요', W / 2, py + 266, 21, INK, 'center', null, F_B); }
       else if (net && net.role === 'host') {
-        if (net.status === 'opening') text('방을 여는 중' + dots, W / 2, 360, 32, INK, 'center', null, F_H);
+        if (net.status === 'opening') text('방을 여는 중' + dots, W / 2, py + ph / 2, 32, INK, 'center', null, F_H);
         else {
-          text('이 링크를 친구에게 보내 주세요', W / 2, 150, 28, INK, 'center', null, F_T);
-          const L = net.link, n = Math.ceil(L.length / 52);
-          rr(54, 180, 612, 26 + n * 24, 12, '#fff', OUT, 2.5);
-          for (let i = 0; i < n; i++) text(L.slice(i * 52, i * 52 + 52), W / 2, 205 + i * 24, 17, '#3d6fb0', 'center', null, F_B);
-          const y = 228 + n * 24;
-          button(net.copied ? '복사했어요!' : '링크 복사', 210, y, 300, 64, copyLink, { size: 26, fill: net.copied ? '#d8f3dc' : '#fff3c4' });
-          text('방 코드', W / 2, y + 112, 20, '#7a6872', 'center', null, F_B);
-          text(net.code, W / 2, y + 156, 52, CORAL, 'center', OUT, F_N);
-          text('친구가 들어오면 바로 경기가 시작돼요' + dots, W / 2, y + 218, 26, INK, 'center', null, F_H);
-          if (location.protocol === 'file:') { text('지금은 내 PC 안의 파일이라 다른 PC에서는 열리지 않아요.', W / 2, y + 270, 17, '#e2574c', 'center', null, F_B); text('게임을 웹에 올린 뒤, 그 주소에서 방을 만들어 주세요.', W / 2, y + 296, 17, '#e2574c', 'center', null, F_B); }
-          else text('이 창을 닫거나 다른 탭으로 가리면 경기가 멈춰요', W / 2, y + 270, 17, '#7a6872', 'center', null, F_B);
+          text('이 링크를 친구에게 보내 주세요', W / 2, py + 46, 29, INK, 'center', null, F_T);
+          const Ln = net.link, per = 44, n = Math.ceil(Ln.length / per);
+          rr(LY.m + LY.pad, py + 80, LY.w - LY.pad * 2, 28 + n * 28, 12, '#fff', OUT, 2.5);
+          for (let i = 0; i < n; i++) text(Ln.slice(i * per, i * per + per), W / 2, py + 108 + i * 28, 20, '#3d6fb0', 'center', null, F_B);
+          const y = py + 128 + n * 28;
+          button(net.copied ? '복사했어요!' : '링크 복사', W / 2 - 160, y, 320, 68, copyLink, { size: 28, fill: net.copied ? '#d8f3dc' : '#fff3c4' });
+          text('방 코드', W / 2, y + 120, 22, '#7a6872', 'center', null, F_B);
+          text(net.code, W / 2, y + 166, 54, CORAL, 'center', OUT, F_N);
+          text('친구가 들어오면 바로 경기가 시작돼요' + dots, W / 2, y + 232, 27, INK, 'center', null, F_H);
+          if (location.protocol === 'file:') text('내 PC 안의 파일이라 다른 기기에서는 열리지 않아요', W / 2, y + 282, 20, '#e2574c', 'center', null, F_B);
+          else text('이 창을 닫거나 다른 탭으로 가리면 경기가 멈춰요', W / 2, y + 282, 20, '#7a6872', 'center', null, F_B);
         }
       } else if (net) {
-        text(net.status === 'joined' ? '연결됐어요! 경기를 준비하는 중' + dots : '방 ' + net.code + ' 에 연결하는 중' + dots, W / 2, 300, 28, INK, 'center', null, F_H);
-        ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(setup.animal, W / 2, 560, 1.5, { front: true, t: state.t, anim: 'run', accent: CORAL });
+        text(net.status === 'joined' ? '연결됐어요! 경기를 준비하는 중' + dots : '방 ' + net.code + ' 에 연결하는 중' + dots, W / 2, py + 170, 29, INK, 'center', null, F_H);
+        ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(setup.animal, W / 2, py + 440, 1.5, { front: true, t: state.t, anim: 'run', accent: CORAL });
       }
-      button('그만두고 홈으로', 210, 730, 300, 64, goHome, { size: 24 });
+      sideBtn('홈으로', goHome);
       menuEnd('Esc 를 눌러도 돌아가요');
     },
   },
@@ -1474,34 +1489,34 @@ const scenes = {
       const T = touchUI;
       if (helpPage === 0) {
         helpRows([
-          [T ? '조이스틱' : '← → ↑ ↓', '선수 이동', '#dbe9f7', T ? '' : 'WASD 도 돼요'],
-          [T ? '스트로크' : 'J', '기본 샷 · 공이 몸에 닿는 순간 누르기', '#ffd0c8', '꾹 눌렀다 놓으면 파워샷 · 네트 앞에선 발리'],
-          [T ? '슬라이스' : 'K', '낮게 깔리는 슬라이스', '#cfe8ff', '네트 앞이나 아래 방향과 함께: 드롭샷'],
-          [T ? '로브' : 'L', '상대 머리 위로 높이 넘기기', '#e6dbf7'],
-          [T ? '스매시' : 'I', '높이 뜬 공을 내려찍기', '#fff1b0', '낮은 공에 쓰면 실수가 많아요'],
-          [T ? '스트로크' : 'J', '서브 · 한 번 눌러 토스, 공이 꼭대기일 때 한 번 더', '#ffd0c8', '고리가 초록이면 좋은 타이밍, 빨강이면 폴트'],
-          [T ? '치는 순간' : '← / →', '샷 방향 · 치는 순간 누른 쪽으로 공이 가요', '#efe3d3'],
-          ['타이밍', "'딱!' 완벽 · '빨랐어!' / '늦었어!' 는 공이 흔들려요", '#efe3d3'],
-        ], 140, 66, 150);
-        text(T ? '오른쪽 위: 일시정지 · 소리 · 낙하지점 표시 · 도움말' : 'P 일시정지 · M 소리 · G 낙하지점 표시 · H 도움말', W / 2, 676, 18, '#3d9be0', 'center', null, F_H);
+          [T ? '조이스틱' : '← → ↑ ↓', '선수를 움직여요', '#dbe9f7', T ? '' : 'WASD 도 돼요'],
+          [T ? '스트로크' : 'J', '스트로크 · 공이 몸에 닿을 때', '#ffd0c8', '꾹 눌렀다 놓으면 파워샷'],
+          [T ? '슬라이스' : 'K', '슬라이스 · 낮게 깔리는 공', '#cfe8ff', '네트 앞이나 아래 방향과 함께: 드롭샷'],
+          [T ? '로브' : 'L', '로브 · 상대 머리 위로 높이', '#e6dbf7'],
+          [T ? '스매시' : 'I', '스매시 · 높은 공 내려찍기', '#fff1b0', '낮은 공엔 실수가 많아요'],
+          ['서브', (T ? '스트로크' : 'J') + ' 로 토스, 꼭대기에서 한 번 더', '#ffd0c8', '고리가 초록이면 좋은 타이밍'],
+          [T ? '치는 순간' : '← / →', '치는 순간 누른 쪽으로 공이 가요', '#efe3d3'],
+          ['타이밍', "'딱!' 은 완벽한 타이밍", '#efe3d3', "'빨랐어!' · '늦었어!' 는 공이 흔들려요"],
+        ], 140, 66, 130);
+        text(T ? '오른쪽 위: 일시정지 · 소리 · 낙하지점 · 도움말' : 'P 일시정지 · M 소리 · G 낙하지점 · H 도움말', W / 2, 676, 21, '#3d9be0', 'center', null, F_H);
       } else {
         helpRows([
-          ['점수', '0 → 15 → 30 → 40 → 게임', '#fff1b0', '40-40은 듀스: 2점을 연달아 따야 게임'],
-          ['서브', '대각선 서비스 박스에 넣기 · 기회는 두 번', '#ffd0c8', '두 번 다 실패하면 더블 폴트로 실점'],
-          ['실점', '공이 선 밖에 떨어지거나 네트에 걸리면', '#dbe9f7', '내 코트에서 두 번 튀기 전에 쳐야 해요 (선에 닿으면 인)'],
-          ['타이브레이크', '게임이 동점이면 1점씩 세는 결정전', '#e6dbf7', '7점 먼저, 2점 차 (매치 타이브레이크는 10점)'],
-        ], 140, 78, 150);
+          ['점수', '0 → 15 → 30 → 40 → 게임', '#fff1b0', '40-40은 듀스: 2점을 연달아 따야 해요'],
+          ['서브', '대각선 서비스 박스에 넣기', '#ffd0c8', '기회는 두 번 · 둘 다 실패하면 실점'],
+          ['실점', '선 밖이나 네트에 걸리면 실점', '#dbe9f7', '내 코트에서 두 번 튀기 전에 쳐야 해요'],
+          ['타이브레이크', '게임 동점일 때 1점씩 결정전', '#e6dbf7', '7점 먼저, 2점 차 (매치 타이브레이크는 10점)'],
+        ], 140, 76, 130);
         rr(70, 448, 580, 2, 1, '#e2d4c4', null);
-        text('경기 방식', W / 2, 482, 23, INK, 'center', null, F_T);
+        text('경기 방식', W / 2, 482, 25, INK, 'center', null, F_T);
         FORMAT_IDS.forEach((id, i) => { const y = 530 + i * 54, on = id === (m.format || 'regular');
           if (on) rr(70, y - 24, 580, 48, 14, '#fff3c4', CORAL, 2.4);
-          text(FORMATS[id].ko, 92, y, 21, INK, 'left', null, F_T);
-          text({ flash: '10점 매치 타이브레이크 한 판 (2점 차)', short: '4게임 먼저 · 40-40이면 한 포인트로 결정 · 4-4 타이브레이크', regular: '6게임 세트 · 3세트 먼저 · 6-6이면 타이브레이크' }[id], 178, y, 17, '#5d4f58', 'left', null, F_B); });
-        text('지금 경기는 노란 칸의 방식이에요', W / 2, 692, 18, '#c0605a', 'center', null, F_H);
+          text(FORMATS[id].ko, 92, y, 23, INK, 'left', null, F_T);
+          text({ flash: '10점 먼저 (2점 차)', short: '4게임 먼저 · 노애드 · 4-4 타이브레이크', regular: '3세트 먼저 · 6게임 세트' }[id], 190, y, 20, '#5d4f58', 'left', null, F_B); });
+        text('지금 경기는 노란 칸의 방식이에요', W / 2, 692, 21, '#c0605a', 'center', null, F_H);
       }
       button('닫기', 210, 718, 300, 62, closeHelp, { size: 27, fill: '#fff3c4' });
       ctx.restore(); OY = 0;
-      text(T ? '탭을 눌러 페이지를 넘겨요' : '← → 페이지 · H 또는 Esc 닫기', W / 2, top + 828, 18, CREAM, 'center', OUT, F_B);
+      text(T ? '위의 탭을 눌러 페이지를 넘겨요' : '← → 페이지 · H 또는 Esc 닫기', W / 2, top + 830, 21, CREAM, 'center', OUT, F_B);
     },
   },
   pause: {
@@ -1520,7 +1535,7 @@ const scenes = {
       text(m.online ? '온라인 경기는 멈추지 않아요' : '숨 한번 고르고 가요', W / 2, cy - 78, 24, '#c0605a', 'center', null, F_H);
       button('계속하기', 170, cy - 36, 380, 72, () => { scene = 'play'; }, { size: 30, fill: '#fff3c4' });
       button('홈으로', 170, cy + 58, 380, 72, goHome, { size: 28 });
-      text('P : 계속하기 · Q : 홈으로 · H : 조작법과 규칙', W / 2, cy + 162, 17, '#7a6872', 'center', null, F_B);
+      text('P 계속하기 · Q 홈으로 · H 도움말', W / 2, cy + 162, 20, '#7a6872', 'center', null, F_B);
     },
   },
   results: {
@@ -1534,28 +1549,30 @@ const scenes = {
     draw() {
       menuBegin();
       const sc = m.sc, w = sc.winner, me = w === view, guest = net && net.role === 'guest';
-      text(me ? '승리!' : '패배', W / 2, 96, 84, me ? CORAL : '#7f8fb5', 'center', OUT, F_T);
+      text(me ? '승리!' : '패배', W / 2, 64, 76, me ? CORAL : '#7f8fb5', 'center', OUT, F_T);
       const RR = rules(), fin = sc.sets[sc.sets.length - 1] || [0, 0];
-      text(`${RR.ko} · ${NAME(w)} 승리 · ${RR.matchTb ? `${fin[w]} – ${fin[1 - w]}` : RR.sets > 1 ? `세트 ${sc.won[w]} – ${sc.won[1 - w]}` : `${fin[w]} – ${fin[1 - w]}`}`, W / 2, 166, 28, INK, 'center', CREAM, F_H);
-      rr(40, 204, 640, 440, 24, 'rgba(255,248,231,0.96)', OUT);
+      const reg = canRank(), py = LY.top + 36, pb = LY.bot - LY.gap * 2 - (reg ? 68 + LY.gap : 0);
+      text(`${RR.ko} · ${NAME(w)} 승리 · ${RR.sets > 1 && !RR.matchTb ? `세트 ${sc.won[w]} – ${sc.won[1 - w]}` : `${fin[w]} – ${fin[1 - w]}`}`, W / 2, LY.top + 10, 28, INK, 'center', CREAM, F_H);
+      panel(LY.m, py, LY.w, pb - py);
       for (let r = 0; r < 2; r++) {
-        const i = r === 0 ? view : 1 - view, y = 252 + r * 64;
+        const i = r === 0 ? view : 1 - view, y = py + 50 + r * 66;
         ctx.lineWidth = 2.6; ctx.strokeStyle = OUT;
-        drawAnimal(m.P[i].a, 86, y + 26, 0.5, { front: true, accent: i === view ? CORAL : SKY, anim: i === w ? 'cheer' : 'sad', t: state.t });
-        text(NAME(i), 124, y, 26, INK, 'left', null, F_T);
-        sc.sets.forEach((g, n) => text('' + g[i], 400 + n * 54, y, 32, g[i] > g[1 - i] ? INK : '#b3a4ac', 'center', null, F_N));
+        drawAnimal(m.P[i].a, LY.m + 48, y + 26, 0.5, { front: true, accent: i === view ? CORAL : SKY, anim: i === w ? 'cheer' : 'sad', t: state.t });
+        text(NAME(i), LY.m + 88, y, 28, INK, 'left', null, F_T);
+        sc.sets.forEach((g, n) => text('' + g[i], 400 + n * 54, y, 33, g[i] > g[1 - i] ? INK : '#b3a4ac', 'center', null, F_N));
       }
-      const S = m.stats, a = view, b = 1 - view;
-      text(NAME(a), 180, 394, 19, CORAL, 'center', null, F_T); text(NAME(b), 540, 394, 19, '#3d9be0', 'center', null, F_T);
-      [['딴 포인트', S.pts], ['스위트 스폿', S.sweet], ['파워샷', S.power], ['에이스', S.aces]].forEach((row, i) => { const y = 436 + i * 40; text(row[0], W / 2, y, 19, '#7a6872', 'center', null, F_B); text('' + row[1][a], 180, y, 28, INK, 'center', null, F_N); text('' + row[1][b], 540, y, 28, INK, 'center', null, F_N); });
-      text(`가장 긴 랠리  ${S.longest}번`, W / 2, 610, 24, '#c0605a', 'center', null, F_H);
-      if (guest) text('방장이 다시 시작하길 기다리는 중', W / 2, 706, 24, INK, 'center', CREAM, F_H);
-      else button('다시 하기', 60, 676, 290, 72, () => { reset(); scene = 'play'; }, { size: 30, fill: '#fff3c4' });
-      button('홈으로', guest ? 215 : 370, guest ? 746 : 676, 290, 72, goHome, { size: 28 });
-      if (canRank()) {
-        if (rank.sent === m) { rr(60, 766, 600, 64, 18, 'rgba(255,248,231,0.9)', OUT); text(rank.msg, W / 2, 798, 25, '#c0605a', 'center', null, F_H); }
-        else button(rank.sending ? '등록하는 중…' : '랭킹에 기록 등록하기', 60, 766, 600, 64, openNick, { size: 27, fill: '#ffe1a8' });
+      const S = m.stats, a = view, b = 1 - view, sy = py + 196;
+      text(NAME(a), 180, sy, 22, CORAL, 'center', null, F_T); text(NAME(b), 540, sy, 22, '#3d9be0', 'center', null, F_T);
+      [['딴 포인트', S.pts], ['스위트 스폿', S.sweet], ['파워샷', S.power], ['에이스', S.aces]].forEach((row, i) => { const y = sy + 46 + i * 44; text(row[0], W / 2, y, 21, '#7a6872', 'center', null, F_B); text('' + row[1][a], 180, y, 30, INK, 'center', null, F_N); text('' + row[1][b], 540, y, 30, INK, 'center', null, F_N); });
+      text(`가장 긴 랠리  ${S.longest}번`, W / 2, sy + 46 + 4 * 44 + 4, 25, '#c0605a', 'center', null, F_H);
+      if (reg) {
+        const ry = LY.bot - LY.gap - 68;
+        if (rank.sent === m) { rr(LY.m, ry, LY.w, 68, 18, 'rgba(255,248,231,0.92)', OUT); text(rank.msg, W / 2, ry + 34, 26, '#c0605a', 'center', null, F_H); }
+        else button(rank.sending ? '등록하는 중…' : '랭킹에 기록 등록하기', LY.m, ry, LY.w, 68, openNick, { size: 28, fill: '#ffe1a8' });
       }
+      sideBtn('홈으로', goHome);
+      if (guest) text('방장이 다시 시작하길 기다리는 중', 468, LY.bot + 34, 24, INK, 'center', CREAM, F_H);
+      else mainBtn('다시 하기', () => { reset(); scene = 'play'; });
       menuEnd(guest ? '' : 'Enter : 다시 하기 · Esc : 홈으로');
     },
   },
