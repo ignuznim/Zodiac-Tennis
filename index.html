@@ -1259,15 +1259,16 @@ function goHome() { netClose(); scene = 'title'; }
 // One layout for every menu page, in the 720 x 900 box: the same side margins, the title row,
 // where the content starts, and one bottom row of buttons (the side button left, the main one right)
 const LY = { m: 40, w: 640, btnH: 68, side: 200, gap: 16, pad: 24 };
-const LAYOUT = (params.get('layout') || 'c').toLowerCase(); // a: stretch, b: low, c: balanced (a phone's tall screen)
 function computeLayout() { // where the garden ends, the title row, the content and the bottom row, for this screen's height
   const ex = H - 900;
   if (ex < 140 || COVER) { Object.assign(LY, { tall: false, sb: 232, titleY: 56, top: 112, bot: 744, foot: 856, copy: 892 }); return; } // a wide screen: the garden sits behind
   LY.tall = true; LY.copy = H - 30; LY.foot = H - 78; LY.bot = LY.foot - 116;
-  const nat = 608, end = LY.bot - LY.gap * 2, room = end - (232 + 110);
-  const cont = LAYOUT === 'a' ? end - (clamp(232 + ex * 0.12, 232, 330) + 110) : LAYOUT === 'b' ? nat : clamp(room, nat, nat * 1.3);
-  LY.top = end - cont; LY.titleY = LY.top - 58; LY.sb = LY.titleY - 54;
+  const end = LY.bot - LY.gap * 2, room = end - (232 + 110);
+  LY.top = end - clamp(room, 600, 680); LY.titleY = LY.top - 58; LY.sb = LY.titleY - 54; // the garden takes what the content does not need
 }
+// fixed sizes: a card is as tall as what it holds, never stretched to fill
+const SZ = () => ({ format: 150, mode: 116, court: 184, cell: LY.tall ? 120 : 96, info: 262, row: LY.tall ? 48 : 44, result: 448, lobby: 500 });
+
 function menuBegin(title, home) {
   OY = 0; computeLayout();
   drawBackdrop('#8fd3b8', LY.sb, LY.tall);
@@ -1288,7 +1289,7 @@ function button(label, x, y, w, h, fn, o = {}) { // a big rounded button, for th
   const over = btn(x, y, w, h, fn), on = o.on;
   rr(x, y + 5, w, h, 18, OUT, null);
   rr(x, y, w, h, 18, on ? '#fff3c4' : over ? '#fffdf3' : o.fill || 'rgba(255,248,231,0.96)', on ? CORAL : OUT, on ? 5 : 3);
-  if (o.sub) { text(label, x + LY.pad + 4, y + h / 2 - 18, o.size || 27, INK, 'left', null, F_T); text(o.sub, x + LY.pad + 4, y + h / 2 + 22, 21, '#7a6872', 'left', null, F_B); }
+  if (o.sub) { text(label, x + LY.pad, y + h / 2 - 18, o.size || 27, INK, 'left', null, F_T); text(o.sub, x + LY.pad, y + h / 2 + 22, 21, '#7a6872', 'left', null, F_B); }
   else text(label, x + w / 2, y + h / 2 + 1, o.size || 28, o.ink || INK, 'center', null, F_T);
 }
 const STAT_COL = [CORAL, '#ffb86b', '#c3a6e8', BALL, SKY];
@@ -1382,7 +1383,7 @@ const scenes = {
         const over = btn(x, LY.top, tw, 56, () => { if (!on) { rank.list = null; loadRanking(id); } });
         rr(x, LY.top, tw, 56, 16, on ? '#fff3c4' : over ? '#fffdf3' : 'rgba(255,248,231,0.8)', on ? CORAL : OUT, on ? 4 : 2.6);
         text(MODE_KO[id], x + tw / 2, LY.top + 29, 25, on ? INK : '#7a6872', 'center', null, F_T); });
-      const py = LY.top + 56 + LY.gap, ph = contentEnd() - py;
+      const py = LY.top + 56 + LY.gap, ph = 64 + SZ().row * 10 + LY.pad;
       panel(LY.m, py, LY.w, ph);
       const L = rank.list, mid = py + ph / 2;
       if (rank.loading && !L) text('불러오는 중…', W / 2, mid, 30, '#7a6872', 'center', null, F_H);
@@ -1422,8 +1423,7 @@ const scenes = {
     },
     draw() {
       menuBegin('선수를 골라 주세요', true);
-      const span = contentEnd() - LY.top, cw = (LY.w - LY.gap * 3) / 4;
-      const ch = LY.tall ? clamp((span * 0.52 - LY.gap * 3) / 3, 104, 150) : 96, k = ch / 104;
+      const cw = (LY.w - LY.gap * 3) / 4, ch = SZ().cell, k = ch / 104;
       ANIMALS.forEach((A, i) => {
         const x = LY.m + (i % 4) * (cw + LY.gap), y = LY.top + Math.floor(i / 4) * (ch + LY.gap), on = i === state.sel, cx = x + cw / 2;
         const over = btn(x, y, cw, ch, () => { if (state.sel === i) pickAnimal(); else { state.sel = i; tone(660, 0.05, 'sine', 0.15); } });
@@ -1432,7 +1432,7 @@ const scenes = {
         drawAnimal(i, cx, y + ch - 32 - 2 * k, 0.42 * Math.min(k, 1.3), { front: true, t: on ? state.t : 0.4, anim: on ? 'run' : 'idle', accent: on ? CORAL : '#d9cbbd' });
         text(A.ko, cx, y + ch - 15, 21, INK, 'center', on ? '#fff3c4' : CREAM, F_T);
       });
-      const a = state.sel, A = ANIMALS[a], py = LY.top + 3 * (ch + LY.gap), ph = contentEnd() - py;
+      const a = state.sel, A = ANIMALS[a], py = LY.top + 3 * (ch + LY.gap), ph = SZ().info;
       panel(LY.m, py, LY.w, ph);
       // one block, centred both ways: the animal on the left, its name, line and stats beside it
       ctx.font = `${Math.round(17 * 1.1)}px ${F_B}`; const dw = Math.max(...STAT_DO.map(d => ctx.measureText(d).width));
@@ -1461,7 +1461,7 @@ const scenes = {
     draw() {
       menuBegin('누구와 겨룰까요?', true);
       const rows = [['컴퓨터와 대결 · 쉬움', '받기 쉬운 공을 보내고 실수도 자주 해요'], ['컴퓨터와 대결 · 보통', '빈 곳을 노리고 가끔 변칙을 섞어요'], ['컴퓨터와 대결 · 어려움', '코너를 찌르고 드롭샷, 로브, 파워샷까지'], ['온라인 대결 · 방 만들기', '초대 링크를 보내 각자의 기기에서 겨뤄요']];
-      const ch = cardH(4);
+      const ch = SZ().mode;
       rows.forEach((r, i) => button(r[0], LY.m, LY.top + i * (ch + LY.gap), LY.w, ch, () => pickMode(i), { on: i === state.cur, sub: r[1], size: 29 }));
       sideBtn('뒤로', () => { scene = 'format'; });
       menuEnd(`${FORMATS[setup.format].ko} · ${{ flash: '10점 매치 타이브레이크', short: '4게임 짧은 세트', regular: '5세트 3선승' }[setup.format]}`);
@@ -1477,14 +1477,14 @@ const scenes = {
     },
     draw() {
       menuBegin('어느 코트에서 할까요?', true);
-      const ch = cardH(3), af = AFFINITY[ANIMALS[setup.animal].id];
+      const ch = SZ().court, af = AFFINITY[ANIMALS[setup.animal].id];
       COURT_IDS.forEach((id, i) => {
         const C = COURTS[id], y = LY.top + i * (ch + LY.gap), on = i === state.cc;
         card(LY.m, y, LY.w, ch, () => pickCourt(i), on);
         const ph = ch - LY.pad * 2, pw = Math.min(200, ph * 1.3), px = LY.m + LY.pad;
         courtPic(px, y + LY.pad, pw, ph, id);
         // the text block, centred in the card: name (with the badge on the same line), its line, then two ratings
-        const tx = px + pw + 28, by = y + (ch - 150) / 2, right = LY.m + LY.w - LY.pad;
+        const tx = px + pw + LY.pad, by = y + LY.pad + 1, right = LY.m + LY.w - LY.pad;
         text(C.ko, tx, by + 18, 33, INK, 'left', null, F_T);
         if (af[0] === id || af[2] === id) { const good = af[0] === id, bw = 150;
           rr(right - bw, by + 1, bw, 34, 17, good ? '#ffe1a8' : '#dbe9f7', OUT, 2.2);
@@ -1513,9 +1513,9 @@ const scenes = {
       if (state.fm == null) state.fm = FORMAT_IDS.indexOf(setup.format);
       menuBegin('경기 방식을 골라 주세요', true);
       const how = { flash: '10점을 먼저 따면 승리 (2점 차)', short: '4게임 먼저 · 40-40이면 한 포인트로 결정', regular: '세트 3개를 먼저 따면 승리' };
-      const ch = cardH(3);
+      const ch = SZ().format;
       FORMAT_IDS.forEach((id, i) => {
-        const F = FORMATS[id], y = LY.top + i * (ch + LY.gap), x = LY.m + LY.pad + 4, by = y + (ch - 112) / 2; // three lines, centred in the card
+        const F = FORMATS[id], y = LY.top + i * (ch + LY.gap), x = LY.m + LY.pad, by = y + LY.pad - 5; // three lines from the card's padding
         card(LY.m, y, LY.w, ch, () => pickFormat(i), i === state.fm);
         text(F.ko, x, by + 20, 40, INK, 'left', null, F_T);
         if (id === 'short') { rr(x + 150, by + 2, 88, 36, 18, CORAL, OUT, 2.2); text('추천', x + 194, by + 20, 21, CREAM, 'center', null, F_T); }
@@ -1536,7 +1536,7 @@ const scenes = {
     },
     draw() {
       menuBegin(net && net.role === 'guest' ? '방에 들어가는 중' : '친구를 기다리는 중', true);
-      const py = LY.top, ph = contentEnd() - py;
+      const py = LY.top, ph = SZ().lobby;
       panel(LY.m, py, LY.w, ph);
       const dots = '.'.repeat(1 + Math.floor(state.t * 2) % 3);
       if (net && net.status === 'error') { text(net.msg, W / 2, py + 220, 23, '#e2574c', 'center', null, F_B); text('인터넷 연결을 확인하고 다시 시도해 주세요', W / 2, py + 266, 21, INK, 'center', null, F_B); }
@@ -1652,7 +1652,7 @@ const scenes = {
       const sc = m.sc, w = sc.winner, me = w === view, guest = net && net.role === 'guest';
       text(me ? '승리!' : '패배', W / 2, LY.titleY + 8, 76, me ? CORAL : '#7f8fb5', 'center', OUT, F_T);
       const RR = rules(), fin = sc.sets[sc.sets.length - 1] || [0, 0];
-      const reg = canRank(), py = LY.top + 36, pb = contentEnd() - (reg ? 68 + LY.gap : 0);
+      const reg = canRank(), py = LY.top + 36, pb = py + SZ().result;
       text(`${RR.ko} · ${NAME(w)} 승리 · ${RR.sets > 1 && !RR.matchTb ? `세트 ${sc.won[w]} – ${sc.won[1 - w]}` : `${fin[w]} – ${fin[1 - w]}`}`, W / 2, LY.top + 8, 28, INK, 'center', CREAM, F_H);
       panel(LY.m, py, LY.w, pb - py);
       const bh = 400, by = py + (pb - py - bh) / 2; // the block of scores and stats, centred in the panel
@@ -1668,7 +1668,7 @@ const scenes = {
       [['딴 포인트', S.pts], ['스위트 스폿', S.sweet], ['파워샷', S.power], ['에이스', S.aces]].forEach((row, i) => { const y = sy + 44 + i * 40; text(row[0], W / 2, y, 21, '#7a6872', 'center', null, F_B); text('' + row[1][a], 180, y, 30, INK, 'center', null, F_N); text('' + row[1][b], 540, y, 30, INK, 'center', null, F_N); });
       text(`가장 긴 랠리  ${S.longest}번`, W / 2, sy + 44 + 4 * 40 + 6, 25, '#c0605a', 'center', null, F_H);
       if (reg) {
-        const ry = contentEnd() - 68;
+        const ry = pb + LY.gap;
         if (rank.sent === m) { rr(LY.m, ry, LY.w, 68, 18, 'rgba(255,248,231,0.92)', OUT); text(rank.msg, W / 2, ry + 34, 26, '#c0605a', 'center', null, F_H); }
         else button(rank.sending ? '등록하는 중…' : '랭킹에 기록 등록하기', LY.m, ry, LY.w, 68, openNick, { size: 28, fill: '#ffe1a8' });
       }
