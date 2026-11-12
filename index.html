@@ -5,7 +5,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Zodiac Tennis</title>
 <style>
   @font-face { font-family: 'Jua'; src: url('assets/Jua-Regular.ttf'); }
@@ -14,11 +14,14 @@
   @font-face { font-family: 'Gaegu'; src: url('assets/Gaegu-Bold.ttf'); font-weight: 700; }
   html, body { margin: 0; height: 100%; background: #5fb49a; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
   body { font-variant-numeric: tabular-nums; }
-  canvas { display: block; margin: 0 auto; box-shadow: 0 0 40px rgba(59,51,64,0.35); touch-action: none; }
+  html, body { position: fixed; inset: 0; width: 100%; }
+  canvas { display: block; position: absolute; left: 0; top: 0; box-shadow: 0 0 40px rgba(59,51,64,0.35); touch-action: none; }
+  #safe { position: fixed; visibility: hidden; pointer-events: none; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
 </style>
 </head>
 <body>
 <canvas id="game"></canvas>
+<div id="safe"></div>
 <script src="config.js"></script>
 <script>
 'use strict';
@@ -50,18 +53,37 @@ const events = []; // window.game.events: anything the game wants a run to see
 // ---- Screen ---------------------------------------------------------------------------
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
-function fit() { // fills the window at any size and pixel ratio
-  H = COVER ? 571 : Math.round(W * Math.max(1.25, Math.min(2.2, innerHeight / Math.max(1, innerWidth)))); // the page reshapes itself to the window
-  const k = Math.min(innerWidth / W, innerHeight / H);
+let fitKey = '';
+function viewBox() { // the part of the screen really visible: the visual viewport (mobile toolbars), less the notch and home bar
+  const vv = window.visualViewport, zoomed = vv && Math.abs(vv.scale - 1) > 0.01; // a pinch zoom never shrinks the game
+  let w = vv && !zoomed ? vv.width : innerWidth, h = vv && !zoomed ? vv.height : innerHeight;
+  w = Math.min(w, innerWidth, document.documentElement.clientWidth || innerWidth);
+  h = Math.min(h, innerHeight);
+  const cs = getComputedStyle(document.getElementById('safe') || document.body);
+  const it = parseFloat(cs.paddingTop) || 0, ir = parseFloat(cs.paddingRight) || 0, ib = parseFloat(cs.paddingBottom) || 0, il = parseFloat(cs.paddingLeft) || 0;
+  return { x: il, y: it, w: Math.max(1, w - il - ir), h: Math.max(1, h - it - ib) };
+}
+function fit(force) { // fills the visible screen at any shape and pixel ratio, never past its edges
+  const v = viewBox(), dpr = devicePixelRatio || 1, key = [v.x, v.y, v.w, v.h, dpr].join();
+  if (key === fitKey && force !== true) return; fitKey = key;
+  H = COVER ? 571 : Math.round(W * Math.max(1.25, Math.min(2.4, v.h / v.w))); // the page reshapes itself: 4:5 to 12:5 tall; past that, bars
+  const k = Math.min(v.w / W, v.h / H);
   const s = PIXEL ? Math.max(1, Math.floor(k)) : k;
-  const r = PIXEL ? 1 : s * (devicePixelRatio || 1);
+  const r = PIXEL ? 1 : s * dpr;
+  const cw = Math.floor(W * s), ch = Math.floor(H * s); // rounded down: never a pixel over the edge
   canvas.width = Math.round(W * r); canvas.height = Math.round(H * r);
-  canvas.style.width = Math.round(W * s) + 'px'; canvas.style.height = Math.round(H * s) + 'px';
-  canvas.style.marginTop = Math.max(0, Math.floor((innerHeight - H * s) / 2)) + 'px';
+  canvas.style.width = cw + 'px'; canvas.style.height = ch + 'px';
+  canvas.style.left = Math.floor(v.x + (v.w - cw) / 2) + 'px'; canvas.style.top = Math.floor(v.y + (v.h - ch) / 2) + 'px';
   canvas.style.imageRendering = PIXEL ? 'pixelated' : 'auto';
   ctx.setTransform(r, 0, 0, r, 0, 0); ctx.imageSmoothingEnabled = !PIXEL;
+  try { if (scene) drawFrame(); } catch (e) { /* not started yet: drawn on the first frame */ }
 }
-addEventListener('resize', fit); fit();
+const refit = () => { fit(); setTimeout(fit, 120); setTimeout(fit, 500); }; // a phone reports its new size late after turning
+addEventListener('resize', refit); addEventListener('orientationchange', refit);
+if (window.visualViewport) visualViewport.addEventListener('resize', refit);
+document.addEventListener('visibilitychange', refit);
+setInterval(fit, 600); // in-app browsers that never say they resized
+fit(true);
 const OUT = '#6b5560', CREAM = '#fff8e7', CORAL = '#ff8a7a', SKY = '#6ec1ff', BALL = '#ffe45c', INK = '#4a3d47';
 function clear(c) { ctx.fillStyle = c; ctx.fillRect(0, 0, W, H); }
 function text(s, x, y, size, c, align = 'center', edge, font = F_T) {
@@ -473,18 +495,25 @@ function launch(p, kind, q, charge, aimX, aimD, late = 0) {
   else if (kind === 'slice') { v *= tune.slice_v; err *= 0.7; }
   else if (kind === 'drop') { v = tune.drop_v; depth = aimD > 0 ? 2.8 : 2.0; err *= 0.7; }
   else if (kind === 'lob') { depth = 10.0; err *= 1.2; T = tune.lob_time; }
+  const ai = p.ctrl === 'ai' ? n => tune['ai' + m.level + '_' + n] : null; // the computer's level: its pace, its aim, its slips
+  if (ai) v *= ai('pace');
   const perfect = q >= 0.95; p.streak = perfect ? p.streak + 1 : 0; // perfect hits in a row sharpen the next one
   v *= (0.8 + 0.2 * q) * (1 - tune.fatigue_pace * fat) * (1 + tune.sweet_bonus * Math.min(p.streak, tune.sweet_streak_max));
   const e = err * (tune.err_bad + (tune.err_sweet - tune.err_bad) * q) * (1.3 - tune.err_spin * spin) * (1 + tune.fatigue_err * fat);
   let tx = aimX * tune.aim_x; if (aimX === 0) tx = clamp(b.x * 0.35 + (rng() - 0.5) * 2.4, -2.2, 2.2);
   tx += Math.sign(b.x - p.x || 1) * Math.min(2.2, late * tune.late_pull); // a late hit drags the ball wide, to the side it was struck on
+  if (ai && kind !== 'drop' && rng() < ai('gentle')) tx = clamp(m.P[1 - p.i].x + (rng() - 0.5) * 1.6, -3.2, 3.2); // a kind computer plays it back to you
   const an = rng() * 6.283, r = e * Math.sqrt(rng());
-  tx += Math.cos(an) * r; const ty = opp * depth + Math.sin(an) * r * 1.3;
+  tx += Math.cos(an) * r; let ty = opp * depth + Math.sin(an) * r * 1.3;
+  let slip = ai && rng() < ai('miss') ? rng() : -1; // the computer's own unforced error: long, wide or into the net
+  if (slip >= 0 && slip < 0.4) ty = opp * (CL + 0.5 + rng() * 1.8);
+  else if (slip >= 0.4 && slip < 0.75) tx = (tx >= 0 ? 1 : -1) * (CW + 0.4 + rng() * 1.4);
   const dist = Math.hypot(tx - b.x, ty - b.y);
   if (!T) T = Math.max(0.3, dist / v);
   const need = tune.net_height + 0.14, tn = f => f * Math.abs(b.y) / Math.max(0.01, Math.abs(ty - b.y));
   for (let i = 0; i < 40; i++) { const t0 = tn(T), zn = b.z + ((0.5 * g * T * T - b.z) / T) * t0 - 0.5 * g * t0 * t0; if (zn >= need || ((q < 0.45 || kind === 'wild') && i > 2)) break; T *= 1.05; }
   b.vx = (tx - b.x) / T; b.vy = (ty - b.y) / T; b.vz = (0.5 * g * T * T - b.z) / T;
+  if (slip >= 0.75) { const t0 = tn(T); b.vz = (tune.net_height * 0.6 - b.z + 0.5 * g * t0 * t0) / t0; } // into the tape
   b.last = p.i; b.bounces = 0; b.kind = kind; b.live = true; b.fly = true; b.power = kind === 'power' ? 0.6 + 0.4 * charge : kind === 'smash' ? 0.8 : 0;
   p.stam = Math.max(0, p.stam - tune.stam_shot - (kind === 'power' ? tune.stam_power * charge : kind === 'smash' || kind === 'wild' ? 2 : 0));
   m.rally++; m.hitId++; m.mark = null; m.land = { x: tx, y: ty };
@@ -545,7 +574,7 @@ function doServe(p, q, aimX) {
   const early = b.vz > 0;                                              // struck while the toss still rises
   const bad = q < (second ? tune.serve_fault_q2 : tune.serve_fault_q); // mistimed: this serve is a fault
   q = clamp(q, 0.1, 1);
-  const v = (tune.serve_v + pow * tune.serve_v_pow) * (0.78 + 0.22 * q) * (second ? tune.second_serve : 1) * (1 - tune.fatigue_pace * fat);
+  const v = (tune.serve_v + pow * tune.serve_v_pow) * (0.78 + 0.22 * q) * (second ? tune.second_serve : 1) * (1 - tune.fatigue_pace * fat) * (p.ctrl === 'ai' ? tune['ai' + m.level + '_serve'] : 1);
   const wide = Math.sign(aimX) * m.boxX;
   let tx = (wide > 0 ? 3.25 : wide < 0 ? 0.75 : 2.0) * m.boxX; let ty = -p.side * 5.0;
   const e = tune.err_serve * (1.9 - 1.4 * q) * (second ? 0.45 : 1) * (1.3 - tune.err_spin * spin) * (1 + tune.fatigue_err * fat);
@@ -684,7 +713,7 @@ function updatePlayer(p, inp, dt) {
       if (sw) {
         sw.t += dt;
         if (sw.mode === 'tap') {
-          if (!tryHit(p, sw.kind, null, 0, inp.dx, inp.dy) && sw.t > tune.tap_window) {
+          if (!tryHit(p, sw.kind, null, 0, inp.dx, inp.dy) && sw.t > (m.online ? tune.tap_window : tune['ai' + m.level + '_window'])) {
             if (sw.kind === 'stroke' && inp.a) { sw.mode = 'charge'; setAnim(p, 'charge'); }
             else { p.sw = null; p.cool = 0.2; setAnim(p, 'hit'); fx('whiff'); }
           }
@@ -1089,7 +1118,7 @@ const scenes = {
     },
     draw() {
       menuBegin('어떻게 겨룰까요?', true);
-      const rows = [['컴퓨터와 대결 · 쉬움', '느긋하지만 실수는 놓치지 않아요'], ['컴퓨터와 대결 · 보통', '빈 곳을 노리고 가끔 변칙을 섞어요'], ['컴퓨터와 대결 · 어려움', '코너를 찌르고 드롭샷, 로브, 파워샷까지'], ['온라인 대결 · 방 만들기', '초대 링크를 보내 각자의 PC에서 겨뤄요']];
+      const rows = [['컴퓨터와 대결 · 쉬움', '받기 쉬운 공을 보내고 실수도 자주 해요'], ['컴퓨터와 대결 · 보통', '빈 곳을 노리고 가끔 변칙을 섞어요'], ['컴퓨터와 대결 · 어려움', '코너를 찌르고 드롭샷, 로브, 파워샷까지'], ['온라인 대결 · 방 만들기', '초대 링크를 보내 각자의 PC에서 겨뤄요']];
       rows.forEach((r, i) => { const y = 104 + i * 124; button(r[0], 40, y, 640, 104, () => pickMode(i), { on: i === state.cur, sub: r[1] }); });
       text('5세트 경기 · 3세트를 먼저 따면 승리', W / 2, 628, 26, INK, 'center', CREAM, F_H);
       ctx.fillStyle = 'rgba(70,90,140,0.2)'; ctx.beginPath(); ctx.ellipse(W / 2, 800, 46, 12, 0, 0, 7); ctx.fill();
@@ -1244,7 +1273,13 @@ function tick() {
   ALPHA = acc / STEP;
   drawFrame();
 }
-function drawFrame() { hot = []; scenes[scene].draw(); canvas.style.cursor = hitTest(mouse) ? 'pointer' : 'default'; }
+function drawFrame() {
+  hot = []; scenes[scene].draw();
+  if (touchUI && !COVER && innerWidth > innerHeight * 1.1) { // a phone held sideways: the game is drawn for portrait
+    rr(W / 2 - 210, H - 50, 420, 38, 19, 'rgba(59,51,64,0.88)', null);
+    text('휴대폰을 세로로 돌리면 화면이 더 커져요', W / 2, H - 31, 19, CREAM, 'center', null, F_B);
+  }
+  canvas.style.cursor = hitTest(mouse) ? 'pointer' : 'default'; }
 function frame() { tick(); requestAnimationFrame(frame); }
 // A headless browser on a time budget runs timers but almost no animation frames: a timer
 // ticks when no frame has come for 100 ms on a visible page; a hidden tab stays paused.

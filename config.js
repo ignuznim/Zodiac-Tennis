@@ -93,21 +93,36 @@ window.CONFIG = {
   tired_run: { value: 0.3, min: 0, max: 0.6, step: 0.02 },   // run speed lost at zero stamina
 
   // ---- The computer, three levels: 1 easy, 2 normal, 3 hard ----
-  ai1_react: { value: 0.36, min: 0, max: 0.8, step: 0.02 },  // s before it starts to move
+  ai1_react: { value: 0.4, min: 0, max: 0.8, step: 0.02 },  // s before it starts to move
   ai2_react: { value: 0.22, min: 0, max: 0.8, step: 0.02 },
   ai3_react: { value: 0.1, min: 0, max: 0.8, step: 0.02 },
-  ai1_timing: { value: 0.52, min: 0, max: 1, step: 0.02 },   // its average timing, 1 is sweet
+  ai1_timing: { value: 0.7, min: 0, max: 1, step: 0.02 },   // its average timing, 1 is sweet
   ai2_timing: { value: 0.72, min: 0, max: 1, step: 0.02 },
-  ai3_timing: { value: 0.9, min: 0, max: 1, step: 0.02 },
-  ai1_smart: { value: 0.25, min: 0, max: 1, step: 0.05 },    // how often it aims away from you
+  ai3_timing: { value: 0.86, min: 0, max: 1, step: 0.02 },
+  ai1_smart: { value: 0.1, min: 0, max: 1, step: 0.05 },    // how often it aims away from you
   ai2_smart: { value: 0.55, min: 0, max: 1, step: 0.05 },
-  ai3_smart: { value: 0.88, min: 0, max: 1, step: 0.05 },
-  ai1_variety: { value: 0.06, min: 0, max: 1, step: 0.02 },  // how often it drops, lobs or powers up
+  ai3_smart: { value: 0.8, min: 0, max: 1, step: 0.05 },
+  ai1_variety: { value: 0.04, min: 0, max: 1, step: 0.02 },  // how often it drops, lobs or powers up
   ai2_variety: { value: 0.2, min: 0, max: 1, step: 0.02 },
   ai3_variety: { value: 0.38, min: 0, max: 1, step: 0.02 },
   ai1_run: { value: 0.84, min: 0.5, max: 1, step: 0.02 },    // share of its run speed it uses
   ai2_run: { value: 0.94, min: 0.5, max: 1, step: 0.02 },
   ai3_run: { value: 1, min: 0.5, max: 1, step: 0.02 },
+  ai1_pace: { value: 0.68, min: 0.5, max: 1.1, step: 0.02 },  // its stroke speed, as a share of a player's
+  ai2_pace: { value: 0.92, min: 0.5, max: 1.1, step: 0.02 },
+  ai3_pace: { value: 1, min: 0.5, max: 1.1, step: 0.02 },
+  ai1_serve: { value: 0.66, min: 0.5, max: 1.1, step: 0.02 }, // its serve speed, as a share of a player's
+  ai2_serve: { value: 0.9, min: 0.5, max: 1.1, step: 0.02 },
+  ai3_serve: { value: 1, min: 0.5, max: 1.1, step: 0.02 },
+  ai1_gentle: { value: 0.85, min: 0, max: 1, step: 0.05 },    // how often it plays the ball back to where you stand
+  ai2_gentle: { value: 0.25, min: 0, max: 1, step: 0.05 },
+  ai3_gentle: { value: 0, min: 0, max: 1, step: 0.05 },
+  ai1_miss: { value: 0.16, min: 0, max: 0.4, step: 0.01 },    // chance a shot is its own error: long, wide or in the net
+  ai2_miss: { value: 0.05, min: 0, max: 0.4, step: 0.01 },
+  ai3_miss: { value: 0, min: 0, max: 0.4, step: 0.01 },
+  ai1_window: { value: 0.42, min: 0.12, max: 0.5, step: 0.01 }, // your swing buffer against this level (online: tap_window)
+  ai2_window: { value: 0.3, min: 0.12, max: 0.5, step: 0.01 },
+  ai3_window: { value: 0.26, min: 0.12, max: 0.5, step: 0.01 },
 
   // ---- The twelve animals: power, stamina, spin, reflex, speed (each 1 to 5, 16 in all) ----
   rat_power: { value: 1, min: 1, max: 5, step: 1 }, rat_stamina: { value: 3, min: 1, max: 5, step: 1 }, rat_spin: { value: 4, min: 1, max: 5, step: 1 }, rat_reflex: { value: 5, min: 1, max: 5, step: 1 }, rat_speed: { value: 3, min: 1, max: 5, step: 1 },
