@@ -124,6 +124,9 @@ window.CONFIG = {
   ai2_window: { value: 0.3, min: 0.12, max: 0.5, step: 0.01 },
   ai3_window: { value: 0.26, min: 0.12, max: 0.5, step: 0.01 },
 
+  // ---- Courts and animals: each animal's signature stat rises on its favourite court and falls on its worst ----
+  court_bonus: { value: 0.5, min: 0, max: 1.5, step: 0.1 },
+
   // ---- The twelve animals: power, stamina, spin, reflex, speed (each 1 to 5, 16 in all) ----
   rat_power: { value: 1, min: 1, max: 5, step: 1 }, rat_stamina: { value: 3, min: 1, max: 5, step: 1 }, rat_spin: { value: 4, min: 1, max: 5, step: 1 }, rat_reflex: { value: 5, min: 1, max: 5, step: 1 }, rat_speed: { value: 3, min: 1, max: 5, step: 1 },
   ox_power: { value: 5, min: 1, max: 5, step: 1 }, ox_stamina: { value: 5, min: 1, max: 5, step: 1 }, ox_spin: { value: 2, min: 1, max: 5, step: 1 }, ox_reflex: { value: 2, min: 1, max: 5, step: 1 }, ox_speed: { value: 2, min: 1, max: 5, step: 1 },

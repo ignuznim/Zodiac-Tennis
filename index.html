@@ -199,7 +199,19 @@ const ANIMALS = [
   { id: 'pig', ko: '돼지', c: '#f9b7c4', d: '#e98aa0', l: '#ffdbe3', note: '든든한 체력과 힘' },
 ];
 const STATS = ['power', 'stamina', 'spin', 'reflex', 'speed'], STAT_KO = ['파워', '스태미너', '스핀', '순발력', '스피드'];
-const stat = (a, s) => CONFIG[ANIMALS[a].id + '_' + s].value;
+// Each animal has a court it loves (its signature stat a little higher) and one it dislikes (a little lower)
+const AFFINITY = {
+  ox: ['grass', 'power', 'clay'], tiger: ['grass', 'power', 'clay'], rabbit: ['grass', 'speed', 'clay'], horse: ['grass', 'speed', 'clay'],
+  dragon: ['clay', 'spin', 'grass'], snake: ['clay', 'spin', 'grass'], sheep: ['clay', 'stamina', 'grass'], pig: ['clay', 'stamina', 'grass'],
+  rat: ['hard', 'reflex', 'grass'], monkey: ['hard', 'reflex', 'clay'], rooster: ['hard', 'reflex', 'grass'], dog: ['hard', 'speed', 'clay'],
+};
+const COURT_TITLE = { grass: '잔디의 신', clay: '흙신', hard: '하드코트의 왕' };
+function courtBonus(a, s, c) { // + on its favourite court, - on its worst, for its signature stat only
+  const f = AFFINITY[ANIMALS[a].id];
+  if (!f || !c || s !== f[1]) return 0;
+  return c === f[0] ? tune.court_bonus : c === f[2] ? -tune.court_bonus : 0;
+}
+function stat(a, s, c) { return CONFIG[ANIMALS[a].id + '_' + s].value + courtBonus(a, s, c === undefined ? (m && m.court) : c); }
 
 function E(x, y, rx, ry, fill, rot = 0, noStroke) {
   ctx.beginPath(); ctx.ellipse(x, y, rx, ry, rot, 0, 7); ctx.fillStyle = fill; ctx.fill(); if (!noStroke) ctx.stroke();
@@ -349,11 +361,22 @@ function drawAnimal(a, X, Y, k, o) {
 // ---- The court: metres. x across, y along (the net at 0, player 0 at +y), z up ----------------
 const CW = 4.115, DW = 5.485, CL = 11.885, SVC = 6.4, PXM = 62; // CW: the singles sideline, DW: the doubles one
 const COURTS = { // three surfaces, in the colours of the three great tournaments played on them
-  hard: { ko: '하드 코트', sub: '호주 오픈 스타일 · 표준 바운드', ground: '#7db8ea', apron: '#5c9fe0', a: '#3f7fd0', b: '#4587d6' },
-  grass: { ko: '잔디 코트', sub: '윔블던 스타일 · 낮고 빠른 바운드', ground: '#6fba8a', apron: '#58a877', a: '#84d08a', b: '#93d998' },
-  clay: { ko: '클레이 코트', sub: '롤랑가로스 스타일 · 높고 느린 바운드', ground: '#eba77f', apron: '#de8a5c', a: '#dd7748', b: '#e28253' },
+  hard: { ko: '하드 코트', sub: '호주 오픈 스타일 · 표준 바운드', ground: '#b4d6f4', apron: '#93c2ee', edge: '#2a5ea8', a: '#3471c4', b: '#3a79cb' },
+  grass: { ko: '잔디 코트', sub: '윔블던 스타일 · 낮고 빠른 바운드', ground: '#bfe3c4', apron: '#a3d6ac', edge: '#2f7a45', a: '#4a9d5c', b: '#53a765' },
+  clay: { ko: '클레이 코트', sub: '롤랑가로스 스타일 · 높고 느린 바운드', ground: '#f8d3b9', apron: '#f2bb97', edge: '#a8481e', a: '#cc6031', b: '#d36a3a' },
 };
 const COURT_IDS = ['hard', 'grass', 'clay'];
+// Three ways to play, all from the ITF Rules of Tennis: a deciding match tie-break, a short set (Appendix V), the full five sets
+const FORMATS = {
+  flash: { ko: '번개전', sub: '10점 매치 타이브레이크 · 약 6~9분', sets: 1, games: 6, noAd: false, matchTb: true },
+  short: { ko: '단판전', sub: '4게임 짧은 세트 · 노애드 · 4-4 타이브레이크 · 약 10~15분', sets: 1, games: 4, noAd: true, matchTb: false },
+  regular: { ko: '정규전', sub: '5세트 3선승 · 6게임 세트 · 30분 이상', sets: 0, games: 0, noAd: false, matchTb: false },
+};
+const FORMAT_IDS = ['flash', 'short', 'regular'];
+function rules(f) { // regular reads its numbers live from the tuning
+  const F = FORMATS[f || (m && m.format) || 'regular'];
+  return F.sets ? F : Object.assign({}, F, { sets: tune.sets_to_win, games: tune.games_per_set });
+}
 let view = 0; // 1 draws the court from the far player's end (the online guest)
 function proj(x, y, z = 0) {
   if (view) { x = -x; y = -y; }
@@ -390,6 +413,7 @@ function drawCourt() {
   const C = COURTS[m.court] || COURTS.grass;
   drawBackdrop(C.ground);
   quad(-7.9, -15.6, 7.9, 15.9, C.apron);
+  quad(-DW - 0.28, -CL - 0.28, DW + 0.28, CL + 0.28, C.edge); // a dark rim: where the court ends is plain at a glance
   for (let i = 0; i < 8; i++) { const y0 = -CL + i * (2 * CL / 8); quad(-DW, y0, DW, y0 + 2 * CL / 8, i % 2 ? C.b : C.a); }
   ctx.lineCap = 'butt';
   cline(-DW, -CL, DW, -CL, 4); cline(-DW, CL, DW, CL, 4);          // baselines, the full doubles width
@@ -411,10 +435,10 @@ function drawNet() {
 
 // ---- The match: plain data, so the online host can send it whole ------------------------------
 let scene, state, m;          // m is state.m, the match
-const setup = { animal: 0, level: 2, mode: 'cpu', guestAnimal: 3, court: 'hard', pending: 1 };
+const setup = { animal: 0, level: 2, mode: 'cpu', guestAnimal: 3, court: 'hard', pending: 1, format: 'short' };
 let matchCount = 0;
 function newPlayer(i, a, ctrl) {
-  const max = tune.stam_base + stat(a, 'stamina') * tune.stam_per;
+  const max = tune.stam_base + stat(a, 'stamina', setup.court) * tune.stam_per;
   return { i, side: i === 0 ? 1 : -1, a, ctrl, x: 0, y: 0, vx: 0, vy: 0, stam: max, max, sw: null, cool: 0, anim: 'idle', at: 0, hand: 1,
     pa: false, pk: false, pl: false, ps: false, streak: 0, ai: { for: -1, wait: 0, tgt: null, set: 0, st: 0, q: 1 } };
 }
@@ -430,7 +454,9 @@ function newMatch() {
     stats: { pts: [0, 0], sweet: [0, 0], power: [0, 0], longest: 0, aces: [0, 0] },
   };
   setupPoint();
-  m.banner = { text: '1세트', sub: `${ANIMALS[m.P[0].a].ko} 서브`, t: 0, big: 0 };
+  const R = rules();
+  if (R.matchTb) { m.sc.tb = true; m.sc.tbFirst = m.sc.server; }
+  m.banner = { text: R.matchTb ? '매치 타이브레이크' : R.ko + ' · 1세트', sub: `${ANIMALS[m.P[0].a].ko} 서브 · ${R.matchTb ? '10점 먼저' : R.sets > 1 ? R.sets + '세트 먼저' : R.games + '게임 먼저'}`, t: 0, big: 0 };
   return m;
 }
 function fx(k, a, b) { m.fx.push({ id: ++m.fxId, k, a, b }); if (m.fx.length > 14) m.fx.shift(); }
@@ -442,7 +468,7 @@ const PT = ['0', '15', '30', '40'];
 function ptsText() {
   const sc = m.sc, s = sc.server, r = 1 - s, a = sc.pts[s], b = sc.pts[r];
   if (sc.tb) return `${a} – ${b}`;
-  if (a >= 3 && b >= 3) return a === b ? '듀스' : `어드밴티지 ${NAME(a > b ? s : r)}`;
+  if (a >= 3 && b >= 3) return a === b ? (rules().noAd ? '40 – 40 · 결정 포인트' : '듀스') : `어드밴티지 ${NAME(a > b ? s : r)}`;
   return `${PT[a]} – ${PT[b]}`;
 }
 function ptCell(i) {
@@ -459,17 +485,17 @@ function setupPoint() {
   m.boxX = -sg; m.phase = 'serve'; m.pt = 0; m.refault = false; m.rally = 0; m.mark = null; m.land = null;
   b.live = false; b.fly = false; b.bounces = 0; b.kind = ''; b.power = 0; b.last = -1; b.vx = b.vy = b.vz = 0;
 }
-function award(w) { // real tennis: points, games (two clear), sets, the tiebreak at six all
-  const sc = m.sc, l = 1 - w, g = tune.games_per_set;
+function award(w) { // real tennis: points, games (two clear, or one deciding point with no-ad), sets, the tiebreak at games all
+  const sc = m.sc, l = 1 - w, R = rules(), g = R.games;
   sc.pts[w]++;
-  const final = sc.sets.length === 2 * tune.sets_to_win - 2;
-  const need = sc.tb ? (final ? tune.final_tiebreak_points : tune.tiebreak_points) : 4;
-  if (sc.pts[w] >= need && sc.pts[w] - sc.pts[l] >= 2) {
-    const wasTb = sc.tb; sc.games[w]++; sc.pts = [0, 0];
+  const final = sc.sets.length === 2 * R.sets - 2;
+  const need = sc.tb ? (R.matchTb || (final && R.sets > 1) ? tune.final_tiebreak_points : tune.tiebreak_points) : 4; // 10 for a match tie-break or the last set's
+  if (sc.pts[w] >= need && (sc.pts[w] - sc.pts[l] >= 2 || (R.noAd && !sc.tb))) {
+    const wasTb = sc.tb, tbp = sc.pts.slice(); sc.games[w]++; sc.pts = [0, 0];
     if (wasTb || (sc.games[w] >= g && sc.games[w] - sc.games[l] >= 2)) {
-      const gs = sc.games.slice(); sc.sets.push(gs); sc.won[w]++; sc.games = [0, 0]; sc.tb = false;
+      const gs = R.matchTb ? tbp : sc.games.slice(); sc.sets.push(gs); sc.won[w]++; sc.games = [0, 0]; sc.tb = false;
       sc.server = wasTb ? 1 - sc.tbFirst : 1 - sc.server;
-      if (sc.won[w] >= tune.sets_to_win) { sc.done = true; sc.winner = w; return { s: `경기 종료 · ${NAME(w)} 승리`, big: 2 }; }
+      if (sc.won[w] >= R.sets) { sc.done = true; sc.winner = w; return { s: `경기 종료 · ${NAME(w)} 승리`, big: 2 }; }
       return { s: `세트 ${NAME(w)} · ${gs[0]}–${gs[1]}`, big: 1 };
     }
     sc.server = 1 - sc.server;
@@ -830,7 +856,7 @@ function drawBall() {
   ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(s.x - 11 * s.s, s.y, 11 * s.s, -0.7, 0.7); ctx.stroke();
 }
 function drawScoreboard() { // one row a player: sets won, a cell for each of the five sets, then the point
-  const sc = m.sc, n = 2 * tune.sets_to_win - 1, x0 = 12, y0 = 10, nx = x0 + 44, wx = nx + 150, sx = wx + 44, px = sx + n * 30 + 6, w = px + 60 - x0;
+  const R = rules(), sc = m.sc, n = R.matchTb ? 0 : 2 * R.sets - 1, x0 = 12, y0 = 10, nx = x0 + 44, wx = nx + 150, sx = wx + 44, px = sx + n * 30 + 6, w = px + 60 - x0;
   rr(x0, y0, w, 112, 16, '#4a3d47', OUT);
   text('세트', wx + 17, y0 + 14, 13, '#cbbcc4', 'center', null, F_B);
   for (let k = 0; k < n; k++) text('' + (k + 1), sx + k * 30 + 13, y0 + 14, 13, k === sc.sets.length && !sc.done ? BALL : '#cbbcc4', 'center', null, F_N);
@@ -859,7 +885,9 @@ function iconBtn(x, y, kind, fn) { // the small square buttons: home and sound
   rr(x, y, 56, 54, 14, over ? '#fff3c4' : 'rgba(255,248,231,0.95)', OUT);
   ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; ctx.lineJoin = 'round';
   const cx = x + 28, cy = y + 28;
-  if (kind === 'home') { poly([cx - 15, cy - 2, cx, cy - 16, cx + 15, cy - 2], CORAL); rr(cx - 11, cy - 3, 22, 16, 3, CREAM, OUT, 2.6); rr(cx - 3.5, cy + 3, 7, 10, 2, '#f1c9a5', OUT, 2); }
+  if (kind === 'pause') { rr(cx - 11, cy - 13, 8, 26, 3, CORAL, OUT, 2.4); rr(cx + 3, cy - 13, 8, 26, 3, CORAL, OUT, 2.4); }
+  else if (kind === 'help') { E(cx, cy, 16, 16, SKY); text('?', cx, cy + 1, 26, CREAM, 'center', OUT, F_T); }
+  else if (kind === 'home') { poly([cx - 15, cy - 2, cx, cy - 16, cx + 15, cy - 2], CORAL); rr(cx - 11, cy - 3, 22, 16, 3, CREAM, OUT, 2.6); rr(cx - 3.5, cy + 3, 7, 10, 2, '#f1c9a5', OUT, 2); }
   else if (kind === 'guide') { // the landing marker's switch: a dashed ring round a dot
     ctx.setLineDash([5, 4]); ctx.strokeStyle = guide ? OUT : '#b3a4ac'; ctx.beginPath(); ctx.ellipse(cx, cy + 2, 16, 9, 0, 0, 7); ctx.stroke(); ctx.setLineDash([]);
     ctx.strokeStyle = OUT; E(cx, cy - 8, 6, 6, guide ? BALL : '#e9dccb');
@@ -875,7 +903,8 @@ function keycap(x, y, k, lit) {
   rr(x, y + 3, 34, 32, 8, OUT, null); rr(x, y, 34, 32, 8, lit ? BALL : CREAM, OUT, 2.4); text(k, x + 17, y + 17, 21, INK, 'center', null, F_N);
 }
 function drawLegend() { // the shot keys, always on screen; each is also a button for the mouse
-  const y = H - 108, chips = [['J', '스트로크', 'KeyJ', K_A], ['K', '슬라이스', 'KeyK', K_K], ['L', '로브', 'KeyL', K_LOB], ['I', '스매시', 'KeyI', K_S]];
+  const serving = m.sc.server === view && (m.phase === 'serve' || m.phase === 'toss') && !m.sc.done;
+  const y = H - 108, chips = [['J', serving ? (m.phase === 'serve' ? '토스' : '서브!') : '스트로크', 'KeyJ', K_A], ['K', '슬라이스', 'KeyK', K_K], ['L', '로브', 'KeyL', K_LOB], ['I', '스매시', 'KeyI', K_S]];
   chips.forEach((c, i) => {
     const x = 14 + i * 174, on = anyDown(...c[3]), over = btn(x, y, 168, 46, null, c[2]);
     rr(x, y, 168, 46, 14, on ? '#fff3c4' : over ? '#fffdf3' : 'rgba(255,248,231,0.93)', OUT, 2.6);
@@ -903,13 +932,14 @@ function drawTouch() { // phones and tablets: a joystick on the left, the four s
   ctx.lineWidth = 3.4; ctx.strokeStyle = OUT; E(c.x + stick.x * STICK_R * 0.7, c.y + stick.y * STICK_R * 0.7, 44, 44, stick.id !== null ? '#fff3c4' : CREAM);
   // the big stroke button, and the other three on one arc round it: the same gap between each
   const sx = W - 116, sy = H - 156, R = 152, ang = [180, 225, 270];
-  const B = [['스트로크', 'KeyJ', sx, sy, 82, CORAL]];
+  const serving = m.sc.server === view && (m.phase === 'serve' || m.phase === 'toss') && !m.sc.done;
+  const B = [[serving ? (m.phase === 'serve' ? '토스' : '서브!') : '스트로크', 'KeyJ', sx, sy, 82, CORAL]];
   [['슬라이스', 'KeyK', SKY], ['로브', 'KeyL', '#c3a6e8'], ['스매시', 'KeyI', BALL]].forEach((q, i) => { const a = ang[i] * Math.PI / 180; B.push([q[0], q[1], sx + Math.cos(a) * R, sy + Math.sin(a) * R, 50, q[2]]); });
   for (const [label, code, x, y, r, col] of B) {
     const on = down.has(code); btn(x - r, y - r, r * 2, r * 2, null, code);
     ctx.lineWidth = 4; ctx.strokeStyle = OUT; E(x, y, r, r, on ? '#fff3c4' : col);
     text(label, x, y - (r > 60 ? 9 : 0), r > 60 ? 29 : 20, INK, 'center', null, F_T);
-    if (r > 60) text('꾹: 파워샷', x, y + 24, 17, INK, 'center', null, F_B);
+    if (r > 60) text(serving ? (m.phase === 'serve' ? '공 띄우기' : '꼭대기에서!') : '꾹: 파워샷', x, y + 24, 17, INK, 'center', null, F_B);
   }
   text('네트 앞: 발리 · 슬라이스 + 아래: 드롭샷', W / 2, H - 26, 16, CREAM, 'center', OUT, F_B);
 }
@@ -931,9 +961,10 @@ function drawMatch() {
   for (const q of m.pops) { const s = proj(q.x, q.y, q.z); ctx.globalAlpha = clamp((0.9 - q.t) * 4, 0, 1); text(q.s, clamp(s.x, 70, W - 70), s.y - q.t * 40, q.s.startsWith('딱') ? 44 : 30, q.c, 'center', OUT, F_H); ctx.globalAlpha = 1; }
   ctx.restore();
   drawScoreboard();
-  iconBtn(W - 68, 10, 'home', () => { if (scene === 'play') scene = 'pause'; });
+  iconBtn(W - 68, 10, 'pause', () => { if (scene === 'play') scene = 'pause'; });
   iconBtn(W - 68, 68, 'sound', () => setMuted(!muted));
   iconBtn(W - 128, 10, 'guide', toggleGuide);
+  iconBtn(W - 128, 68, 'help', () => openHelp(0));
   if (m.banner) {
     const B = m.banner, k = Math.min(1, B.t * 6), a = Math.min(1, (Math.max(1.5, m.pause) - B.t) * 4), cy = Math.round(H * 0.42);
     ctx.globalAlpha = Math.max(0, a);
@@ -1003,7 +1034,7 @@ function guestStep() { // the guest draws what the host sends and sends its own 
 // ---- Ranking: wins against the computer, kept in Supabase (the key below is the public one) ----
 const RANK = { url: 'https://cvlsgzhprpabzchmoutn.supabase.co/rest/v1/scores', key: 'sb_publishable_H77zqwSZzj0pRkPleK8HnA_neZwJyUK' };
 const LEVEL_KO = ['', '쉬움', '보통', '어려움'], MODE_KO = { regular: '정규전', short: '단판전', flash: '번개전' };
-const rank = { list: null, err: '', loading: false, mode: 'regular', sent: null, sending: false, msg: '' };
+const rank = { list: null, err: '', loading: false, mode: 'short', sent: null, sending: false, msg: '' };
 function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
 function clientId() {
   let id = store('zt_client');
@@ -1064,6 +1095,59 @@ nickBox.querySelector('form').onsubmit = async e => {
   rank.sending = false;
 };
 
+// ---- The title screen's show: drifting clouds, a bouncing name, and two animals keeping a rally going ----
+function cloud(x, y, k) {
+  ctx.fillStyle = 'rgba(255,255,255,0.8)';
+  for (const [dx, dy, r] of [[0, 0, 22], [24, -10, 26], [50, 0, 20], [24, 6, 22]]) { ctx.beginPath(); ctx.arc(x + dx * k, y + dy * k, r * k, 0, 7); ctx.fill(); }
+}
+function drawTitleShow(t) {
+  ctx.save(); ctx.translate(0, -OY); // the sky belongs to the screen, not to the menu box
+  for (let i = 0; i < 4; i++) { const sp = 9 + i * 4, x = ((i * 230 + t * sp) % (W + 260)) - 150; cloud(x, 34 + (i % 2) * 52 + i * 6, 0.7 + (i % 3) * 0.2); }
+  ctx.restore();
+  // the name: each letter bobs in turn
+  ctx.font = `84px ${F_T}`; const chars = [...TITLE], ws = chars.map(c => ctx.measureText(c).width), total = ws.reduce((a, b) => a + b, 0);
+  let x = W / 2 - total / 2;
+  chars.forEach((c, i) => { const hop = Math.max(0, Math.sin(t * 3.2 - i * 0.55)) * 12; text(c, x + ws[i] / 2, 136 - hop, 84, CORAL, 'center', OUT, F_T); x += ws[i]; });
+  for (let i = 0; i < 5; i++) { const a = (Math.sin(t * 2.4 + i * 1.7) + 1) / 2; ctx.globalAlpha = 0.35 + 0.65 * a; star([92, 640, 610, 120, 360][i], [96, 84, 176, 186, 66][i], 6 + a * 7, i % 2 ? CREAM : BALL); ctx.globalAlpha = 1; }
+  text('열두 동물, 진짜 테니스 승부', W / 2, 212, 30, INK, 'center', CREAM, F_H);
+  // a little court and a rally that never ends; the pair changes every few shots
+  const leg = 1.05, n = Math.floor(t / leg), u = (t % leg) / leg, pair = Math.floor(n / 4) % 6, L = [pair * 2, pair * 2 + 1];
+  rr(56, 382, 608, 46, 23, '#4a9d5c', OUT, 2.6);
+  ctx.strokeStyle = 'rgba(255,248,231,0.9)'; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.moveTo(84, 405); ctx.lineTo(636, 405); ctx.stroke();
+  ctx.strokeStyle = OUT; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(360, 410); ctx.lineTo(360, 360); ctx.stroke();
+  ctx.strokeStyle = CREAM; ctx.lineWidth = 3; ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,248,231,0.55)'; ctx.lineWidth = 1; ctx.beginPath(); for (let k = 0; k < 6; k++) { ctx.moveTo(352, 366 + k * 8); ctx.lineTo(368, 366 + k * 8); } ctx.stroke();
+  const fromL = n % 2 === 0, x0 = fromL ? 180 : 540, x1 = fromL ? 540 : 180;
+  const ballAt = v => { const bx = x0 + (x1 - x0) * v; let by;
+    if (v < 0.62) { const w = v / 0.62; by = 350 + 50 * w - 150 * 4 * w * (1 - w); } else { const w = (v - 0.62) / 0.38; by = 400 - 50 * w - 70 * 4 * w * (1 - w); }
+    return [bx, by]; };
+  [0, 1].forEach(side => {
+    const px = side ? 570 : 150, hitter = (side === 0) === fromL, hand = side ? -1 : 1;
+    ctx.fillStyle = 'rgba(40,70,50,0.25)'; ctx.beginPath(); ctx.ellipse(px, 412, 40, 10, 0, 0, 7); ctx.fill();
+    ctx.lineWidth = 2.6; ctx.strokeStyle = OUT;
+    const swingT = hitter ? u * leg : u > 0.8 ? 0 : 1, an = hitter && u < 0.3 ? 'hit' : !hitter && u > 0.8 ? 'swing' : 'idle';
+    drawAnimal(L[side], px, 412, 1.05, { front: true, hand, t: an === 'hit' ? swingT : t + side, anim: an, accent: side ? SKY : CORAL });
+  });
+  for (let k = 5; k >= 1; k--) { const [tx, ty] = ballAt(Math.max(0, u - k * 0.035)); ctx.globalAlpha = 0.12 * (6 - k); star(tx, ty, 4 + (6 - k), CREAM); } ctx.globalAlpha = 1;
+  const [bx, by] = ballAt(u);
+  ctx.fillStyle = 'rgba(40,70,50,0.3)'; ctx.beginPath(); ctx.ellipse(bx, 412, 9, 3, 0, 0, 7); ctx.fill();
+  ctx.lineWidth = 2.4; ctx.strokeStyle = OUT; E(bx, by, 11, 11, BALL);
+  text(`${ANIMALS[L[0]].ko}  vs  ${ANIMALS[L[1]].ko}`, W / 2, 300, 22, '#4f6f63', 'center', CREAM, F_H);
+}
+
+// ---- Help: two pages over the match, controls then rules ----
+let helpPage = 0, helpBack = 'play';
+function openHelp(pg) { if (scene !== 'play' && scene !== 'pause') return; helpBack = scene; helpPage = pg; scene = 'help'; tone(660, 0.06, 'sine', 0.15); }
+function closeHelp() { scene = helpBack === 'pause' ? 'pause' : 'play'; }
+function helpRows(rows, y0, gap, kw) { // a two-column list: the label, then what it does
+  rows.forEach((r, i) => {
+    const y = y0 + i * gap;
+    if (r[0]) { rr(76, y - 19, kw, 38, 12, r[2] || '#efe3d3', OUT, 2); text(r[0], 76 + kw / 2, y, 19, INK, 'center', null, F_T); }
+    text(r[1], 96 + kw, y - (r[3] ? 11 : 0), 19, INK, 'left', null, F_B);
+    if (r[3]) text(r[3], 96 + kw, y + 13, 16, '#7a6872', 'left', null, F_B);
+  });
+}
+
 const room = params.get('room');
 function reset() {
   seed = Number(params.get('seed')) || (CONFIG.seed + matchCount * 7919); matchCount++;
@@ -1090,15 +1174,16 @@ const STAT_COL = [CORAL, '#ffb86b', '#c3a6e8', BALL, SKY];
 const STAT_DO = ['공이 빨라져요', '오래 뛰어도 안 지쳐요', '정확하고 드롭샷이 죽어요', '빨리 돌고 멀리 닿아요', '달리기가 빨라요'];
 function statBars(a, x, y) {
   STATS.forEach((s, i) => {
-    const v = stat(a, s), yy = y + i * 34;
+    const v = stat(a, s, null), yy = y + i * 34;
     text(STAT_KO[i], x, yy, 20, INK, 'left', null, F_T);
     for (let k = 0; k < 5; k++) rr(x + 92 + k * 30, yy - 9, 24, 18, 6, k < v ? STAT_COL[i] : '#eadfd2', OUT, 2.2);
     text(STAT_DO[i], x + 252, yy, 16, '#7a6872', 'left', null, F_B);
   });
 }
 function pickMode(i) { tone(880, 0.12, 'triangle', 0.25); setup.pending = i; scene = 'court'; }
-function pickCourt(i) {
-  tone(880, 0.12, 'triangle', 0.25); setup.court = COURT_IDS[i];
+function pickCourt(i) { tone(880, 0.12, 'triangle', 0.25); setup.court = COURT_IDS[i]; scene = 'format'; }
+function pickFormat(i) {
+  tone(880, 0.12, 'triangle', 0.25); setup.format = FORMAT_IDS[i]; rank.mode = setup.format;
   if (setup.pending < 3) { setup.mode = 'cpu'; setup.level = setup.pending + 1; reset(); scene = 'play'; }
   else { netHost(); scene = 'lobby'; }
 }
@@ -1147,9 +1232,7 @@ const scenes = {
     update(dt) { state.t += dt; if (anyHit(...K_OK)) scene = 'select'; },
     draw() {
       menuBegin();
-      text(TITLE, W / 2, 138, 84, CORAL, 'center', OUT, F_T);
-      text('열두 동물, 다섯 세트의 진짜 승부', W / 2, 212, 30, INK, 'center', CREAM, F_H);
-      [2, 3, 0, 10].forEach((a, i) => { const x = 120 + i * 160, y = 410; ctx.fillStyle = 'rgba(70,90,140,0.2)'; ctx.beginPath(); ctx.ellipse(x, y, 44, 12, 0, 0, 7); ctx.fill(); ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(a, x, y, 1.25, { front: true, t: state.t + i, anim: i % 2 ? 'cheer' : 'idle', accent: i % 2 ? SKY : CORAL }); });
+      drawTitleShow(state.t);
       rr(50, 446, 620, 232, 22, 'rgba(255,248,231,0.95)', OUT);
       text('조작 방법', W / 2, 476, 24, INK, 'center', null, F_T);
       [['이동', '방향키 / WASD'], ['스트로크', 'J  (꾹 눌렀다 놓으면 파워샷)'], ['슬라이스 · 로브 · 스매시', 'K  ·  L  ·  I'], ['일시정지 · 음소거 · 낙하지점', 'P  ·  M  ·  G']].forEach((c, i) => { const y = 518 + i * 36; text(c[0], 312, y, 18, '#7a6872', 'right', null, F_B); text(c[1], 330, y, 19, INK, 'left', null, F_B); });
@@ -1159,14 +1242,24 @@ const scenes = {
         button('시작하기', 100, 706, 330, 76, () => { scene = 'select'; }, { size: 34, fill: '#fff3c4' });
         button('랭킹', 446, 706, 174, 76, () => { scene = 'ranking'; loadRanking(); }, { size: 28 });
       }
-      menuEnd('Enter 를 눌러도 시작해요');
+      text('Enter 를 눌러도 시작해요', W / 2, 840, 17, '#4f6f63', 'center', null, F_B);
+      text('© 2026 IGNUZNIM. All rights reserved.', W / 2, 878, 15, 'rgba(59,51,64,0.55)', 'center', null, F_B);
+      menuEnd();
     },
   },
   ranking: {
-    update(dt) { state.t += dt; if (pressed('Escape')) scene = 'title'; if (pressed('KeyR') && !rank.loading) loadRanking(); },
+    update(dt) {
+      state.t += dt; if (pressed('Escape')) scene = 'title'; if (pressed('KeyR') && !rank.loading) loadRanking();
+      const d = anyHit(...K_R) ? 1 : anyHit(...K_L) ? 2 : 0;
+      if (d && !rank.loading) { rank.list = null; loadRanking(FORMAT_IDS[(FORMAT_IDS.indexOf(rank.mode) + d) % 3]); }
+    },
     draw() {
       menuBegin('랭킹 TOP 10', true);
-      text(MODE_KO[rank.mode] + ' · 컴퓨터를 이긴 기록 · 한 사람당 최고 기록', W / 2, 104, 19, '#4f6f63', 'center', null, F_B);
+      FORMAT_IDS.forEach((id, i) => { const x = 40 + i * 218, on = id === rank.mode;
+        if (btn(x, 92, 204, 50, () => { if (!on) { rank.list = null; loadRanking(id); } }) && !on) rr(x, 92, 204, 50, 16, '#fffdf3', OUT, 3);
+        else rr(x, 92, 204, 50, 16, on ? '#fff3c4' : 'rgba(255,248,231,0.75)', on ? CORAL : OUT, on ? 4 : 2.6);
+        text(MODE_KO[id], x + 102, 118, 23, on ? INK : '#7a6872', 'center', null, F_T); });
+      ctx.save(); ctx.translate(0, 20);
       rr(40, 130, 640, 600, 24, 'rgba(255,248,231,0.96)', OUT);
       const L = rank.list;
       if (rank.loading && !L) text('불러오는 중…', W / 2, 420, 28, '#7a6872', 'center', null, F_H);
@@ -1188,9 +1281,10 @@ const scenes = {
           text(r.score.toLocaleString(), 630, y, 26, INK, 'right', null, F_N);
         });
       }
-      button('뒤로', 40, 760, 300, 68, () => { scene = 'title'; }, { size: 26 });
-      button(rank.loading ? '불러오는 중…' : '새로고침', 380, 760, 300, 68, () => { if (!rank.loading) loadRanking(); }, { size: 26, fill: '#fff3c4' });
-      menuEnd('점수 = 난이도(100 · 300 · 1000) + 득실 차 × 10 + 스위트 스폿 × 2');
+      ctx.restore();
+      button('뒤로', 40, 772, 300, 64, () => { scene = 'title'; }, { size: 26 });
+      button(rank.loading ? '불러오는 중…' : '새로고침', 380, 772, 300, 64, () => { if (!rank.loading) loadRanking(); }, { size: 26, fill: '#fff3c4' });
+      menuEnd('컴퓨터를 이긴 기록 · 1인 최고 기록 · 점수 = 난이도 + 득실 차 × 10 + 스위트 스폿 × 2');
     },
   },
   select: {
@@ -1219,7 +1313,10 @@ const scenes = {
       drawAnimal(a, 106, 730, 1.2, { front: true, t: state.t, accent: CORAL });
       text(A.ko, 196, 510, 34, INK, 'left', null, F_T);
       text(A.note, 196, 546, 21, '#c0605a', 'left', null, F_H);
-      statBars(a, 196, 588);
+      statBars(a, 196, 584);
+      const af = AFFINITY[A.id], sk = STAT_KO[STATS.indexOf(af[1])];
+      rr(470, 492, 206, 36, 18, '#ffe1a8', OUT, 2.2); text(COURT_TITLE[af[0]], 573, 510, 20, '#c0605a', 'center', null, F_T);
+      text(`${COURTS[af[0]].ko} ${sk} +${tune.court_bonus}  ·  ${COURTS[af[2]].ko} ${sk} −${tune.court_bonus}`, 196, 744, 17, '#7a6872', 'left', null, F_B);
       button('뒤로', 24, 780, 180, 64, () => { scene = 'title'; }, { size: 24 });
       button('이 선수로 결정', 220, 780, 476, 64, pickAnimal, { size: 28, fill: '#fff3c4' });
       menuEnd(room ? '초대받은 방 ' + room + ' 에 들어갑니다' : '← → ↑ ↓ 로 고르고 Enter · 마우스로 눌러도 돼요');
@@ -1237,7 +1334,7 @@ const scenes = {
       menuBegin('어떻게 겨룰까요?', true);
       const rows = [['컴퓨터와 대결 · 쉬움', '받기 쉬운 공을 보내고 실수도 자주 해요'], ['컴퓨터와 대결 · 보통', '빈 곳을 노리고 가끔 변칙을 섞어요'], ['컴퓨터와 대결 · 어려움', '코너를 찌르고 드롭샷, 로브, 파워샷까지'], ['온라인 대결 · 방 만들기', '초대 링크를 보내 각자의 PC에서 겨뤄요']];
       rows.forEach((r, i) => { const y = 104 + i * 124; button(r[0], 40, y, 640, 104, () => pickMode(i), { on: i === state.cur, sub: r[1] }); });
-      text('5세트 경기 · 3세트를 먼저 따면 승리', W / 2, 628, 26, INK, 'center', CREAM, F_H);
+      text('다음 화면에서 코트와 경기 방식을 골라요', W / 2, 628, 26, INK, 'center', CREAM, F_H);
       ctx.fillStyle = 'rgba(70,90,140,0.2)'; ctx.beginPath(); ctx.ellipse(W / 2, 800, 46, 12, 0, 0, 7); ctx.fill();
       ctx.lineWidth = 2.6; ctx.strokeStyle = OUT;
       drawAnimal(setup.animal, W / 2, 800, 1.1, { front: true, t: state.t, accent: CORAL });
@@ -1268,6 +1365,9 @@ const scenes = {
         ctx.strokeStyle = OUT; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(76, y + 102); ctx.lineTo(254, y + 102); ctx.stroke(); ctx.strokeStyle = CREAM; ctx.lineWidth = 2.5; ctx.stroke();
         text(C.ko, 296, y + 46, 32, INK, 'left', null, F_T);
         text(C.sub, 296, y + 84, 17, '#7a6872', 'left', null, F_B);
+        const af = AFFINITY[ANIMALS[setup.animal].id], sk = STAT_KO[STATS.indexOf(af[1])];
+        if (af[0] === id) { rr(470, y + 26, 196, 34, 17, '#ffe1a8', OUT, 2.2); text(`${ANIMALS[setup.animal].ko} ▲ ${sk} +${tune.court_bonus}`, 568, y + 43, 18, '#c0605a', 'center', null, F_T); }
+        else if (af[2] === id) { rr(470, y + 26, 196, 34, 17, '#dbe9f7', OUT, 2.2); text(`${ANIMALS[setup.animal].ko} ▼ ${sk} −${tune.court_bonus}`, 568, y + 43, 18, '#3d7fc0', 'center', null, F_T); }
         [['바운드', tune[id + '_bounce']], ['공 빠르기', tune[id + '_pace']]].forEach((row, r) => {
           const yy = y + 128 + r * 36, lv = row[1] < 0.95 ? 1 : row[1] > 1.05 ? 3 : 2;
           text(row[0], 296, yy, 19, INK, 'left', null, F_T);
@@ -1277,6 +1377,31 @@ const scenes = {
       });
       button('뒤로', 24, 786, 180, 60, () => { scene = 'mode'; }, { size: 24 });
       menuEnd('↑ ↓ 로 고르고 Enter · 눌러도 돼요');
+    },
+  },
+  format: {
+    update(dt) {
+      state.t += dt; if (state.fm == null) state.fm = FORMAT_IDS.indexOf(setup.format);
+      if (anyHit(...K_D)) state.fm = (state.fm + 1) % 3; if (anyHit(...K_U)) state.fm = (state.fm + 2) % 3;
+      if (anyHit(...K_D, ...K_U)) tone(660, 0.05, 'sine', 0.15);
+      if (pressed('Escape')) { scene = 'court'; return; }
+      if (anyHit(...K_OK)) pickFormat(state.fm);
+    },
+    draw() {
+      if (state.fm == null) state.fm = FORMAT_IDS.indexOf(setup.format);
+      menuBegin('경기 방식을 골라 주세요', true);
+      const how = { flash: '10점을 먼저 따면 승리 (2점 차) · 공식 복식의 결승 세트 방식', short: '4게임을 먼저 따면 승리 · 40-40이면 한 포인트로 결정', regular: '세트 3개를 먼저 따면 승리 · 그랜드슬램 남자 단식 방식' };
+      FORMAT_IDS.forEach((id, i) => {
+        const F = FORMATS[id], y = 110 + i * 196, on = i === state.fm, over = btn(40, y, 640, 176, () => pickFormat(i));
+        rr(40, y + 5, 640, 176, 20, OUT, null);
+        rr(40, y, 640, 176, 20, on ? '#fff3c4' : over ? '#fffdf3' : 'rgba(255,248,231,0.96)', on ? CORAL : OUT, on ? 5 : 3);
+        text(F.ko, 70, y + 48, 38, INK, 'left', null, F_T);
+        if (id === 'short') { rr(220, y + 30, 82, 34, 17, CORAL, OUT, 2.2); text('추천', 261, y + 47, 19, CREAM, 'center', null, F_T); }
+        text(rules(id).sub, 70, y + 98, 19, '#c0605a', 'left', null, F_H);
+        text(how[id], 70, y + 138, 17, '#7a6872', 'left', null, F_B);
+      });
+      button('뒤로', 24, 786, 180, 60, () => { scene = 'court'; }, { size: 24 });
+      menuEnd('↑ ↓ 로 고르고 Enter · 랭킹은 경기 방식마다 따로 집계돼요');
     },
   },
   lobby: {
@@ -1319,14 +1444,64 @@ const scenes = {
     update(dt) {
       if (pressed('KeyP') || pressed('Escape')) { scene = 'pause'; return; }
       if (pressed('KeyG')) toggleGuide();
+      if (pressed('KeyH')) { openHelp(0); return; }
       playCore(dt);
     },
     draw() { drawMatch(); },
+  },
+  help: {
+    update(dt) {
+      if (m.online) { playCore(dt); if (scene !== 'help') return; }
+      if (anyHit(...K_R)) helpPage = 1; if (anyHit(...K_L)) helpPage = 0;
+      if (pressed('Escape') || pressed('KeyH') || pressed('KeyP')) closeHelp();
+    },
+    draw() {
+      drawMatch(); hot = []; OY = 0;
+      ctx.fillStyle = 'rgba(59,51,64,0.62)'; ctx.fillRect(0, 0, W, H);
+      const top = Math.round(H / 2 - 400);
+      ctx.save(); ctx.translate(0, top); OY = top;
+      rr(40, 0, 640, 800, 26, 'rgba(255,248,231,0.98)', OUT, 4);
+      ['조작법', '경기 규칙'].forEach((t, i) => { const x = 70 + i * 296, on = helpPage === i;
+        btn(x, 22, 284, 54, () => { helpPage = i; });
+        rr(x, 22, 284, 54, 16, on ? '#fff3c4' : '#f3e8da', on ? CORAL : OUT, on ? 4 : 2.4); text(`${i + 1}. ${t}`, x + 142, 50, 25, on ? INK : '#7a6872', 'center', null, F_T); });
+      const T = touchUI;
+      if (helpPage === 0) {
+        helpRows([
+          [T ? '조이스틱' : '← → ↑ ↓', '선수 이동', '#dbe9f7', T ? '' : 'WASD 도 돼요'],
+          [T ? '스트로크' : 'J', '기본 샷 · 공이 몸에 닿는 순간 누르기', '#ffd0c8', '꾹 눌렀다 놓으면 파워샷 · 네트 앞에선 발리'],
+          [T ? '슬라이스' : 'K', '낮게 깔리는 슬라이스', '#cfe8ff', '네트 앞이나 아래 방향과 함께: 드롭샷'],
+          [T ? '로브' : 'L', '상대 머리 위로 높이 넘기기', '#e6dbf7'],
+          [T ? '스매시' : 'I', '높이 뜬 공을 내려찍기', '#fff1b0', '낮은 공에 쓰면 실수가 많아요'],
+          [T ? '스트로크' : 'J', '서브 · 한 번 눌러 토스, 공이 꼭대기일 때 한 번 더', '#ffd0c8', '고리가 초록이면 좋은 타이밍, 빨강이면 폴트'],
+          [T ? '치는 순간' : '← / →', '샷 방향 · 치는 순간 누른 쪽으로 공이 가요', '#efe3d3'],
+          ['타이밍', "'딱!' 완벽 · '빨랐어!' / '늦었어!' 는 공이 흔들려요", '#efe3d3'],
+        ], 140, 66, 150);
+        text(T ? '오른쪽 위: 일시정지 · 소리 · 낙하지점 표시 · 도움말' : 'P 일시정지 · M 소리 · G 낙하지점 표시 · H 도움말', W / 2, 676, 18, '#3d9be0', 'center', null, F_H);
+      } else {
+        helpRows([
+          ['점수', '0 → 15 → 30 → 40 → 게임', '#fff1b0', '40-40은 듀스: 2점을 연달아 따야 게임'],
+          ['서브', '대각선 서비스 박스에 넣기 · 기회는 두 번', '#ffd0c8', '두 번 다 실패하면 더블 폴트로 실점'],
+          ['실점', '공이 선 밖에 떨어지거나 네트에 걸리면', '#dbe9f7', '내 코트에서 두 번 튀기 전에 쳐야 해요 (선에 닿으면 인)'],
+          ['타이브레이크', '게임이 동점이면 1점씩 세는 결정전', '#e6dbf7', '7점 먼저, 2점 차 (매치 타이브레이크는 10점)'],
+        ], 140, 78, 150);
+        rr(70, 448, 580, 2, 1, '#e2d4c4', null);
+        text('경기 방식', W / 2, 482, 23, INK, 'center', null, F_T);
+        FORMAT_IDS.forEach((id, i) => { const y = 530 + i * 54, on = id === (m.format || 'regular');
+          if (on) rr(70, y - 24, 580, 48, 14, '#fff3c4', CORAL, 2.4);
+          text(FORMATS[id].ko, 92, y, 21, INK, 'left', null, F_T);
+          text({ flash: '10점 매치 타이브레이크 한 판 (2점 차)', short: '4게임 먼저 · 40-40이면 한 포인트로 결정 · 4-4 타이브레이크', regular: '6게임 세트 · 3세트 먼저 · 6-6이면 타이브레이크' }[id], 178, y, 17, '#5d4f58', 'left', null, F_B); });
+        text('지금 경기는 노란 칸의 방식이에요', W / 2, 692, 18, '#c0605a', 'center', null, F_H);
+      }
+      button('닫기', 210, 718, 300, 62, closeHelp, { size: 27, fill: '#fff3c4' });
+      ctx.restore(); OY = 0;
+      text(T ? '탭을 눌러 페이지를 넘겨요' : '← → 페이지 · H 또는 Esc 닫기', W / 2, top + 828, 18, CREAM, 'center', OUT, F_B);
+    },
   },
   pause: {
     update(dt) {
       if (m.online) { playCore(dt); if (scene !== 'pause') return; }
       if (pressed('KeyP') || pressed('Escape')) scene = 'play';
+      if (pressed('KeyH')) openHelp(0);
       if (pressed('KeyQ')) goHome();
     },
     draw() {
@@ -1338,7 +1513,7 @@ const scenes = {
       text(m.online ? '온라인 경기는 멈추지 않아요' : '숨 한번 고르고 가요', W / 2, cy - 78, 24, '#c0605a', 'center', null, F_H);
       button('계속하기', 170, cy - 36, 380, 72, () => { scene = 'play'; }, { size: 30, fill: '#fff3c4' });
       button('홈으로', 170, cy + 58, 380, 72, goHome, { size: 28 });
-      text('P : 계속하기 · Q : 홈으로', W / 2, cy + 162, 17, '#7a6872', 'center', null, F_B);
+      text('P : 계속하기 · Q : 홈으로 · H : 조작법과 규칙', W / 2, cy + 162, 17, '#7a6872', 'center', null, F_B);
     },
   },
   results: {
@@ -1353,7 +1528,8 @@ const scenes = {
       menuBegin();
       const sc = m.sc, w = sc.winner, me = w === view, guest = net && net.role === 'guest';
       text(me ? '승리!' : '패배', W / 2, 96, 84, me ? CORAL : '#7f8fb5', 'center', OUT, F_T);
-      text(`${NAME(w)} 승리 · 세트 ${sc.won[w]} – ${sc.won[1 - w]}`, W / 2, 166, 28, INK, 'center', CREAM, F_H);
+      const RR = rules(), fin = sc.sets[sc.sets.length - 1] || [0, 0];
+      text(`${RR.ko} · ${NAME(w)} 승리 · ${RR.matchTb ? `${fin[w]} – ${fin[1 - w]}` : RR.sets > 1 ? `세트 ${sc.won[w]} – ${sc.won[1 - w]}` : `${fin[w]} – ${fin[1 - w]}`}`, W / 2, 166, 28, INK, 'center', CREAM, F_H);
       rr(40, 204, 640, 440, 24, 'rgba(255,248,231,0.96)', OUT);
       for (let r = 0; r < 2; r++) {
         const i = r === 0 ? view : 1 - view, y = 252 + r * 64;
@@ -1383,7 +1559,7 @@ function step() {
   if (pressed('KeyM')) { setMuted(!muted); hit.delete('KeyM'); }
   while (clicks.length) { drawFrame(); const h = hitTest(clicks.shift()); if (h && h.fn) h.fn(); } // drawn again first: the buttons are where this frame puts them
   scenes[scene].update(STEP);
-  if (scene === 'play' || scene === 'pause' || scene === 'results') netSend();
+  if (scene === 'play' || scene === 'pause' || scene === 'help' || scene === 'results') netSend();
   hit.clear();
 }
 let last, acc = 0, ALPHA = 1; // ALPHA: how far the frame is between the last two steps
