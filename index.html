@@ -16,12 +16,29 @@
   body { font-variant-numeric: tabular-nums; }
   html, body { position: fixed; inset: 0; width: 100%; }
   canvas { display: block; position: absolute; left: 0; top: 0; box-shadow: 0 0 40px rgba(59,51,64,0.35); touch-action: none; }
+  #nick { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(59,51,64,0.55); z-index: 5; }
+  #nick.on { display: flex; }
+  #nick form { width: min(86vw, 360px); box-sizing: border-box; padding: 22px 20px 18px; background: #fff8e7; border: 3px solid #6b5560; border-radius: 22px; box-shadow: 0 6px 0 #6b5560; text-align: center; font-family: 'Jua', sans-serif; color: #4a3d47; }
+  #nick h2 { margin: 0 0 4px; font-size: 26px; font-weight: normal; }
+  #nick p { margin: 0 0 14px; font: 15px 'Gowun Dodum', sans-serif; color: #7a6872; }
+  #nick input { width: 100%; box-sizing: border-box; padding: 12px 14px; font: 22px 'Jua', sans-serif; color: #4a3d47; text-align: center; border: 3px solid #6b5560; border-radius: 14px; background: #fff; outline: none; }
+  #nick input:focus { border-color: #ff8a7a; }
+  #nick .row { display: flex; gap: 10px; margin-top: 14px; }
+  #nick button { flex: 1; padding: 12px 0; font: 21px 'Jua', sans-serif; color: #4a3d47; border: 3px solid #6b5560; border-radius: 14px; background: #fff; cursor: pointer; }
+  #nick button.go { background: #fff3c4; border-color: #ff8a7a; }
+  #nick .err { min-height: 18px; margin-top: 8px; font: 14px 'Gowun Dodum', sans-serif; color: #e2574c; }
   #safe { position: fixed; visibility: hidden; pointer-events: none; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
 </style>
 </head>
 <body>
 <canvas id="game"></canvas>
 <div id="safe"></div>
+<div id="nick"><form autocomplete="off">
+  <h2>랭킹 등록</h2><p>랭킹에 표시할 닉네임 (1~10자)</p>
+  <input id="nickIn" maxlength="10" enterkeyhint="done" spellcheck="false">
+  <div class="err" id="nickErr"></div>
+  <div class="row"><button type="button" id="nickNo">취소</button><button type="submit" class="go">등록</button></div>
+</form></div>
 <script src="config.js"></script>
 <script>
 'use strict';
@@ -104,6 +121,7 @@ const down = new Set(), hit = new Set();
 const pressed = code => hit.has(code); // true for one step after the key goes down
 const anyDown = (...c) => c.some(k => down.has(k)), anyHit = (...c) => c.some(k => hit.has(k));
 addEventListener('keydown', e => {
+  if (e.target && e.target.tagName === 'INPUT') return; // typing a nickname
   startAudio();
   if (!e.repeat) { down.add(e.code); hit.add(e.code); }
   if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
@@ -404,7 +422,7 @@ function newMatch() {
   let opp = setup.guestAnimal;
   if (setup.mode === 'cpu') { opp = Math.floor(rng() * 11); if (opp >= setup.animal) opp++; }
   m = {
-    t: 0, phase: 'serve', pt: 0, pause: 1.7, level: setup.level, online: setup.mode !== 'cpu', court: setup.court, land: null,
+    t: 0, phase: 'serve', pt: 0, pause: 1.7, level: setup.level, format: setup.format || 'regular', online: setup.mode !== 'cpu', court: setup.court, land: null,
     ball: { x: 0, y: 0, z: 1, vx: 0, vy: 0, vz: 0, last: -1, bounces: 0, live: false, fly: false, kind: '', power: 0 },
     P: [newPlayer(0, setup.animal, 'human'), newPlayer(1, opp, setup.mode === 'cpu' ? 'ai' : 'remote')],
     sc: { pts: [0, 0], games: [0, 0], sets: [], won: [0, 0], server: 0, tb: false, tbFirst: 0, done: false, winner: -1 },
@@ -982,6 +1000,70 @@ function guestStep() { // the guest draws what the host sends and sends its own 
 }
 
 // ---- Scenes: the menus are laid out in a 720 x 900 box, centred in whatever height the window gives ----
+// ---- Ranking: wins against the computer, kept in Supabase (the key below is the public one) ----
+const RANK = { url: 'https://cvlsgzhprpabzchmoutn.supabase.co/rest/v1/scores', key: 'sb_publishable_H77zqwSZzj0pRkPleK8HnA_neZwJyUK' };
+const LEVEL_KO = ['', '쉬움', '보통', '어려움'], MODE_KO = { regular: '정규전', short: '단판전', flash: '번개전' };
+const rank = { list: null, err: '', loading: false, mode: 'regular', sent: null, sending: false, msg: '' };
+function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
+function clientId() {
+  let id = store('zt_client');
+  if (!id) { id = (crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-8xxx-xxxxxxxxxxxx'.replace(/x/g, () => (Math.random() * 16 | 0).toString(16))); store('zt_client', id); }
+  return id;
+}
+function rankHeaders(extra) { return Object.assign({ apikey: RANK.key, 'Content-Type': 'application/json' }, extra); }
+const scoreOf = r => [0, 100, 300, 1000][r.level] + Math.max(0, r.pts_for - r.pts_against) * 10 + r.sweet * 2; // the same sum the database does
+function canRank() { return m && m.sc.done && m.sc.winner === 0 && !m.online && setup.mode === 'cpu' && m.P[1].ctrl === 'ai'; }
+function matchRecord(nickname) {
+  return { nickname, mode: m.format || 'regular', level: m.level, animal: m.P[0].a, opponent: m.P[1].a, court: m.court,
+    sets: m.sc.sets.map(g => g[0] + '-' + g[1]).join(' '), pts_for: m.stats.pts[0], pts_against: m.stats.pts[1],
+    sweet: m.stats.sweet[0], duration_s: Math.round(m.t), client_id: clientId() };
+}
+async function loadRanking(mode) {
+  rank.mode = mode || rank.mode; rank.loading = true; rank.err = '';
+  try {
+    const q = `?select=nickname,level,animal,court,sets,score,created_at&mode=eq.${rank.mode}&order=score.desc,created_at.asc&limit=100`;
+    const r = await fetch(RANK.url + q, { headers: rankHeaders() });
+    if (!r.ok) throw new Error(r.status);
+    const seen = new Set(); rank.list = (await r.json()).filter(x => !seen.has(x.nickname) && seen.add(x.nickname)).slice(0, 10); // each player's best
+  } catch (e) { rank.err = '랭킹을 불러오지 못했어요 · 인터넷 연결을 확인해 주세요'; rank.list = rank.list || []; }
+  rank.loading = false;
+}
+async function sendRecord(nickname) {
+  const rec = matchRecord(nickname);
+  const r = await fetch(RANK.url, { method: 'POST', headers: rankHeaders({ Prefer: 'return=minimal' }), body: JSON.stringify(rec) });
+  if (!r.ok) { const t = await r.text(); throw new Error(/slow down/.test(t) ? '잠시 후 다시 등록해 주세요' : /not a finished|too fast|too many/.test(t) ? '등록할 수 없는 기록이에요' : '등록하지 못했어요 · 인터넷 연결을 확인해 주세요'); }
+  const score = scoreOf(rec);
+  let place = 0;
+  try { // the place on the board: records that scored more, plus one
+    const c = await fetch(RANK.url + `?select=id&mode=eq.${rec.mode}&score=gt.${score}`, { method: 'HEAD', headers: rankHeaders({ Prefer: 'count=exact' }) });
+    place = +((c.headers.get('content-range') || '').split('/')[1]) + 1 || 0;
+  } catch (e) { /* the place is a nicety */ }
+  return { score, place };
+}
+const nickBox = document.getElementById('nick'), nickIn = document.getElementById('nickIn'), nickErr = document.getElementById('nickErr');
+function openNick() {
+  if (rank.sent === m || rank.sending) return;
+  nickIn.value = store('zt_nick') || ''; nickErr.textContent = ''; nickBox.classList.add('on'); down.clear();
+  setTimeout(() => nickIn.focus(), 30);
+}
+function closeNick() { nickBox.classList.remove('on'); nickIn.blur(); down.clear(); }
+document.getElementById('nickNo').onclick = closeNick;
+nickBox.addEventListener('pointerdown', e => e.stopPropagation()); nickBox.addEventListener('click', e => e.stopPropagation());
+nickBox.addEventListener('keydown', e => { if (e.key === 'Escape') closeNick(); e.stopPropagation(); });
+nickBox.querySelector('form').onsubmit = async e => {
+  e.preventDefault();
+  const name = nickIn.value.trim().replace(/\s+/g, ' ');
+  if (!name) { nickErr.textContent = '닉네임을 입력해 주세요'; return; }
+  if ([...name].length > 10) { nickErr.textContent = '10자까지 쓸 수 있어요'; return; }
+  rank.sending = true; nickErr.textContent = '등록하는 중…';
+  try {
+    const r = await sendRecord(name); store('zt_nick', name);
+    rank.sent = m; rank.msg = `${r.score.toLocaleString()}점${r.place ? ` · ${MODE_KO[m.format || 'regular']} ${r.place}위` : ''} 등록 완료!`;
+    closeNick(); tone(880, 0.1, 'triangle', 0.25); tone(1320, 0.18, 'triangle', 0.25, 0.1);
+  } catch (err) { nickErr.textContent = err.message; }
+  rank.sending = false;
+};
+
 const room = params.get('room');
 function reset() {
   seed = Number(params.get('seed')) || (CONFIG.seed + matchCount * 7919); matchCount++;
@@ -1072,8 +1154,43 @@ const scenes = {
       text('조작 방법', W / 2, 476, 24, INK, 'center', null, F_T);
       [['이동', '방향키 / WASD'], ['스트로크', 'J  (꾹 눌렀다 놓으면 파워샷)'], ['슬라이스 · 로브 · 스매시', 'K  ·  L  ·  I'], ['일시정지 · 음소거 · 낙하지점', 'P  ·  M  ·  G']].forEach((c, i) => { const y = 518 + i * 36; text(c[0], 312, y, 18, '#7a6872', 'right', null, F_B); text(c[1], 330, y, 19, INK, 'left', null, F_B); });
       text(touchUI ? '휴대폰에서는 조이스틱과 버튼으로 해요' : '버튼은 마우스로 눌러도 돼요', W / 2, 656, 20, '#3d9be0', 'center', null, F_H);
-      button(room ? '초대받은 방에 들어가기' : '시작하기', 150, 706, 420, 76, () => { scene = 'select'; }, { size: 34, fill: '#fff3c4' });
+      if (room) button('초대받은 방에 들어가기', 150, 706, 420, 76, () => { scene = 'select'; }, { size: 34, fill: '#fff3c4' });
+      else {
+        button('시작하기', 100, 706, 330, 76, () => { scene = 'select'; }, { size: 34, fill: '#fff3c4' });
+        button('랭킹', 446, 706, 174, 76, () => { scene = 'ranking'; loadRanking(); }, { size: 28 });
+      }
       menuEnd('Enter 를 눌러도 시작해요');
+    },
+  },
+  ranking: {
+    update(dt) { state.t += dt; if (pressed('Escape')) scene = 'title'; if (pressed('KeyR') && !rank.loading) loadRanking(); },
+    draw() {
+      menuBegin('랭킹 TOP 10', true);
+      text(MODE_KO[rank.mode] + ' · 컴퓨터를 이긴 기록 · 한 사람당 최고 기록', W / 2, 104, 19, '#4f6f63', 'center', null, F_B);
+      rr(40, 130, 640, 600, 24, 'rgba(255,248,231,0.96)', OUT);
+      const L = rank.list;
+      if (rank.loading && !L) text('불러오는 중…', W / 2, 420, 28, '#7a6872', 'center', null, F_H);
+      else if (rank.err && !(L && L.length)) text(rank.err, W / 2, 420, 21, '#e2574c', 'center', null, F_B);
+      else if (!L || !L.length) { text('아직 기록이 없어요', W / 2, 400, 30, INK, 'center', null, F_T); text('첫 번째 주인공이 되어 보세요!', W / 2, 446, 24, '#c0605a', 'center', null, F_H); }
+      else {
+        text('순위', 92, 160, 16, '#7a6872', 'center', null, F_B); text('선수', 236, 160, 16, '#7a6872', 'left', null, F_B);
+        text('난이도', 470, 160, 16, '#7a6872', 'center', null, F_B); text('점수', 630, 160, 16, '#7a6872', 'right', null, F_B);
+        L.forEach((r, i) => {
+          const y = 206 + i * 52;
+          if (i % 2 === 0) rr(56, y - 23, 608, 46, 12, 'rgba(234,223,210,0.45)', null);
+          const medal = ['#ffd34d', '#cfd8e3', '#e6a46a'][i];
+          if (medal) { ctx.lineWidth = 2.4; ctx.strokeStyle = OUT; E(92, y, 17, 17, medal); }
+          text('' + (i + 1), 92, y + 1, 22, INK, 'center', null, F_N);
+          ctx.lineWidth = 2; ctx.strokeStyle = OUT;
+          drawAnimal(r.animal, 150, y + 18, 0.32, { front: true, t: 0.4, accent: CORAL });
+          text(r.nickname, 182, y, 24, INK, 'left', null, F_T);
+          text(LEVEL_KO[r.level] || '', 470, y, 19, ['', '#3d9be0', '#4f9a6a', '#e2574c'][r.level] || INK, 'center', null, F_T);
+          text(r.score.toLocaleString(), 630, y, 26, INK, 'right', null, F_N);
+        });
+      }
+      button('뒤로', 40, 760, 300, 68, () => { scene = 'title'; }, { size: 26 });
+      button(rank.loading ? '불러오는 중…' : '새로고침', 380, 760, 300, 68, () => { if (!rank.loading) loadRanking(); }, { size: 26, fill: '#fff3c4' });
+      menuEnd('점수 = 난이도(100 · 300 · 1000) + 득실 차 × 10 + 스위트 스폿 × 2');
     },
   },
   select: {
@@ -1252,6 +1369,10 @@ const scenes = {
       if (guest) text('방장이 다시 시작하길 기다리는 중', W / 2, 706, 24, INK, 'center', CREAM, F_H);
       else button('다시 하기', 60, 676, 290, 72, () => { reset(); scene = 'play'; }, { size: 30, fill: '#fff3c4' });
       button('홈으로', guest ? 215 : 370, guest ? 746 : 676, 290, 72, goHome, { size: 28 });
+      if (canRank()) {
+        if (rank.sent === m) { rr(60, 766, 600, 64, 18, 'rgba(255,248,231,0.9)', OUT); text(rank.msg, W / 2, 798, 25, '#c0605a', 'center', null, F_H); }
+        else button(rank.sending ? '등록하는 중…' : '랭킹에 기록 등록하기', 60, 766, 600, 64, openNick, { size: 27, fill: '#ffe1a8' });
+      }
       menuEnd(guest ? '' : 'Enter : 다시 하기 · Esc : 홈으로');
     },
   },
