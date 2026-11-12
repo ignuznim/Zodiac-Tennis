@@ -1,0 +1,46 @@
+# Where each file in assets/ and vendor/ came from, one entry per file. The field names are the
+# provenance record's, so the entries carry over when the game grows.
+# - path: assets/hit.wav      # relative to this game's folder
+#   origin: ai                # ai | bought | cc0 | you | outsourced | template | plugin | licensed | code | unknown
+#   tool: "what made or fetched it: the generator, or the script for code"
+#   model: "the model ID, when a model made it or an AI wrote its code"
+#   source: {vendor: "who made or sold it", product: "its name", url: "where from"}   # a download
+#   licence: {id: CC0-1.0}    # a download: the SPDX id where one exists
+#   date: 2026-01-31
+#   ships: true               # false for a file only the build uses
+#   placeholder: true         # until it is replaced; leave the line out otherwise
+- path: vendor/peerjs.min.js
+  origin: plugin
+  tool: "curl from cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"
+  source: {vendor: "PeerJS contributors", product: "PeerJS 1.5.4", url: "https://github.com/peers/peerjs"}
+  licence: {id: MIT}
+  date: 2026-11-12
+  ships: true
+- path: assets/Jua-Regular.ttf
+  origin: licensed
+  tool: "curl from github.com/google/fonts (ofl/jua)"
+  source: {vendor: "Woowahan Brothers", product: "Jua", url: "https://fonts.google.com/specimen/Jua"}
+  licence: {id: OFL-1.1}
+  date: 2026-11-12
+  ships: true
+- path: assets/DoHyeon-Regular.ttf
+  origin: licensed
+  tool: "curl from github.com/google/fonts (ofl/dohyeon)"
+  source: {vendor: "Woowahan Brothers", product: "Do Hyeon", url: "https://fonts.google.com/specimen/Do+Hyeon"}
+  licence: {id: OFL-1.1}
+  date: 2026-11-12
+  ships: true
+- path: assets/GowunDodum-Regular.ttf
+  origin: licensed
+  tool: "curl from github.com/google/fonts (ofl/gowundodum)"
+  source: {vendor: "Yanghee Ryu", product: "Gowun Dodum", url: "https://fonts.google.com/specimen/Gowun+Dodum"}
+  licence: {id: OFL-1.1}
+  date: 2026-11-12
+  ships: true
+- path: assets/Gaegu-Bold.ttf
+  origin: licensed
+  tool: "curl from github.com/google/fonts (ofl/gaegu)"
+  source: {vendor: "JIKJI SOFT", product: "Gaegu", url: "https://fonts.google.com/specimen/Gaegu"}
+  licence: {id: OFL-1.1}
+  date: 2026-11-12
+  ships: true
