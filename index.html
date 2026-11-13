@@ -138,14 +138,22 @@ function btn(x, y, w, h, fn, key) { hot.push({ x, y: y + OY, w, h, fn, key }); r
 let touchUI = (window.matchMedia && matchMedia('(pointer: coarse)').matches) || params.get('touch') === '1'; // a phone or tablet: joystick and big buttons
 const held = new Map();                    // pointer id -> the key that finger holds
 const stick = { id: null, x: 0, y: 0 };    // the on-screen joystick, -1..1 each way
-const STICK_R = 84, stickC = () => ({ x: 132, y: H - 150 });
+const STICK_R = 84, stickC = () => ({ x: 140, y: H - 170 });
+const TOUCH_ZONE = 400, TOUCH_SPLIT = 320; // the strip at the bottom that belongs to the thumbs, and where its two halves meet
+function shotButtons() { // three shots only; a high ball turns the stroke into a smash by itself
+  return [['스트로크', 'KeyJ', W - 128, H - 176, 96, CORAL], ['슬라이스', 'KeyK', 384, H - 142, 64, SKY], ['로브', 'KeyL', 452, H - 318, 64, '#c3a6e8']];
+}
+function nearestShot(p) { let best = null, bd = 1e9; for (const b of shotButtons()) { const d = Math.hypot(p.x - b[2], p.y - b[3]) - b[4]; if (d < bd) { bd = d; best = b[1]; } } return best; }
 let tapAt = null, lastTap = -1e9;
 function stickMove(p) { const c = stickC(), dx = (p.x - c.x) / STICK_R, dy = (p.y - c.y) / STICK_R, l = Math.hypot(dx, dy); stick.x = l > 1 ? dx / l : dx; stick.y = l > 1 ? dy / l : dy; }
 addEventListener('pointerdown', e => {
   startAudio(); if (e.pointerType === 'touch') touchUI = true;
   const p = toLogical(e); mouse = p; const h = hitTest(p);
   if (h && h.key) { held.set(e.pointerId, h.key); down.add(h.key); hit.add(h.key); return; }
-  if (touchUI && scene === 'play' && stick.id === null && !h && p.x < W * 0.55 && p.y > H - 330) { stick.id = e.pointerId; stickMove(p); return; }
+  if (touchUI && scene === 'play' && p.y > H - TOUCH_ZONE) { // the bottom strip: the stick on the left, the shots on the right, no dead space
+    if (p.x >= TOUCH_SPLIT) { const k = nearestShot(p); held.set(e.pointerId, k); down.add(k); hit.add(k); return; }
+    if (stick.id === null && !h) { stick.id = e.pointerId; stickMove(p); return; }
+  }
   tapAt = { id: e.pointerId, x: p.x, y: p.y };
 });
 addEventListener('pointermove', e => { const p = toLogical(e); if (e.pointerId === stick.id) stickMove(p); else mouse = p; });
@@ -530,12 +538,14 @@ function newMatch() {
   m = {
     t: 0, phase: 'serve', pt: 0, pause: 1.7, level: setup.level, format: setup.format || 'regular', online: setup.mode !== 'cpu', court: setup.court, land: null,
     ball: { x: 0, y: 0, z: 1, vx: 0, vy: 0, vz: 0, last: -1, bounces: 0, live: false, fly: false, kind: '', power: 0 },
-    P: [newPlayer(0, setup.animal, 'human'), newPlayer(1, opp, setup.mode === 'cpu' ? 'ai' : 'remote')],
+    P: [newPlayer(0, setup.animal, 'human'), newPlayer(1, opp, setup.practice ? 'machine' : setup.mode === 'cpu' ? 'ai' : 'remote')],
+    practice: !!setup.practice, prac: setup.practice ? { li: 0, done: 0, wait: 0, shot: null, res: null, resT: 9, next: false } : null,
     sc: { pts: [0, 0], games: [0, 0], sets: [], won: [0, 0], server: 0, tb: false, tbFirst: 0, done: false, winner: -1 },
     fault: 0, refault: false, boxX: 1, rally: 0, hitId: 0, banner: null, pops: [], fx: [], fxId: 0, mark: null,
     stats: { pts: [0, 0], sweet: [0, 0], power: [0, 0], longest: 0, aces: [0, 0] },
   };
   setupPoint();
+  if (m.practice) { m.level = 2; m.online = false; practiceNext(); m.banner = { text: '볼머신장', sub: '레슨을 따라 공 치는 법을 익혀요', t: 0, big: 0 }; return m; }
   const R = rules();
   if (R.matchTb) { m.sc.tb = true; m.sc.tbFirst = m.sc.server; }
   m.banner = { text: R.matchTb ? '매치 타이브레이크' : R.ko + ' · 1세트', sub: `${ANIMALS[m.P[0].a].ko} 서브 · ${R.matchTb ? '10점 먼저' : R.sets > 1 ? R.sets + '세트 먼저' : R.games + '게임 먼저'}`, t: 0, big: 0 };
@@ -588,6 +598,7 @@ function award(w) { // real tennis: points, games (two clear, or one deciding po
   return { s: ptsText(), big: 0 };
 }
 function endPoint(w, call) {
+  if (m.practice) return practiceResult(call);
   const b = m.ball; b.live = false; m.phase = 'point'; m.pt = 0; m.fault = 0; m.refault = false;
   m.stats.pts[w]++; m.stats.longest = Math.max(m.stats.longest, m.rally);
   if (call === '에이스') m.stats.aces[w]++;
@@ -598,6 +609,7 @@ function endPoint(w, call) {
   fx('point', w, ev.big); events.push({ t: m.t, point: w, call });
 }
 function fault(call) {
+  if (m.practice) return practiceResult('폴트');
   const b = m.ball;
   if (m.fault === 0) { b.live = false; m.fault = 1; m.refault = true; m.phase = 'point'; m.pt = 0; m.pause = 1.2; m.banner = { text: call === '네트' ? '폴트 (네트)' : '폴트', sub: '세컨드 서브', t: 0, big: 0 }; fx('call'); }
   else endPoint(1 - b.last, '더블 폴트');
@@ -643,6 +655,7 @@ function launch(p, kind, q, charge, aimX, aimD, late = 0) {
   b.last = p.i; b.bounces = 0; b.kind = kind; b.live = true; b.fly = true; b.power = kind === 'power' ? 0.6 + 0.4 * charge : kind === 'smash' ? 0.8 : 0;
   p.stam = Math.max(0, p.stam - tune.stam_shot - (kind === 'power' ? tune.stam_power * charge : kind === 'smash' || kind === 'wild' ? 2 : 0));
   m.rally++; m.hitId++; m.mark = null; m.land = { x: tx, y: ty };
+  if (m.practice && p.i === 0) m.prac.shot = { kind, hand: fh ? '포핸드' : '백핸드', q, perfect, late, dir: aimX, speed: Math.round(Math.hypot(b.vx, b.vy, b.vz) * 3.6) };
   if (perfect) { m.stats.sweet[p.i]++; pop(p.streak > 1 ? '딱! ×' + Math.min(p.streak, tune.sweet_streak_max) : '딱!', b.x, b.y, b.z + 0.9, BALL); }
   else if (late > 0.45) pop('늦었어!', b.x, b.y, b.z + 0.9, '#f25f5c');
   else if (q <= 0.6 && p.ctrl !== 'ai') pop('빨랐어!', b.x, b.y, b.z + 0.9, '#f25f5c');
@@ -663,7 +676,7 @@ function canHit(p) {
   if (b.kind === 'serve' && b.bounces === 0) return false; // a serve must bounce first
   if (p.side * b.y < -0.2 || b.z > 3.1) return false;
   if (Math.hypot(b.x - p.x, b.y - p.y) > reach(p)) return false;
-  return p.side * (b.y - p.y) >= -0.85; // the ball has come to the body
+  return p.side * (b.y - p.y) >= (b.z >= tune.smash_min_z ? -1.6 : -0.85); // the ball has come to the body (overhead, a little sooner)
 }
 function tryHit(p, kind, qGiven, charge, aimX, aimDy) {
   if (!canHit(p)) return false;
@@ -681,6 +694,7 @@ function tryHit(p, kind, qGiven, charge, aimX, aimDy) {
   let k2 = kind;
   if (kind === 'stroke') {
     if (charge >= 0.4) k2 = 'power';
+    else if (b.z >= tune.smash_min_z + 0.1) k2 = 'smash'; // a high ball: the stroke button smashes it, no fourth button to find
     else if (b.bounces === 0 && Math.abs(p.y) < 6.5) k2 = 'volley';
   } else if (kind === 'slice') { if (aimD < 0 || Math.abs(p.y) < 6.5) k2 = 'drop'; }
   else if (kind === 'smash') { if (b.z < tune.smash_min_z) k2 = 'wild'; }
@@ -719,6 +733,7 @@ function doServe(p, q, aimX) {
   p.stam = Math.max(0, p.stam - tune.stam_shot); p.hand = 1; setAnim(p, 'smash');
   if (q >= 0.95) { m.stats.sweet[p.i]++; pop('딱!', b.x, b.y, b.z + 0.8, BALL); }
   else if (bad) pop(early ? '너무 빨랐어!' : '너무 늦었어!', p.x, p.y, 3.4, '#f25f5c');
+  if (m.practice && p.i === 0) m.prac.shot = { kind: 'serve', hand: '서브', q, perfect: q >= 0.95, late: 0, dir: Math.sign(aimX), speed: Math.round(Math.hypot(b.vx, b.vy, b.vz) * 3.6), bad, early };
   fx('hit', p.i, { kind: 'serve', q });
 }
 const serveQ = () => 1 - Math.abs(m.ball.vz) / 3.4; // 1 at the top of the toss, falling off either side
@@ -862,14 +877,16 @@ function localInput(v) { // screen directions turned into court directions for t
 function simulate(dt) {
   m.t += dt; m.pt += dt;
   for (const p of m.P) {
-    const inp = p.ctrl === 'ai' ? aiThink(p, dt) : p.ctrl === 'remote' ? net.rin : localInput(0);
+    const inp = p.ctrl === 'ai' ? aiThink(p, dt) : p.ctrl === 'remote' ? net.rin : p.ctrl === 'machine' ? NOINPUT : localInput(0);
     updatePlayer(p, inp, dt);
   }
   ballStep(dt);
+  if (m.practice) practiceStep(dt);
   if (m.banner) { m.banner.t += dt; if (m.banner.t > Math.max(1.5, m.pause)) m.banner = null; }
   for (const q of m.pops) q.t += dt; while (m.pops.length && m.pops[0].t > 0.9) m.pops.shift();
   if (m.phase === 'point' && m.pt > m.pause) {
-    if (m.sc.done) { m.phase = 'done'; m.pt = 0; } else { const keep = m.refault; setupPoint(); if (!keep) m.fault = 0; }
+    if (m.practice) practiceNext();
+    else if (m.sc.done) { m.phase = 'done'; m.pt = 0; } else { const keep = m.refault; setupPoint(); if (!keep) m.fault = 0; }
   }
   state.score = m.sc.won[0];
 }
@@ -915,6 +932,7 @@ function star(x, y, r, c) {
   ctx.closePath(); ctx.fillStyle = c; ctx.fill();
 }
 function drawPlayer(p) {
+  if (p.ctrl === 'machine') return drawMachine(p);
   const s = proj(p.x, p.y, 0), me = p.i === view;
   ctx.fillStyle = 'rgba(70,90,140,0.22)'; ctx.beginPath(); ctx.ellipse(s.x, s.y, 30 * s.s, 9 * s.s, 0, 0, 7); ctx.fill();
   const glow = p.sw && p.sw.mode !== 'tap' ? 0.25 + p.sw.charge * 0.75 : 0;
@@ -996,6 +1014,7 @@ function drawLegend() { // the shot keys, always on screen; each is also a butto
   text('J 꾹: 파워샷 · 네트 앞: 발리 · K + ↓: 드롭샷 · H: 도움말', W / 2, H - 33, 20, CREAM, 'center', null, F_B);
 }
 function hintText() {
+  if (m.practice) return LESSONS[m.prac.li].tip(touchUI);
   const srv = m.sc.server === view;
   if (m.phase === 'serve' && srv) return (m.fault ? '세컨드 서브! ' : '') + (touchUI ? '좌우로 자리 잡고, 스트로크로 공 띄우기' : '← → 로 자리 잡고, J 로 공 띄우기');
   if (m.phase === 'toss' && srv) return touchUI ? '고리가 초록일 때 한 번 더! 빨강이면 폴트' : '고리가 초록일 때 J! 빨강이면 폴트';
@@ -1012,18 +1031,14 @@ function drawTouch() { // phones and tablets: a joystick on the left, the four s
   ctx.fillStyle = 'rgba(107,85,96,0.45)';
   for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2; ctx.beginPath(); for (const q of [[STICK_R + 4, 0], [STICK_R - 16, 0.2], [STICK_R - 16, -0.2]]) ctx.lineTo(c.x + Math.cos(a + q[1]) * q[0], c.y + Math.sin(a + q[1]) * q[0]); ctx.fill(); }
   ctx.lineWidth = 3.4; ctx.strokeStyle = OUT; E(c.x + stick.x * STICK_R * 0.7, c.y + stick.y * STICK_R * 0.7, 44, 44, stick.id !== null ? '#fff3c4' : CREAM);
-  // the big stroke button, and the other three on one arc round it: the same gap between each
-  const sx = W - 116, sy = H - 156, R = 152, ang = [180, 225, 270];
   const serving = m.sc.server === view && (m.phase === 'serve' || m.phase === 'toss') && !m.sc.done;
-  const B = [[serving ? (m.phase === 'serve' ? '토스' : '서브!') : '스트로크', 'KeyJ', sx, sy, 82, CORAL]];
-  [['슬라이스', 'KeyK', SKY], ['로브', 'KeyL', '#c3a6e8'], ['스매시', 'KeyI', BALL]].forEach((q, i) => { const a = ang[i] * Math.PI / 180; B.push([q[0], q[1], sx + Math.cos(a) * R, sy + Math.sin(a) * R, 50, q[2]]); });
-  for (const [label, code, x, y, r, col] of B) {
-    const on = down.has(code); btn(x - r, y - r, r * 2, r * 2, null, code);
-    ctx.lineWidth = 4; ctx.strokeStyle = OUT; E(x, y, r, r, on ? '#fff3c4' : col);
-    text(label, x, y - (r > 60 ? 9 : 0), r > 60 ? 30 : 22, INK, 'center', null, F_T);
-    if (r > 60) text(serving ? (m.phase === 'serve' ? '공 띄우기' : '꼭대기에서!') : '꾹: 파워샷', x, y + 26, 19, INK, 'center', null, F_B);
+  for (const [label0, code, x, y, r, col] of shotButtons()) {
+    const on = down.has(code), big = r > 80, label = big && serving ? (m.phase === 'serve' ? '토스' : '서브!') : label0;
+    ctx.lineWidth = 4; ctx.strokeStyle = OUT; E(x, y + 5, r, r, OUT); E(x, y + (on ? 3 : 0), r, r, on ? '#fff3c4' : col);
+    text(label, x, y - (big ? 10 : 0) + (on ? 3 : 0), big ? 32 : 25, INK, 'center', null, F_T);
+    if (big) text(serving ? (m.phase === 'serve' ? '공 띄우기' : '꼭대기에서!') : '꾹: 파워샷', x, y + 28 + (on ? 3 : 0), 19, INK, 'center', null, F_B);
   }
-  text('네트 앞: 발리 · 슬라이스 + 아래: 드롭샷', W / 2, H - 24, 20, CREAM, 'center', OUT, F_B);
+  text('높은 공은 스트로크로 스매시 · 슬라이스 + 아래: 드롭샷', W / 2, H - 24, 20, CREAM, 'center', OUT, F_B);
 }
 function drawMatch() {
   OY = 0;
@@ -1042,7 +1057,7 @@ function drawMatch() {
   drawPlayer(near); if (bv >= ny) drawBall();
   for (const q of m.pops) { const s = proj(q.x, q.y, q.z); ctx.globalAlpha = clamp((0.9 - q.t) * 4, 0, 1); text(q.s, clamp(s.x, 70, W - 70), s.y - q.t * 40, q.s.startsWith('딱') ? 44 : 30, q.c, 'center', OUT, F_H); ctx.globalAlpha = 1; }
   ctx.restore();
-  drawScoreboard();
+  if (m.practice) { drawLesson(); drawPracticeResult(); } else drawScoreboard();
   iconBtn(W - 68, 10, 'pause', () => { if (scene === 'play') scene = 'pause'; });
   iconBtn(W - 68, 68, 'sound', () => setMuted(!muted));
   iconBtn(W - 128, 10, 'guide', toggleGuide);
@@ -1062,6 +1077,105 @@ function drawMatch() {
   if (touchUI) drawTouch(); else drawLegend();
   if (net && net.msg) text(net.msg, W / 2, 170, 20, CREAM, 'center', OUT, F_B);
 }
+
+// ---- 볼머신장: a ball machine feeds, each lesson teaches one shot, and every shot is explained ----
+const NOINPUT = { dx: 0, dy: 0, a: false, k: false, l: false, s: false };
+const LESSONS = [
+  { name: '기본 스트로크', feed: 'base', goal: 5, tip: t => t ? '공이 몸에 닿는 순간 스트로크!' : '공이 몸에 닿는 순간 J!', ok: r => r.in },
+  { name: "타이밍 '딱!'", feed: 'base', goal: 3, tip: () => "닿기 직전에 누르면 '딱!' · 공이 더 빨라져요", ok: r => r.in && r.perfect },
+  { name: '방향 조절', feed: 'base', goal: 4, tip: t => t ? '치는 순간 조이스틱을 왼쪽·오른쪽으로' : '치는 순간 ← 또는 → 를 함께', ok: r => r.in && r.dir !== 0 },
+  { name: '파워샷', feed: 'base', goal: 3, tip: () => '꾹 눌러 모았다가 공이 오면 놓기 · 늦으면 길게 나가요', ok: r => r.in && r.kind === 'power' },
+  { name: '슬라이스 · 드롭샷', feed: 'short', goal: 4, tip: t => t ? '슬라이스는 낮게 · 조이스틱 아래와 함께면 드롭샷' : 'K 슬라이스는 낮게 · ↓ 와 함께면 드롭샷', ok: r => r.in && (r.kind === 'slice' || r.kind === 'drop') },
+  { name: '로브', feed: 'base', goal: 3, tip: t => t ? '로브로 높이 띄워 상대 뒤쪽에' : 'L 로브로 높이 띄워 상대 뒤쪽에', ok: r => r.in && r.kind === 'lob' },
+  { name: '스매시', feed: 'high', goal: 3, tip: t => '높이 뜬 공 아래로 가서 ' + (t ? '스트로크' : 'J') + ' · 자동으로 스매시', ok: r => r.in && r.kind === 'smash' },
+  { name: '서브', feed: 'serve', goal: 3, tip: t => (t ? '스트로크' : 'J') + '로 토스, 공이 꼭대기일 때 한 번 더', ok: r => r.in && r.kind === 'serve' },
+  { name: '자유 연습', feed: 'mix', goal: 0, tip: () => '여러 가지 공이 섞여 와요 · 마음껏 쳐 보세요', ok: () => false },
+];
+function practiceLesson(d) { const P = m.prac; P.li = (P.li + d + LESSONS.length) % LESSONS.length; P.done = 0; P.res = null; m.banner = { text: LESSONS[P.li].name, sub: `레슨 ${P.li + 1} / ${LESSONS.length}`, t: 0, big: 0 }; practiceNext(); tone(660, 0.06, 'sine', 0.15); }
+function practiceNext() { // the next ball: a serve of your own in the serve lesson, otherwise wait for the machine
+  const P = m.prac, L = LESSONS[P.li];
+  if (P.next) { P.next = false; P.li = Math.min(P.li + 1, LESSONS.length - 1); P.done = 0; m.banner = { text: LESSONS[P.li].name, sub: `다음 레슨 · ${P.li + 1} / ${LESSONS.length}`, t: 0, big: 0 }; }
+  const me = m.P[0], mc = m.P[1], b = m.ball;
+  m.sc.server = 0; setupPoint(); m.fault = 0;
+  mc.x = 0; mc.y = -12.6; setAnim(mc, 'idle');
+  if (LESSONS[P.li].feed !== 'serve') { m.phase = 'rally'; me.x = 0; me.y = 12.2; b.live = false; b.fly = false; b.x = mc.x; b.y = mc.y + 0.5; b.z = 1.0; P.wait = 1.1; }
+  P.shot = null;
+}
+function practiceStep(dt) {
+  const P = m.prac, b = m.ball;
+  for (const p of m.P) p.stam = p.max; // no tiring at practice
+  if (m.phase === 'rally' && !b.live && P.wait > 0 && (P.wait -= dt) <= 0) feed();
+  P.resT += dt;
+}
+function feed() { // the machine sends a ball over, shaped by the lesson
+  const P = m.prac, b = m.ball, g = tune.gravity, mc = m.P[1];
+  let f = LESSONS[P.li].feed; if (f === 'mix') f = ['base', 'base', 'short', 'high'][Math.floor(rng() * 4)];
+  const tx = (rng() - 0.5) * (f === 'high' ? 3 : 5.2), ty = f === 'short' ? 4.6 + rng() * 1.6 : f === 'high' ? 6 + rng() * 2.5 : 7.4 + rng() * 2.2;
+  b.x = mc.x + 0.3; b.y = mc.y + 0.6; b.z = 1.0;
+  let T = f === 'high' ? 2.7 : Math.hypot(tx - b.x, ty - b.y) / (f === 'short' ? 11 : 14.5);
+  const tn = T0 => T0 * Math.abs(b.y) / Math.abs(ty - b.y);
+  for (let i = 0; i < 40; i++) { const t0 = tn(T), zn = b.z + ((0.5 * g * T * T - b.z) / T) * t0 - 0.5 * g * t0 * t0; if (zn >= tune.net_height + 0.25) break; T *= 1.05; }
+  b.vx = (tx - b.x) / T; b.vy = (ty - b.y) / T; b.vz = (0.5 * g * T * T - b.z) / T;
+  b.kind = f === 'short' ? 'slice' : 'feed'; b.last = 1; b.bounces = 0; b.live = true; b.fly = true; b.power = 0;
+  m.rally = 0; m.hitId++; m.mark = null; m.land = { x: tx, y: ty }; fx('hit', 1, { kind: 'stroke', q: 0.8 });
+}
+function practiceResult(call) { // what that shot did, in words, and whether it counts for the lesson
+  const P = m.prac, b = m.ball, mk = m.mark, sh = P.shot;
+  b.live = false; m.phase = 'point'; m.pt = 0; m.pause = 1.3;
+  let r;
+  if (!sh || b.last === 1) r = { in: false, title: '놓쳤어요', how: '', why: '공을 따라가서 몸에 닿을 때 쳐 보세요' };
+  else {
+    const name = { stroke: '스트로크', power: '파워샷', volley: '발리', slice: '슬라이스', drop: '드롭샷', lob: '로브', smash: '스매시', wild: '무리한 스매시', serve: '서브' }[sh.kind] || '';
+    const timing = sh.perfect ? "타이밍 '딱!'" : sh.late > 0.45 ? '조금 늦었어요' : sh.q <= 0.6 ? '조금 빨랐어요' : '타이밍 좋아요';
+    const how = `${sh.kind === 'serve' ? '' : sh.hand + ' '}${name} · ${timing} · ${sh.speed}km/h`;
+    const good = call === '위너' || call === '에이스';
+    let where = '', why = '';
+    if (good && mk) { const side = mk.x < -1.4 ? '왼쪽' : mk.x > 1.4 ? '오른쪽' : '가운데', d = Math.abs(mk.y); where = sh.kind === 'serve' ? `서비스 박스 ${side}` : `${side} ${d > 8.6 ? '깊숙이' : d < 5 ? '짧게' : '중간'}`; }
+    if (!good) {
+      if (call === '네트') why = sh.late > 0.45 ? '네트에 걸렸어요 · 조금 일찍 쳐 보세요' : '네트에 걸렸어요';
+      else if (call === '폴트') why = sh.bad ? (sh.early ? '토스가 다 오르기 전에 쳤어요' : '토스가 너무 내려온 뒤에 쳤어요') : '서비스 박스를 벗어났어요';
+      else if (mk && Math.abs(mk.y) > CL) why = sh.kind === 'power' ? '길게 나갔어요 · 놓는 타이밍을 맞춰 보세요' : '길게 나갔어요';
+      else why = sh.late > 0.45 ? '옆으로 나갔어요 · 늦게 치면 공이 바깥으로 끌려요' : '옆으로 나갔어요';
+    }
+    r = { in: good, title: good ? '인!' : call === '폴트' ? '폴트' : call === '네트' ? '네트' : '아웃', how, why: good ? where : why, kind: sh.kind, perfect: sh.perfect, dir: sh.dir };
+  }
+  const L = LESSONS[P.li];
+  if (r.in && L.ok(r)) { P.done++; r.count = true; }
+  if (L.goal && P.done >= L.goal && P.li < LESSONS.length - 1) { P.next = true; m.pause = 2.2; m.banner = { text: '레슨 완료!', sub: '다음: ' + LESSONS[P.li + 1].name, t: 0, big: 1 }; fx('point', 0, 1); }
+  P.res = r; P.resT = 0; fx(r.in ? 'bounce' : 'call');
+  for (const p of m.P) p.sw = null;
+}
+function drawMachine(p) { // a ball machine: a box on wheels with a hopper of balls and a mouth
+  const s = proj(p.x, p.y, 0), k = s.s;
+  ctx.fillStyle = 'rgba(70,90,140,0.22)'; ctx.beginPath(); ctx.ellipse(s.x, s.y, 34 * k, 9 * k, 0, 0, 7); ctx.fill();
+  ctx.lineWidth = 2.6 * k; ctx.strokeStyle = OUT;
+  E(s.x - 20 * k, s.y - 4 * k, 8 * k, 8 * k, '#5d4f58'); E(s.x + 20 * k, s.y - 4 * k, 8 * k, 8 * k, '#5d4f58');
+  rr(s.x - 30 * k, s.y - 62 * k, 60 * k, 56 * k, 10 * k, '#8fb7e6', OUT, 2.6 * k);
+  E(s.x, s.y - 34 * k, 13 * k, 13 * k, '#4a3d47');
+  rr(s.x - 24 * k, s.y - 84 * k, 48 * k, 24 * k, 6 * k, '#e8e0d2', OUT, 2.2 * k);
+  for (let i = 0; i < 5; i++) E(s.x - 16 * k + i * 8 * k, s.y - 86 * k - (i % 2) * 5 * k, 6 * k, 6 * k, BALL);
+}
+function drawLesson() { // the lesson card where the scoreboard sits in a match
+  const P = m.prac, L = LESSONS[P.li], x0 = 12, y0 = 10, w = W - 152, h = 112;
+  rr(x0, y0, w, h, 16, '#4a3d47', OUT);
+  text(`볼머신장 · 레슨 ${P.li + 1} / ${LESSONS.length}`, x0 + 18, y0 + 22, 17, '#cbbcc4', 'left', null, F_B);
+  text(L.name, x0 + 18, y0 + 58, 30, CREAM, 'left', null, F_T);
+  if (L.goal) for (let i = 0; i < L.goal; i++) { ctx.lineWidth = 2; ctx.strokeStyle = '#cbbcc4'; E(x0 + 26 + i * 24, y0 + 92, 8, 8, i < P.done ? BALL : '#372c34'); }
+  else text('목표 없이 자유롭게', x0 + 18, y0 + 92, 16, '#cbbcc4', 'left', null, F_B);
+  const bw = 52, by = y0 + (h - 52) / 2; // previous and next lesson
+  [[-1, '◀', x0 + w - bw * 2 - 22], [1, '▶', x0 + w - bw - 12]].forEach(([d, t, bx]) => { const over = btn(bx, by, bw, 52, () => practiceLesson(d)); rr(bx, by, bw, 52, 14, over ? '#fff3c4' : CREAM, OUT, 2.4); text(t, bx + bw / 2, by + 27, 22, INK, 'center', null, F_T); });
+}
+function drawPracticeResult() { // the last shot, explained, under the net
+  const r = m.prac.res; if (!r || m.prac.resT > 2.6 || m.banner) return;
+  const a = Math.min(1, (2.6 - m.prac.resT) * 3), cy = Math.round(H * 0.42);
+  ctx.globalAlpha = a;
+  rr(60, cy - 70, W - 120, 140, 26, 'rgba(255,248,231,0.95)', r.in ? CORAL : OUT, r.in ? 4 : 3);
+  text(r.title + (r.count ? '  +1' : ''), W / 2, cy - 32, 42, r.in ? '#3f9a5c' : '#e2574c', 'center', null, F_T);
+  if (r.how) text(r.how, W / 2, cy + 10, 22, INK, 'center', null, F_B);
+  if (r.why) text(r.why, W / 2, cy + 44, 22, '#c0605a', 'center', null, F_H);
+  ctx.globalAlpha = 1;
+}
+function startPractice() { setup.practice = true; setup.mode = 'cpu'; reset(); scene = 'play'; }
 
 // ---- Online: browser to browser over a link. The host runs the match, the guest sends keys ----
 let net = null; // { role, peer, conn, status, code, link, rin, msg, last }
@@ -1116,7 +1230,7 @@ function guestStep() { // the guest draws what the host sends and sends its own 
 // ---- Ranking: wins against the computer, kept in Supabase (the key below is the public one) ----
 const RANK = { url: 'https://cvlsgzhprpabzchmoutn.supabase.co/rest/v1/scores', key: 'sb_publishable_H77zqwSZzj0pRkPleK8HnA_neZwJyUK' };
 const LEVEL_KO = ['', '쉬움', '보통', '어려움'], MODE_KO = { regular: '정규전', short: '단판전', flash: '번개전' };
-const rank = { list: null, err: '', loading: false, mode: 'short', sent: null, sending: false, msg: '' };
+const rank = { list: null, err: '', loading: false, mode: 'short', period: 'month', sent: null, sending: false, msg: '' };
 function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
 function clientId() {
   let id = store('zt_client');
@@ -1131,13 +1245,15 @@ function matchRecord(nickname) {
     sets: m.sc.sets.map(g => g[0] + '-' + g[1]).join(' '), pts_for: m.stats.pts[0], pts_against: m.stats.pts[1],
     sweet: m.stats.sweet[0], duration_s: Math.round(m.t), client_id: clientId() };
 }
-async function loadRanking(mode) {
-  rank.mode = mode || rank.mode; rank.loading = true; rank.err = '';
-  try {
-    const q = `?select=nickname,level,animal,court,sets,score,created_at&mode=eq.${rank.mode}&order=score.desc,created_at.asc&limit=100`;
+const monthStart = () => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1).toISOString(); }; // this month, by the player's clock
+async function loadRanking(mode, period) {
+  rank.mode = mode || rank.mode; rank.period = period || rank.period; rank.loading = true; rank.err = '';
+  try { // the top ten records, the same name as often as it earned a place
+    const since = rank.period === 'month' ? `&created_at=gte.${encodeURIComponent(monthStart())}` : '';
+    const q = `?select=nickname,level,animal,court,sets,score,created_at&mode=eq.${rank.mode}${since}&order=score.desc,created_at.asc&limit=10`;
     const r = await fetch(RANK.url + q, { headers: rankHeaders() });
     if (!r.ok) throw new Error(r.status);
-    const seen = new Set(); rank.list = (await r.json()).filter(x => !seen.has(x.nickname) && seen.add(x.nickname)).slice(0, 10); // each player's best
+    rank.list = await r.json();
   } catch (e) { rank.err = '랭킹을 불러오지 못했어요 · 인터넷 연결을 확인해 주세요'; rank.list = rank.list || []; }
   rank.loading = false;
 }
@@ -1146,12 +1262,11 @@ async function sendRecord(nickname) {
   const r = await fetch(RANK.url, { method: 'POST', headers: rankHeaders({ Prefer: 'return=minimal' }), body: JSON.stringify(rec) });
   if (!r.ok) { const t = await r.text(); throw new Error(/slow down/.test(t) ? '잠시 후 다시 등록해 주세요' : /not a finished|too fast|too many/.test(t) ? '등록할 수 없는 기록이에요' : '등록하지 못했어요 · 인터넷 연결을 확인해 주세요'); }
   const score = scoreOf(rec);
-  let place = 0;
-  try { // the place on the board: records that scored more, plus one
-    const c = await fetch(RANK.url + `?select=id&mode=eq.${rec.mode}&score=gt.${score}`, { method: 'HEAD', headers: rankHeaders({ Prefer: 'count=exact' }) });
-    place = +((c.headers.get('content-range') || '').split('/')[1]) + 1 || 0;
-  } catch (e) { /* the place is a nicety */ }
-  return { score, place };
+  const placeOf = async since => { // the place on a board: records that scored more, plus one
+    try { const c = await fetch(RANK.url + `?select=id&mode=eq.${rec.mode}&score=gt.${score}${since}`, { method: 'HEAD', headers: rankHeaders({ Prefer: 'count=exact' }) });
+      return +((c.headers.get('content-range') || '').split('/')[1]) + 1 || 0; } catch (e) { return 0; }
+  };
+  return { score, month: await placeOf(`&created_at=gte.${encodeURIComponent(monthStart())}`), all: await placeOf('') };
 }
 const nickBox = document.getElementById('nick'), nickIn = document.getElementById('nickIn'), nickErr = document.getElementById('nickErr');
 function openNick() {
@@ -1171,7 +1286,7 @@ nickBox.querySelector('form').onsubmit = async e => {
   rank.sending = true; nickErr.textContent = '등록하는 중…';
   try {
     const r = await sendRecord(name); store('zt_nick', name);
-    rank.sent = m; rank.msg = `${r.score.toLocaleString()}점${r.place ? ` · ${MODE_KO[m.format || 'regular']} ${r.place}위` : ''} 등록 완료!`;
+    rank.sent = m; rank.msg = `${r.score.toLocaleString()}점 등록!${r.month ? ` 월간 ${r.month}위` : ''}${r.all ? ` · 전체 ${r.all}위` : ''}`;
     closeNick(); tone(880, 0.1, 'triangle', 0.25); tone(1320, 0.18, 'triangle', 0.25, 0.1);
   } catch (err) { nickErr.textContent = err.message; }
   rank.sending = false;
@@ -1267,7 +1382,7 @@ function computeLayout() { // where the garden ends, the title row, the content 
   LY.top = end - clamp(room, 600, 680); LY.titleY = LY.top - 58; LY.sb = LY.titleY - 54; // the garden takes what the content does not need
 }
 // fixed sizes: a card is as tall as what it holds, never stretched to fill
-const SZ = () => ({ format: 150, mode: 116, court: 184, cell: LY.tall ? 120 : 96, info: 262, row: LY.tall ? 48 : 44, result: 448, lobby: 500 });
+const SZ = () => ({ format: 150, mode: 116, court: 184, cell: LY.tall ? 120 : 96, info: 262, row: LY.tall ? 46 : 38, result: 448, lobby: 500 });
 
 function menuBegin(title, home) {
   OY = 0; computeLayout();
@@ -1303,11 +1418,12 @@ function statBars(a, x, y) {
   });
 }
 // the way in: format, then who you play, then your animal, then the court (an invited guest only picks an animal)
-function pickFormat(i) { tone(880, 0.12, 'triangle', 0.25); setup.format = FORMAT_IDS[i]; rank.mode = setup.format; scene = 'mode'; }
+function pickFormat(i) { tone(880, 0.12, 'triangle', 0.25); setup.practice = false; setup.format = FORMAT_IDS[i]; rank.mode = setup.format; scene = 'mode'; }
 function pickMode(i) { tone(880, 0.12, 'triangle', 0.25); setup.pending = i; scene = 'select'; }
 function pickCourt(i) {
   tone(880, 0.12, 'triangle', 0.25); setup.court = COURT_IDS[i];
-  if (setup.pending < 3) { setup.mode = 'cpu'; setup.level = setup.pending + 1; reset(); scene = 'play'; }
+  if (setup.practice) startPractice();
+  else if (setup.pending < 3) { setup.mode = 'cpu'; setup.level = setup.pending + 1; reset(); scene = 'play'; }
   else { netHost(); scene = 'lobby'; }
 }
 function pickAnimal() {
@@ -1352,7 +1468,7 @@ const scenes = {
     },
   },
   title: {
-    update(dt) { state.t += dt; if (anyHit(...K_OK)) scene = room ? 'select' : 'format'; },
+    update(dt) { state.t += dt; if (anyHit(...K_OK)) { setup.practice = false; scene = room ? 'select' : 'format'; } },
     draw() {
       menuBegin();
       const rows = [['이동', '방향키 / WASD'], ['스트로크', 'J  (꾹 눌렀다 놓으면 파워샷)'], ['슬라이스 · 로브 · 스매시', 'K  ·  L  ·  I'], ['일시정지 · 소리 · 낙하지점', 'P  ·  M  ·  G']];
@@ -1363,9 +1479,14 @@ const scenes = {
       const ly = k => pt + P + step * (k + 0.5);
       text('조작 방법', W / 2, ly(0), 26, INK, 'center', null, F_T);
       rows.forEach((c, i) => { text(c[0], 334, ly(i + 1), 21, '#7a6872', 'right', null, F_B); text(c[1], 352, ly(i + 1), 22, INK, 'left', null, F_B); });
-      text(touchUI ? '휴대폰에서는 조이스틱과 버튼으로 해요' : '버튼은 마우스로 눌러도 돼요', W / 2, ly(5), 23, '#3d9be0', 'center', null, F_H);
+      text(touchUI ? '모바일에서는 조이스틱과 버튼으로 해요' : '버튼은 마우스로 눌러도 돼요', W / 2, ly(5), 23, '#3d9be0', 'center', null, F_H);
       if (room) wideBtn('초대받은 방에 들어가기', () => { scene = 'select'; });
-      else { sideBtn('랭킹', () => { scene = 'ranking'; loadRanking(); }); mainBtn('시작하기', () => { scene = 'format'; }); }
+      else { // three equal buttons: the ranking, the ball machine, the match
+        const bw = (LY.w - LY.gap * 2) / 3;
+        button('랭킹', LY.m, LY.bot, bw, LY.btnH, () => { scene = 'ranking'; loadRanking(); }, { size: 27 });
+        button('볼머신장 가기', LY.m + bw + LY.gap, LY.bot, bw, LY.btnH, () => { setup.practice = true; scene = 'select'; }, { size: 25, fill: '#dff1ff' });
+        button('시작하기', LY.m + (bw + LY.gap) * 2, LY.bot, bw, LY.btnH, () => { setup.practice = false; scene = 'format'; }, { size: 29, fill: '#fff3c4' });
+      }
       text('© 2026 IGNUZNIM. All rights reserved.', W / 2, LY.copy, 16, 'rgba(59,51,64,0.6)', 'center', null, F_B);
       menuEnd('Enter 를 눌러도 시작해요');
     },
@@ -1375,15 +1496,21 @@ const scenes = {
       state.t += dt; if (pressed('Escape')) scene = 'title'; if (pressed('KeyR') && !rank.loading) loadRanking();
       const d = anyHit(...K_R) ? 1 : anyHit(...K_L) ? 2 : 0;
       if (d && !rank.loading) { rank.list = null; loadRanking(FORMAT_IDS[(FORMAT_IDS.indexOf(rank.mode) + d) % 3]); }
+      if (anyHit(...K_U, ...K_D) && !rank.loading) { rank.list = null; loadRanking(null, rank.period === 'month' ? 'all' : 'month'); }
     },
     draw() {
-      menuBegin('랭킹 TOP 10', true);
-      const tw = (LY.w - LY.gap * 2) / 3;
+      menuBegin(rank.period === 'month' ? '이번 달 랭킹' : '명예의 전당', true);
+      const pw = (LY.w - LY.gap) / 2; // the period: this month's race, or every record ever
+      [['month', '월간 랭킹'], ['all', '명예의 전당']].forEach(([id, t], i) => { const x = LY.m + i * (pw + LY.gap), on = id === rank.period;
+        const over = btn(x, LY.top, pw, 56, () => { if (!on) { rank.list = null; loadRanking(null, id); } });
+        rr(x, LY.top, pw, 56, 16, on ? '#fff3c4' : over ? '#fffdf3' : 'rgba(255,248,231,0.8)', on ? CORAL : OUT, on ? 4 : 2.6);
+        text(t, x + pw / 2, LY.top + 29, 26, on ? INK : '#7a6872', 'center', null, F_T); });
+      const tw = (LY.w - LY.gap * 2) / 3, fy = LY.top + 56 + 12; // then the format
       FORMAT_IDS.forEach((id, i) => { const x = LY.m + i * (tw + LY.gap), on = id === rank.mode;
-        const over = btn(x, LY.top, tw, 56, () => { if (!on) { rank.list = null; loadRanking(id); } });
-        rr(x, LY.top, tw, 56, 16, on ? '#fff3c4' : over ? '#fffdf3' : 'rgba(255,248,231,0.8)', on ? CORAL : OUT, on ? 4 : 2.6);
-        text(MODE_KO[id], x + tw / 2, LY.top + 29, 25, on ? INK : '#7a6872', 'center', null, F_T); });
-      const py = LY.top + 56 + LY.gap, ph = 64 + SZ().row * 10 + LY.pad;
+        const over = btn(x, fy, tw, 44, () => { if (!on) { rank.list = null; loadRanking(id); } });
+        rr(x, fy, tw, 44, 14, on ? '#fdf0d0' : over ? '#fffdf3' : 'rgba(255,248,231,0.7)', on ? '#e3a46a' : OUT, on ? 3 : 2.2);
+        text(MODE_KO[id], x + tw / 2, fy + 23, 21, on ? INK : '#7a6872', 'center', null, F_T); });
+      const py = fy + 44 + LY.gap, ph = 64 + SZ().row * 10 + LY.pad;
       panel(LY.m, py, LY.w, ph);
       const L = rank.list, mid = py + ph / 2;
       if (rank.loading && !L) text('불러오는 중…', W / 2, mid, 30, '#7a6872', 'center', null, F_H);
@@ -1409,7 +1536,8 @@ const scenes = {
       }
       sideBtn('뒤로', () => { scene = 'title'; });
       mainBtn(rank.loading ? '불러오는 중…' : '새로고침', () => { if (!rank.loading) loadRanking(); });
-      menuEnd('컴퓨터를 이긴 기록 · 한 사람당 최고 기록');
+      const now = new Date();
+      menuEnd(rank.period === 'month' ? `${now.getFullYear()}년 ${now.getMonth() + 1}월 기록 · 매달 1일에 새로 시작해요` : '지금까지 컴퓨터를 이긴 모든 기록 중 TOP 10');
     },
   },
   select: {
@@ -1418,7 +1546,7 @@ const scenes = {
       if (anyHit(...K_R)) state.sel = (state.sel + 1) % 12; if (anyHit(...K_L)) state.sel = (state.sel + 11) % 12;
       if (anyHit(...K_D)) state.sel = (state.sel + 4) % 12; if (anyHit(...K_U)) state.sel = (state.sel + 8) % 12;
       if (anyHit(...K_R, ...K_L, ...K_D, ...K_U)) tone(660, 0.05, 'sine', 0.15);
-      if (pressed('Escape')) { scene = room ? 'title' : 'mode'; return; }
+      if (pressed('Escape')) { scene = room || setup.practice ? 'title' : 'mode'; return; }
       if (anyHit(...K_OK)) pickAnimal();
     },
     draw() {
@@ -1445,7 +1573,7 @@ const scenes = {
       text(A.ko, tx, by + 16, 34, INK, 'left', null, F_T);
       text(A.note, tx, by + 54, 23, '#c0605a', 'left', null, F_H);
       statBars(a, tx, by + 90);
-      sideBtn('뒤로', () => { scene = room ? 'title' : 'mode'; });
+      sideBtn('뒤로', () => { scene = room || setup.practice ? 'title' : 'mode'; });
       mainBtn('이 선수로 결정', pickAnimal);
       menuEnd(room ? '초대받은 방 ' + room + ' 에 들어갑니다' : '← → ↑ ↓ 로 고르고 Enter');
     },
@@ -1594,7 +1722,7 @@ const scenes = {
           [T ? '스트로크' : 'J', '스트로크 · 공이 몸에 닿을 때', '#ffd0c8', '꾹 눌렀다 놓으면 파워샷'],
           [T ? '슬라이스' : 'K', '슬라이스 · 낮게 깔리는 공', '#cfe8ff', '네트 앞이나 아래 방향과 함께: 드롭샷'],
           [T ? '로브' : 'L', '로브 · 상대 머리 위로 높이', '#e6dbf7'],
-          [T ? '스매시' : 'I', '스매시 · 높은 공 내려찍기', '#fff1b0', '낮은 공엔 실수가 많아요'],
+          [T ? '스매시' : 'J / I', '높은 공은 스트로크로 쳐도 스매시', '#fff1b0', '낮은 공에 무리하면 실수가 많아요'],
           ['서브', (T ? '스트로크' : 'J') + ' 로 토스, 꼭대기에서 한 번 더', '#ffd0c8', '고리가 초록이면 좋은 타이밍'],
           [T ? '치는 순간' : '← / →', '치는 순간 누른 쪽으로 공이 가요', '#efe3d3'],
           ['타이밍', "'딱!' 은 완벽한 타이밍", '#efe3d3', "'빨랐어!' · '늦었어!' 는 공이 흔들려요"],
