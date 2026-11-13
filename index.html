@@ -139,9 +139,11 @@ let touchUI = (window.matchMedia && matchMedia('(pointer: coarse)').matches) || 
 const held = new Map();                    // pointer id -> the key that finger holds
 const stick = { id: null, x: 0, y: 0 };    // the on-screen joystick, -1..1 each way
 const STICK_R = 84, stickC = () => ({ x: 140, y: H - 170 });
-const TOUCH_ZONE = 400, TOUCH_SPLIT = 320; // the strip at the bottom that belongs to the thumbs, and where its two halves meet
-function shotButtons() { // three shots only; a high ball turns the stroke into a smash by itself
-  return [['스트로크', 'KeyJ', W - 128, H - 176, 96, CORAL], ['슬라이스', 'KeyK', 384, H - 142, 64, SKY], ['로브', 'KeyL', 452, H - 318, 64, '#c3a6e8']];
+const TOUCH_ZONE = 450, TOUCH_SPLIT = 330; // the strip at the bottom that belongs to the thumbs, and where its two halves meet
+function shotButtons() { // the four shots, wide apart; a high ball played with the stroke still smashes
+  const cx = W - 120, cy = H - 170, R = 205, B = [['스트로크', 'KeyJ', cx, cy, 92, CORAL]]; // the big one, and three round it on one wide arc
+  [['슬라이스', 'KeyK', SKY, 180], ['로브', 'KeyL', '#c3a6e8', 225], ['스매시', 'KeyI', BALL, 270]].forEach(([t, k, c, a]) => B.push([t, k, cx + Math.cos(a * Math.PI / 180) * R, cy + Math.sin(a * Math.PI / 180) * R, 58, c]));
+  return B;
 }
 function nearestShot(p) { let best = null, bd = 1e9; for (const b of shotButtons()) { const d = Math.hypot(p.x - b[2], p.y - b[3]) - b[4]; if (d < bd) { bd = d; best = b[1]; } } return best; }
 let tapAt = null, lastTap = -1e9;
@@ -169,8 +171,9 @@ for (const n of ['pointerup', 'pointercancel']) addEventListener(n, e => {
 addEventListener('click', e => { if (performance.now() - lastTap < 700) return; const p = toLogical(e), h = hitTest(p); if (!(h && h.key)) clicks.push(p); });
 addEventListener('contextmenu', e => e.preventDefault());
 addEventListener('blur', () => { down.clear(); held.clear(); stick.id = null; stick.x = stick.y = 0; });
-const K_L = ['ArrowLeft', 'KeyA'], K_R = ['ArrowRight', 'KeyD'], K_U = ['ArrowUp', 'KeyW'], K_D = ['ArrowDown', 'KeyS'];
-const K_A = ['KeyJ', 'KeyZ', 'Space'], K_K = ['KeyK', 'KeyX'], K_LOB = ['KeyL', 'KeyC'], K_S = ['KeyI', 'KeyV'], K_OK = ['Enter', 'KeyJ', 'KeyZ', 'Space'];
+// on a PC: the arrow keys move, Q W E R are the four shots (J K L I and Z X C V still work)
+const K_L = ['ArrowLeft'], K_R = ['ArrowRight'], K_U = ['ArrowUp'], K_D = ['ArrowDown'];
+const K_A = ['KeyQ', 'KeyJ', 'KeyZ', 'Space'], K_K = ['KeyW', 'KeyK', 'KeyX'], K_LOB = ['KeyE', 'KeyL', 'KeyC'], K_S = ['KeyR', 'KeyI', 'KeyV'], K_OK = ['Enter', 'KeyQ', 'KeyJ', 'KeyZ', 'Space'];
 
 // ---- Audio: started on first input, mute on M --------------------------------------------
 let audio = null, muted = false;
@@ -496,7 +499,7 @@ function stadium(court) { // each court its own grounds, after the three great o
   }
 }
 function drawBackdrop(ground = '#7fc9ae', hb = 232, wall = true) {
-  if ((scene === 'play' || scene === 'pause' || scene === 'help') && m) stadium(m.court); else gardenBack(hb, wall);
+  if ((scene === 'play' || scene === 'pause' || scene === 'help' || scene === 'lessons') && m) stadium(m.court); else gardenBack(hb, wall);
   ctx.fillStyle = ground; ctx.fillRect(0, hb, W, H - hb);
 }
 function drawCourt() {
@@ -1004,24 +1007,24 @@ function keycap(x, y, k, lit) {
 }
 function drawLegend() { // the shot keys, always on screen; each is also a button for the mouse
   const serving = m.sc.server === view && (m.phase === 'serve' || m.phase === 'toss') && !m.sc.done;
-  const y = H - 108, chips = [['J', serving ? (m.phase === 'serve' ? '토스' : '서브!') : '스트로크', 'KeyJ', K_A], ['K', '슬라이스', 'KeyK', K_K], ['L', '로브', 'KeyL', K_LOB], ['I', '스매시', 'KeyI', K_S]];
+  const y = H - 108, chips = [['Q', serving ? (m.phase === 'serve' ? '토스' : '서브!') : '스트로크', 'KeyJ', K_A], ['W', '슬라이스', 'KeyK', K_K], ['E', '로브', 'KeyL', K_LOB], ['R', '스매시', 'KeyI', K_S]];
   chips.forEach((c, i) => {
     const x = 14 + i * 174, on = anyDown(...c[3]), over = btn(x, y, 168, 46, null, c[2]);
     rr(x, y, 168, 46, 14, on ? '#fff3c4' : over ? '#fffdf3' : 'rgba(255,248,231,0.93)', OUT, 2.6);
     keycap(x + 8, y + 6, c[0], on); text(c[1], x + 50, y + 24, 20, INK, 'left', null, F_T);
   });
   rr(14, H - 56, W - 28, 44, 12, 'rgba(74,61,71,0.82)', null);
-  text('J 꾹: 파워샷 · 네트 앞: 발리 · K + ↓: 드롭샷 · H: 도움말', W / 2, H - 33, 20, CREAM, 'center', null, F_B);
+  text('Q 꾹: 파워샷 · 네트 앞: 발리 · W + ↓: 드롭샷 · H: 도움말', W / 2, H - 33, 20, CREAM, 'center', null, F_B);
 }
 function hintText() {
   if (m.practice) return LESSONS[m.prac.li].tip(touchUI);
   const srv = m.sc.server === view;
-  if (m.phase === 'serve' && srv) return (m.fault ? '세컨드 서브! ' : '') + (touchUI ? '좌우로 자리 잡고, 스트로크로 공 띄우기' : '← → 로 자리 잡고, J 로 공 띄우기');
-  if (m.phase === 'toss' && srv) return touchUI ? '고리가 초록일 때 한 번 더! 빨강이면 폴트' : '고리가 초록일 때 J! 빨강이면 폴트';
+  if (m.phase === 'serve' && srv) return (m.fault ? '세컨드 서브! ' : '') + (touchUI ? '좌우로 자리 잡고, 스트로크로 공 띄우기' : '← → 로 자리 잡고, Q 로 공 띄우기');
+  if (m.phase === 'toss' && srv) return touchUI ? '고리가 초록일 때 한 번 더! 빨강이면 폴트' : '고리가 초록일 때 Q! 빨강이면 폴트';
   if (m.phase === 'rally' || m.phase === 'serve' || m.phase === 'toss') {
-    if (hints.hits < 3) return touchUI ? '조이스틱으로 따라가, 몸에 닿는 순간 스트로크!' : '공을 따라가, 몸에 닿는 순간 J!';
-    if (hints.power < 1) return (touchUI ? '스트로크를' : 'J 를') + ' 꾹 모았다가 공이 올 때 놓으면 파워샷';
-    if (hints.shots < 2) return touchUI ? '슬라이스와 로브, 높은 공엔 스매시!' : 'K 슬라이스 · L 로브 · 높은 공엔 I 스매시';
+    if (hints.hits < 3) return touchUI ? '조이스틱으로 따라가, 몸에 닿는 순간 스트로크!' : '공을 따라가, 몸에 닿는 순간 Q!';
+    if (hints.power < 1) return (touchUI ? '스트로크를' : 'Q 를') + ' 꾹 모았다가 공이 올 때 놓으면 파워샷';
+    if (hints.shots < 2) return touchUI ? '슬라이스와 로브, 높은 공엔 스매시!' : 'W 슬라이스 · E 로브 · 높은 공엔 R 스매시';
   }
   return '';
 }
@@ -1038,7 +1041,7 @@ function drawTouch() { // phones and tablets: a joystick on the left, the four s
     text(label, x, y - (big ? 10 : 0) + (on ? 3 : 0), big ? 32 : 25, INK, 'center', null, F_T);
     if (big) text(serving ? (m.phase === 'serve' ? '공 띄우기' : '꼭대기에서!') : '꾹: 파워샷', x, y + 28 + (on ? 3 : 0), 19, INK, 'center', null, F_B);
   }
-  text('높은 공은 스트로크로 스매시 · 슬라이스 + 아래: 드롭샷', W / 2, H - 24, 20, CREAM, 'center', OUT, F_B);
+  text('꾹 눌렀다 놓으면 파워샷 · 슬라이스 + 아래: 드롭샷', W / 2, H - 24, 20, CREAM, 'center', OUT, F_B);
 }
 function drawMatch() {
   OY = 0;
@@ -1081,20 +1084,26 @@ function drawMatch() {
 // ---- 볼머신장: a ball machine feeds, each lesson teaches one shot, and every shot is explained ----
 const NOINPUT = { dx: 0, dy: 0, a: false, k: false, l: false, s: false };
 const LESSONS = [
-  { name: '기본 스트로크', feed: 'base', goal: 5, tip: t => t ? '공이 몸에 닿는 순간 스트로크!' : '공이 몸에 닿는 순간 J!', ok: r => r.in },
+  { name: '기본 스트로크', feed: 'base', goal: 5, tip: t => t ? '공이 몸에 닿는 순간 스트로크!' : '공이 몸에 닿는 순간 Q!', ok: r => r.in },
   { name: "타이밍 '딱!'", feed: 'base', goal: 3, tip: () => "닿기 직전에 누르면 '딱!' · 공이 더 빨라져요", ok: r => r.in && r.perfect },
   { name: '방향 조절', feed: 'base', goal: 4, tip: t => t ? '치는 순간 조이스틱을 왼쪽·오른쪽으로' : '치는 순간 ← 또는 → 를 함께', ok: r => r.in && r.dir !== 0 },
   { name: '파워샷', feed: 'base', goal: 3, tip: () => '꾹 눌러 모았다가 공이 오면 놓기 · 늦으면 길게 나가요', ok: r => r.in && r.kind === 'power' },
-  { name: '슬라이스 · 드롭샷', feed: 'short', goal: 4, tip: t => t ? '슬라이스는 낮게 · 조이스틱 아래와 함께면 드롭샷' : 'K 슬라이스는 낮게 · ↓ 와 함께면 드롭샷', ok: r => r.in && (r.kind === 'slice' || r.kind === 'drop') },
-  { name: '로브', feed: 'base', goal: 3, tip: t => t ? '로브로 높이 띄워 상대 뒤쪽에' : 'L 로브로 높이 띄워 상대 뒤쪽에', ok: r => r.in && r.kind === 'lob' },
-  { name: '스매시', feed: 'high', goal: 3, tip: t => '높이 뜬 공 아래로 가서 ' + (t ? '스트로크' : 'J') + ' · 자동으로 스매시', ok: r => r.in && r.kind === 'smash' },
-  { name: '서브', feed: 'serve', goal: 3, tip: t => (t ? '스트로크' : 'J') + '로 토스, 공이 꼭대기일 때 한 번 더', ok: r => r.in && r.kind === 'serve' },
+  { name: '슬라이스 · 드롭샷', feed: 'short', goal: 4, tip: t => t ? '슬라이스는 낮게 · 조이스틱 아래와 함께면 드롭샷' : 'W 슬라이스는 낮게 · ↓ 와 함께면 드롭샷', ok: r => r.in && (r.kind === 'slice' || r.kind === 'drop') },
+  { name: '로브', feed: 'base', goal: 3, tip: t => t ? '로브로 높이 띄워 상대 뒤쪽에' : 'E 로브로 높이 띄워 상대 뒤쪽에', ok: r => r.in && r.kind === 'lob' },
+  { name: '스매시', feed: 'high', goal: 3, tip: t => '높이 뜬 공 아래로 가서 ' + (t ? '스매시' : 'R') + ' (스트로크도 돼요)', ok: r => r.in && r.kind === 'smash' },
+  { name: '서브', feed: 'serve', goal: 3, tip: t => (t ? '스트로크' : 'Q') + '로 토스, 공이 꼭대기일 때 한 번 더', ok: r => r.in && r.kind === 'serve' },
   { name: '자유 연습', feed: 'mix', goal: 0, tip: () => '여러 가지 공이 섞여 와요 · 마음껏 쳐 보세요', ok: () => false },
 ];
-function practiceLesson(d) { const P = m.prac; P.li = (P.li + d + LESSONS.length) % LESSONS.length; P.done = 0; P.res = null; m.banner = { text: LESSONS[P.li].name, sub: `레슨 ${P.li + 1} / ${LESSONS.length}`, t: 0, big: 0 }; practiceNext(); tone(660, 0.06, 'sine', 0.15); }
+function practiceLesson(d, to) { const P = m.prac; P.li = to != null ? to : (P.li + d + LESSONS.length) % LESSONS.length; P.done = 0; P.next = P.advance = false; P.res = null; m.banner = { text: LESSONS[P.li].name, sub: `레슨 ${P.li + 1} / ${LESSONS.length}`, t: 0, big: 0 }; practiceNext(); tone(660, 0.06, 'sine', 0.15); }
 function practiceNext() { // the next ball: a serve of your own in the serve lesson, otherwise wait for the machine
   const P = m.prac, L = LESSONS[P.li];
-  if (P.next) { P.next = false; P.li = Math.min(P.li + 1, LESSONS.length - 1); P.done = 0; m.banner = { text: LESSONS[P.li].name, sub: `다음 레슨 · ${P.li + 1} / ${LESSONS.length}`, t: 0, big: 0 }; }
+  if (P.next) { // the lesson is done: say so, wait, then move on
+    P.next = false; P.advance = true; P.res = null; m.phase = 'point'; m.pt = 0; m.pause = 2.6; m.ball.live = false; m.ball.fly = false;
+    const last = P.li === LESSONS.length - 2;
+    m.banner = { text: last ? '모든 레슨 완료!' : '레슨 완료!', sub: last ? '이제 자유 연습으로 마음껏 쳐 보세요' : `다음 레슨 · ${LESSONS[P.li + 1].name}`, t: 0, big: 1 }; fx('point', 0, 1);
+    return;
+  }
+  if (P.advance) { P.advance = false; P.li = Math.min(P.li + 1, LESSONS.length - 1); P.done = 0; }
   const me = m.P[0], mc = m.P[1], b = m.ball;
   m.sc.server = 0; setupPoint(); m.fault = 0;
   mc.x = 0; mc.y = -12.6; setAnim(mc, 'idle');
@@ -1141,7 +1150,7 @@ function practiceResult(call) { // what that shot did, in words, and whether it 
   }
   const L = LESSONS[P.li];
   if (r.in && L.ok(r)) { P.done++; r.count = true; }
-  if (L.goal && P.done >= L.goal && P.li < LESSONS.length - 1) { P.next = true; m.pause = 2.2; m.banner = { text: '레슨 완료!', sub: '다음: ' + LESSONS[P.li + 1].name, t: 0, big: 1 }; fx('point', 0, 1); }
+  if (L.goal && P.done >= L.goal && P.li < LESSONS.length - 1) { P.next = true; m.pause = 1.9; } // the shot's result shows first; the lesson card follows
   P.res = r; P.resT = 0; fx(r.in ? 'bounce' : 'call');
   for (const p of m.P) p.sw = null;
 }
@@ -1159,7 +1168,9 @@ function drawLesson() { // the lesson card where the scoreboard sits in a match
   const P = m.prac, L = LESSONS[P.li], x0 = 12, y0 = 10, w = W - 152, h = 112;
   rr(x0, y0, w, h, 16, '#4a3d47', OUT);
   text(`볼머신장 · 레슨 ${P.li + 1} / ${LESSONS.length}`, x0 + 18, y0 + 22, 17, '#cbbcc4', 'left', null, F_B);
-  text(L.name, x0 + 18, y0 + 58, 30, CREAM, 'left', null, F_T);
+  ctx.font = `30px ${F_T}`; const lw = ctx.measureText(L.name).width;
+  if (btn(x0 + 8, y0 + 36, lw + 54, 44, () => openLessons())) rr(x0 + 8, y0 + 37, lw + 54, 42, 12, 'rgba(255,248,231,0.12)', null);
+  text(L.name + ' ▾', x0 + 18, y0 + 58, 30, CREAM, 'left', null, F_T);
   if (L.goal) for (let i = 0; i < L.goal; i++) { ctx.lineWidth = 2; ctx.strokeStyle = '#cbbcc4'; E(x0 + 26 + i * 24, y0 + 92, 8, 8, i < P.done ? BALL : '#372c34'); }
   else text('목표 없이 자유롭게', x0 + 18, y0 + 92, 16, '#cbbcc4', 'left', null, F_B);
   const bw = 52, by = y0 + (h - 52) / 2; // previous and next lesson
@@ -1175,6 +1186,7 @@ function drawPracticeResult() { // the last shot, explained, under the net
   if (r.why) text(r.why, W / 2, cy + 44, 22, '#c0605a', 'center', null, F_H);
   ctx.globalAlpha = 1;
 }
+function openLessons() { if (scene === 'play') { scene = 'lessons'; tone(660, 0.06, 'sine', 0.15); } }
 function startPractice() { setup.practice = true; setup.mode = 'cpu'; reset(); scene = 'play'; }
 
 // ---- Online: browser to browser over a link. The host runs the match, the guest sends keys ----
@@ -1260,6 +1272,7 @@ async function loadRanking(mode, period) {
 async function sendRecord(nickname) {
   const rec = matchRecord(nickname);
   const r = await fetch(RANK.url, { method: 'POST', headers: rankHeaders({ Prefer: 'return=minimal' }), body: JSON.stringify(rec) });
+  if (r.status === 409) throw new Error('이미 등록된 기록이에요');
   if (!r.ok) { const t = await r.text(); throw new Error(/slow down/.test(t) ? '잠시 후 다시 등록해 주세요' : /not a finished|too fast|too many/.test(t) ? '등록할 수 없는 기록이에요' : '등록하지 못했어요 · 인터넷 연결을 확인해 주세요'); }
   const score = scoreOf(rec);
   const placeOf = async since => { // the place on a board: records that scored more, plus one
@@ -1283,13 +1296,14 @@ nickBox.querySelector('form').onsubmit = async e => {
   const name = nickIn.value.trim().replace(/\s+/g, ' ');
   if (!name) { nickErr.textContent = '닉네임을 입력해 주세요'; return; }
   if ([...name].length > 10) { nickErr.textContent = '10자까지 쓸 수 있어요'; return; }
-  rank.sending = true; nickErr.textContent = '등록하는 중…';
+  if (rank.sending || rank.sent === m) return; // a second tap or Enter while the first is on its way sends nothing
+  rank.sending = true; nickErr.textContent = '등록하는 중…'; nickBox.querySelector('.go').disabled = true;
   try {
     const r = await sendRecord(name); store('zt_nick', name);
     rank.sent = m; rank.msg = `${r.score.toLocaleString()}점 등록!${r.month ? ` 월간 ${r.month}위` : ''}${r.all ? ` · 전체 ${r.all}위` : ''}`;
     closeNick(); tone(880, 0.1, 'triangle', 0.25); tone(1320, 0.18, 'triangle', 0.25, 0.1);
   } catch (err) { nickErr.textContent = err.message; }
-  rank.sending = false;
+  rank.sending = false; nickBox.querySelector('.go').disabled = false;
 };
 
 function courtPic(x, y, w, h, id) { // a court seen from above with its lines and the net, for the court cards
@@ -1382,7 +1396,7 @@ function computeLayout() { // where the garden ends, the title row, the content 
   LY.top = end - clamp(room, 600, 680); LY.titleY = LY.top - 58; LY.sb = LY.titleY - 54; // the garden takes what the content does not need
 }
 // fixed sizes: a card is as tall as what it holds, never stretched to fill
-const SZ = () => ({ format: 150, mode: 116, court: 184, cell: LY.tall ? 120 : 96, info: 262, row: LY.tall ? 46 : 38, result: 448, lobby: 500 });
+const SZ = () => ({ format: 150, format4: 132, mode: 116, court: 184, cell: LY.tall ? 120 : 96, info: 262, row: LY.tall ? 46 : 38, result: 448, lobby: 500 });
 
 function menuBegin(title, home) {
   OY = 0; computeLayout();
@@ -1396,7 +1410,7 @@ function menuEnd(foot) { if (foot) text(foot, W / 2, LY.foot, 20, '#4f6f63', 'ce
 const contentEnd = () => LY.bot - LY.gap * 2;
 const cardH = n => (contentEnd() - LY.top - LY.gap * (n - 1)) / n; // n cards filling the content area
 function panel(x, y, w, h) { rr(x, y, w, h, 24, 'rgba(255,248,231,0.96)', OUT); }
-function card(x, y, w, h, fn, on) { const over = btn(x, y, w, h, fn); rr(x, y + 5, w, h, 20, OUT, null); rr(x, y, w, h, 20, on ? '#fff3c4' : over ? '#fffdf3' : 'rgba(255,248,231,0.96)', on ? CORAL : OUT, on ? 5 : 3); }
+function card(x, y, w, h, fn, on, fill) { const over = btn(x, y, w, h, fn); rr(x, y + 5, w, h, 20, OUT, null); rr(x, y, w, h, 20, on ? '#fff3c4' : over ? '#fffdf3' : fill || 'rgba(255,248,231,0.96)', on ? CORAL : OUT, on ? 5 : 3); }
 function sideBtn(label, fn) { button(label, LY.m, LY.bot, LY.side, LY.btnH, fn, { size: 28 }); }
 function mainBtn(label, fn) { button(label, LY.m + LY.side + LY.gap, LY.bot, LY.w - LY.side - LY.gap, LY.btnH, fn, { size: 31, fill: '#fff3c4' }); }
 function wideBtn(label, fn) { button(label, LY.m, LY.bot, LY.w, LY.btnH, fn, { size: 31, fill: '#fff3c4' }); }
@@ -1418,7 +1432,11 @@ function statBars(a, x, y) {
   });
 }
 // the way in: format, then who you play, then your animal, then the court (an invited guest only picks an animal)
-function pickFormat(i) { tone(880, 0.12, 'triangle', 0.25); setup.practice = false; setup.format = FORMAT_IDS[i]; rank.mode = setup.format; scene = 'mode'; }
+function pickFormat(i) {
+  tone(880, 0.12, 'triangle', 0.25);
+  if (i >= FORMAT_IDS.length) { setup.practice = true; scene = 'select'; return; } // the ball machine: pick an animal and a court, then practise
+  setup.practice = false; setup.format = FORMAT_IDS[i]; rank.mode = setup.format; scene = 'mode';
+}
 function pickMode(i) { tone(880, 0.12, 'triangle', 0.25); setup.pending = i; scene = 'select'; }
 function pickCourt(i) {
   tone(880, 0.12, 'triangle', 0.25); setup.court = COURT_IDS[i];
@@ -1471,7 +1489,7 @@ const scenes = {
     update(dt) { state.t += dt; if (anyHit(...K_OK)) { setup.practice = false; scene = room ? 'select' : 'format'; } },
     draw() {
       menuBegin();
-      const rows = [['이동', '방향키 / WASD'], ['스트로크', 'J  (꾹 눌렀다 놓으면 파워샷)'], ['슬라이스 · 로브 · 스매시', 'K  ·  L  ·  I'], ['일시정지 · 소리 · 낙하지점', 'P  ·  M  ·  G']];
+      const rows = [['이동', '방향키 ← → ↑ ↓'], ['스트로크', 'Q  (꾹 눌렀다 놓으면 파워샷)'], ['슬라이스 · 로브 · 스매시', 'W  ·  E  ·  R'], ['일시정지 · 소리 · 낙하지점', 'P  ·  M  ·  G']];
       const P = LY.tall ? 30 : 22, step = LY.tall ? 44 : 38, ph = P * 2 + step * 6, pt = contentEnd() - ph; // six lines, evenly spaced, the same margin above and below
       if (LY.tall) { const r0 = LY.sb + 20, free = Math.max(0, pt - 16 - r0 - 330); drawTitleShow(state.t, r0 + 70 + free * 0.3, pt - 22 - free * 0.25); }
       else drawTitleShow(state.t, 136, Math.min(412, pt - 30));
@@ -1481,12 +1499,7 @@ const scenes = {
       rows.forEach((c, i) => { text(c[0], 334, ly(i + 1), 21, '#7a6872', 'right', null, F_B); text(c[1], 352, ly(i + 1), 22, INK, 'left', null, F_B); });
       text(touchUI ? '모바일에서는 조이스틱과 버튼으로 해요' : '버튼은 마우스로 눌러도 돼요', W / 2, ly(5), 23, '#3d9be0', 'center', null, F_H);
       if (room) wideBtn('초대받은 방에 들어가기', () => { scene = 'select'; });
-      else { // three equal buttons: the ranking, the ball machine, the match
-        const bw = (LY.w - LY.gap * 2) / 3;
-        button('랭킹', LY.m, LY.bot, bw, LY.btnH, () => { scene = 'ranking'; loadRanking(); }, { size: 27 });
-        button('볼머신장 가기', LY.m + bw + LY.gap, LY.bot, bw, LY.btnH, () => { setup.practice = true; scene = 'select'; }, { size: 25, fill: '#dff1ff' });
-        button('시작하기', LY.m + (bw + LY.gap) * 2, LY.bot, bw, LY.btnH, () => { setup.practice = false; scene = 'format'; }, { size: 29, fill: '#fff3c4' });
-      }
+      else { sideBtn('랭킹', () => { scene = 'ranking'; loadRanking(); }); mainBtn('시작하기', () => { scene = 'format'; }); }
       text('© 2026 IGNUZNIM. All rights reserved.', W / 2, LY.copy, 16, 'rgba(59,51,64,0.6)', 'center', null, F_B);
       menuEnd('Enter 를 눌러도 시작해요');
     },
@@ -1546,7 +1559,7 @@ const scenes = {
       if (anyHit(...K_R)) state.sel = (state.sel + 1) % 12; if (anyHit(...K_L)) state.sel = (state.sel + 11) % 12;
       if (anyHit(...K_D)) state.sel = (state.sel + 4) % 12; if (anyHit(...K_U)) state.sel = (state.sel + 8) % 12;
       if (anyHit(...K_R, ...K_L, ...K_D, ...K_U)) tone(660, 0.05, 'sine', 0.15);
-      if (pressed('Escape')) { scene = room || setup.practice ? 'title' : 'mode'; return; }
+      if (pressed('Escape')) { scene = room ? 'title' : setup.practice ? 'format' : 'mode'; return; }
       if (anyHit(...K_OK)) pickAnimal();
     },
     draw() {
@@ -1573,7 +1586,7 @@ const scenes = {
       text(A.ko, tx, by + 16, 34, INK, 'left', null, F_T);
       text(A.note, tx, by + 54, 23, '#c0605a', 'left', null, F_H);
       statBars(a, tx, by + 90);
-      sideBtn('뒤로', () => { scene = room || setup.practice ? 'title' : 'mode'; });
+      sideBtn('뒤로', () => { scene = room ? 'title' : setup.practice ? 'format' : 'mode'; });
       mainBtn('이 선수로 결정', pickAnimal);
       menuEnd(room ? '초대받은 방 ' + room + ' 에 들어갑니다' : '← → ↑ ↓ 로 고르고 Enter');
     },
@@ -1632,7 +1645,7 @@ const scenes = {
   format: {
     update(dt) {
       state.t += dt; if (state.fm == null) state.fm = FORMAT_IDS.indexOf(setup.format);
-      if (anyHit(...K_D)) state.fm = (state.fm + 1) % 3; if (anyHit(...K_U)) state.fm = (state.fm + 2) % 3;
+      if (anyHit(...K_D)) state.fm = (state.fm + 1) % 4; if (anyHit(...K_U)) state.fm = (state.fm + 3) % 4;
       if (anyHit(...K_D, ...K_U)) tone(660, 0.05, 'sine', 0.15);
       if (pressed('Escape')) { scene = 'title'; return; }
       if (anyHit(...K_OK)) pickFormat(state.fm);
@@ -1640,15 +1653,17 @@ const scenes = {
     draw() {
       if (state.fm == null) state.fm = FORMAT_IDS.indexOf(setup.format);
       menuBegin('경기 방식을 골라 주세요', true);
-      const how = { flash: '10점을 먼저 따면 승리 (2점 차)', short: '4게임 먼저 · 40-40이면 한 포인트로 결정', regular: '세트 3개를 먼저 따면 승리' };
-      const ch = SZ().format;
-      FORMAT_IDS.forEach((id, i) => {
-        const F = FORMATS[id], y = LY.top + i * (ch + LY.gap), x = LY.m + LY.pad, by = y + LY.pad - 5; // three lines from the card's padding
-        card(LY.m, y, LY.w, ch, () => pickFormat(i), i === state.fm);
-        text(F.ko, x, by + 20, 40, INK, 'left', null, F_T);
-        if (id === 'short') { rr(x + 150, by + 2, 88, 36, 18, CORAL, OUT, 2.2); text('추천', x + 194, by + 20, 21, CREAM, 'center', null, F_T); }
-        text(rules(id).sub, x, by + 66, 23, '#c0605a', 'left', null, F_H);
-        text(how[id], x, by + 102, 21, '#7a6872', 'left', null, F_B);
+      const how = { flash: '10점을 먼저 따면 승리 (2점 차)', short: '4게임 먼저 · 40-40이면 한 포인트로 결정', regular: '세트 3개를 먼저 따면 승리', practice: '샷마다 타이밍 · 속도 · 떨어진 곳을 알려 줘요' };
+      const ch = SZ().format4, ids = [...FORMAT_IDS, 'practice'];
+      ids.forEach((id, i) => {
+        const y = LY.top + i * (ch + LY.gap), x = LY.m + LY.pad, by = y + LY.pad - 8; // three lines from the card's padding
+        const name = id === 'practice' ? '볼머신장 가기' : FORMATS[id].ko, sub = id === 'practice' ? '볼머신과 레슨 9개 · 공 치는 법 익히기' : rules(id).sub;
+        card(LY.m, y, LY.w, ch, () => pickFormat(i), i === state.fm, id === 'practice' ? '#eef7ff' : null);
+        text(name, x, by + 20, 36, INK, 'left', null, F_T);
+        ctx.font = `36px ${F_T}`; const nw = ctx.measureText(name).width, tag = id === 'short' ? '추천' : id === 'practice' ? '연습모드' : '';
+        if (tag) { const tw = tag.length * 21 + 26; rr(x + nw + 14, by + 3, tw, 34, 17, id === 'short' ? CORAL : SKY, OUT, 2.2); text(tag, x + nw + 14 + tw / 2, by + 20, 20, CREAM, 'center', null, F_T); }
+        text(sub, x, by + 60, 22, id === 'practice' ? '#3d7fc0' : '#c0605a', 'left', null, F_H);
+        text(how[id], x, by + 92, 20, '#7a6872', 'left', null, F_B);
       });
       sideBtn('뒤로', () => { scene = 'title'; });
       menuEnd('↑ ↓ 로 고르고 Enter · 랭킹은 경기 방식마다 따로 집계돼요');
@@ -1700,6 +1715,28 @@ const scenes = {
     },
     draw() { drawMatch(); },
   },
+  lessons: { // the list of lessons, over the court: tap one to go there
+    update(dt) {
+      for (let i = 0; i < LESSONS.length; i++) if (pressed('Digit' + (i + 1))) { practiceLesson(0, i); scene = 'play'; return; }
+      if (pressed('Escape') || pressed('KeyP')) scene = 'play';
+    },
+    draw() {
+      drawMatch(); hot = []; OY = 0;
+      ctx.fillStyle = 'rgba(59,51,64,0.62)'; ctx.fillRect(0, 0, W, H);
+      const rh = 66, ph = 96 + LESSONS.length * rh + 108, top = Math.round(H / 2 - ph / 2);
+      rr(LY.m, top, LY.w, ph, 26, 'rgba(255,248,231,0.98)', OUT, 4);
+      text('레슨 고르기', W / 2, top + 48, 32, INK, 'center', null, F_T);
+      LESSONS.forEach((L, i) => {
+        const y = top + 88 + i * rh, on = i === m.prac.li, x = LY.m + LY.pad;
+        const over = btn(x, y, LY.w - LY.pad * 2, rh - 10, () => { practiceLesson(0, i); scene = 'play'; });
+        rr(x, y, LY.w - LY.pad * 2, rh - 10, 14, on ? '#fff3c4' : over ? '#fffdf3' : '#f3e8da', on ? CORAL : OUT, on ? 3.4 : 2);
+        text(`${i + 1}`, x + 32, y + (rh - 10) / 2, 24, CORAL, 'center', null, F_N);
+        text(L.name, x + 64, y + (rh - 10) / 2, 25, INK, 'left', null, F_T);
+        text(L.goal ? `목표 ${L.goal}개` : '목표 없음', x + LY.w - LY.pad * 2 - 20, y + (rh - 10) / 2, 19, '#7a6872', 'right', null, F_B);
+      });
+      button('닫기', W / 2 - 150, top + ph - 88, 300, 64, () => { scene = 'play'; }, { size: 27, fill: '#fff3c4' });
+    },
+  },
   help: {
     update(dt) {
       if (m.online) { playCore(dt); if (scene !== 'help') return; }
@@ -1718,12 +1755,12 @@ const scenes = {
       const T = touchUI;
       if (helpPage === 0) {
         helpRows([
-          [T ? '조이스틱' : '← → ↑ ↓', '선수를 움직여요', '#dbe9f7', T ? '' : 'WASD 도 돼요'],
-          [T ? '스트로크' : 'J', '스트로크 · 공이 몸에 닿을 때', '#ffd0c8', '꾹 눌렀다 놓으면 파워샷'],
-          [T ? '슬라이스' : 'K', '슬라이스 · 낮게 깔리는 공', '#cfe8ff', '네트 앞이나 아래 방향과 함께: 드롭샷'],
-          [T ? '로브' : 'L', '로브 · 상대 머리 위로 높이', '#e6dbf7'],
-          [T ? '스매시' : 'J / I', '높은 공은 스트로크로 쳐도 스매시', '#fff1b0', '낮은 공에 무리하면 실수가 많아요'],
-          ['서브', (T ? '스트로크' : 'J') + ' 로 토스, 꼭대기에서 한 번 더', '#ffd0c8', '고리가 초록이면 좋은 타이밍'],
+          [T ? '조이스틱' : '← → ↑ ↓', '선수를 움직여요', '#dbe9f7'],
+          [T ? '스트로크' : 'Q', '스트로크 · 공이 몸에 닿을 때', '#ffd0c8', '꾹 눌렀다 놓으면 파워샷'],
+          [T ? '슬라이스' : 'W', '슬라이스 · 낮게 깔리는 공', '#cfe8ff', '네트 앞이나 아래 방향과 함께: 드롭샷'],
+          [T ? '로브' : 'E', '로브 · 상대 머리 위로 높이', '#e6dbf7'],
+          [T ? '스매시' : 'R', '스매시 · 높은 공 내려찍기', '#fff1b0', '높은 공은 스트로크로 쳐도 스매시'],
+          ['서브', (T ? '스트로크' : 'Q') + ' 로 토스, 꼭대기에서 한 번 더', '#ffd0c8', '고리가 초록이면 좋은 타이밍'],
           [T ? '치는 순간' : '← / →', '치는 순간 누른 쪽으로 공이 가요', '#efe3d3'],
           ['타이밍', "'딱!' 은 완벽한 타이밍", '#efe3d3', "'빨랐어!' · '늦었어!' 는 공이 흔들려요"],
         ], 140, 66, 130);
@@ -1753,7 +1790,7 @@ const scenes = {
       if (m.online) { playCore(dt); if (scene !== 'pause') return; }
       if (pressed('KeyP') || pressed('Escape')) scene = 'play';
       if (pressed('KeyH')) openHelp(0);
-      if (pressed('KeyQ')) goHome();
+      if (pressed('Backspace')) goHome();
     },
     draw() {
       drawMatch(); hot = []; OY = 0;
@@ -1764,7 +1801,7 @@ const scenes = {
       text(m.online ? '온라인 경기는 멈추지 않아요' : '숨 한번 고르고 가요', W / 2, cy - 78, 24, '#c0605a', 'center', null, F_H);
       button('계속하기', 170, cy - 36, 380, 72, () => { scene = 'play'; }, { size: 30, fill: '#fff3c4' });
       button('홈으로', 170, cy + 58, 380, 72, goHome, { size: 28 });
-      text('P 계속하기 · Q 홈으로 · H 도움말', W / 2, cy + 162, 20, '#7a6872', 'center', null, F_B);
+      text('P 계속하기 · Backspace 홈으로 · H 도움말', W / 2, cy + 162, 20, '#7a6872', 'center', null, F_B);
     },
   },
   results: {

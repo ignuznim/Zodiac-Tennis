@@ -55,3 +55,10 @@ grant select (id, created_at, nickname, mode, level, animal, opponent, court, se
   on public.scores to anon, authenticated;
 grant insert (nickname, mode, level, animal, opponent, court, sets, pts_for, pts_against, sweet, duration_s, client_id)
   on public.scores to anon, authenticated;
+
+-- One record per match: a double tap once sent the same win twice. Drop the repeats, keep the first,
+-- and let the database refuse a repeat from now on (the game reads the refusal as "already sent").
+delete from public.scores a using public.scores b
+ where a.id > b.id and a.client_id = b.client_id and a.mode = b.mode and a.score = b.score
+   and a.duration_s = b.duration_s and a.pts_for = b.pts_for and a.pts_against = b.pts_against;
+create unique index if not exists scores_one_per_match on public.scores (client_id, mode, score, duration_s, pts_for, pts_against);
