@@ -69,9 +69,10 @@ create table if not exists public.achievements (
   daily  boolean not null default false
 );
 insert into public.achievements (code, reward, daily) values
-  ('daily', 1, true), ('first_win', 3, false), ('win_easy', 1, false), ('win_normal', 2, false), ('win_hard', 3, false),
-  ('win_flash', 1, false), ('win_short', 2, false), ('win_regular', 5, false), ('lessons_all', 3, false),
-  ('sweet_50', 2, false), ('sweet_300', 4, false), ('aces_10', 2, false), ('ranked', 1, false)
+  ('daily', 1, true), ('first_win', 1, false), ('win_easy', 1, false), ('win_normal', 1, false), ('win_hard', 2, false),
+  ('win_flash', 1, false), ('win_short', 1, false), ('win_regular', 3, false), ('lessons_all', 2, false), ('ranked', 1, false),
+  ('sweet_50', 1, false), ('aces_10', 1, false), ('wins_10', 2, false), ('sweet_300', 2, false), ('hard_5', 3, false),
+  ('rally_30', 2, false), ('wins_50', 5, false), ('sweet_1000', 5, false)
 on conflict (code) do update set reward = excluded.reward, daily = excluded.daily;
 
 -- ---- One profile per account ----

@@ -70,7 +70,7 @@ const events = []; // window.game.events: anything the game wants a run to see
 
 // ---- Screen ---------------------------------------------------------------------------
 const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
+let ctx = canvas.getContext('2d'); // let: a long list is drawn once into its own canvas, then only moved
 let fitKey = '';
 function viewBox() { // the part of the screen really visible: the visual viewport (mobile toolbars), less the notch and home bar
   const vv = window.visualViewport, zoomed = vv && Math.abs(vv.scale - 1) > 0.01; // a pinch zoom never shrinks the game
@@ -160,10 +160,12 @@ addEventListener('pointerdown', e => {
   tapAt = { id: e.pointerId, x: p.x, y: p.y };
 });
 addEventListener('pointermove', e => { const p = toLogical(e); if (e.pointerId === stick.id) stickMove(p); else mouse = p;
-  if (scene === 'closet' && closet.drag && closet.drag.id === e.pointerId) closet.scroll = clamp(closet.drag.s - (p.y - closet.drag.y), 0, closet.max); });
-addEventListener('pointerdown', e => { if (scene === 'closet') { const p = toLogical(e); if (p.y > closet.v0 && p.y < closet.v1) closet.drag = { id: e.pointerId, y: p.y, s: closet.scroll }; } });
-addEventListener('pointerup', e => { if (closet.drag && closet.drag.id === e.pointerId) closet.drag = null; });
-addEventListener('wheel', e => { if (scene !== 'closet') return; closet.scroll = clamp(closet.scroll + e.deltaY * W / canvas.getBoundingClientRect().width, 0, closet.max); e.preventDefault(); }, { passive: false });
+  const S = activeScroll(); if (S && S.drag && S.drag.id === e.pointerId) { // follow the finger, and note its speed for the glide after
+    const now = performance.now(), dt = Math.max(1, now - S.drag.t) / 1000; S.vel = 0.6 * S.vel + 0.4 * (S.drag.ly - p.y) / dt; S.drag.ly = p.y; S.drag.t = now;
+    S.scroll = clamp(S.drag.s - (p.y - S.drag.y), 0, S.max); } });
+addEventListener('pointerdown', e => { const S = activeScroll(); if (S) { const p = toLogical(e); if (p.y > S.v0 && p.y < S.v1) { S.drag = { id: e.pointerId, y: p.y, ly: p.y, s: S.scroll, t: performance.now() }; S.vel = 0; } } });
+for (const n of ['pointerup', 'pointercancel']) addEventListener(n, e => { for (const k in SCR) { const S = SCR[k]; if (S.drag && S.drag.id === e.pointerId) { if (performance.now() - S.drag.t > 80) S.vel = 0; S.drag = null; } } });
+addEventListener('wheel', e => { const S = activeScroll(); if (!S) return; S.vel = 0; S.scroll = clamp(S.scroll + e.deltaY * W / canvas.getBoundingClientRect().width, 0, S.max); e.preventDefault(); }, { passive: false });
 for (const n of ['pointerup', 'pointercancel']) addEventListener(n, e => {
   const k = held.get(e.pointerId);
   if (k) { held.delete(e.pointerId); if (![...held.values()].includes(k)) down.delete(k); }
@@ -315,6 +317,7 @@ function drawHead(A, front, t) {
 }
 function drawRacket(A, hand, an, t, accent) {
   let hx = hand * 21, hy = -40, ang = hand * 0.65;
+  if (A.id === 'snake') { hx = hand * 36; hy = -24; } // no hands: the tail's tip holds it
   const u = Math.min(1, t / 0.2);
   if (an === 'hit' || an === 'lob') ang = hand * (2.5 - 3.9 * u);
   else if (an === 'drop') { ang = hand * (2.9 - 1.6 * u); hy = -30; }
@@ -355,7 +358,7 @@ function drawAnimal(a, X, Y, k, o) {
     ctx.translate(0, -bob);
     E(0, -8, 26, 10, A.c); E(0, -22, 20, 10, A.c); E(0, -36, 14, 12, A.c);
     if (front) E(0, -30, 8, 12, A.l, 0, true);
-    drawTail(A, -hand, front);
+    curve(hand * 18, -6, hand * 46, -2, hand * 36, -24, A.c, 8); E(hand * 36, -24, 4.5, 4.5, A.c); // the tail curls up to hold the racket
     ctx.save(); ctx.beginPath(); ctx.rect(-14, -46, 28, 7); ctx.clip(); band(-14, -46, 28, 7); ctx.restore(); rr(-14, -46, 28, 7, 3, null, OUT, 2.2);
   } else {
     if (front) drawTail(A, -hand, true);
@@ -1445,22 +1448,27 @@ const ITEMS = { // the same catalogue as the server's items table; look is how i
 const item = id => { const q = ITEMS[id]; return q && { id, slot: q[0], grade: q[1], stat: q[2], amt: q[3], name: q[4], look: q[5] }; };
 const STAT_NAME = { power: '파워', stamina: '체력', spin: '스핀', reflex: '순발력', speed: '스피드' };
 function gearBonus(ids) { const b = {}; for (const id of Object.values(ids || {})) { const it = item(id); if (it) b[it.stat] = (b[it.stat] || 0) + it.amt; } return b; }
-const ACH = [ // the achievements: what counts, the goal, and the server's reward
-  ['daily', '오늘의 출석', '하루에 한 번 받을 수 있어요', () => [1, 1]],
+const ACH = [ // the achievements: what counts, the goal; the server holds the reward
+  ['daily', '오늘의 출석', '하루에 한 번', () => [1, 1]],
   ['first_win', '첫 승리', '컴퓨터를 처음 이기기', p => [p.wins || 0, 1]],
   ['win_easy', '쉬움 정복', '쉬움 컴퓨터 이기기', p => [p.win_easy || 0, 1]],
   ['win_normal', '보통 정복', '보통 컴퓨터 이기기', p => [p.win_normal || 0, 1]],
   ['win_hard', '어려움 정복', '어려움 컴퓨터 이기기', p => [p.win_hard || 0, 1]],
   ['win_flash', '번개전 승리', '번개전에서 이기기', p => [p.win_flash || 0, 1]],
   ['win_short', '단판전 승리', '단판전에서 이기기', p => [p.win_short || 0, 1]],
-  ['win_regular', '정규전 승리', '정규전(5세트)에서 이기기', p => [p.win_regular || 0, 1]],
-  ['lessons_all', '볼머신장 수료', '볼머신장 레슨 모두 마치기', p => [p.lessons || 0, 1]],
-  ['sweet_50', "'딱!' 50번", '스위트 스폿 50번 맞히기', p => [p.sweet || 0, 50]],
-  ['sweet_300', "'딱!' 300번", '스위트 스폿 300번 맞히기', p => [p.sweet || 0, 300]],
-  ['aces_10', '에이스 10개', '서브 에이스 10번', p => [p.aces || 0, 10]],
+  ['win_regular', '정규전 승리', '5세트 정규전에서 이기기', p => [p.win_regular || 0, 1]],
+  ['lessons_all', '볼머신장 수료', '레슨 모두 마치기', p => [p.lessons || 0, 1]],
   ['ranked', '랭킹 데뷔', '랭킹에 처음 기록 남기기', p => [p.ranked || 0, 1]],
+  ['sweet_50', "'딱!' 50번", '스위트 스폿 50번', p => [p.sweet || 0, 50]],
+  ['aces_10', '에이스 10개', '서브 에이스 10번', p => [p.aces || 0, 10]],
+  ['wins_10', '10승', '컴퓨터를 10번 이기기', p => [p.wins || 0, 10]],
+  ['sweet_300', "'딱!' 300번", '스위트 스폿 300번', p => [p.sweet || 0, 300]],
+  ['hard_5', '어려움 5승', '어려움 컴퓨터를 5번 이기기', p => [p.win_hard || 0, 5]],
+  ['rally_30', '긴 랠리', '한 포인트에 30번 주고받기', p => [p.rally || 0, 30]],
+  ['wins_50', '50승', '컴퓨터를 50번 이기기', p => [p.wins || 0, 50]],
+  ['sweet_1000', "'딱!' 1000번", '스위트 스폿 1000번', p => [p.sweet || 0, 1000]],
 ];
-const ACH_REWARD = { daily: 1, first_win: 3, win_easy: 1, win_normal: 2, win_hard: 3, win_flash: 1, win_short: 2, win_regular: 5, lessons_all: 3, sweet_50: 2, sweet_300: 4, aces_10: 2, ranked: 1 };
+const ACH_REWARD = { daily: 1, first_win: 1, win_easy: 1, win_normal: 1, win_hard: 2, win_flash: 1, win_short: 1, win_regular: 3, lessons_all: 2, ranked: 1, sweet_50: 1, aces_10: 1, wins_10: 2, sweet_300: 2, hard_5: 3, rally_30: 2, wins_50: 5, sweet_1000: 5 };
 const acct = { sb: null, user: null, prof: null, inv: {}, busy: false, msg: '', msgT: 0, wtab: 'gacha', wslot: 'hat', g: { phase: 'idle', t: 0, res: null, err: '' } };
 let prog = {}; try { prog = JSON.parse(store('zt_prog') || '{}') || {}; } catch (e) { prog = {}; }
 const progOf = () => { const s = (acct.prof && acct.prof.progress) || {}, o = Object.assign({}, prog); for (const k in s) o[k] = Math.max(o[k] || 0, s[k]); return o; };
@@ -1579,9 +1587,66 @@ function iconButton(kind, label, x, y, w, h, fn, dot) { // a small button: a pic
 }
 // ---- 옷장: what you wear on top, every item below; only what you own shows its shape ----
 let closetBack = 'select';
-const closet = { scroll: 0, max: 0, sel: null, v0: 0, v1: 0, drag: null };
+const closet = { sel: null };
+const mkScroll = () => ({ scroll: 0, max: 0, v0: 0, v1: 0, drag: null, vel: 0, cache: null, key: '', rects: [], h: 0, r: 0 });
+const SCR = { closet: mkScroll(), ach: mkScroll() };
+function activeScroll() { return scene === 'closet' ? SCR.closet : scene === 'wardrobe' && acct.wtab === 'ach' && acct.prof ? SCR.ach : null; }
+function scrollStep(dt) { // after a flick the list glides on and slows
+  const S = activeScroll(); if (!S || S.drag) return;
+  if (Math.abs(S.vel) > 8) { S.scroll = clamp(S.scroll + S.vel * dt, 0, S.max); S.vel *= Math.exp(-4.5 * dt); if (S.scroll <= 0 || S.scroll >= S.max) S.vel = 0; } else S.vel = 0;
+}
+function scrollView(S, v0, v1, key, height, draw) { // draw() paints the content from y 0 once; afterwards only the visible slice is copied
+  S.v0 = v0; S.v1 = v1; const r = canvas.width / W;
+  if (!S.cache || S.key !== key || S.r !== r) {
+    const c = S.cache && S.r === r && S.cache.height >= Math.ceil(height * r) ? S.cache : document.createElement('canvas');
+    c.width = Math.ceil(W * r); c.height = Math.ceil(height * r);
+    const keep = [ctx, hot, OY, mouse]; ctx = c.getContext('2d'); ctx.setTransform(r, 0, 0, r, 0, 0); hot = []; OY = 0; mouse = { x: -1, y: -1 };
+    try { S.h = draw(); } finally { S.rects = hot; [ctx, hot, OY, mouse] = keep; }
+    S.cache = c; S.key = key; S.r = r;
+  }
+  S.max = Math.max(0, S.h - (v1 - v0)); S.scroll = clamp(S.scroll, 0, S.max);
+  const top = Math.round(S.scroll * r), rows = Math.min(S.cache.height - top, Math.round((v1 - v0) * r));
+  if (rows > 0) ctx.drawImage(S.cache, 0, top, S.cache.width, rows, 0, v0, W, rows / r);
+  for (const h of S.rects) { const a = Math.max(h.y - S.scroll + v0, v0), b = Math.min(h.y + h.h - S.scroll + v0, v1); if (b > a) hot.push({ x: h.x, y: a, w: h.w, h: b - a, fn: h.fn }); }
+  if (S.max > 0) { const th = Math.max(40, (v1 - v0) * (v1 - v0) / S.h), ty = v0 + (v1 - v0 - th) * S.scroll / S.max; rr(LY.m + LY.w + 10, ty, 6, th, 3, 'rgba(74,61,71,0.35)', null); }
+  if (S.scroll < S.max - 4) { const g = ctx.createLinearGradient(0, v1 - 36, 0, v1); g.addColorStop(0, 'rgba(162,227,200,0)'); g.addColorStop(1, 'rgba(162,227,200,0.9)'); ctx.fillStyle = g; ctx.fillRect(LY.m - 10, v1 - 36, LY.w + 20, 36); }
+}
 const SHADOW = 'filter' in CanvasRenderingContext2D.prototype; // a true silhouette where the browser can draw one
-function openCloset(back) { if (!acct.user) { toast('로그인하면 옷장을 쓸 수 있어요'); return; } closetBack = back; closet.sel = null; closet.scroll = 0; scene = 'closet'; tone(660, 0.06, 'sine', 0.15); }
+function drawClosetList(gear, eh, chh) { // the closet's whole list, from y 0: worn gear big, then each slot four across
+  let y = 0;
+  text('장착 중', LY.m, y + 16, 24, INK, 'left', null, F_T); y += 38;
+  const ew = (LY.w - 14) / 2;
+  SLOTS.forEach(([id, ko], i) => { const x = LY.m + (i % 2) * (ew + 14), yy = y + Math.floor(i / 2) * (eh + 14), it = item(gear[id]);
+    btn(x, yy, ew, eh, () => { if (it) { closet.sel = it.id; equip(id, null); } });
+    rr(x, yy + 4, ew, eh, 18, OUT, null); rr(x, yy, ew, eh, 18, it ? '#ffffff' : 'rgba(255,248,231,0.85)', it ? GRADE[it.grade].c : '#cdbfb3', it ? 4.5 : 2.6);
+    if (it) { ctx.save(); ctx.beginPath(); ctx.rect(x + 6, yy + 6, 104, eh - 12); ctx.clip(); itemIcon(it.id, x + 58, yy + eh / 2 + 4, 78); ctx.restore();
+      text(ko, x + 118, yy + 26, 17, '#7a6872', 'left', null, F_B); gradeChip(it.grade, x + ew - 60, yy + 12, 26);
+      text(it.name, x + 118, yy + 62, 22, INK, 'left', null, F_T); text(`${STAT_NAME[it.stat]} +${it.amt}`, x + 118, yy + 96, 19, GRADE[it.grade].c, 'left', null, F_T); }
+    else { text(ko, x + ew / 2, yy + eh / 2 - 14, 22, '#7a6872', 'center', null, F_T); text('비어 있음', x + ew / 2, yy + eh / 2 + 18, 18, '#a8999f', 'center', null, F_B); }
+  });
+  y += 2 * (eh + 14) + 16;
+  const cw = (LY.w - 12 * 3) / 4;
+  SLOTS.forEach(([sid, ko]) => {
+    const ids = Object.keys(ITEMS).filter(k => ITEMS[k][0] === sid).sort((p, q) => ITEMS[p][1] - ITEMS[q][1]), got = ids.filter(id => acct.inv[id]).length;
+    text(ko, LY.m, y + 18, 24, INK, 'left', null, F_T); text(`${got} / ${ids.length}`, LY.m + LY.w, y + 18, 19, '#7a6872', 'right', null, F_N); y += 40;
+    ids.forEach((id, n) => { const it = item(id), have = acct.inv[id] || 0, on = gear[sid] === id, x = LY.m + (n % 4) * (cw + 12), yy = y + Math.floor(n / 4) * (chh + 12);
+      btn(x, yy, cw, chh, () => { closet.sel = id; if (!have) toast('뽑기 기계에서 얻을 수 있어요'); else equip(sid, on ? null : id); });
+      rr(x, yy, cw, chh, 16, have ? (on ? '#fff3c4' : closet.sel === id ? '#fffdf3' : '#ffffff') : '#e9e1d8', have ? GRADE[it.grade].c : closet.sel === id ? '#7a6872' : '#c9bdb2', on ? 5 : have ? 3.4 : 2.4);
+      if (have) { ctx.save(); ctx.beginPath(); ctx.rect(x + 4, yy + 4, cw - 8, chh - 56); ctx.clip(); itemIcon(id, x + cw / 2, yy + 52, 70); ctx.restore();
+        text(it.name, x + cw / 2, yy + chh - 42, 17, INK, 'center', null, F_T); text(`${STAT_NAME[it.stat]} +${it.amt}`, x + cw / 2, yy + chh - 18, 15, GRADE[it.grade].c, 'center', null, F_T);
+        if (on) { rr(x + 8, yy + 8, 44, 24, 12, CORAL, null); text('착용', x + 30, yy + 21, 14, '#fff', 'center', null, F_T); } else if (have > 1) text('×' + have, x + cw - 10, yy + 18, 15, '#7a6872', 'right', null, F_N); }
+      else { // a silhouette: the shape in shadow, the name a mystery
+        ctx.save(); ctx.beginPath(); ctx.rect(x + 4, yy + 4, cw - 8, chh - 56); ctx.clip(); ctx.globalAlpha = 0.28; if (SHADOW) ctx.filter = 'brightness(0)'; itemIcon(id, x + cw / 2, yy + 52, 70); ctx.restore();
+        if (!SHADOW) text('?', x + cw / 2, yy + 52, 44, '#a8999f', 'center', null, F_T);
+        rr(x + cw / 2 - 16, yy + 64, 32, 28, 14, '#ffffff', '#b9aaa0', 2); text('?', x + cw / 2, yy + 79, 20, '#7a6872', 'center', null, F_T);
+        text('???', x + cw / 2, yy + chh - 42, 17, '#9a8b93', 'center', null, F_T); text(GRADE[it.grade].ko, x + cw / 2, yy + chh - 18, 15, GRADE[it.grade].c, 'center', null, F_T); }
+      E(x + cw - 14, yy + chh - 14, 5, 5, GRADE[it.grade].c);
+    });
+    y += 3 * (chh + 12) + 14;
+  });
+  return y;
+}
+function openCloset(back) { if (!acct.user) { toast('로그인하면 옷장을 쓸 수 있어요'); return; } closetBack = back; closet.sel = null; SCR.closet.scroll = 0; SCR.closet.vel = 0; scene = 'closet'; tone(660, 0.06, 'sine', 0.15); }
 function drawGachaTab(y0, end) {
   const G = acct.g, cx = W / 2, h = end - y0, base = y0 + h - 30, k = Math.min(1, h / 470);
   ctx.save(); ctx.translate(cx, base); ctx.scale(k, k); ctx.lineWidth = 3.4; ctx.strokeStyle = OUT; ctx.lineJoin = 'round';
@@ -1623,17 +1688,30 @@ function drawGachaTab(y0, end) {
 function capsule(x, y, r, c, rot) { ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.lineWidth = 2.4; ctx.strokeStyle = OUT;
   ctx.beginPath(); ctx.arc(0, 0, r, Math.PI, 0); ctx.closePath(); ctx.fillStyle = c; ctx.fill(); ctx.stroke();
   ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI); ctx.closePath(); ctx.fillStyle = '#fff8e7'; ctx.fill(); ctx.stroke(); ctx.restore(); }
+async function claimAll() { // every reward that is ready, one after another
+  if (acct.busy) return; const codes = ACH.map(a => a[0]).filter(claimable); if (!codes.length) { toast('받을 보상이 없어요'); return; }
+  acct.busy = true; let got = 0;
+  for (const c of codes) { try { acct.prof = await rpc('claim_achievement', { c }); got += ACH_REWARD[c]; } catch (e) { /* claimed elsewhere */ } }
+  acct.busy = false; toast(`뽑기권 ${got}장을 받았어요`); tone(880, 0.1, 'triangle', 0.25); tone(1320, 0.18, 'triangle', 0.25, 0.1);
+}
 function drawAchTab(y0, end) {
-  const rows = ACH.length, rh = Math.min(48, (end - y0 - LY.pad) / rows), p = progOf();
-  panel(LY.m, y0, LY.w, rh * rows + LY.pad);
-  ACH.forEach(([code, name, desc, f], i) => { const y = y0 + LY.pad / 2 + i * rh + rh / 2, [c, g] = f(p), can = claimable(code), done = code === 'daily' ? !can : !!acct.prof.claimed[code];
-    if (i % 2 === 0) rr(LY.m + 10, y - rh / 2 + 2, LY.w - 20, rh - 4, 10, 'rgba(234,223,210,0.4)', null);
-    text(name, LY.m + LY.pad, y, 21, done ? '#9a8b93' : INK, 'left', null, F_T);
-    text(code === 'daily' ? '매일' : `${Math.min(c, g)}/${g}`, LY.m + 250, y, 18, '#7a6872', 'left', null, F_N);
-    text(`뽑기권 ${ACH_REWARD[code]}`, LY.m + 380, y, 18, '#3d8be0', 'left', null, F_B);
-    const bx = LY.m + LY.w - LY.pad - 96;
-    if (can) { const over = btn(bx, y - 17, 96, 34, () => claim(code)); rr(bx, y - 17, 96, 34, 17, over ? '#ffe9a8' : '#ffd36b', OUT, 2.4); text('받기', bx + 48, y + 1, 19, INK, 'center', null, F_T); }
-    else text(done ? '받음' : '진행 중', bx + 48, y, 18, '#9a8b93', 'center', null, F_B);
+  const ready = ACH.filter(a => claimable(a[0])), sum = ready.reduce((n, a) => n + ACH_REWARD[a[0]], 0);
+  text(ready.length ? `받을 보상 ${ready.length}개 · 뽑기권 ${sum}장` : '받을 보상이 없어요', LY.m, y0 + 26, 21, ready.length ? INK : '#9a8b93', 'left', null, F_T);
+  if (ready.length) button('모두 받기', LY.m + LY.w - 170, y0, 170, 52, claimAll, { size: 23, fill: '#ffd36b' });
+  const rh = 72, key = JSON.stringify([acct.prof.claimed, progOf(), new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10)]);
+  scrollView(SCR.ach, y0 + 68, end, key, ACH.length * rh + 8, () => {
+    const p = progOf();
+    ACH.forEach(([code, name, desc, f], i) => { const y = i * rh, [c, g] = f(p), can = claimable(code), done = code === 'daily' ? !can : !!acct.prof.claimed[code];
+      rr(LY.m, y + 4, LY.w, rh - 8, 16, done ? 'rgba(255,248,231,0.6)' : '#fffaf0', can ? '#f0a020' : '#d9cbbd', can ? 3 : 2);
+      text(name, LY.m + LY.pad, y + rh / 2 - 11, 21, done ? '#9a8b93' : INK, 'left', null, F_T);
+      text(desc, LY.m + LY.pad, y + rh / 2 + 14, 16, '#7a6872', 'left', null, F_B);
+      if (code !== 'daily' && g > 1) { const bw = 120, bx = LY.m + 330; rr(bx, y + rh / 2 - 6, bw, 12, 6, '#eadfd2', null); rr(bx, y + rh / 2 - 6, bw * Math.min(1, c / g), 12, 6, '#3d8be0', null); text(`${Math.min(c, g)}/${g}`, bx + bw / 2, y + rh / 2 + 18, 14, '#7a6872', 'center', null, F_N); }
+      text(`뽑기권 ${ACH_REWARD[code]}`, LY.m + 330 + (code !== 'daily' && g > 1 ? 0 : 60), y + rh / 2 - (code !== 'daily' && g > 1 ? 22 : 0), 16, '#3d8be0', code !== 'daily' && g > 1 ? 'left' : 'center', null, F_T);
+      const bx = LY.m + LY.w - LY.pad - 90;
+      if (can) { btn(bx, y + rh / 2 - 18, 90, 36, () => claim(code)); rr(bx, y + rh / 2 - 18, 90, 36, 18, '#ffd36b', OUT, 2.4); text('받기', bx + 45, y + rh / 2 + 1, 19, INK, 'center', null, F_T); }
+      else text(done ? '받음 ✓' : '진행 중', bx + 45, y + rh / 2, 17, '#9a8b93', 'center', null, F_B);
+    });
+    return ACH.length * rh + 8;
   });
 }
 
@@ -1724,7 +1802,7 @@ function playCore(dt) { // the match itself; the pause menu keeps it running whe
 }
 function matchProgress() { // what this match adds to the account's counts
   if (m.online && view !== 0) return;
-  const d = { sweet: m.stats.sweet[0], aces: m.stats.aces[0] };
+  const d = { sweet: m.stats.sweet[0], aces: m.stats.aces[0] }; setProgress('rally', m.stats.longest);
   if (m.sc.winner === 0 && !m.online) { d.wins = 1; d['win_' + ['', 'easy', 'normal', 'hard'][m.level]] = 1; d['win_' + (m.format || 'regular')] = 1; }
   addProgress(d);
 }
@@ -1892,52 +1970,14 @@ const scenes = {
   closet: {
     update(dt) {
       state.t += dt; acct.msgT += dt; if (pressed('Escape')) scene = closetBack;
-      if (anyHit(...K_D)) closet.scroll = clamp(closet.scroll + 160, 0, closet.max); if (anyHit(...K_U)) closet.scroll = clamp(closet.scroll - 160, 0, closet.max);
+      const S = SCR.closet; if (anyHit(...K_D)) S.vel = 900; if (anyHit(...K_U)) S.vel = -900;
     },
     draw() {
       menuBegin('옷장', true);
-      const gear = myGear(), own = Object.keys(ITEMS).filter(id => acct.inv[id]).length, v0 = LY.top, v1 = contentEnd();
+      const gear = myGear(), own = Object.keys(ITEMS).filter(id => acct.inv[id]).length;
       text(`보유 ${own} / ${Object.keys(ITEMS).length}`, LY.m + LY.w, LY.titleY, 21, '#3d8be0', 'right', null, F_T);
-      closet.v0 = v0; closet.v1 = v1;
-      ctx.save(); ctx.beginPath(); ctx.rect(0, v0, W, v1 - v0); ctx.clip(); ctx.translate(0, -closet.scroll);
-      const sb = (x, y, w, h, fn) => { const a = Math.max(y, v0 + closet.scroll), b = Math.min(y + h, v1 + closet.scroll); if (b > a) hot.push({ x, y: a - closet.scroll, w, h: b - a, fn }); }; // only the part in view can be tapped
-      let y = v0;
-      // what is worn: two by two, big
-      text('장착 중', LY.m, y + 16, 24, INK, 'left', null, F_T); y += 38;
-      const ew = (LY.w - 14) / 2, eh = 128;
-      SLOTS.forEach(([id, ko], i) => { const x = LY.m + (i % 2) * (ew + 14), yy = y + Math.floor(i / 2) * (eh + 14), it = item(gear[id]);
-        sb(x, yy, ew, eh, () => { if (it) { closet.sel = it.id; equip(id, null); } });
-        rr(x, yy + 4, ew, eh, 18, OUT, null); rr(x, yy, ew, eh, 18, it ? '#ffffff' : 'rgba(255,248,231,0.8)', it ? GRADE[it.grade].c : '#cdbfb3', it ? 4.5 : 2.6);
-        if (it) { ctx.save(); ctx.beginPath(); ctx.rect(x + 6, yy + 6, 104, eh - 12); ctx.clip(); itemIcon(it.id, x + 58, yy + eh / 2 + 4, 78); ctx.restore();
-          text(ko, x + 118, yy + 26, 17, '#7a6872', 'left', null, F_B); gradeChip(it.grade, x + ew - 60, yy + 12, 26);
-          text(it.name, x + 118, yy + 62, 22, INK, 'left', null, F_T); text(`${STAT_NAME[it.stat]} +${it.amt}`, x + 118, yy + 96, 19, GRADE[it.grade].c, 'left', null, F_T); }
-        else { text(ko, x + ew / 2, yy + eh / 2 - 14, 22, '#7a6872', 'center', null, F_T); text('비어 있음', x + ew / 2, yy + eh / 2 + 18, 18, '#a8999f', 'center', null, F_B); }
-      });
-      y += 2 * (eh + 14) + 16;
-      // every item, slot by slot, four across; what you do not own is a dark shape and a question
-      const cw = (LY.w - 12 * 3) / 4, chh = 150;
-      SLOTS.forEach(([sid, ko]) => {
-        const ids = Object.keys(ITEMS).filter(k => ITEMS[k][0] === sid).sort((p, q) => ITEMS[p][1] - ITEMS[q][1]), got = ids.filter(id => acct.inv[id]).length;
-        text(ko, LY.m, y + 18, 24, INK, 'left', null, F_T); text(`${got} / ${ids.length}`, LY.m + LY.w, y + 18, 19, '#7a6872', 'right', null, F_N); y += 40;
-        ids.forEach((id, n) => { const it = item(id), have = acct.inv[id] || 0, on = gear[sid] === id, x = LY.m + (n % 4) * (cw + 12), yy = y + Math.floor(n / 4) * (chh + 12);
-          sb(x, yy, cw, chh, () => { closet.sel = id; if (!have) toast('뽑기 기계에서 얻을 수 있어요'); else equip(sid, on ? null : id); });
-          rr(x, yy, cw, chh, 16, have ? (on ? '#fff3c4' : closet.sel === id ? '#fffdf3' : '#ffffff') : '#e9e1d8', have ? GRADE[it.grade].c : closet.sel === id ? '#7a6872' : '#c9bdb2', on ? 5 : have ? 3.4 : 2.4);
-          if (have) { ctx.save(); ctx.beginPath(); ctx.rect(x + 4, yy + 4, cw - 8, chh - 56); ctx.clip(); itemIcon(id, x + cw / 2, yy + 52, 70); ctx.restore();
-            text(it.name, x + cw / 2, yy + chh - 42, 17, INK, 'center', null, F_T); text(`${STAT_NAME[it.stat]} +${it.amt}`, x + cw / 2, yy + chh - 18, 15, GRADE[it.grade].c, 'center', null, F_T);
-            if (on) { rr(x + 8, yy + 8, 44, 24, 12, CORAL, null); text('착용', x + 30, yy + 21, 14, '#fff', 'center', null, F_T); } else if (have > 1) text('×' + have, x + cw - 10, yy + 18, 15, '#7a6872', 'right', null, F_N); }
-          else { // a silhouette: the shape in shadow, the name a mystery
-            ctx.save(); ctx.beginPath(); ctx.rect(x + 4, yy + 4, cw - 8, chh - 56); ctx.clip(); ctx.globalAlpha = 0.28; if (SHADOW) ctx.filter = 'brightness(0)'; itemIcon(id, x + cw / 2, yy + 52, 70); ctx.restore();
-            if (!SHADOW) text('?', x + cw / 2, yy + 52, 44, '#a8999f', 'center', null, F_T);
-            rr(x + cw / 2 - 16, yy + 64, 32, 28, 14, '#ffffff', '#b9aaa0', 2); text('?', x + cw / 2, yy + 79, 20, '#7a6872', 'center', null, F_T);
-            text('???', x + cw / 2, yy + chh - 42, 17, '#9a8b93', 'center', null, F_T); text(GRADE[it.grade].ko, x + cw / 2, yy + chh - 18, 15, GRADE[it.grade].c, 'center', null, F_T); }
-          E(x + cw - 14, yy + chh - 14, 5, 5, GRADE[it.grade].c);
-        });
-        y += 3 * (chh + 12) + 14;
-      });
-      ctx.restore();
-      closet.max = Math.max(0, y - v1);
-      if (closet.max > 0) { const th = (v1 - v0) * (v1 - v0) / (y - v0), ty = v0 + (v1 - v0 - th) * closet.scroll / closet.max; rr(LY.m + LY.w + 10, ty, 6, th, 3, 'rgba(74,61,71,0.35)', null); } // where you are in the list
-      if (closet.scroll < closet.max - 4) { const g = ctx.createLinearGradient(0, v1 - 40, 0, v1); g.addColorStop(0, 'rgba(162,227,200,0)'); g.addColorStop(1, 'rgba(162,227,200,0.9)'); ctx.fillStyle = g; ctx.fillRect(LY.m - 10, v1 - 40, LY.w + 20, 40); }
+      const key = JSON.stringify([acct.inv, gear, closet.sel]), eh = 128, chh = 150, height = 38 + 2 * (eh + 14) + 16 + 4 * (40 + 3 * (chh + 12) + 14);
+      scrollView(SCR.closet, LY.top, contentEnd(), key, height, () => drawClosetList(gear, eh, chh));
       const sel = item(closet.sel);
       if (acct.msg && acct.msgT < 2.6) { ctx.font = `24px ${F_B}`; const w = ctx.measureText(acct.msg).width + 60; rr(W / 2 - w / 2, LY.bot - 62, w, 46, 23, 'rgba(59,51,64,0.9)', null); text(acct.msg, W / 2, LY.bot - 38, 21, CREAM, 'center', null, F_B); }
       sideBtn('뒤로', () => { scene = closetBack; });
@@ -1997,7 +2037,12 @@ const scenes = {
       menuBegin('누구와 겨룰까요?', true);
       const rows = [['컴퓨터와 대결 · 쉬움', '받기 쉬운 공을 보내고 실수도 자주 해요'], ['컴퓨터와 대결 · 보통', '빈 곳을 노리고 가끔 변칙을 섞어요'], ['컴퓨터와 대결 · 어려움', '코너를 찌르고 드롭샷, 로브, 파워샷까지'], ['온라인 대결 · 방 만들기', '초대 링크를 보내 각자의 기기에서 겨뤄요']];
       const ch = SZ().format4; // the same cards as the four ways to play
-      rows.forEach((r, i) => button(r[0], LY.m, LY.top + i * (ch + LY.gap), LY.w, ch, () => pickMode(i), { on: i === state.cur, sub: r[1], size: 29 }));
+      const tags = [['쉬움', '#4fa86a'], ['보통', '#3d8be0'], ['어려움', '#e2574c'], ['온라인', '#9b5de5']];
+      rows.forEach((r, i) => { const y = LY.top + i * (ch + LY.gap), [tg, c] = tags[i], x = LY.m + LY.pad;
+        card(LY.m, y, LY.w, ch, () => pickMode(i), i === state.cur);
+        rr(x, y + ch / 2 - 30, 132, 60, 18, c, OUT, 2.6); text(tg, x + 66, y + ch / 2 + 1, 30, '#ffffff', 'center', null, F_T); // the level, big and coloured
+        text(i < 3 ? '컴퓨터와 대결' : '방 만들기', x + 152, y + ch / 2 - 16, 26, INK, 'left', null, F_T);
+        text(r[1], x + 152, y + ch / 2 + 20, 19, '#7a6872', 'left', null, F_B); });
       sideBtn('뒤로', () => { scene = 'format'; });
       menuEnd(`${FORMATS[setup.format].ko} · ${{ flash: '10점 매치 타이브레이크', short: '4게임 짧은 세트', regular: '5세트 3선승' }[setup.format]}`);
     },
@@ -2241,6 +2286,7 @@ const scenes = {
 
 // ---- Loop: fixed step, frame time clamped ---------------------------------------------
 function step() {
+  scrollStep(STEP);
   if (pressed('KeyM')) { setMuted(!muted); hit.delete('KeyM'); }
   while (clicks.length) { drawFrame(); const h = hitTest(clicks.shift()); if (h && h.fn) h.fn(); } // drawn again first: the buttons are where this frame puts them
   scenes[scene].update(STEP);
