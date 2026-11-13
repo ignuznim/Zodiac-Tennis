@@ -2,7 +2,7 @@
 -- Run once in Supabase: SQL Editor -> New query -> paste -> Run. Safe to run again.
 -- Everything that hands out items or tickets runs here, never in the browser.
 
--- ---- The item catalogue: four slots, four grades (0 일반, 1 희귀, 2 영웅, 3 전설) ----
+-- ---- The item catalogue: 48 items, twelve a slot, four grades (0 일반, 1 희귀, 2 영웅, 3 전설) ----
 create table if not exists public.items (
   id     text primary key,
   slot   text not null check (slot in ('hat', 'uniform', 'shoes', 'racket')),
@@ -12,18 +12,54 @@ create table if not exists public.items (
   name   text not null
 );
 insert into public.items (id, slot, grade, stat, amount, name) values
-  ('h1', 'hat', 0, 'reflex', 0.1, '흰 머리띠'),      ('h2', 'hat', 0, 'reflex', 0.1, '빨간 머리띠'),
-  ('h3', 'hat', 1, 'reflex', 0.2, '파란 썬캡'),      ('h4', 'hat', 1, 'reflex', 0.2, '보라 머리띠'),
-  ('h5', 'hat', 2, 'reflex', 0.3, '선비 갓'),        ('h6', 'hat', 3, 'reflex', 0.5, '황금 왕관'),
-  ('u1', 'uniform', 0, 'stamina', 0.1, '흰 셔츠'),   ('u2', 'uniform', 0, 'stamina', 0.1, '하늘 셔츠'),
-  ('u3', 'uniform', 1, 'stamina', 0.2, '줄무늬 셔츠'), ('u4', 'uniform', 1, 'stamina', 0.2, '국가대표 저지'),
-  ('u5', 'uniform', 2, 'stamina', 0.3, '색동 한복'),  ('u6', 'uniform', 3, 'stamina', 0.5, '황금 유니폼'),
-  ('s1', 'shoes', 0, 'speed', 0.1, '흰 운동화'),     ('s2', 'shoes', 0, 'speed', 0.1, '빨간 운동화'),
-  ('s3', 'shoes', 1, 'speed', 0.2, '클레이화'),      ('s4', 'shoes', 1, 'speed', 0.2, '잔디화'),
-  ('s5', 'shoes', 2, 'speed', 0.3, '번개 신발'),     ('s6', 'shoes', 3, 'speed', 0.5, '날개 신발'),
-  ('r1', 'racket', 0, 'power', 0.1, '나무 라켓'),    ('r2', 'racket', 0, 'spin', 0.1, '연습 라켓'),
-  ('r3', 'racket', 1, 'power', 0.2, '묵직한 라켓'),  ('r4', 'racket', 1, 'spin', 0.2, '가벼운 라켓'),
-  ('r5', 'racket', 2, 'spin', 0.3, '용비늘 라켓'),   ('r6', 'racket', 3, 'power', 0.5, '황금 라켓')
+  ('h1', 'hat', 0, 'reflex', 0.1, '흰 머리띠'),
+  ('h2', 'hat', 0, 'reflex', 0.1, '빨간 머리띠'),
+  ('h7', 'hat', 0, 'speed', 0.1, '노란 머리띠'),
+  ('h8', 'hat', 0, 'stamina', 0.1, '초록 머리띠'),
+  ('h3', 'hat', 1, 'reflex', 0.2, '파란 썬캡'),
+  ('h4', 'hat', 1, 'spin', 0.2, '보라 머리띠'),
+  ('h9', 'hat', 1, 'power', 0.2, '빨간 야구모자'),
+  ('h10', 'hat', 1, 'speed', 0.2, '하얀 테니스캡'),
+  ('h5', 'hat', 2, 'reflex', 0.3, '선비 갓'),
+  ('h11', 'hat', 2, 'stamina', 0.3, '족두리'),
+  ('h6', 'hat', 3, 'reflex', 0.5, '황금 왕관'),
+  ('h12', 'hat', 3, 'power', 0.5, '은하수 왕관'),
+  ('u1', 'uniform', 0, 'stamina', 0.1, '흰 셔츠'),
+  ('u2', 'uniform', 0, 'stamina', 0.1, '하늘 셔츠'),
+  ('u7', 'uniform', 0, 'reflex', 0.1, '분홍 셔츠'),
+  ('u8', 'uniform', 0, 'speed', 0.1, '민트 셔츠'),
+  ('u3', 'uniform', 1, 'stamina', 0.2, '줄무늬 셔츠'),
+  ('u4', 'uniform', 1, 'power', 0.2, '국가대표 저지'),
+  ('u9', 'uniform', 1, 'spin', 0.2, '체크 셔츠'),
+  ('u10', 'uniform', 1, 'reflex', 0.2, '해군 셔츠'),
+  ('u5', 'uniform', 2, 'stamina', 0.3, '색동 한복'),
+  ('u11', 'uniform', 2, 'power', 0.3, '태권도 도복'),
+  ('u6', 'uniform', 3, 'stamina', 0.5, '황금 유니폼'),
+  ('u12', 'uniform', 3, 'power', 0.5, '불꽃 유니폼'),
+  ('s1', 'shoes', 0, 'speed', 0.1, '흰 운동화'),
+  ('s2', 'shoes', 0, 'speed', 0.1, '빨간 운동화'),
+  ('s7', 'shoes', 0, 'stamina', 0.1, '검정 운동화'),
+  ('s8', 'shoes', 0, 'reflex', 0.1, '노란 운동화'),
+  ('s3', 'shoes', 1, 'speed', 0.2, '클레이화'),
+  ('s4', 'shoes', 1, 'speed', 0.2, '잔디화'),
+  ('s9', 'shoes', 1, 'stamina', 0.2, '하드코트화'),
+  ('s10', 'shoes', 1, 'reflex', 0.2, '고무신'),
+  ('s5', 'shoes', 2, 'speed', 0.3, '번개 신발'),
+  ('s11', 'shoes', 2, 'stamina', 0.3, '꽃신'),
+  ('s6', 'shoes', 3, 'speed', 0.5, '날개 신발'),
+  ('s12', 'shoes', 3, 'power', 0.5, '로켓 신발'),
+  ('r1', 'racket', 0, 'power', 0.1, '나무 라켓'),
+  ('r2', 'racket', 0, 'spin', 0.1, '연습 라켓'),
+  ('r7', 'racket', 0, 'reflex', 0.1, '하늘 라켓'),
+  ('r8', 'racket', 0, 'speed', 0.1, '분홍 라켓'),
+  ('r3', 'racket', 1, 'power', 0.2, '묵직한 라켓'),
+  ('r4', 'racket', 1, 'spin', 0.2, '가벼운 라켓'),
+  ('r9', 'racket', 1, 'stamina', 0.2, '대나무 라켓'),
+  ('r10', 'racket', 1, 'reflex', 0.2, '얼음 라켓'),
+  ('r5', 'racket', 2, 'spin', 0.3, '용비늘 라켓'),
+  ('r11', 'racket', 2, 'power', 0.3, '태극 라켓'),
+  ('r6', 'racket', 3, 'power', 0.5, '황금 라켓'),
+  ('r12', 'racket', 3, 'spin', 0.5, '무지개 라켓')
 on conflict (id) do update set slot = excluded.slot, grade = excluded.grade, stat = excluded.stat, amount = excluded.amount, name = excluded.name;
 
 -- ---- Achievements: the reward in gacha tickets; a daily one can be claimed once a day ----

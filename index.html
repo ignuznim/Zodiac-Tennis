@@ -224,7 +224,7 @@ function courtBonus(a, s, c) { // + on its favourite court, - on its worst, for 
   if (!f || !c || s !== f[1]) return 0;
   return c === f[0] ? tune.court_bonus : c === f[2] ? -tune.court_bonus : 0;
 }
-function pstat(p, s) { return Math.min(6, stat(p.a, s) + ((p.gear && p.gear[s]) || 0)); } // a player's stat: the animal's, the court's and the gear's
+function pstat(p, s) { return Math.min(7.5, stat(p.a, s) + ((p.gear && p.gear[s]) || 0)); } // a player's stat: the animal's, the court's and the gear's
 function stat(a, s, c) { return CONFIG[ANIMALS[a].id + '_' + s].value + courtBonus(a, s, c === undefined ? (m && m.court) : c); }
 
 function E(x, y, rx, ry, fill, rot = 0, noStroke) {
@@ -358,6 +358,8 @@ function drawAnimal(a, X, Y, k, o) {
     const fc = shoes ? shoes.look.c : A.c, fy = s => -5 - Math.max(0, s) * 0.5;
     if (shoes && shoes.look.wing) for (const sd of [-1, 1]) { ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(sd * 20, fy(sd * step) - 6, 9, 4, sd * 0.6, 0, 7); ctx.fill(); ctx.stroke(); }
     E(-10 + step * 0.3, fy(step), 9, 7, fc); E(10 - step * 0.3, fy(-step), 9, 7, fc);
+    if (shoes && shoes.look.flame) for (const sd of [-1, 1]) poly([sd * 10 - 6, fy(sd * step) + 4, sd * 10, fy(sd * step) + 13, sd * 10 + 6, fy(sd * step) + 4], '#ff8a3d');
+    if (shoes && shoes.look.flower) for (const sd of [-1, 1]) E(sd * 10, fy(sd * step) - 2, 3, 3, '#ffffff');
     if (shoes && shoes.look.bolt) for (const sd of [-1, 1]) poly([sd * 10 - 2, fy(sd * step) - 4, sd * 10 + 2, fy(sd * step), sd * 10 - 1, fy(sd * step), sd * 10 + 2, fy(sd * step) + 4], '#f0a020');
     ctx.translate(0, -bob);
     if (A.id === 'sheep') for (let i = 0; i < 8; i++) { const q = i / 8 * 6.283; E(Math.cos(q) * 17, -30 + Math.sin(q) * 19, 10, 10, A.c); }
@@ -538,7 +540,7 @@ let scene, state, m;          // m is state.m, the match
 const setup = { animal: 0, level: 2, mode: 'cpu', guestAnimal: 3, court: 'hard', pending: 1, format: 'short' };
 let matchCount = 0;
 function newPlayer(i, a, ctrl, gearIds) {
-  const gear = gearBonus(gearIds), max = tune.stam_base + Math.min(6, stat(a, 'stamina', setup.court) + (gear.stamina || 0)) * tune.stam_per;
+  const gear = gearBonus(gearIds), max = tune.stam_base + Math.min(7.5, stat(a, 'stamina', setup.court) + (gear.stamina || 0)) * tune.stam_per;
   return { i, side: i === 0 ? 1 : -1, a, ctrl, gearIds: gearIds || {}, gear, x: 0, y: 0, vx: 0, vy: 0, stam: max, max, sw: null, cool: 0, anim: 'idle', at: 0, hand: 1,
     pa: false, pk: false, pl: false, ps: false, streak: 0, ai: { for: -1, wait: 0, tgt: null, set: 0, st: 0, q: 1 } };
 }
@@ -1412,17 +1414,29 @@ const ODDS = [56, 28, 12, 4]; // the machine's odds by grade, in per cent (worke
 const SLOTS = [['hat', '모자', 'reflex'], ['uniform', '유니폼', 'stamina'], ['shoes', '신발', 'speed'], ['racket', '라켓', 'power']];
 const ITEMS = { // the same catalogue as the server's items table; look is how it is drawn
   h1: ['hat', 0, 'reflex', 0.1, '흰 머리띠', { k: 'band', c: '#ffffff' }], h2: ['hat', 0, 'reflex', 0.1, '빨간 머리띠', { k: 'band', c: '#f25f5c' }],
-  h3: ['hat', 1, 'reflex', 0.2, '파란 썬캡', { k: 'cap', c: '#3d8be0' }], h4: ['hat', 1, 'reflex', 0.2, '보라 머리띠', { k: 'band', c: '#b48be8' }],
-  h5: ['hat', 2, 'reflex', 0.3, '선비 갓', { k: 'gat', c: '#3b3340' }], h6: ['hat', 3, 'reflex', 0.5, '황금 왕관', { k: 'crown', c: '#f6c445' }],
+  h7: ['hat', 0, 'speed', 0.1, '노란 머리띠', { k: 'band', c: '#ffe45c' }], h8: ['hat', 0, 'stamina', 0.1, '초록 머리띠', { k: 'band', c: '#4fc37a' }],
+  h3: ['hat', 1, 'reflex', 0.2, '파란 썬캡', { k: 'cap', c: '#3d8be0' }], h4: ['hat', 1, 'spin', 0.2, '보라 머리띠', { k: 'band', c: '#b48be8' }],
+  h9: ['hat', 1, 'power', 0.2, '빨간 야구모자', { k: 'cap', c: '#e2574c' }], h10: ['hat', 1, 'speed', 0.2, '하얀 테니스캡', { k: 'cap', c: '#ffffff' }],
+  h5: ['hat', 2, 'reflex', 0.3, '선비 갓', { k: 'gat', c: '#3b3340' }], h11: ['hat', 2, 'stamina', 0.3, '족두리', { k: 'jok', c: '#3b3340' }],
+  h6: ['hat', 3, 'reflex', 0.5, '황금 왕관', { k: 'crown', c: '#f6c445' }], h12: ['hat', 3, 'power', 0.5, '은하수 왕관', { k: 'crown', c: '#b9d4ff' }],
   u1: ['uniform', 0, 'stamina', 0.1, '흰 셔츠', { c: ['#ffffff'] }], u2: ['uniform', 0, 'stamina', 0.1, '하늘 셔츠', { c: ['#9ad0ff'] }],
-  u3: ['uniform', 1, 'stamina', 0.2, '줄무늬 셔츠', { c: ['#ffffff', '#3d8be0', '#ffffff'] }], u4: ['uniform', 1, 'stamina', 0.2, '국가대표 저지', { c: ['#e2574c', '#ffffff', '#3d6fb0'] }],
-  u5: ['uniform', 2, 'stamina', 0.3, '색동 한복', { c: ['#e2574c', '#f6c445', '#4fc37a', '#3d8be0', '#b48be8'] }], u6: ['uniform', 3, 'stamina', 0.5, '황금 유니폼', { c: ['#f6c445', '#fff1b0', '#f6c445'] }],
+  u7: ['uniform', 0, 'reflex', 0.1, '분홍 셔츠', { c: ['#f9b7c4'] }], u8: ['uniform', 0, 'speed', 0.1, '민트 셔츠', { c: ['#9fe0c8'] }],
+  u3: ['uniform', 1, 'stamina', 0.2, '줄무늬 셔츠', { c: ['#ffffff', '#3d8be0', '#ffffff'] }], u4: ['uniform', 1, 'power', 0.2, '국가대표 저지', { c: ['#e2574c', '#ffffff', '#3d6fb0'] }],
+  u9: ['uniform', 1, 'spin', 0.2, '체크 셔츠', { c: ['#ffffff', '#e2574c', '#ffffff', '#e2574c'] }], u10: ['uniform', 1, 'reflex', 0.2, '해군 셔츠', { c: ['#ffffff', '#3d6fb0', '#ffffff', '#3d6fb0'] }],
+  u5: ['uniform', 2, 'stamina', 0.3, '색동 한복', { c: ['#e2574c', '#f6c445', '#4fc37a', '#3d8be0', '#b48be8'] }], u11: ['uniform', 2, 'power', 0.3, '태권도 도복', { c: ['#ffffff', '#3b3340', '#ffffff'] }],
+  u6: ['uniform', 3, 'stamina', 0.5, '황금 유니폼', { c: ['#f6c445', '#fff1b0', '#f6c445'] }], u12: ['uniform', 3, 'power', 0.5, '불꽃 유니폼', { c: ['#f25f5c', '#ffb38a', '#ffe45c'] }],
   s1: ['shoes', 0, 'speed', 0.1, '흰 운동화', { c: '#ffffff' }], s2: ['shoes', 0, 'speed', 0.1, '빨간 운동화', { c: '#f25f5c' }],
+  s7: ['shoes', 0, 'stamina', 0.1, '검정 운동화', { c: '#4a3d47' }], s8: ['shoes', 0, 'reflex', 0.1, '노란 운동화', { c: '#ffe45c' }],
   s3: ['shoes', 1, 'speed', 0.2, '클레이화', { c: '#d36a3a' }], s4: ['shoes', 1, 'speed', 0.2, '잔디화', { c: '#4a9d5c' }],
-  s5: ['shoes', 2, 'speed', 0.3, '번개 신발', { c: '#ffe45c', bolt: true }], s6: ['shoes', 3, 'speed', 0.5, '날개 신발', { c: '#fff8e7', wing: true }],
+  s9: ['shoes', 1, 'stamina', 0.2, '하드코트화', { c: '#3471c4' }], s10: ['shoes', 1, 'reflex', 0.2, '고무신', { c: '#e8e0d2' }],
+  s5: ['shoes', 2, 'speed', 0.3, '번개 신발', { c: '#ffe45c', bolt: true }], s11: ['shoes', 2, 'stamina', 0.3, '꽃신', { c: '#f9b7c4', flower: true }],
+  s6: ['shoes', 3, 'speed', 0.5, '날개 신발', { c: '#fff8e7', wing: true }], s12: ['shoes', 3, 'power', 0.5, '로켓 신발', { c: '#9aa3ad', flame: true }],
   r1: ['racket', 0, 'power', 0.1, '나무 라켓', { c: '#b98562' }], r2: ['racket', 0, 'spin', 0.1, '연습 라켓', { c: '#9aa3ad' }],
+  r7: ['racket', 0, 'reflex', 0.1, '하늘 라켓', { c: '#9ad0ff' }], r8: ['racket', 0, 'speed', 0.1, '분홍 라켓', { c: '#f9b7c4' }],
   r3: ['racket', 1, 'power', 0.2, '묵직한 라켓', { c: '#4a3d47' }], r4: ['racket', 1, 'spin', 0.2, '가벼운 라켓', { c: '#6ec1ff' }],
-  r5: ['racket', 2, 'spin', 0.3, '용비늘 라켓', { c: '#4fc37a' }], r6: ['racket', 3, 'power', 0.5, '황금 라켓', { c: '#f6c445' }],
+  r9: ['racket', 1, 'stamina', 0.2, '대나무 라켓', { c: '#9fcf6e' }], r10: ['racket', 1, 'reflex', 0.2, '얼음 라켓', { c: '#cfeeff' }],
+  r5: ['racket', 2, 'spin', 0.3, '용비늘 라켓', { c: '#4fc37a' }], r11: ['racket', 2, 'power', 0.3, '태극 라켓', { c: '#e2574c' }],
+  r6: ['racket', 3, 'power', 0.5, '황금 라켓', { c: '#f6c445' }], r12: ['racket', 3, 'spin', 0.5, '무지개 라켓', { c: '#b48be8' }],
 };
 const item = id => { const q = ITEMS[id]; return q && { id, slot: q[0], grade: q[1], stat: q[2], amt: q[3], name: q[4], look: q[5] }; };
 const STAT_NAME = { power: '파워', stamina: '스태미너', spin: '스핀', reflex: '순발력', speed: '스피드' };
@@ -1516,6 +1530,7 @@ function drawHat(id) { // over the head, in the animal's own coordinates (the he
   if (L.k === 'band') { rr(-27, -91, 54, 10, 5, L.c, OUT, 2.2); }
   else if (L.k === 'cap') { ctx.beginPath(); ctx.arc(0, -86, 25, Math.PI, 0); ctx.closePath(); ctx.fillStyle = L.c; ctx.fill(); ctx.stroke(); E(0, -86, 32, 6, L.c); E(0, -111, 4, 4, '#fff'); }
   else if (L.k === 'gat') { E(0, -90, 44, 8, L.c); rr(-14, -114, 28, 24, 7, L.c, OUT, 2.2); ctx.strokeStyle = '#7a6872'; ctx.beginPath(); ctx.moveTo(-18, -88); ctx.lineTo(-22, -60); ctx.moveTo(18, -88); ctx.lineTo(22, -60); ctx.stroke(); }
+  else if (L.k === 'jok') { rr(-12, -110, 24, 18, 5, L.c, OUT, 2.2); for (const x of [-8, 0, 8]) E(x, -114, 3.5, 3.5, ['#e2574c', '#f6c445', '#3d8be0'][(x / 8 + 1) | 0]); E(0, -96, 16, 4, '#e2574c'); }
   else if (L.k === 'crown') { poly([-22, -88, -24, -110, -12, -98, 0, -116, 12, -98, 24, -110, 22, -88], L.c); for (const x of [-12, 0, 12]) E(x, -94, 3, 3, '#e2574c'); }
 }
 function itemIcon(id, x, y, s) { // a little picture of an item, centred on x, y, about s across
@@ -1525,30 +1540,15 @@ function itemIcon(id, x, y, s) { // a little picture of an item, centred on x, y
   else if (it.slot === 'uniform') { const cs = L.c; ctx.beginPath(); ctx.moveTo(-24, -20); ctx.lineTo(-10, -26); ctx.lineTo(10, -26); ctx.lineTo(24, -20); ctx.lineTo(28, -6); ctx.lineTo(18, -2); ctx.lineTo(18, 24); ctx.lineTo(-18, 24); ctx.lineTo(-18, -2); ctx.lineTo(-28, -6); ctx.closePath();
     ctx.save(); ctx.clip(); cs.forEach((c, i) => { ctx.fillStyle = c; ctx.fillRect(-30, -26 + i * 50 / cs.length, 60, 50 / cs.length + 1); }); ctx.restore(); ctx.stroke(); }
   else if (it.slot === 'shoes') { ctx.beginPath(); ctx.moveTo(-24, 10); ctx.lineTo(-20, -10); ctx.lineTo(-4, -10); ctx.lineTo(0, 0); ctx.lineTo(22, 4); ctx.lineTo(24, 14); ctx.closePath(); ctx.fillStyle = L.c; ctx.fill(); ctx.stroke(); rr(-25, 10, 50, 7, 3, '#fff', OUT, 2);
-    if (L.bolt) poly([-8, -8, -2, -1, -6, -1, 2, 8, -1, 1, 3, 1], '#f0a020'); if (L.wing) { ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(-26, -10, 12, 6, -0.6, 0, 7); ctx.fill(); ctx.stroke(); } }
+    if (L.bolt) poly([-8, -8, -2, -1, -6, -1, 2, 8, -1, 1, 3, 1], '#f0a020');
+    if (L.flower) { E(4, -2, 5, 5, '#ffffff'); E(4, -2, 2, 2, '#f6c445'); }
+    if (L.flame) poly([-26, 4, -40, -2, -34, 8, -42, 14, -26, 14], '#ff8a3d'); if (L.wing) { ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(-26, -10, 12, 6, -0.6, 0, 7); ctx.fill(); ctx.stroke(); } }
   else { ctx.rotate(0.5); ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(0, 26); ctx.lineTo(0, 6); ctx.stroke(); ctx.lineWidth = 3; ctx.strokeStyle = '#a97c50'; ctx.stroke();
     ctx.lineWidth = 6.5; ctx.strokeStyle = OUT; ctx.beginPath(); ctx.ellipse(0, -10, 14, 18, 0, 0, 7); ctx.fillStyle = 'rgba(255,248,231,0.9)'; ctx.fill(); ctx.stroke(); ctx.lineWidth = 4; ctx.strokeStyle = L.c; ctx.stroke(); }
   ctx.restore();
 }
 function gradeChip(g, x, y, h = 26) { const w = 46; rr(x, y, w, h, h / 2, GRADE[g].c, null); text(GRADE[g].ko, x + w / 2, y + h / 2 + 1, 15, '#fff', 'center', null, F_T); return w; }
 
-function drawGearPicker(slot, py, ph) { // the items for one slot, over the player's card: tap one to wear it, again to take it off
-  const gear = myGear(), ids = Object.keys(ITEMS).filter(k => ITEMS[k][0] === slot), x0 = LY.m, w = LY.w, cw = (w - LY.pad * 2 - 12 * 2) / 3, chh = 112;
-  const h = 64 + 2 * chh + 12 + LY.pad, y0 = py + ph - h;
-  btn(0, 0, W, H, () => { state.pick = null; }); // a tap outside closes it
-  rr(x0, y0, w, h, 24, '#fffaf0', OUT, 4); btn(x0, y0, w, h, () => {});
-  text(`${SLOTS.find(q => q[0] === slot)[1]} 고르기`, x0 + LY.pad, y0 + 32, 26, INK, 'left', null, F_T);
-  const cb = btn(x0 + w - LY.pad - 80, y0 + 12, 80, 40, () => { state.pick = null; }); rr(x0 + w - LY.pad - 80, y0 + 12, 80, 40, 14, cb ? '#fff3c4' : CREAM, OUT, 2.4); text('닫기', x0 + w - LY.pad - 40, y0 + 33, 19, INK, 'center', null, F_T);
-  ids.forEach((id, i) => { const it = item(id), have = acct.inv[id] || 0, on = gear[slot] === id, x = x0 + LY.pad + (i % 3) * (cw + 12), y = y0 + 64 + Math.floor(i / 3) * (chh + 12);
-    const over = btn(x, y, cw, chh, () => { if (!have) toast('뽑기 기계에서 얻을 수 있어요'); else { equip(slot, on ? null : id); } });
-    rr(x, y, cw, chh, 14, have ? (on ? '#fff3c4' : over ? '#fffdf3' : '#ffffff') : 'rgba(234,223,210,0.7)', have ? GRADE[it.grade].c : '#b9aaa0', on ? 5 : 3);
-    if (have) itemIcon(id, x + 38, y + chh / 2 - 2, 50); else text('?', x + 38, y + chh / 2, 38, '#b9aaa0', 'center', null, F_T);
-    gradeChip(it.grade, x + cw - 54, y + 8, 24);
-    text(have ? it.name : '???', x + 72, y + chh / 2 - 12, 18, have ? INK : '#9a8b93', 'left', null, F_T);
-    text(`${STAT_NAME[it.stat]} +${it.amt}`, x + 72, y + chh / 2 + 14, 16, GRADE[it.grade].c, 'left', null, F_B);
-    if (on) text('장착 중', x + cw - 10, y + chh - 14, 15, CORAL, 'right', null, F_T); else if (have > 1) text('×' + have, x + cw - 10, y + chh - 14, 15, '#7a6872', 'right', null, F_N);
-  });
-}
 function icon(kind, x, y, s) { // trophy, capsule, medal, hanger: drawn about s across, centred on x, y
   const k = s / 60; ctx.save(); ctx.translate(x, y); ctx.scale(k, k); ctx.lineWidth = 3.2; ctx.strokeStyle = OUT; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
   if (kind === 'trophy') {
@@ -1576,34 +1576,6 @@ function iconButton(kind, label, x, y, w, h, fn, dot) { // a small button: a pic
 // ---- 옷장: what you wear on top, every item below; only what you own shows its shape ----
 let closetBack = 'select', closetSel = null;
 function openCloset(back) { if (!acct.user) { toast('로그인하면 옷장을 쓸 수 있어요'); return; } closetBack = back; closetSel = null; scene = 'closet'; tone(660, 0.06, 'sine', 0.15); }
-function drawEquipTab(y0, end) {
-  const gear = myGear(), b = gearBonus(gear), a = setup.animal, ph = 236;
-  panel(LY.m, y0, LY.w, ph);
-  ctx.fillStyle = 'rgba(70,90,140,0.2)'; ctx.beginPath(); ctx.ellipse(LY.m + 100, y0 + ph - 30, 56, 12, 0, 0, 7); ctx.fill();
-  ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(a, LY.m + 100, y0 + ph - 30, 1.35, { front: true, t: state.t, accent: CORAL, gear });
-  [[-1, '◀', LY.m + 16], [1, '▶', LY.m + 148]].forEach(([d, t, x]) => { if (btn(x, y0 + 14, 40, 40, () => { setup.animal = (setup.animal + d + 12) % 12; state.sel = setup.animal; })) rr(x, y0 + 14, 40, 40, 12, '#fff3c4', null); text(t, x + 20, y0 + 35, 20, '#7a6872', 'center', null, F_T); });
-  const tx = LY.m + 214;
-  STATS.forEach((s, i) => { const y = y0 + 40 + i * 38, v = stat(a, s, null), add = b[s] || 0;
-    text(STAT_KO[i], tx, y, 21, INK, 'left', null, F_T);
-    for (let k = 0; k < 5; k++) rr(tx + 96 + k * 34, y - 11, 28, 22, 6, k < v ? STAT_COL[i] : '#eadfd2', OUT, 2.2);
-    if (add) { const k = Math.min(v, 4), from = tx + 96 + k * 34 + (v >= 5 ? 28 : 0); rr(from, y - 11, 28 * Math.min(add, 1), 22, 5, '#3d8be0', OUT, 2.2); text('+' + Math.round(add * 100) / 100, tx + 96 + 5 * 34 + 14, y, 20, '#3d8be0', 'left', null, F_T); } });
-  // the four slots, then the items of the chosen one
-  const sy = y0 + ph + LY.gap, sw = (LY.w - LY.gap * 3) / 4;
-  SLOTS.forEach(([id, ko], i) => { const x = LY.m + i * (sw + LY.gap), on = id === acct.wslot, it = item(gear[id]);
-    const over = btn(x, sy, sw, 52, () => { acct.wslot = id; });
-    rr(x, sy, sw, 52, 14, on ? '#fff3c4' : over ? '#fffdf3' : 'rgba(255,248,231,0.85)', on ? CORAL : it ? GRADE[it.grade].c : OUT, on ? 4 : 2.6);
-    text(ko, x + sw / 2, sy + 27, 22, on ? INK : '#7a6872', 'center', null, F_T); });
-  const gy = sy + 52 + LY.gap, ids = Object.keys(ITEMS).filter(k => ITEMS[k][0] === acct.wslot), cw = (LY.w - LY.gap * 2) / 3, ch = Math.min(118, (end - gy - LY.gap) / 2);
-  ids.forEach((id, i) => { const it = item(id), have = acct.inv[id] || 0, on = gear[it.slot] === id, x = LY.m + (i % 3) * (cw + LY.gap), y = gy + Math.floor(i / 3) * (ch + LY.gap);
-    const over = btn(x, y, cw, ch, () => { if (!have) toast('뽑기 기계에서 얻을 수 있어요'); else equip(it.slot, on ? null : id); });
-    rr(x, y, cw, ch, 16, have ? (on ? '#fff3c4' : over ? '#fffdf3' : '#fffaf0') : 'rgba(234,223,210,0.7)', have ? GRADE[it.grade].c : '#b9aaa0', on ? 5 : 3);
-    if (have) { itemIcon(id, x + 40, y + ch / 2 - 4, 54); } else text('?', x + 40, y + ch / 2, 40, '#b9aaa0', 'center', null, F_T);
-    gradeChip(it.grade, x + cw - 56, y + 10);
-    text(have ? it.name : '???', x + 78, y + ch / 2 - 14, 19, have ? INK : '#9a8b93', 'left', null, F_T);
-    text(`${STAT_NAME[it.stat]} +${it.amt}`, x + 78, y + ch / 2 + 14, 17, GRADE[it.grade].c, 'left', null, F_B);
-    if (on) text('장착 중', x + cw - 12, y + ch - 16, 16, CORAL, 'right', null, F_T); else if (have > 1) text('×' + have, x + cw - 12, y + ch - 16, 16, '#7a6872', 'right', null, F_N);
-  });
-}
 function drawGachaTab(y0, end) {
   const G = acct.g, cx = W / 2, h = end - y0, base = y0 + h - 30, k = Math.min(1, h / 470);
   ctx.save(); ctx.translate(cx, base); ctx.scale(k, k); ctx.lineWidth = 3.4; ctx.strokeStyle = OUT; ctx.lineJoin = 'round';
@@ -1668,7 +1640,6 @@ function reset() {
 function goHome() { netClose(); scene = 'title'; }
 // One layout for every menu page, in the 720 x 900 box: the same side margins, the title row,
 // where the content starts, and one bottom row of buttons (the side button left, the main one right)
-const TITLE_BTNS = params.get('tb') || 'a'; // the title's buttons: a two rows, b one row
 const LY = { m: 40, w: 640, btnH: 68, side: 200, gap: 16, pad: 24 };
 function computeLayout() { // where the garden ends, the title row, the content and the bottom row, for this screen's height
   const ex = H - 900;
@@ -1705,13 +1676,17 @@ function button(label, x, y, w, h, fn, o = {}) { // a big rounded button, for th
 }
 const STAT_COL = [CORAL, '#ffb86b', '#c3a6e8', BALL, SKY];
 const STAT_DO = ['공이 빨라져요', '오래 뛰어도 안 지쳐요', '정확하고 드롭샷이 죽어요', '빨리 돌고 멀리 닿아요', '달리기가 빨라요'];
+const BAR = { lab: 88, step: 22, cell: 18, n: 7 }; // five cells for the animal, two spare for its gear
+const barsWidth = dw => BAR.lab + BAR.step * BAR.n + 10 + dw;
 function statBars(a, x, y, bonus = {}) {
   STATS.forEach((s, i) => {
     const v = stat(a, s, null), yy = y + i * 30, add = bonus[s] || 0;
     text(STAT_KO[i], x, yy, 21, INK, 'left', null, F_T);
-    for (let k = 0; k < 5; k++) rr(x + 92 + k * 30, yy - 9, 24, 18, 6, k < v ? STAT_COL[i] : '#eadfd2', OUT, 2.2);
-    if (add) rr(x + 92 + Math.min(v, 4) * 30 + (v >= 5 ? 24 : 0), yy - 9, 24 * Math.min(add, 1), 18, 4, '#3d8be0', OUT, 2); // what the gear adds
-    text(STAT_DO[i], x + 248, yy, 17, '#7a6872', 'left', null, F_B);
+    for (let k = 0; k < BAR.n; k++) { const cx = x + BAR.lab + k * BAR.step, spare = k >= 5, fill = Math.max(0, Math.min(1, v + add - k));
+      if (spare) { ctx.setLineDash([3, 3]); rr(cx, yy - 9, BAR.cell, 18, 5, 'rgba(234,223,210,0.45)', '#b9aaa0', 1.6); ctx.setLineDash([]); }
+      else rr(cx, yy - 9, BAR.cell, 18, 5, k < v ? STAT_COL[i] : '#eadfd2', OUT, 2.2);
+      if (k >= v && fill > 0) rr(cx, yy - 9, BAR.cell * fill, 18, 4, '#3d8be0', OUT, 1.8); } // what the gear adds, in blue, into the spare cells
+    text(STAT_DO[i], x + BAR.lab + BAR.step * BAR.n + 10, yy, 17, '#7a6872', 'left', null, F_B);
   });
 }
 // the way in: format, then who you play, then your animal, then the court (an invited guest only picks an animal)
@@ -1779,7 +1754,7 @@ const scenes = {
     draw() {
       menuBegin();
       const rows = [['이동', '방향키 ← → ↑ ↓'], ['스트로크', 'Q  (꾹 눌렀다 놓으면 파워샷)'], ['슬라이스 · 로브 · 스매시', 'W  ·  E  ·  R'], ['일시정지 · 소리 · 낙하지점', 'P  ·  M  ·  G']];
-      const P = LY.tall ? 30 : 22, step = LY.tall ? 44 : 38, ph = P * 2 + step * 6, pt = contentEnd() - ph - (room ? 0 : TITLE_BTNS === 'b' ? 8 : 86); // six lines, evenly spaced, the same margin above and below
+      const P = LY.tall ? 30 : 22, step = LY.tall ? 44 : 38, ph = P * 2 + step * 6, pt = contentEnd() - ph - (room ? 0 : 8); // six lines, evenly spaced, the same margin above and below
       if (LY.tall) { const r0 = LY.sb + 20, free = Math.max(0, pt - 16 - r0 - 330); drawTitleShow(state.t, r0 + 70 + free * 0.3, pt - 22 - free * 0.25); }
       else drawTitleShow(state.t, 136, Math.min(412, pt - 30));
       panel(LY.m, pt, LY.w, ph);
@@ -1788,18 +1763,12 @@ const scenes = {
       rows.forEach((c, i) => { text(c[0], 334, ly(i + 1), 21, '#7a6872', 'right', null, F_B); text(c[1], 352, ly(i + 1), 22, INK, 'left', null, F_B); });
       text(touchUI ? '모바일에서는 조이스틱과 버튼으로 해요' : '버튼은 마우스로 눌러도 돼요', W / 2, ly(5), 23, '#3d9be0', 'center', null, F_H);
       if (room) wideBtn('초대받은 방에 들어가기', () => { scene = 'select'; });
-      else if (TITLE_BTNS === 'b') { // one row: three small picture buttons, then a wide start
+      else { // one row: three small picture buttons, then the start, the biggest
         const sq = 92, sh = 84, y = LY.bot - 8, sx = LY.m + (sq + 12) * 3;
         iconButton('trophy', '랭킹', LY.m, y, sq, sh, () => { scene = 'ranking'; loadRanking(); });
         iconButton('capsule', '뽑기', LY.m + sq + 12, y, sq, sh, () => { acct.wtab = 'gacha'; scene = 'wardrobe'; });
         iconButton('medal', '업적', LY.m + (sq + 12) * 2, y, sq, sh, () => { acct.wtab = 'ach'; scene = 'wardrobe'; }, anyClaimable());
         button('시작하기', sx, y, LY.m + LY.w - sx, sh, () => { scene = 'format'; }, { size: 36, fill: '#fff3c4' });
-      } else { // two rows: the picture buttons above, the start across the whole width below
-        const bw = (LY.w - 12 * 2) / 3, y1 = LY.bot - 86;
-        iconButton('trophy', '랭킹', LY.m, y1, bw, 74, () => { scene = 'ranking'; loadRanking(); });
-        iconButton('capsule', '뽑기', LY.m + bw + 12, y1, bw, 74, () => { acct.wtab = 'gacha'; scene = 'wardrobe'; });
-        iconButton('medal', '업적', LY.m + (bw + 12) * 2, y1, bw, 74, () => { acct.wtab = 'ach'; scene = 'wardrobe'; }, anyClaimable());
-        button('시작하기', LY.m, LY.bot + 4, LY.w, 76, () => { scene = 'format'; }, { size: 36, fill: '#fff3c4' });
       }
       { const P = acct.prof, t = acct.user ? (P && P.nickname ? P.nickname + ' · 뽑기권 ' + P.tickets : '로그인됨') : '로그인', cw = Math.max(132, t.length * 17 + 44), cx = W - LY.m - cw, cy = 14;
         const over = btn(cx, cy, cw, 50, () => { scene = 'account'; });
@@ -1931,18 +1900,18 @@ const scenes = {
           text(it.name, x + 58, y + 52, 16, INK, 'left', null, F_T); text(`${STAT_NAME[it.stat]} +${it.amt}`, x + 58, y + 76, 15, GRADE[it.grade].c, 'left', null, F_T); }
         else text('비어 있음', x + sw / 2, y + 60, 17, '#a8999f', 'center', null, F_B);
       });
-      // every item, one row a slot
-      y += sh + 22; text('전체 아이템', LY.m, y + 12, 22, INK, 'left', null, F_T); text('가진 아이템을 누르면 입고 벗어요', LY.m + LY.w, y + 12, 16, '#7a6872', 'right', null, F_B); y += 30;
-      const cw = (LY.w - 10 * 5) / 6, chh = Math.min(104, (contentEnd() - y - 10 * 3) / 4);
-      SLOTS.forEach(([sid], r) => Object.keys(ITEMS).filter(k => ITEMS[k][0] === sid).forEach((id, i) => {
-        const it = item(id), have = acct.inv[id] || 0, on = gear[sid] === id, x = LY.m + i * (cw + 10), yy = y + r * (chh + 10);
-        const over = btn(x, yy, cw, chh, () => { closetSel = id; if (!have) toast('뽑기 기계에서 얻을 수 있어요'); else equip(sid, on ? null : id); });
-        rr(x, yy, cw, chh, 14, have ? (on ? '#fff3c4' : over ? '#fffdf3' : '#ffffff') : 'rgba(214,204,196,0.6)', have ? GRADE[it.grade].c : '#bfb2a8', on ? 5 : have ? 3 : 2);
-        E(x + 12, yy + 12, 5, 5, have ? GRADE[it.grade].c : '#bfb2a8');
-        if (have) { ctx.save(); ctx.beginPath(); ctx.rect(x + 3, yy + 3, cw - 6, chh - 30); ctx.clip(); itemIcon(id, x + cw / 2, yy + (chh - 22) / 2 + 2, Math.min(50, chh * 0.5)); ctx.restore();
-          text(it.name, x + cw / 2, yy + chh - 15, 13, INK, 'center', null, F_T); if (on) text('착용', x + cw - 8, yy + 13, 13, CORAL, 'right', null, F_T); else if (have > 1) text('×' + have, x + cw - 8, yy + 13, 13, '#7a6872', 'right', null, F_N); }
-        else text('?', x + cw / 2, yy + chh / 2 + 2, 34, '#a8999f', 'center', null, F_T);
-      }));
+      // every item: eight across, slot by slot, the strongest last
+      y += sh + 22; text('전체 아이템', LY.m, y + 12, 22, INK, 'left', null, F_T); text('누르면 정보 · 가진 아이템은 입고 벗어요', LY.m + LY.w, y + 12, 16, '#7a6872', 'right', null, F_B); y += 30;
+      const ids = Object.keys(ITEMS).sort((p, q) => SLOTS.findIndex(z => z[0] === ITEMS[p][0]) - SLOTS.findIndex(z => z[0] === ITEMS[q][0]) || ITEMS[p][1] - ITEMS[q][1]);
+      const cols = 8, gap = 8, cw = (LY.w - gap * (cols - 1)) / cols, chh = Math.min(76, (contentEnd() - y - gap * 5) / 6);
+      ids.forEach((id, n) => { const it = item(id), have = acct.inv[id] || 0, on = gear[it.slot] === id, x = LY.m + (n % cols) * (cw + gap), yy = y + Math.floor(n / cols) * (chh + gap);
+        const over = btn(x, yy, cw, chh, () => { closetSel = id; if (!have) toast('뽑기 기계에서 얻을 수 있어요'); else equip(it.slot, on ? null : id); });
+        rr(x, yy, cw, chh, 12, have ? (on ? '#fff3c4' : over || closetSel === id ? '#fffdf3' : '#ffffff') : 'rgba(214,204,196,0.6)', have ? GRADE[it.grade].c : closetSel === id ? '#8f99a3' : '#bfb2a8', on ? 4.5 : have ? 3 : 2);
+        if (have) { ctx.save(); ctx.beginPath(); ctx.rect(x + 3, yy + 3, cw - 6, chh - 6); ctx.clip(); itemIcon(id, x + cw / 2, yy + chh / 2 + 2, Math.min(44, chh * 0.6)); ctx.restore();
+          if (on) { E(x + cw - 10, yy + 10, 8, 8, CORAL); text('✓', x + cw - 10, yy + 11, 11, '#fff', 'center', null, F_T); } else if (have > 1) text('×' + have, x + cw - 6, yy + 11, 12, '#7a6872', 'right', null, F_N); }
+        else text('?', x + cw / 2, yy + chh / 2 + 2, 28, '#a8999f', 'center', null, F_T);
+        E(x + 9, yy + 9, 4, 4, have ? GRADE[it.grade].c : '#bfb2a8');
+      });
       const sel = item(closetSel);
       if (acct.msg && acct.msgT < 2.6) { ctx.font = `24px ${F_B}`; const w = ctx.measureText(acct.msg).width + 60; rr(W / 2 - w / 2, LY.bot - 62, w, 46, 23, 'rgba(59,51,64,0.9)', null); text(acct.msg, W / 2, LY.bot - 38, 21, CREAM, 'center', null, F_B); }
       sideBtn('뒤로', () => { scene = closetBack; });
@@ -1973,14 +1942,14 @@ const scenes = {
       const a = state.sel, A = ANIMALS[a], gear = myGear(), py = LY.top + 2 * (ch + LY.gap), ph = LY.tall ? 400 : 356;
       panel(LY.m, py, LY.w, ph);
       ctx.font = `${Math.round(17 * 1.1)}px ${F_B}`; const dw = Math.max(...STAT_DO.map(d => ctx.measureText(d).width));
-      const aw = 130, tw = 248 + dw, bw = aw + 18 + tw, bh = 36 + 38 + 30 * 4 + 14, bx = LY.m + (LY.w - bw) / 2, by = py + (ph - bh) / 2 + 10;
-      const ax = bx + aw / 2 - 8, ay = py + ph - 34, ks = LY.tall ? 1.6 : 1.4; // the animal stands tall on the left, wearing its gear
+      const tw = barsWidth(dw), aw = Math.min(140, LY.w - LY.pad * 2 - 14 - tw), bw = aw + 14 + tw, bh = 36 + 38 + 30 * 4 + 14, bx = LY.m + (LY.w - bw) / 2, by = py + (ph - bh) / 2 + 10;
+      const ax = bx + aw / 2 - 6, ay = py + ph - 34, ks = Math.min(LY.tall ? 1.6 : 1.4, aw / 84); // the animal stands tall on the left, wearing its gear
       ctx.fillStyle = 'rgba(70,90,140,0.2)'; ctx.beginPath(); ctx.ellipse(ax, ay, 62, 14, 0, 0, 7); ctx.fill();
       ctx.lineWidth = 2.6; ctx.strokeStyle = OUT;
       drawAnimal(a, ax, ay, ks, { front: true, t: state.t, accent: CORAL, gear });
       { const hx = LY.m + 14, hy = py + 14, over = btn(hx, hy, 64, 64, () => openCloset('select')); // the hanger: the closet
         rr(hx, hy + 4, 64, 64, 16, OUT, null); rr(hx, hy, 64, 64, 16, over ? '#fff3c4' : '#ffffff', OUT, 2.8); icon('hanger', hx + 32, hy + 32, 46); }
-      const tx = bx + aw + 20;
+      const tx = bx + aw + 14;
       text(A.ko, tx, by + 16, 34, INK, 'left', null, F_T);
       text(A.note, tx, by + 54, 23, '#c0605a', 'left', null, F_H);
       statBars(a, tx, by + 90, gearBonus(gear));
