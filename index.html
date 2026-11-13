@@ -159,7 +159,11 @@ addEventListener('pointerdown', e => {
   }
   tapAt = { id: e.pointerId, x: p.x, y: p.y };
 });
-addEventListener('pointermove', e => { const p = toLogical(e); if (e.pointerId === stick.id) stickMove(p); else mouse = p; });
+addEventListener('pointermove', e => { const p = toLogical(e); if (e.pointerId === stick.id) stickMove(p); else mouse = p;
+  if (scene === 'closet' && closet.drag && closet.drag.id === e.pointerId) closet.scroll = clamp(closet.drag.s - (p.y - closet.drag.y), 0, closet.max); });
+addEventListener('pointerdown', e => { if (scene === 'closet') { const p = toLogical(e); if (p.y > closet.v0 && p.y < closet.v1) closet.drag = { id: e.pointerId, y: p.y, s: closet.scroll }; } });
+addEventListener('pointerup', e => { if (closet.drag && closet.drag.id === e.pointerId) closet.drag = null; });
+addEventListener('wheel', e => { if (scene !== 'closet') return; closet.scroll = clamp(closet.scroll + e.deltaY * W / canvas.getBoundingClientRect().width, 0, closet.max); e.preventDefault(); }, { passive: false });
 for (const n of ['pointerup', 'pointercancel']) addEventListener(n, e => {
   const k = held.get(e.pointerId);
   if (k) { held.delete(e.pointerId); if (![...held.values()].includes(k)) down.delete(k); }
@@ -212,7 +216,7 @@ const ANIMALS = [
   { id: 'dog', ko: '개', c: '#f0c98d', d: '#a5673f', l: '#fff3dc', note: '뛰고 또 뛰는 집념' },
   { id: 'pig', ko: '돼지', c: '#f9b7c4', d: '#e98aa0', l: '#ffdbe3', note: '든든한 체력, 묵직한 힘' },
 ];
-const STATS = ['power', 'stamina', 'spin', 'reflex', 'speed'], STAT_KO = ['파워', '스태미너', '스핀', '순발력', '스피드'];
+const STATS = ['power', 'stamina', 'spin', 'reflex', 'speed'], STAT_KO = ['파워', '체력', '스핀', '순발력', '스피드'];
 // Each animal has a court it loves (its signature stat a little higher) and one it dislikes (a little lower)
 const AFFINITY = {
   ox: ['grass', 'power', 'clay'], tiger: ['grass', 'power', 'clay'], rabbit: ['grass', 'speed', 'clay'], horse: ['grass', 'speed', 'clay'],
@@ -1439,7 +1443,7 @@ const ITEMS = { // the same catalogue as the server's items table; look is how i
   r6: ['racket', 3, 'power', 0.5, '황금 라켓', { c: '#f6c445' }], r12: ['racket', 3, 'spin', 0.5, '무지개 라켓', { c: '#b48be8' }],
 };
 const item = id => { const q = ITEMS[id]; return q && { id, slot: q[0], grade: q[1], stat: q[2], amt: q[3], name: q[4], look: q[5] }; };
-const STAT_NAME = { power: '파워', stamina: '스태미너', spin: '스핀', reflex: '순발력', speed: '스피드' };
+const STAT_NAME = { power: '파워', stamina: '체력', spin: '스핀', reflex: '순발력', speed: '스피드' };
 function gearBonus(ids) { const b = {}; for (const id of Object.values(ids || {})) { const it = item(id); if (it) b[it.stat] = (b[it.stat] || 0) + it.amt; } return b; }
 const ACH = [ // the achievements: what counts, the goal, and the server's reward
   ['daily', '오늘의 출석', '하루에 한 번 받을 수 있어요', () => [1, 1]],
@@ -1574,8 +1578,10 @@ function iconButton(kind, label, x, y, w, h, fn, dot) { // a small button: a pic
   if (dot) E(x + w - 14, y + 14, 8, 8, '#e2574c');
 }
 // ---- 옷장: what you wear on top, every item below; only what you own shows its shape ----
-let closetBack = 'select', closetSel = null;
-function openCloset(back) { if (!acct.user) { toast('로그인하면 옷장을 쓸 수 있어요'); return; } closetBack = back; closetSel = null; scene = 'closet'; tone(660, 0.06, 'sine', 0.15); }
+let closetBack = 'select';
+const closet = { scroll: 0, max: 0, sel: null, v0: 0, v1: 0, drag: null };
+const SHADOW = 'filter' in CanvasRenderingContext2D.prototype; // a true silhouette where the browser can draw one
+function openCloset(back) { if (!acct.user) { toast('로그인하면 옷장을 쓸 수 있어요'); return; } closetBack = back; closet.sel = null; closet.scroll = 0; scene = 'closet'; tone(660, 0.06, 'sine', 0.15); }
 function drawGachaTab(y0, end) {
   const G = acct.g, cx = W / 2, h = end - y0, base = y0 + h - 30, k = Math.min(1, h / 470);
   ctx.save(); ctx.translate(cx, base); ctx.scale(k, k); ctx.lineWidth = 3.4; ctx.strokeStyle = OUT; ctx.lineJoin = 'round';
@@ -1675,8 +1681,8 @@ function button(label, x, y, w, h, fn, o = {}) { // a big rounded button, for th
   else text(label, x + w / 2, y + h / 2 + 1, o.size || 28, o.ink || INK, 'center', null, F_T);
 }
 const STAT_COL = [CORAL, '#ffb86b', '#c3a6e8', BALL, SKY];
-const STAT_DO = ['공이 빨라져요', '오래 뛰어도 안 지쳐요', '정확하고 드롭샷이 죽어요', '빨리 돌고 멀리 닿아요', '달리기가 빨라요'];
-const BAR = { lab: 88, step: 22, cell: 18, n: 7 }; // five cells for the animal, two spare for its gear
+const STAT_DO = ['공이 빨라져요', '더 오래 뛰어요', '정확하고 잘 휘어요', '멀리까지 닿아요', '달리기가 빨라요'];
+const BAR = { lab: 76, step: 22, cell: 18, n: 7 }; // five cells for the animal, two spare for its gear
 const barsWidth = dw => BAR.lab + BAR.step * BAR.n + 10 + dw;
 function statBars(a, x, y, bonus = {}) {
   STATS.forEach((s, i) => {
@@ -1884,38 +1890,58 @@ const scenes = {
     },
   },
   closet: {
-    update(dt) { state.t += dt; acct.msgT += dt; if (pressed('Escape')) scene = closetBack; },
+    update(dt) {
+      state.t += dt; acct.msgT += dt; if (pressed('Escape')) scene = closetBack;
+      if (anyHit(...K_D)) closet.scroll = clamp(closet.scroll + 160, 0, closet.max); if (anyHit(...K_U)) closet.scroll = clamp(closet.scroll - 160, 0, closet.max);
+    },
     draw() {
       menuBegin('옷장', true);
-      const gear = myGear(), own = Object.keys(ITEMS).filter(id => acct.inv[id]).length;
+      const gear = myGear(), own = Object.keys(ITEMS).filter(id => acct.inv[id]).length, v0 = LY.top, v1 = contentEnd();
       text(`보유 ${own} / ${Object.keys(ITEMS).length}`, LY.m + LY.w, LY.titleY, 21, '#3d8be0', 'right', null, F_T);
-      // what is worn: four slots across
-      let y = LY.top; text('장착 중', LY.m, y + 14, 22, INK, 'left', null, F_T); y += 34;
-      const sw = (LY.w - 12 * 3) / 4, sh = 100;
-      SLOTS.forEach(([id, ko], i) => { const x = LY.m + i * (sw + 12), it = item(gear[id]);
-        const over = btn(x, y, sw, sh, () => { if (it) { closetSel = it.id; equip(id, null); } });
-        rr(x, y, sw, sh, 16, it ? (over ? '#fffdf3' : '#ffffff') : 'rgba(255,248,231,0.75)', it ? GRADE[it.grade].c : '#cdbfb3', it ? 4 : 2.4);
-        text(ko, x + 12, y + 18, 15, '#7a6872', 'left', null, F_B);
-        if (it) { gradeChip(it.grade, x + sw - 54, y + 8, 22); ctx.save(); ctx.beginPath(); ctx.rect(x + 4, y + 26, 52, 70); ctx.clip(); itemIcon(it.id, x + 30, y + 60, 40); ctx.restore();
-          text(it.name, x + 58, y + 52, 16, INK, 'left', null, F_T); text(`${STAT_NAME[it.stat]} +${it.amt}`, x + 58, y + 76, 15, GRADE[it.grade].c, 'left', null, F_T); }
-        else text('비어 있음', x + sw / 2, y + 60, 17, '#a8999f', 'center', null, F_B);
+      closet.v0 = v0; closet.v1 = v1;
+      ctx.save(); ctx.beginPath(); ctx.rect(0, v0, W, v1 - v0); ctx.clip(); ctx.translate(0, -closet.scroll);
+      const sb = (x, y, w, h, fn) => { const a = Math.max(y, v0 + closet.scroll), b = Math.min(y + h, v1 + closet.scroll); if (b > a) hot.push({ x, y: a - closet.scroll, w, h: b - a, fn }); }; // only the part in view can be tapped
+      let y = v0;
+      // what is worn: two by two, big
+      text('장착 중', LY.m, y + 16, 24, INK, 'left', null, F_T); y += 38;
+      const ew = (LY.w - 14) / 2, eh = 128;
+      SLOTS.forEach(([id, ko], i) => { const x = LY.m + (i % 2) * (ew + 14), yy = y + Math.floor(i / 2) * (eh + 14), it = item(gear[id]);
+        sb(x, yy, ew, eh, () => { if (it) { closet.sel = it.id; equip(id, null); } });
+        rr(x, yy + 4, ew, eh, 18, OUT, null); rr(x, yy, ew, eh, 18, it ? '#ffffff' : 'rgba(255,248,231,0.8)', it ? GRADE[it.grade].c : '#cdbfb3', it ? 4.5 : 2.6);
+        if (it) { ctx.save(); ctx.beginPath(); ctx.rect(x + 6, yy + 6, 104, eh - 12); ctx.clip(); itemIcon(it.id, x + 58, yy + eh / 2 + 4, 78); ctx.restore();
+          text(ko, x + 118, yy + 26, 17, '#7a6872', 'left', null, F_B); gradeChip(it.grade, x + ew - 60, yy + 12, 26);
+          text(it.name, x + 118, yy + 62, 22, INK, 'left', null, F_T); text(`${STAT_NAME[it.stat]} +${it.amt}`, x + 118, yy + 96, 19, GRADE[it.grade].c, 'left', null, F_T); }
+        else { text(ko, x + ew / 2, yy + eh / 2 - 14, 22, '#7a6872', 'center', null, F_T); text('비어 있음', x + ew / 2, yy + eh / 2 + 18, 18, '#a8999f', 'center', null, F_B); }
       });
-      // every item: eight across, slot by slot, the strongest last
-      y += sh + 22; text('전체 아이템', LY.m, y + 12, 22, INK, 'left', null, F_T); text('누르면 정보 · 가진 아이템은 입고 벗어요', LY.m + LY.w, y + 12, 16, '#7a6872', 'right', null, F_B); y += 30;
-      const ids = Object.keys(ITEMS).sort((p, q) => SLOTS.findIndex(z => z[0] === ITEMS[p][0]) - SLOTS.findIndex(z => z[0] === ITEMS[q][0]) || ITEMS[p][1] - ITEMS[q][1]);
-      const cols = 8, gap = 8, cw = (LY.w - gap * (cols - 1)) / cols, chh = Math.min(76, (contentEnd() - y - gap * 5) / 6);
-      ids.forEach((id, n) => { const it = item(id), have = acct.inv[id] || 0, on = gear[it.slot] === id, x = LY.m + (n % cols) * (cw + gap), yy = y + Math.floor(n / cols) * (chh + gap);
-        const over = btn(x, yy, cw, chh, () => { closetSel = id; if (!have) toast('뽑기 기계에서 얻을 수 있어요'); else equip(it.slot, on ? null : id); });
-        rr(x, yy, cw, chh, 12, have ? (on ? '#fff3c4' : over || closetSel === id ? '#fffdf3' : '#ffffff') : 'rgba(214,204,196,0.6)', have ? GRADE[it.grade].c : closetSel === id ? '#8f99a3' : '#bfb2a8', on ? 4.5 : have ? 3 : 2);
-        if (have) { ctx.save(); ctx.beginPath(); ctx.rect(x + 3, yy + 3, cw - 6, chh - 6); ctx.clip(); itemIcon(id, x + cw / 2, yy + chh / 2 + 2, Math.min(44, chh * 0.6)); ctx.restore();
-          if (on) { E(x + cw - 10, yy + 10, 8, 8, CORAL); text('✓', x + cw - 10, yy + 11, 11, '#fff', 'center', null, F_T); } else if (have > 1) text('×' + have, x + cw - 6, yy + 11, 12, '#7a6872', 'right', null, F_N); }
-        else text('?', x + cw / 2, yy + chh / 2 + 2, 28, '#a8999f', 'center', null, F_T);
-        E(x + 9, yy + 9, 4, 4, have ? GRADE[it.grade].c : '#bfb2a8');
+      y += 2 * (eh + 14) + 16;
+      // every item, slot by slot, four across; what you do not own is a dark shape and a question
+      const cw = (LY.w - 12 * 3) / 4, chh = 150;
+      SLOTS.forEach(([sid, ko]) => {
+        const ids = Object.keys(ITEMS).filter(k => ITEMS[k][0] === sid).sort((p, q) => ITEMS[p][1] - ITEMS[q][1]), got = ids.filter(id => acct.inv[id]).length;
+        text(ko, LY.m, y + 18, 24, INK, 'left', null, F_T); text(`${got} / ${ids.length}`, LY.m + LY.w, y + 18, 19, '#7a6872', 'right', null, F_N); y += 40;
+        ids.forEach((id, n) => { const it = item(id), have = acct.inv[id] || 0, on = gear[sid] === id, x = LY.m + (n % 4) * (cw + 12), yy = y + Math.floor(n / 4) * (chh + 12);
+          sb(x, yy, cw, chh, () => { closet.sel = id; if (!have) toast('뽑기 기계에서 얻을 수 있어요'); else equip(sid, on ? null : id); });
+          rr(x, yy, cw, chh, 16, have ? (on ? '#fff3c4' : closet.sel === id ? '#fffdf3' : '#ffffff') : '#e9e1d8', have ? GRADE[it.grade].c : closet.sel === id ? '#7a6872' : '#c9bdb2', on ? 5 : have ? 3.4 : 2.4);
+          if (have) { ctx.save(); ctx.beginPath(); ctx.rect(x + 4, yy + 4, cw - 8, chh - 56); ctx.clip(); itemIcon(id, x + cw / 2, yy + 52, 70); ctx.restore();
+            text(it.name, x + cw / 2, yy + chh - 42, 17, INK, 'center', null, F_T); text(`${STAT_NAME[it.stat]} +${it.amt}`, x + cw / 2, yy + chh - 18, 15, GRADE[it.grade].c, 'center', null, F_T);
+            if (on) { rr(x + 8, yy + 8, 44, 24, 12, CORAL, null); text('착용', x + 30, yy + 21, 14, '#fff', 'center', null, F_T); } else if (have > 1) text('×' + have, x + cw - 10, yy + 18, 15, '#7a6872', 'right', null, F_N); }
+          else { // a silhouette: the shape in shadow, the name a mystery
+            ctx.save(); ctx.beginPath(); ctx.rect(x + 4, yy + 4, cw - 8, chh - 56); ctx.clip(); ctx.globalAlpha = 0.28; if (SHADOW) ctx.filter = 'brightness(0)'; itemIcon(id, x + cw / 2, yy + 52, 70); ctx.restore();
+            if (!SHADOW) text('?', x + cw / 2, yy + 52, 44, '#a8999f', 'center', null, F_T);
+            rr(x + cw / 2 - 16, yy + 64, 32, 28, 14, '#ffffff', '#b9aaa0', 2); text('?', x + cw / 2, yy + 79, 20, '#7a6872', 'center', null, F_T);
+            text('???', x + cw / 2, yy + chh - 42, 17, '#9a8b93', 'center', null, F_T); text(GRADE[it.grade].ko, x + cw / 2, yy + chh - 18, 15, GRADE[it.grade].c, 'center', null, F_T); }
+          E(x + cw - 14, yy + chh - 14, 5, 5, GRADE[it.grade].c);
+        });
+        y += 3 * (chh + 12) + 14;
       });
-      const sel = item(closetSel);
+      ctx.restore();
+      closet.max = Math.max(0, y - v1);
+      if (closet.max > 0) { const th = (v1 - v0) * (v1 - v0) / (y - v0), ty = v0 + (v1 - v0 - th) * closet.scroll / closet.max; rr(LY.m + LY.w + 10, ty, 6, th, 3, 'rgba(74,61,71,0.35)', null); } // where you are in the list
+      if (closet.scroll < closet.max - 4) { const g = ctx.createLinearGradient(0, v1 - 40, 0, v1); g.addColorStop(0, 'rgba(162,227,200,0)'); g.addColorStop(1, 'rgba(162,227,200,0.9)'); ctx.fillStyle = g; ctx.fillRect(LY.m - 10, v1 - 40, LY.w + 20, 40); }
+      const sel = item(closet.sel);
       if (acct.msg && acct.msgT < 2.6) { ctx.font = `24px ${F_B}`; const w = ctx.measureText(acct.msg).width + 60; rr(W / 2 - w / 2, LY.bot - 62, w, 46, 23, 'rgba(59,51,64,0.9)', null); text(acct.msg, W / 2, LY.bot - 38, 21, CREAM, 'center', null, F_B); }
       sideBtn('뒤로', () => { scene = closetBack; });
-      menuEnd(sel ? `${acct.inv[sel.id] ? sel.name : '???'} · ${GRADE[sel.grade].ko} · ${STAT_NAME[sel.stat]} +${sel.amt}` : '일반 · 희귀 · 영웅 · 전설 순으로 강해져요');
+      menuEnd(sel ? `${acct.inv[sel.id] ? sel.name : '???'} · ${GRADE[sel.grade].ko} · ${STAT_NAME[sel.stat]} +${sel.amt}` : '위아래로 밀어서 전체 아이템을 볼 수 있어요');
     },
   },
   select: {
@@ -1935,7 +1961,7 @@ const scenes = {
         const over = btn(x, y, cw, ch, () => { if (state.sel === i) pickAnimal(); else { state.sel = i; tone(660, 0.05, 'sine', 0.15); } });
         rr(x, y, cw, ch, 14, on ? '#fff3c4' : over ? '#fffdf3' : 'rgba(255,248,231,0.92)', on ? CORAL : OUT, on ? 5 : 3);
         ctx.lineWidth = 2.6; ctx.strokeStyle = OUT;
-        drawAnimal(i, cx, y + ch - 32 - 2 * k, 0.4 * Math.min(k, 1.2), { front: true, t: on ? state.t : 0.4, anim: on ? 'run' : 'idle', accent: on ? CORAL : '#d9cbbd' });
+        drawAnimal(i, cx, y + ch - 31 - 2 * k, 0.46 * Math.min(k, 1.2), { front: true, t: on ? state.t : 0.4, anim: on ? 'run' : 'idle', accent: on ? CORAL : '#d9cbbd' });
         text(A.ko, cx, y + ch - 15, 20, INK, 'center', on ? '#fff3c4' : CREAM, F_T);
       });
       // the chosen animal: its card, wearing the account's gear, with the four slots along the bottom
@@ -1950,8 +1976,8 @@ const scenes = {
       drawAnimal(a, ax, ay, ks, { front: true, t: state.t, accent: CORAL, gear });
       { const hx = lx, hy = py + LY.pad, over = btn(hx, hy, 64, 64, () => openCloset('select')); // the hanger: the closet
         rr(hx, hy + 4, 64, 64, 16, OUT, null); rr(hx, hy, 64, 64, 16, over ? '#fff3c4' : '#ffffff', OUT, 2.8); icon('hanger', hx + 32, hy + 32, 46); }
-      text(A.ko, lx + 82, py + LY.pad + 16, 34, INK, 'left', null, F_T);
-      text(A.note, lx + 82, py + LY.pad + 52, 23, '#c0605a', 'left', null, F_H);
+      text(A.ko, lx, sy0 - 74, 34, INK, 'left', null, F_T);
+      text(A.note, lx, sy0 - 38, 23, '#c0605a', 'left', null, F_H);
       statBars(a, lx, sy0, gearBonus(gear));
       if (acct.msg && acct.msgT < 2.6) { ctx.font = `24px ${F_B}`; const w = ctx.measureText(acct.msg).width + 60; rr(W / 2 - w / 2, py + ph - 60, w, 46, 23, 'rgba(59,51,64,0.9)', null); text(acct.msg, W / 2, py + ph - 36, 21, CREAM, 'center', null, F_B); }
       sideBtn('뒤로', () => { scene = room ? 'title' : setup.practice ? 'format' : 'mode'; });
