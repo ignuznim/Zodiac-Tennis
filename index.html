@@ -1549,6 +1549,33 @@ function drawGearPicker(slot, py, ph) { // the items for one slot, over the play
     if (on) text('장착 중', x + cw - 10, y + chh - 14, 15, CORAL, 'right', null, F_T); else if (have > 1) text('×' + have, x + cw - 10, y + chh - 14, 15, '#7a6872', 'right', null, F_N);
   });
 }
+function icon(kind, x, y, s) { // trophy, capsule, medal, hanger: drawn about s across, centred on x, y
+  const k = s / 60; ctx.save(); ctx.translate(x, y); ctx.scale(k, k); ctx.lineWidth = 3.2; ctx.strokeStyle = OUT; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  if (kind === 'trophy') {
+    ctx.beginPath(); ctx.arc(-18, -10, 10, Math.PI * 0.5, Math.PI * 1.5); ctx.stroke(); ctx.beginPath(); ctx.arc(18, -10, 10, -Math.PI * 0.5, Math.PI * 0.5); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-20, -24); ctx.lineTo(20, -24); ctx.lineTo(16, 2); ctx.quadraticCurveTo(0, 14, -16, 2); ctx.closePath(); ctx.fillStyle = '#ffd34d'; ctx.fill(); ctx.stroke();
+    rr(-5, 8, 10, 10, 2, '#ffd34d', OUT, 3); rr(-16, 18, 32, 9, 3, '#c98f5f', OUT, 3); star(0, -12, 7, '#fff8e7');
+  } else if (kind === 'capsule') { capsule(0, 0, 24, '#9b5de5', -0.4); star(20, -20, 7, BALL); }
+  else if (kind === 'medal') {
+    poly([-14, -28, -4, -28, 4, -6, -6, -6], '#3d8be0'); poly([14, -28, 4, -28, -4, -6, 6, -6], '#e2574c');
+    E(0, 8, 17, 17, '#ffd34d'); star(0, 8, 9, '#fff8e7');
+  } else if (kind === 'hanger') { // a hook, the hanger's shoulders, and a little shirt on it
+    ctx.beginPath(); ctx.moveTo(0, -18); ctx.arc(5, -24, 6, Math.PI * 0.6, Math.PI * 2.05, false); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-24, -6); ctx.lineTo(0, -18); ctx.lineTo(24, -6); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-24, -6); ctx.lineTo(-11, -6); ctx.quadraticCurveTo(0, 1, 11, -6); ctx.lineTo(24, -6); ctx.lineTo(28, 6); ctx.lineTo(17, 9); ctx.lineTo(17, 28); ctx.lineTo(-17, 28); ctx.lineTo(-17, 9); ctx.lineTo(-28, 6); ctx.closePath();
+    ctx.fillStyle = CORAL; ctx.fill(); ctx.stroke(); ctx.fillStyle = '#fff8e7'; ctx.fillRect(-17, 14, 34, 5);
+  }
+  ctx.restore();
+}
+function iconButton(kind, label, x, y, w, h, fn, dot) { // a small button: a picture over a word
+  const over = btn(x, y, w, h, fn);
+  rr(x, y + 5, w, h, 18, OUT, null); rr(x, y, w, h, 18, over ? '#fffdf3' : 'rgba(255,248,231,0.96)', OUT, 3);
+  icon(kind, x + w / 2, y + h / 2 - 10, Math.min(46, h * 0.56)); text(label, x + w / 2, y + h - 15, 18, INK, 'center', null, F_T);
+  if (dot) E(x + w - 14, y + 14, 8, 8, '#e2574c');
+}
+// ---- 옷장: what you wear on top, every item below; only what you own shows its shape ----
+let closetBack = 'select', closetSel = null;
+function openCloset(back) { if (!acct.user) { toast('로그인하면 옷장을 쓸 수 있어요'); return; } closetBack = back; closetSel = null; scene = 'closet'; tone(660, 0.06, 'sine', 0.15); }
 function drawEquipTab(y0, end) {
   const gear = myGear(), b = gearBonus(gear), a = setup.animal, ph = 236;
   panel(LY.m, y0, LY.w, ph);
@@ -1602,7 +1629,7 @@ function drawGachaTab(y0, end) {
   text(`뽑기권 ${acct.prof.tickets}장`, LY.m + LY.pad, y0 + 30, 26, '#3d8be0', 'left', null, F_T);
   text('업적을 달성하면 뽑기권을 받아요', LY.m + LY.pad, y0 + 64, 19, '#7a6872', 'left', null, F_B);
   if (G.phase === 'reveal') { // the prize, opened
-    const r = G.res, it = item(r.item), c = GRADE[it.grade].c, py = y0 + 40, ph = Math.min(380, h - 60);
+    const r = G.res, it = item(r.item), c = GRADE[it.grade].c, py = y0 + 20, ph = Math.min(360, h - 110);
     ctx.fillStyle = 'rgba(59,51,64,0.45)'; ctx.fillRect(LY.m - 8, y0 - 8, LY.w + 16, h + 16);
     const gl = ctx.createRadialGradient(W / 2, py + ph * 0.42, 10, W / 2, py + ph * 0.42, 220); gl.addColorStop(0, c + 'cc'); gl.addColorStop(1, c + '00'); ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(W / 2, py + ph * 0.42, 220, 0, 7); ctx.fill();
     rr(LY.m + 60, py, LY.w - 120, ph, 26, '#fffaf0', c, 6);
@@ -1611,6 +1638,7 @@ function drawGachaTab(y0, end) {
     itemIcon(r.item, W / 2, py + ph * 0.42, 130 * Math.min(1, G.t * 4));
     text(it.name, W / 2, py + ph - 96, 34, INK, 'center', null, F_T);
     text(`${SLOTS.find(s => s[0] === it.slot)[1]} · ${STAT_NAME[it.stat]} +${it.amt}`, W / 2, py + ph - 52, 23, c, 'center', null, F_T);
+    button('전체 아이템 보기', W / 2 - 150, py + ph + 18, 300, 60, () => { G.phase = 'idle'; openCloset('wardrobe'); }, { size: 24, fill: '#eef7ff' });
     for (let i = 0; i < 8; i++) { const a = i / 8 * 6.283 + G.t, rr2 = 150 + Math.sin(G.t * 3 + i) * 10; star(W / 2 + Math.cos(a) * rr2, py + ph * 0.42 + Math.sin(a) * rr2 * 0.7, 9, i % 2 ? '#fff' : c); }
   }
 }
@@ -1640,6 +1668,7 @@ function reset() {
 function goHome() { netClose(); scene = 'title'; }
 // One layout for every menu page, in the 720 x 900 box: the same side margins, the title row,
 // where the content starts, and one bottom row of buttons (the side button left, the main one right)
+const TITLE_BTNS = params.get('tb') || 'a'; // the title's buttons: a two rows, b one row
 const LY = { m: 40, w: 640, btnH: 68, side: 200, gap: 16, pad: 24 };
 function computeLayout() { // where the garden ends, the title row, the content and the bottom row, for this screen's height
   const ex = H - 900;
@@ -1750,7 +1779,7 @@ const scenes = {
     draw() {
       menuBegin();
       const rows = [['이동', '방향키 ← → ↑ ↓'], ['스트로크', 'Q  (꾹 눌렀다 놓으면 파워샷)'], ['슬라이스 · 로브 · 스매시', 'W  ·  E  ·  R'], ['일시정지 · 소리 · 낙하지점', 'P  ·  M  ·  G']];
-      const P = LY.tall ? 30 : 22, step = LY.tall ? 44 : 38, ph = P * 2 + step * 6, pt = contentEnd() - ph; // six lines, evenly spaced, the same margin above and below
+      const P = LY.tall ? 30 : 22, step = LY.tall ? 44 : 38, ph = P * 2 + step * 6, pt = contentEnd() - ph - (room ? 0 : TITLE_BTNS === 'b' ? 8 : 86); // six lines, evenly spaced, the same margin above and below
       if (LY.tall) { const r0 = LY.sb + 20, free = Math.max(0, pt - 16 - r0 - 330); drawTitleShow(state.t, r0 + 70 + free * 0.3, pt - 22 - free * 0.25); }
       else drawTitleShow(state.t, 136, Math.min(412, pt - 30));
       panel(LY.m, pt, LY.w, ph);
@@ -1759,12 +1788,18 @@ const scenes = {
       rows.forEach((c, i) => { text(c[0], 334, ly(i + 1), 21, '#7a6872', 'right', null, F_B); text(c[1], 352, ly(i + 1), 22, INK, 'left', null, F_B); });
       text(touchUI ? '모바일에서는 조이스틱과 버튼으로 해요' : '버튼은 마우스로 눌러도 돼요', W / 2, ly(5), 23, '#3d9be0', 'center', null, F_H);
       if (room) wideBtn('초대받은 방에 들어가기', () => { scene = 'select'; });
-      else { // the ranking, the wardrobe, the match
-        const bw = (LY.w - LY.gap * 2) / 3;
-        button('랭킹', LY.m, LY.bot, bw, LY.btnH, () => { scene = 'ranking'; loadRanking(); }, { size: 28 });
-        button('뽑기 · 업적', LY.m + bw + LY.gap, LY.bot, bw, LY.btnH, () => { scene = 'wardrobe'; }, { size: 25, fill: '#eef7ff' });
-        if (anyClaimable()) E(LY.m + bw * 2 + LY.gap - 16, LY.bot + 14, 8, 8, '#e2574c');
-        button('시작하기', LY.m + (bw + LY.gap) * 2, LY.bot, bw, LY.btnH, () => { scene = 'format'; }, { size: 29, fill: '#fff3c4' });
+      else if (TITLE_BTNS === 'b') { // one row: three small picture buttons, then a wide start
+        const sq = 92, sh = 84, y = LY.bot - 8, sx = LY.m + (sq + 12) * 3;
+        iconButton('trophy', '랭킹', LY.m, y, sq, sh, () => { scene = 'ranking'; loadRanking(); });
+        iconButton('capsule', '뽑기', LY.m + sq + 12, y, sq, sh, () => { acct.wtab = 'gacha'; scene = 'wardrobe'; });
+        iconButton('medal', '업적', LY.m + (sq + 12) * 2, y, sq, sh, () => { acct.wtab = 'ach'; scene = 'wardrobe'; }, anyClaimable());
+        button('시작하기', sx, y, LY.m + LY.w - sx, sh, () => { scene = 'format'; }, { size: 36, fill: '#fff3c4' });
+      } else { // two rows: the picture buttons above, the start across the whole width below
+        const bw = (LY.w - 12 * 2) / 3, y1 = LY.bot - 86;
+        iconButton('trophy', '랭킹', LY.m, y1, bw, 74, () => { scene = 'ranking'; loadRanking(); });
+        iconButton('capsule', '뽑기', LY.m + bw + 12, y1, bw, 74, () => { acct.wtab = 'gacha'; scene = 'wardrobe'; });
+        iconButton('medal', '업적', LY.m + (bw + 12) * 2, y1, bw, 74, () => { acct.wtab = 'ach'; scene = 'wardrobe'; }, anyClaimable());
+        button('시작하기', LY.m, LY.bot + 4, LY.w, 76, () => { scene = 'format'; }, { size: 36, fill: '#fff3c4' });
       }
       { const P = acct.prof, t = acct.user ? (P && P.nickname ? P.nickname + ' · 뽑기권 ' + P.tickets : '로그인됨') : '로그인', cw = Math.max(132, t.length * 17 + 44), cx = W - LY.m - cw, cy = 14;
         const over = btn(cx, cy, cw, 50, () => { scene = 'account'; });
@@ -1879,10 +1914,44 @@ const scenes = {
       menuEnd(acct.wtab === 'gacha' ? `확률  일반 ${ODDS[0]}% · 희귀 ${ODDS[1]}% · 영웅 ${ODDS[2]}% · 전설 ${ODDS[3]}%` : '아이템 장착은 선수 선택 화면에서 해요 · 모든 경기(랭킹 포함)에 적용돼요');
     },
   },
+  closet: {
+    update(dt) { state.t += dt; acct.msgT += dt; if (pressed('Escape')) scene = closetBack; },
+    draw() {
+      menuBegin('옷장', true);
+      const gear = myGear(), own = Object.keys(ITEMS).filter(id => acct.inv[id]).length;
+      text(`보유 ${own} / ${Object.keys(ITEMS).length}`, LY.m + LY.w, LY.titleY, 21, '#3d8be0', 'right', null, F_T);
+      // what is worn: four slots across
+      let y = LY.top; text('장착 중', LY.m, y + 14, 22, INK, 'left', null, F_T); y += 34;
+      const sw = (LY.w - 12 * 3) / 4, sh = 100;
+      SLOTS.forEach(([id, ko], i) => { const x = LY.m + i * (sw + 12), it = item(gear[id]);
+        const over = btn(x, y, sw, sh, () => { if (it) { closetSel = it.id; equip(id, null); } });
+        rr(x, y, sw, sh, 16, it ? (over ? '#fffdf3' : '#ffffff') : 'rgba(255,248,231,0.75)', it ? GRADE[it.grade].c : '#cdbfb3', it ? 4 : 2.4);
+        text(ko, x + 12, y + 18, 15, '#7a6872', 'left', null, F_B);
+        if (it) { gradeChip(it.grade, x + sw - 54, y + 8, 22); ctx.save(); ctx.beginPath(); ctx.rect(x + 4, y + 26, 52, 70); ctx.clip(); itemIcon(it.id, x + 30, y + 60, 40); ctx.restore();
+          text(it.name, x + 58, y + 52, 16, INK, 'left', null, F_T); text(`${STAT_NAME[it.stat]} +${it.amt}`, x + 58, y + 76, 15, GRADE[it.grade].c, 'left', null, F_T); }
+        else text('비어 있음', x + sw / 2, y + 60, 17, '#a8999f', 'center', null, F_B);
+      });
+      // every item, one row a slot
+      y += sh + 22; text('전체 아이템', LY.m, y + 12, 22, INK, 'left', null, F_T); text('가진 아이템을 누르면 입고 벗어요', LY.m + LY.w, y + 12, 16, '#7a6872', 'right', null, F_B); y += 30;
+      const cw = (LY.w - 10 * 5) / 6, chh = Math.min(104, (contentEnd() - y - 10 * 3) / 4);
+      SLOTS.forEach(([sid], r) => Object.keys(ITEMS).filter(k => ITEMS[k][0] === sid).forEach((id, i) => {
+        const it = item(id), have = acct.inv[id] || 0, on = gear[sid] === id, x = LY.m + i * (cw + 10), yy = y + r * (chh + 10);
+        const over = btn(x, yy, cw, chh, () => { closetSel = id; if (!have) toast('뽑기 기계에서 얻을 수 있어요'); else equip(sid, on ? null : id); });
+        rr(x, yy, cw, chh, 14, have ? (on ? '#fff3c4' : over ? '#fffdf3' : '#ffffff') : 'rgba(214,204,196,0.6)', have ? GRADE[it.grade].c : '#bfb2a8', on ? 5 : have ? 3 : 2);
+        E(x + 12, yy + 12, 5, 5, have ? GRADE[it.grade].c : '#bfb2a8');
+        if (have) { ctx.save(); ctx.beginPath(); ctx.rect(x + 3, yy + 3, cw - 6, chh - 30); ctx.clip(); itemIcon(id, x + cw / 2, yy + (chh - 22) / 2 + 2, Math.min(50, chh * 0.5)); ctx.restore();
+          text(it.name, x + cw / 2, yy + chh - 15, 13, INK, 'center', null, F_T); if (on) text('착용', x + cw - 8, yy + 13, 13, CORAL, 'right', null, F_T); else if (have > 1) text('×' + have, x + cw - 8, yy + 13, 13, '#7a6872', 'right', null, F_N); }
+        else text('?', x + cw / 2, yy + chh / 2 + 2, 34, '#a8999f', 'center', null, F_T);
+      }));
+      const sel = item(closetSel);
+      if (acct.msg && acct.msgT < 2.6) { ctx.font = `24px ${F_B}`; const w = ctx.measureText(acct.msg).width + 60; rr(W / 2 - w / 2, LY.bot - 62, w, 46, 23, 'rgba(59,51,64,0.9)', null); text(acct.msg, W / 2, LY.bot - 38, 21, CREAM, 'center', null, F_B); }
+      sideBtn('뒤로', () => { scene = closetBack; });
+      menuEnd(sel ? `${acct.inv[sel.id] ? sel.name : '???'} · ${GRADE[sel.grade].ko} · ${STAT_NAME[sel.stat]} +${sel.amt}` : '일반 · 희귀 · 영웅 · 전설 순으로 강해져요');
+    },
+  },
   select: {
     update(dt) {
       state.t += dt; acct.msgT += dt;
-      if (state.pick) { if (pressed('Escape')) state.pick = null; return; } // the gear picker is open
       if (anyHit(...K_R)) state.sel = (state.sel + 1) % 12; if (anyHit(...K_L)) state.sel = (state.sel + 11) % 12;
       if (anyHit(...K_D)) state.sel = (state.sel + 6) % 12; if (anyHit(...K_U)) state.sel = (state.sel + 6) % 12;
       if (anyHit(...K_R, ...K_L, ...K_D, ...K_U)) tone(660, 0.05, 'sine', 0.15);
@@ -1901,32 +1970,24 @@ const scenes = {
         text(A.ko, cx, y + ch - 15, 20, INK, 'center', on ? '#fff3c4' : CREAM, F_T);
       });
       // the chosen animal: its card, wearing the account's gear, with the four slots along the bottom
-      const a = state.sel, A = ANIMALS[a], gear = myGear(), py = LY.top + 2 * (ch + LY.gap), ph = 356;
+      const a = state.sel, A = ANIMALS[a], gear = myGear(), py = LY.top + 2 * (ch + LY.gap), ph = LY.tall ? 400 : 356;
       panel(LY.m, py, LY.w, ph);
       ctx.font = `${Math.round(17 * 1.1)}px ${F_B}`; const dw = Math.max(...STAT_DO.map(d => ctx.measureText(d).width));
-      const aw = 132, tw = 248 + dw, bw = aw + 20 + tw, bh = 36 + 38 + 30 * 4 + 14, bx = LY.m + (LY.w - bw) / 2, by = py + LY.pad;
-      const ax = bx + aw / 2, ay = by + bh - 4;
-      ctx.fillStyle = 'rgba(70,90,140,0.2)'; ctx.beginPath(); ctx.ellipse(ax, ay, 50, 12, 0, 0, 7); ctx.fill();
+      const aw = 130, tw = 248 + dw, bw = aw + 18 + tw, bh = 36 + 38 + 30 * 4 + 14, bx = LY.m + (LY.w - bw) / 2, by = py + (ph - bh) / 2 + 10;
+      const ax = bx + aw / 2 - 8, ay = py + ph - 34, ks = LY.tall ? 1.6 : 1.4; // the animal stands tall on the left, wearing its gear
+      ctx.fillStyle = 'rgba(70,90,140,0.2)'; ctx.beginPath(); ctx.ellipse(ax, ay, 62, 14, 0, 0, 7); ctx.fill();
       ctx.lineWidth = 2.6; ctx.strokeStyle = OUT;
-      drawAnimal(a, ax, ay, LY.tall ? 1.15 : 1.0, { front: true, t: state.t, accent: CORAL, gear });
+      drawAnimal(a, ax, ay, ks, { front: true, t: state.t, accent: CORAL, gear });
+      { const hx = LY.m + 14, hy = py + 14, over = btn(hx, hy, 64, 64, () => openCloset('select')); // the hanger: the closet
+        rr(hx, hy + 4, 64, 64, 16, OUT, null); rr(hx, hy, 64, 64, 16, over ? '#fff3c4' : '#ffffff', OUT, 2.8); icon('hanger', hx + 32, hy + 32, 46); }
       const tx = bx + aw + 20;
       text(A.ko, tx, by + 16, 34, INK, 'left', null, F_T);
       text(A.note, tx, by + 54, 23, '#c0605a', 'left', null, F_H);
       statBars(a, tx, by + 90, gearBonus(gear));
-      const sy = py + ph - LY.pad - 72, sw = (LY.w - LY.pad * 2 - 12 * 3) / 4;
-      ctx.strokeStyle = '#e2d4c4'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(LY.m + LY.pad, sy - 14); ctx.lineTo(LY.m + LY.w - LY.pad, sy - 14); ctx.stroke();
-      SLOTS.forEach(([id, ko], i) => { const x = LY.m + LY.pad + i * (sw + 12), it = item(gear[id]);
-        const over = btn(x, sy, sw, 72, () => { if (!acct.user) { toast('로그인하면 아이템을 장착할 수 있어요'); return; } if (!acct.prof) return; state.pick = id; tone(660, 0.06, 'sine', 0.15); });
-        rr(x, sy, sw, 72, 14, over ? '#fffdf3' : '#fffaf0', it ? GRADE[it.grade].c : '#cdbfb3', it ? 4 : 2.4);
-        if (it) { ctx.save(); ctx.beginPath(); ctx.rect(x + 4, sy + 4, 46, 64); ctx.clip(); itemIcon(it.id, x + 27, sy + 38, 34); ctx.restore();
-          text(ko, x + 52, sy + 24, 15, '#7a6872', 'left', null, F_B); text(`${STAT_NAME[it.stat]}`, x + 52, sy + 44, 14, GRADE[it.grade].c, 'left', null, F_T); text(`+${it.amt}`, x + 52, sy + 60, 14, GRADE[it.grade].c, 'left', null, F_T); }
-        else { text(ko, x + sw / 2, sy + 26, 19, '#7a6872', 'center', null, F_T); text(acct.user ? '비어 있음' : '로그인 필요', x + sw / 2, sy + 50, 15, '#a8999f', 'center', null, F_B); }
-      });
-      if (acct.msg && acct.msgT < 2.6) { ctx.font = `24px ${F_B}`; const w = ctx.measureText(acct.msg).width + 60; rr(W / 2 - w / 2, sy - 64, w, 46, 23, 'rgba(59,51,64,0.9)', null); text(acct.msg, W / 2, sy - 40, 21, CREAM, 'center', null, F_B); }
-      if (state.pick) drawGearPicker(state.pick, py, ph);
-      sideBtn('뒤로', () => { state.pick = null; scene = room ? 'title' : setup.practice ? 'format' : 'mode'; });
-      mainBtn('이 선수로 결정', () => { state.pick = null; pickAnimal(); });
-      menuEnd(room ? '초대받은 방 ' + room + ' 에 들어갑니다' : '← → ↑ ↓ 로 고르고 Enter · 아래 칸을 눌러 아이템 장착');
+      if (acct.msg && acct.msgT < 2.6) { ctx.font = `24px ${F_B}`; const w = ctx.measureText(acct.msg).width + 60; rr(W / 2 - w / 2, py + ph - 60, w, 46, 23, 'rgba(59,51,64,0.9)', null); text(acct.msg, W / 2, py + ph - 36, 21, CREAM, 'center', null, F_B); }
+      sideBtn('뒤로', () => { scene = room ? 'title' : setup.practice ? 'format' : 'mode'; });
+      mainBtn('이 선수로 결정', pickAnimal);
+      menuEnd(room ? '초대받은 방 ' + room + ' 에 들어갑니다' : '← → ↑ ↓ 로 고르고 Enter · 옷걸이를 눌러 옷장 열기');
     },
   },
   mode: {
