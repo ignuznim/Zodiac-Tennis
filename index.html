@@ -1939,20 +1939,20 @@ const scenes = {
         text(A.ko, cx, y + ch - 15, 20, INK, 'center', on ? '#fff3c4' : CREAM, F_T);
       });
       // the chosen animal: its card, wearing the account's gear, with the four slots along the bottom
-      const a = state.sel, A = ANIMALS[a], gear = myGear(), py = LY.top + 2 * (ch + LY.gap), ph = LY.tall ? 400 : 356;
+      const a = state.sel, A = ANIMALS[a], gear = myGear(), py = LY.top + 2 * (ch + LY.gap), ph = LY.tall ? 372 : 356;
       panel(LY.m, py, LY.w, ph);
       ctx.font = `${Math.round(17 * 1.1)}px ${F_B}`; const dw = Math.max(...STAT_DO.map(d => ctx.measureText(d).width));
-      const tw = barsWidth(dw), aw = Math.min(140, LY.w - LY.pad * 2 - 14 - tw), bw = aw + 14 + tw, bh = 36 + 38 + 30 * 4 + 14, bx = LY.m + (LY.w - bw) / 2, by = py + (ph - bh) / 2 + 10;
-      const ax = bx + aw / 2 - 6, ay = py + ph - 34, ks = Math.min(LY.tall ? 1.6 : 1.4, aw / 84); // the animal stands tall on the left, wearing its gear
-      ctx.fillStyle = 'rgba(70,90,140,0.2)'; ctx.beginPath(); ctx.ellipse(ax, ay, 62, 14, 0, 0, 7); ctx.fill();
+      // left: the hanger and the name at the top, the stats along the bottom; right: the animal, big, wearing its gear
+      const tw = barsWidth(dw), lx = LY.m + LY.pad, sy0 = py + ph - LY.pad - 4 * 30 - 12, free = LY.m + LY.w - LY.pad - (lx + tw);
+      const ax = LY.m + LY.w - LY.pad - Math.max(free, 150) / 2, ay = py + Math.min(ph * 0.66, ph - 60), ks = LY.tall ? 2.0 : 1.75;
+      ctx.fillStyle = 'rgba(70,90,140,0.2)'; ctx.beginPath(); ctx.ellipse(ax, ay, 26 * ks, 6 * ks, 0, 0, 7); ctx.fill();
       ctx.lineWidth = 2.6; ctx.strokeStyle = OUT;
       drawAnimal(a, ax, ay, ks, { front: true, t: state.t, accent: CORAL, gear });
-      { const hx = LY.m + 14, hy = py + 14, over = btn(hx, hy, 64, 64, () => openCloset('select')); // the hanger: the closet
+      { const hx = lx, hy = py + LY.pad, over = btn(hx, hy, 64, 64, () => openCloset('select')); // the hanger: the closet
         rr(hx, hy + 4, 64, 64, 16, OUT, null); rr(hx, hy, 64, 64, 16, over ? '#fff3c4' : '#ffffff', OUT, 2.8); icon('hanger', hx + 32, hy + 32, 46); }
-      const tx = bx + aw + 14;
-      text(A.ko, tx, by + 16, 34, INK, 'left', null, F_T);
-      text(A.note, tx, by + 54, 23, '#c0605a', 'left', null, F_H);
-      statBars(a, tx, by + 90, gearBonus(gear));
+      text(A.ko, lx + 82, py + LY.pad + 16, 34, INK, 'left', null, F_T);
+      text(A.note, lx + 82, py + LY.pad + 52, 23, '#c0605a', 'left', null, F_H);
+      statBars(a, lx, sy0, gearBonus(gear));
       if (acct.msg && acct.msgT < 2.6) { ctx.font = `24px ${F_B}`; const w = ctx.measureText(acct.msg).width + 60; rr(W / 2 - w / 2, py + ph - 60, w, 46, 23, 'rgba(59,51,64,0.9)', null); text(acct.msg, W / 2, py + ph - 36, 21, CREAM, 'center', null, F_B); }
       sideBtn('뒤로', () => { scene = room ? 'title' : setup.practice ? 'format' : 'mode'; });
       mainBtn('이 선수로 결정', pickAnimal);
@@ -1970,7 +1970,7 @@ const scenes = {
     draw() {
       menuBegin('누구와 겨룰까요?', true);
       const rows = [['컴퓨터와 대결 · 쉬움', '받기 쉬운 공을 보내고 실수도 자주 해요'], ['컴퓨터와 대결 · 보통', '빈 곳을 노리고 가끔 변칙을 섞어요'], ['컴퓨터와 대결 · 어려움', '코너를 찌르고 드롭샷, 로브, 파워샷까지'], ['온라인 대결 · 방 만들기', '초대 링크를 보내 각자의 기기에서 겨뤄요']];
-      const ch = SZ().mode;
+      const ch = SZ().format4; // the same cards as the four ways to play
       rows.forEach((r, i) => button(r[0], LY.m, LY.top + i * (ch + LY.gap), LY.w, ch, () => pickMode(i), { on: i === state.cur, sub: r[1], size: 29 }));
       sideBtn('뒤로', () => { scene = 'format'; });
       menuEnd(`${FORMATS[setup.format].ko} · ${{ flash: '10점 매치 타이브레이크', short: '4게임 짧은 세트', regular: '5세트 3선승' }[setup.format]}`);
