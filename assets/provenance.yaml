@@ -44,3 +44,10 @@
   licence: {id: OFL-1.1}
   date: 2026-11-12
   ships: true
+- path: vendor/supabase.js
+  origin: plugin
+  tool: "npm pack @supabase/supabase-js@2.45.4 (dist/umd/supabase.js)"
+  source: {vendor: "Supabase", product: "supabase-js 2.45.4", url: "https://github.com/supabase/supabase-js"}
+  licence: {id: MIT}
+  date: 2026-11-13
+  ships: true

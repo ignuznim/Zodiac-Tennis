@@ -39,6 +39,7 @@
   <div class="err" id="nickErr"></div>
   <div class="row"><button type="button" id="nickNo">취소</button><button type="submit" class="go">등록</button></div>
 </form></div>
+<script src="vendor/supabase.js"></script>
 <script src="config.js"></script>
 <script>
 'use strict';
@@ -223,6 +224,7 @@ function courtBonus(a, s, c) { // + on its favourite court, - on its worst, for 
   if (!f || !c || s !== f[1]) return 0;
   return c === f[0] ? tune.court_bonus : c === f[2] ? -tune.court_bonus : 0;
 }
+function pstat(p, s) { return Math.min(6, stat(p.a, s) + ((p.gear && p.gear[s]) || 0)); } // a player's stat: the animal's, the court's and the gear's
 function stat(a, s, c) { return CONFIG[ANIMALS[a].id + '_' + s].value + courtBonus(a, s, c === undefined ? (m && m.court) : c); }
 
 function E(x, y, rx, ry, fill, rot = 0, noStroke) {
@@ -331,7 +333,8 @@ function drawRacket(A, hand, an, t, accent) {
 // o: front, anim, t, hand, glow (0..1), accent, tired (0..1)
 function drawAnimal(a, X, Y, k, o) {
   const A = ANIMALS[a], front = o.front !== false, hand = o.hand || 1, an = o.anim || 'idle', t = o.t || 0;
-  const accent = o.accent || CORAL;
+  const accent = o.accent || CORAL, G = o.gear || {}, shirt = item(G.uniform), shoes = item(G.shoes), rk = item(G.racket);
+  const band = (x, y, w, h) => { const cs = shirt ? shirt.look.c : [accent]; cs.forEach((c, i) => { ctx.fillStyle = c; ctx.fillRect(x, y + i * h / cs.length, w, h / cs.length + 0.5); }); };
   ctx.save(); ctx.translate(X, Y); ctx.scale(k, k);
   ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; ctx.lineJoin = ctx.lineCap = 'round';
   let bob = Math.sin(t * 3) * 1.2, step = 0;
@@ -349,23 +352,27 @@ function drawAnimal(a, X, Y, k, o) {
     E(0, -8, 26, 10, A.c); E(0, -22, 20, 10, A.c); E(0, -36, 14, 12, A.c);
     if (front) E(0, -30, 8, 12, A.l, 0, true);
     drawTail(A, -hand, front);
-    rr(-14, -46, 28, 7, 3, accent, OUT, 2.2);
+    ctx.save(); ctx.beginPath(); ctx.rect(-14, -46, 28, 7); ctx.clip(); band(-14, -46, 28, 7); ctx.restore(); rr(-14, -46, 28, 7, 3, null, OUT, 2.2);
   } else {
     if (front) drawTail(A, -hand, true);
-    E(-10 + step * 0.3, -5 - Math.max(0, step) * 0.5, 9, 7, A.c); E(10 - step * 0.3, -5 - Math.max(0, -step) * 0.5, 9, 7, A.c);
+    const fc = shoes ? shoes.look.c : A.c, fy = s => -5 - Math.max(0, s) * 0.5;
+    if (shoes && shoes.look.wing) for (const sd of [-1, 1]) { ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(sd * 20, fy(sd * step) - 6, 9, 4, sd * 0.6, 0, 7); ctx.fill(); ctx.stroke(); }
+    E(-10 + step * 0.3, fy(step), 9, 7, fc); E(10 - step * 0.3, fy(-step), 9, 7, fc);
+    if (shoes && shoes.look.bolt) for (const sd of [-1, 1]) poly([sd * 10 - 2, fy(sd * step) - 4, sd * 10 + 2, fy(sd * step), sd * 10 - 1, fy(sd * step), sd * 10 + 2, fy(sd * step) + 4], '#f0a020');
     ctx.translate(0, -bob);
     if (A.id === 'sheep') for (let i = 0; i < 8; i++) { const q = i / 8 * 6.283; E(Math.cos(q) * 17, -30 + Math.sin(q) * 19, 10, 10, A.c); }
     E(0, -30, 21, 24, A.c);
     if (front) E(0, -26, 12, 15, A.l, 0, true);
-    ctx.save(); ctx.beginPath(); ctx.ellipse(0, -30, 21, 24, 0, 0, 7); ctx.clip(); ctx.fillStyle = accent; ctx.fillRect(-24, -38, 48, 9); ctx.restore();
+    ctx.save(); ctx.beginPath(); ctx.ellipse(0, -30, 21, 24, 0, 0, 7); ctx.clip(); band(-24, -38, 48, shirt ? 12 : 9); ctx.restore();
     E(0, -30, 21, 24, 'rgba(0,0,0,0)');
     if (!front) drawTail(A, -hand, false);
     E(-hand * 21, -36, 6.5, 6.5, A.c);
   }
-  drawRacket(A, hand, an, t, accent);
+  drawRacket(A, hand, an, t, rk ? rk.look.c : accent);
   ctx.translate(0, droop);
   drawEars(A, front);
   drawHead(A, front, t + a);
+  if (G.hat) drawHat(G.hat);
   if ((o.tired || 0) > 0.75 && front) { ctx.fillStyle = '#9ad7ff'; ctx.beginPath(); ctx.ellipse(24, -86 + (t * 30 % 14), 3, 5, 0, 0, 7); ctx.fill(); ctx.stroke(); }
   ctx.restore();
 }
@@ -530,9 +537,9 @@ function drawNet() {
 let scene, state, m;          // m is state.m, the match
 const setup = { animal: 0, level: 2, mode: 'cpu', guestAnimal: 3, court: 'hard', pending: 1, format: 'short' };
 let matchCount = 0;
-function newPlayer(i, a, ctrl) {
-  const max = tune.stam_base + stat(a, 'stamina', setup.court) * tune.stam_per;
-  return { i, side: i === 0 ? 1 : -1, a, ctrl, x: 0, y: 0, vx: 0, vy: 0, stam: max, max, sw: null, cool: 0, anim: 'idle', at: 0, hand: 1,
+function newPlayer(i, a, ctrl, gearIds) {
+  const gear = gearBonus(gearIds), max = tune.stam_base + Math.min(6, stat(a, 'stamina', setup.court) + (gear.stamina || 0)) * tune.stam_per;
+  return { i, side: i === 0 ? 1 : -1, a, ctrl, gearIds: gearIds || {}, gear, x: 0, y: 0, vx: 0, vy: 0, stam: max, max, sw: null, cool: 0, anim: 'idle', at: 0, hand: 1,
     pa: false, pk: false, pl: false, ps: false, streak: 0, ai: { for: -1, wait: 0, tgt: null, set: 0, st: 0, q: 1 } };
 }
 function newMatch() {
@@ -541,7 +548,7 @@ function newMatch() {
   m = {
     t: 0, phase: 'serve', pt: 0, pause: 1.7, level: setup.level, format: setup.format || 'regular', online: setup.mode !== 'cpu', court: setup.court, land: null,
     ball: { x: 0, y: 0, z: 1, vx: 0, vy: 0, vz: 0, last: -1, bounces: 0, live: false, fly: false, kind: '', power: 0 },
-    P: [newPlayer(0, setup.animal, 'human'), newPlayer(1, opp, setup.practice ? 'machine' : setup.mode === 'cpu' ? 'ai' : 'remote')],
+    P: [newPlayer(0, setup.animal, 'human', myGear()), newPlayer(1, opp, setup.practice ? 'machine' : setup.mode === 'cpu' ? 'ai' : 'remote', setup.mode === 'cpu' ? {} : setup.guestGear)],
     practice: !!setup.practice, prac: setup.practice ? { li: 0, done: 0, wait: 0, shot: null, res: null, resT: 9, next: false } : null,
     sc: { pts: [0, 0], games: [0, 0], sets: [], won: [0, 0], server: 0, tb: false, tbFirst: 0, done: false, winner: -1 },
     fault: 0, refault: false, boxX: 1, rally: 0, hitId: 0, banner: null, pops: [], fx: [], fxId: 0, mark: null,
@@ -557,7 +564,7 @@ function newMatch() {
 function fx(k, a, b) { m.fx.push({ id: ++m.fxId, k, a, b }); if (m.fx.length > 14) m.fx.shift(); }
 function pop(s, x, y, z, c) { m.pops.push({ s, x, y, z, t: 0, c: c || CREAM }); if (m.pops.length > 6) m.pops.shift(); }
 function setAnim(p, a) { p.anim = a; p.at = 0; }
-const reach = p => tune.reach + stat(p.a, 'reflex') * tune.reach_reflex;
+const reach = p => tune.reach + pstat(p, 'reflex') * tune.reach_reflex;
 const NAME = i => ANIMALS[m.P[i].a].ko;
 const PT = ['0', '15', '30', '40'];
 function ptsText() {
@@ -618,14 +625,14 @@ function fault(call) {
   else endPoint(1 - b.last, '더블 폴트');
 }
 function bounceOf(b) { // what a bounce keeps: the shot's spin, then the court's surface
-  const sp = b.last >= 0 ? stat(m.P[b.last].a, 'spin') : 3;
+  const sp = b.last >= 0 ? pstat(m.P[b.last], 'spin') : 3;
   let rest = tune.bounce, pace = Math.min(0.92, tune.bounce_pace + sp * tune.bounce_pace_spin);
   if (b.kind === 'drop') { rest = tune.drop_bounce; pace = Math.max(0.1, tune.drop_pace - sp * tune.drop_pace_spin); }
   else if (b.kind === 'slice') { rest = tune.slice_bounce; pace = tune.slice_pace; }
   return { rest: rest * tune[m.court + '_bounce'], pace: Math.min(0.95, pace * tune[m.court + '_pace']) };
 }
 function launch(p, kind, q, charge, aimX, aimD, late = 0) {
-  const b = m.ball, opp = -p.side, spin = stat(p.a, 'spin'), pow = stat(p.a, 'power'), fat = 1 - p.stam / p.max, g = tune.gravity;
+  const b = m.ball, opp = -p.side, spin = pstat(p, 'spin'), pow = pstat(p, 'power'), fat = 1 - p.stam / p.max, g = tune.gravity;
   const fh = (b.x - p.x) * p.side >= 0; // right-handed: the ball on the racket side is a forehand
   let v = tune.stroke_v + pow * tune.stroke_v_pow, depth = [7.4, 9.3, 10.7][aimD + 1], err = tune.err_stroke, T = 0;
   if (!fh && (kind === 'stroke' || kind === 'power' || kind === 'slice')) v *= tune.backhand_pace;
@@ -713,7 +720,7 @@ function toss(p) {
   setAnim(p, 'toss'); fx('toss');
 }
 function doServe(p, q, aimX) {
-  const b = m.ball, second = m.fault === 1, pow = stat(p.a, 'power'), spin = stat(p.a, 'spin'), fat = 1 - p.stam / p.max, g = tune.gravity;
+  const b = m.ball, second = m.fault === 1, pow = pstat(p, 'power'), spin = pstat(p, 'spin'), fat = 1 - p.stam / p.max, g = tune.gravity;
   const early = b.vz > 0;                                              // struck while the toss still rises
   const bad = q < (second ? tune.serve_fault_q2 : tune.serve_fault_q); // mistimed: this serve is a fault
   q = clamp(q, 0.1, 1);
@@ -829,7 +836,7 @@ function aiThink(p, dt) {
 }
 function updatePlayer(p, inp, dt) {
   const f = p.stam / p.max, serving = (m.phase === 'serve' || m.phase === 'toss') && m.sc.server === p.i;
-  const vfull = tune.run_v + stat(p.a, 'speed') * tune.run_v_speed;
+  const vfull = tune.run_v + pstat(p, 'speed') * tune.run_v_speed;
   let vmax = vfull * (1 - tune.tired_run * (1 - f));
   if (p.ctrl === 'ai') vmax *= tune['ai' + m.level + '_run'];
   if (p.sw && p.sw.mode === 'charge') vmax *= tune.charge_slow;
@@ -837,7 +844,7 @@ function updatePlayer(p, inp, dt) {
   let dx = inp.dx, dy = inp.dy; const l = Math.hypot(dx, dy); if (l > 1) { dx /= l; dy /= l; }
   if (serving) { dy = 0; if (m.phase !== 'serve') dx = 0; } // the server may sidestep along the baseline before the toss
   if (m.phase === 'done' || m.phase === 'point') dx = dy = 0;
-  const acc = (tune.accel + stat(p.a, 'reflex') * tune.accel_reflex) * dt;
+  const acc = (tune.accel + pstat(p, 'reflex') * tune.accel_reflex) * dt;
   p.vx += clamp(dx * vmax - p.vx, -acc, acc); p.vy += clamp(dy * vmax - p.vy, -acc, acc);
   p.x = clamp(p.x + p.vx * dt, -5.6, 5.6); p.y = p.side * clamp(p.side * (p.y + p.vy * dt), 0.7, 16.4);
   if (serving) { const sg = -m.boxX; p.x = sg * clamp(sg * p.x, 0.25, CW); } // never past the centre mark or the singles sideline
@@ -939,7 +946,7 @@ function drawPlayer(p) {
   const s = proj(p.x, p.y, 0), me = p.i === view;
   ctx.fillStyle = 'rgba(70,90,140,0.22)'; ctx.beginPath(); ctx.ellipse(s.x, s.y, 30 * s.s, 9 * s.s, 0, 0, 7); ctx.fill();
   const glow = p.sw && p.sw.mode !== 'tap' ? 0.25 + p.sw.charge * 0.75 : 0;
-  drawAnimal(p.a, s.x, s.y, s.s * 1.02, { front: !me, anim: p.anim, t: p.at + viewT * 0.0001, hand: (view ? -1 : 1) * p.hand, glow, accent: me ? CORAL : SKY, tired: 1 - p.stam / p.max });
+  drawAnimal(p.a, s.x, s.y, s.s * 1.02, { gear: p.gearIds, front: !me, anim: p.anim, t: p.at + viewT * 0.0001, hand: (view ? -1 : 1) * p.hand, glow, accent: me ? CORAL : SKY, tired: 1 - p.stam / p.max });
   if (glow > 0) { // the charge ring fills as the shot powers up
     ctx.lineWidth = 5 * s.s; ctx.strokeStyle = 'rgba(107,85,96,0.35)'; ctx.beginPath(); ctx.arc(s.x, s.y - 128 * s.s, 13 * s.s, 0, 7); ctx.stroke();
     ctx.strokeStyle = p.sw.charge >= 1 ? CORAL : BALL; ctx.beginPath(); ctx.arc(s.x, s.y - 128 * s.s, 13 * s.s, -1.57, -1.57 + 6.283 * p.sw.charge); ctx.stroke();
@@ -1102,7 +1109,7 @@ function practiceNext() { // the next ball: a serve of your own in the serve les
   const P = m.prac, L = LESSONS[P.li];
   if (P.next) { // the lesson is done: say so, wait, then move on
     P.next = false; P.advance = true; P.res = null; m.phase = 'point'; m.pt = 0; m.pause = 2.6; m.ball.live = false; m.ball.fly = false;
-    const last = P.li === LESSONS.length - 2;
+    const last = P.li === LESSONS.length - 2; if (last) setProgress('lessons', 1);
     m.banner = { text: last ? '모든 레슨 완료!' : '레슨 완료!', sub: last ? '이제 자유 연습으로 마음껏 쳐 보세요' : `다음 레슨 · ${LESSONS[P.li + 1].name}`, t: 0, big: 1 }; fx('point', 0, 1);
     return;
   }
@@ -1212,7 +1219,7 @@ function netHost() {
     net.peer.on('connection', c => {
       if (net.conn) { c.close(); return; }
       net.conn = c;
-      c.on('data', d => { if (!net) return; if (d.t === 'hello') { setup.guestAnimal = d.animal; setup.mode = 'online'; net.status = 'playing'; reset(); scene = 'play'; } else if (d.t === 'i') net.rin = d; });
+      c.on('data', d => { if (!net) return; if (d.t === 'hello') { setup.guestAnimal = d.animal; setup.guestGear = d.gear && typeof d.gear === 'object' ? d.gear : {}; setup.mode = 'online'; net.status = 'playing'; reset(); scene = 'play'; } else if (d.t === 'i') net.rin = d; });
       c.on('close', () => netLost());
     });
   });
@@ -1227,7 +1234,7 @@ function netJoin(code) {
       if (!net) return;
       net.status = 'connecting';
       const c = net.conn = net.peer.connect('zodiac-tennis-' + code.toUpperCase(), { serialization: 'json' });
-      c.on('open', () => { net.status = 'joined'; c.send({ t: 'hello', animal: setup.animal }); });
+      c.on('open', () => { net.status = 'joined'; c.send({ t: 'hello', animal: setup.animal, gear: myGear() }); });
       c.on('data', d => { if (net && d.t === 's') net.snap = d.m; });
       c.on('close', () => netLost());
     });
@@ -1258,15 +1265,16 @@ function canRank() { return m && m.sc.done && m.sc.winner === 0 && !m.online && 
 function matchRecord(nickname) {
   return { nickname, mode: m.format || 'regular', level: m.level, animal: m.P[0].a, opponent: m.P[1].a, court: m.court,
     sets: m.sc.sets.map(g => g[0] + '-' + g[1]).join(' '), pts_for: m.stats.pts[0], pts_against: m.stats.pts[1],
-    sweet: m.stats.sweet[0], duration_s: Math.round(m.t), client_id: clientId() };
+    sweet: m.stats.sweet[0], duration_s: Math.round(m.t), client_id: clientId(), gear: SLOTS.map(q => (m.P[0].gearIds || {})[q[0]] || '-').join(',') };
 }
 const monthStart = () => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1).toISOString(); }; // this month, by the player's clock
 async function loadRanking(mode, period) {
   rank.mode = mode || rank.mode; rank.period = period || rank.period; rank.loading = true; rank.err = '';
   try { // the top ten records, the same name as often as it earned a place
     const since = rank.period === 'month' ? `&created_at=gte.${encodeURIComponent(monthStart())}` : '';
-    const q = `?select=nickname,level,animal,court,sets,score,created_at&mode=eq.${rank.mode}${since}&order=score.desc,created_at.asc&limit=10`;
-    const r = await fetch(RANK.url + q, { headers: rankHeaders() });
+    const q = `?select=nickname,level,animal,court,sets,score,created_at,gear&mode=eq.${rank.mode}${since}&order=score.desc,created_at.asc&limit=10`;
+    let r = await fetch(RANK.url + q, { headers: rankHeaders() });
+    if (r.status === 400) r = await fetch(RANK.url + q.replace(',gear', ''), { headers: rankHeaders() }); // before the gear column exists
     if (!r.ok) throw new Error(r.status);
     rank.list = await r.json();
   } catch (e) { rank.err = '랭킹을 불러오지 못했어요 · 인터넷 연결을 확인해 주세요'; rank.list = rank.list || []; }
@@ -1274,7 +1282,8 @@ async function loadRanking(mode, period) {
 }
 async function sendRecord(nickname) {
   const rec = matchRecord(nickname);
-  const r = await fetch(RANK.url, { method: 'POST', headers: rankHeaders({ Prefer: 'return=minimal' }), body: JSON.stringify(rec) });
+  let r = await fetch(RANK.url, { method: 'POST', headers: rankHeaders({ Prefer: 'return=minimal' }), body: JSON.stringify(rec) });
+  if (r.status === 400) { delete rec.gear; r = await fetch(RANK.url, { method: 'POST', headers: rankHeaders({ Prefer: 'return=minimal' }), body: JSON.stringify(rec) }); } // before the gear column exists
   if (r.status === 409) throw new Error('이미 등록된 기록이에요');
   if (!r.ok) { const t = await r.text(); throw new Error(/slow down/.test(t) ? '잠시 후 다시 등록해 주세요' : /not a finished|too fast|too many/.test(t) ? '등록할 수 없는 기록이에요' : '등록하지 못했어요 · 인터넷 연결을 확인해 주세요'); }
   const score = scoreOf(rec);
@@ -1285,9 +1294,17 @@ async function sendRecord(nickname) {
   return { score, month: await placeOf(`&created_at=gte.${encodeURIComponent(monthStart())}`), all: await placeOf('') };
 }
 const nickBox = document.getElementById('nick'), nickIn = document.getElementById('nickIn'), nickErr = document.getElementById('nickErr');
-function openNick() {
-  if (rank.sent === m || rank.sending) return;
-  nickIn.value = store('zt_nick') || ''; nickErr.textContent = ''; nickBox.classList.add('on'); down.clear();
+let nickMode = 'rank';
+function openNick(mode = 'rank') {
+  nickMode = mode;
+  nickBox.querySelector('h2').textContent = mode === 'profile' ? '닉네임 정하기' : '랭킹 등록';
+  nickBox.querySelector('p').textContent = mode === 'profile' ? '랭킹과 옷장에 쓰일 이름 (1~10자)' : '랭킹에 표시할 닉네임 (1~10자)';
+  nickBox.querySelector('.go').textContent = mode === 'profile' ? '저장' : '등록';
+  if (mode === 'rank') {
+    if (rank.sent === m || rank.sending) return;
+    if (acct.prof && acct.prof.nickname) { submitRecord(acct.prof.nickname); return; } // signed in: the account's name, no question
+  }
+  nickIn.value = (acct.prof && acct.prof.nickname) || store('zt_nick') || ''; nickErr.textContent = ''; nickBox.classList.add('on'); down.clear();
   setTimeout(() => nickIn.focus(), 30);
 }
 function closeNick() { nickBox.classList.remove('on'); nickIn.blur(); down.clear(); }
@@ -1299,15 +1316,23 @@ nickBox.querySelector('form').onsubmit = async e => {
   const name = nickIn.value.trim().replace(/\s+/g, ' ');
   if (!name) { nickErr.textContent = '닉네임을 입력해 주세요'; return; }
   if ([...name].length > 10) { nickErr.textContent = '10자까지 쓸 수 있어요'; return; }
+  if (nickMode === 'profile') {
+    nickBox.querySelector('.go').disabled = true; nickErr.textContent = '저장하는 중…';
+    try { acct.prof = await rpc('set_nickname', { n: name }); store('zt_nick', name); closeNick(); toast('닉네임을 저장했어요'); } catch (err) { nickErr.textContent = err.message; }
+    nickBox.querySelector('.go').disabled = false; return;
+  }
+  submitRecord(name);
+};
+async function submitRecord(name) {
   if (rank.sending || rank.sent === m) return; // a second tap or Enter while the first is on its way sends nothing
   rank.sending = true; nickErr.textContent = '등록하는 중…'; nickBox.querySelector('.go').disabled = true;
   try {
     const r = await sendRecord(name); store('zt_nick', name);
     rank.sent = m; rank.msg = `${r.score.toLocaleString()}점 등록!${r.month ? ` 월간 ${r.month}위` : ''}${r.all ? ` · 전체 ${r.all}위` : ''}`;
-    closeNick(); tone(880, 0.1, 'triangle', 0.25); tone(1320, 0.18, 'triangle', 0.25, 0.1);
-  } catch (err) { nickErr.textContent = err.message; }
+    closeNick(); addProgress({ ranked: 1 }); tone(880, 0.1, 'triangle', 0.25); tone(1320, 0.18, 'triangle', 0.25, 0.1);
+  } catch (err) { if (nickBox.classList.contains('on')) nickErr.textContent = err.message; else toast(err.message); }
   rank.sending = false; nickBox.querySelector('.go').disabled = false;
-};
+}
 
 function courtPic(x, y, w, h, id) { // a court seen from above with its lines and the net, for the court cards
   const C = COURTS[id]; rr(x, y, w, h, 12, C.apron, OUT, 2.6);
@@ -1378,6 +1403,212 @@ function helpRows(rows, y0, gap, kw) { // a two-column list: the label, then wha
     if (r[0]) { rr(76, y - 19, kw, 38, 12, r[2] || '#efe3d3', OUT, 2); text(r[0], 76 + kw / 2, y, 19, INK, 'center', null, F_T); }
     text(r[1], 96 + kw, y - (r[3] ? 12 : 0), 21, INK, 'left', null, F_B);
     if (r[3]) text(r[3], 96 + kw, y + 15, 18, '#7a6872', 'left', null, F_B);
+  });
+}
+
+// ---- Accounts: Google or Kakao through Supabase; the wardrobe, tickets and progress live with the account ----
+const GRADE = [{ ko: '일반', c: '#8f99a3' }, { ko: '희귀', c: '#3d8be0' }, { ko: '영웅', c: '#9b5de5' }, { ko: '전설', c: '#f0a020' }];
+const ODDS = [56, 28, 12, 4]; // the machine's odds by grade, in per cent (worked out on the server, shown here)
+const SLOTS = [['hat', '모자', 'reflex'], ['uniform', '유니폼', 'stamina'], ['shoes', '신발', 'speed'], ['racket', '라켓', 'power']];
+const ITEMS = { // the same catalogue as the server's items table; look is how it is drawn
+  h1: ['hat', 0, 'reflex', 0.1, '흰 머리띠', { k: 'band', c: '#ffffff' }], h2: ['hat', 0, 'reflex', 0.1, '빨간 머리띠', { k: 'band', c: '#f25f5c' }],
+  h3: ['hat', 1, 'reflex', 0.2, '파란 썬캡', { k: 'cap', c: '#3d8be0' }], h4: ['hat', 1, 'reflex', 0.2, '보라 머리띠', { k: 'band', c: '#b48be8' }],
+  h5: ['hat', 2, 'reflex', 0.3, '선비 갓', { k: 'gat', c: '#3b3340' }], h6: ['hat', 3, 'reflex', 0.5, '황금 왕관', { k: 'crown', c: '#f6c445' }],
+  u1: ['uniform', 0, 'stamina', 0.1, '흰 셔츠', { c: ['#ffffff'] }], u2: ['uniform', 0, 'stamina', 0.1, '하늘 셔츠', { c: ['#9ad0ff'] }],
+  u3: ['uniform', 1, 'stamina', 0.2, '줄무늬 셔츠', { c: ['#ffffff', '#3d8be0', '#ffffff'] }], u4: ['uniform', 1, 'stamina', 0.2, '국가대표 저지', { c: ['#e2574c', '#ffffff', '#3d6fb0'] }],
+  u5: ['uniform', 2, 'stamina', 0.3, '색동 한복', { c: ['#e2574c', '#f6c445', '#4fc37a', '#3d8be0', '#b48be8'] }], u6: ['uniform', 3, 'stamina', 0.5, '황금 유니폼', { c: ['#f6c445', '#fff1b0', '#f6c445'] }],
+  s1: ['shoes', 0, 'speed', 0.1, '흰 운동화', { c: '#ffffff' }], s2: ['shoes', 0, 'speed', 0.1, '빨간 운동화', { c: '#f25f5c' }],
+  s3: ['shoes', 1, 'speed', 0.2, '클레이화', { c: '#d36a3a' }], s4: ['shoes', 1, 'speed', 0.2, '잔디화', { c: '#4a9d5c' }],
+  s5: ['shoes', 2, 'speed', 0.3, '번개 신발', { c: '#ffe45c', bolt: true }], s6: ['shoes', 3, 'speed', 0.5, '날개 신발', { c: '#fff8e7', wing: true }],
+  r1: ['racket', 0, 'power', 0.1, '나무 라켓', { c: '#b98562' }], r2: ['racket', 0, 'spin', 0.1, '연습 라켓', { c: '#9aa3ad' }],
+  r3: ['racket', 1, 'power', 0.2, '묵직한 라켓', { c: '#4a3d47' }], r4: ['racket', 1, 'spin', 0.2, '가벼운 라켓', { c: '#6ec1ff' }],
+  r5: ['racket', 2, 'spin', 0.3, '용비늘 라켓', { c: '#4fc37a' }], r6: ['racket', 3, 'power', 0.5, '황금 라켓', { c: '#f6c445' }],
+};
+const item = id => { const q = ITEMS[id]; return q && { id, slot: q[0], grade: q[1], stat: q[2], amt: q[3], name: q[4], look: q[5] }; };
+const STAT_NAME = { power: '파워', stamina: '스태미너', spin: '스핀', reflex: '순발력', speed: '스피드' };
+function gearBonus(ids) { const b = {}; for (const id of Object.values(ids || {})) { const it = item(id); if (it) b[it.stat] = (b[it.stat] || 0) + it.amt; } return b; }
+const ACH = [ // the achievements: what counts, the goal, and the server's reward
+  ['daily', '오늘의 출석', '하루에 한 번 받을 수 있어요', () => [1, 1]],
+  ['first_win', '첫 승리', '컴퓨터를 처음 이기기', p => [p.wins || 0, 1]],
+  ['win_easy', '쉬움 정복', '쉬움 컴퓨터 이기기', p => [p.win_easy || 0, 1]],
+  ['win_normal', '보통 정복', '보통 컴퓨터 이기기', p => [p.win_normal || 0, 1]],
+  ['win_hard', '어려움 정복', '어려움 컴퓨터 이기기', p => [p.win_hard || 0, 1]],
+  ['win_flash', '번개전 승리', '번개전에서 이기기', p => [p.win_flash || 0, 1]],
+  ['win_short', '단판전 승리', '단판전에서 이기기', p => [p.win_short || 0, 1]],
+  ['win_regular', '정규전 승리', '정규전(5세트)에서 이기기', p => [p.win_regular || 0, 1]],
+  ['lessons_all', '볼머신장 수료', '볼머신장 레슨 모두 마치기', p => [p.lessons || 0, 1]],
+  ['sweet_50', "'딱!' 50번", '스위트 스폿 50번 맞히기', p => [p.sweet || 0, 50]],
+  ['sweet_300', "'딱!' 300번", '스위트 스폿 300번 맞히기', p => [p.sweet || 0, 300]],
+  ['aces_10', '에이스 10개', '서브 에이스 10번', p => [p.aces || 0, 10]],
+  ['ranked', '랭킹 데뷔', '랭킹에 처음 기록 남기기', p => [p.ranked || 0, 1]],
+];
+const ACH_REWARD = { daily: 1, first_win: 3, win_easy: 1, win_normal: 2, win_hard: 3, win_flash: 1, win_short: 2, win_regular: 5, lessons_all: 3, sweet_50: 2, sweet_300: 4, aces_10: 2, ranked: 1 };
+const acct = { sb: null, user: null, prof: null, inv: {}, busy: false, msg: '', msgT: 0, wtab: 'equip', wslot: 'hat', g: { phase: 'idle', t: 0, res: null, err: '' } };
+let prog = {}; try { prog = JSON.parse(store('zt_prog') || '{}') || {}; } catch (e) { prog = {}; }
+const progOf = () => { const s = (acct.prof && acct.prof.progress) || {}, o = Object.assign({}, prog); for (const k in s) o[k] = Math.max(o[k] || 0, s[k]); return o; };
+function addProgress(d) { // counts that only grow: kept on this device, and with the account when signed in
+  for (const k in d) prog[k] = (prog[k] || 0) + d[k];
+  store('zt_prog', JSON.stringify(prog));
+  if (acct.user) rpc('save_progress', { pr: progOf() }).then(p => { if (p) acct.prof = p; });
+}
+function setProgress(k, v) { prog[k] = Math.max(prog[k] || 0, v); store('zt_prog', JSON.stringify(prog)); if (acct.user) rpc('save_progress', { pr: progOf() }).then(p => { if (p) acct.prof = p; }); }
+function claimable(code) { const P = acct.prof; if (!P) return false; const today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+  if (code === 'daily') return P.claimed.daily !== today; if (P.claimed[code]) return false; const a = ACH.find(x => x[0] === code), [c, g] = a[3](progOf()); return c >= g; }
+const anyClaimable = () => acct.prof && ACH.some(a => claimable(a[0]));
+function toast(s) { acct.msg = s; acct.msgT = 0; }
+async function rpc(fn, args) {
+  if (!acct.sb || !acct.user) return null;
+  const { data, error } = await acct.sb.rpc(fn, args || {});
+  if (error) { const m = error.message || ''; throw new Error(/no tickets/.test(m) ? '뽑기권이 없어요' : /nickname taken/.test(m) ? '이미 쓰는 닉네임이에요' : /already claimed/.test(m) ? '이미 받았어요' : /not owned/.test(m) ? '갖고 있지 않은 아이템이에요' : '서버와 연결하지 못했어요'); }
+  return data;
+}
+async function loadAccount() {
+  try {
+    acct.prof = await rpc('me');
+    const { data } = await acct.sb.from('inventory').select('item_id,count');
+    acct.inv = {}; for (const r of data || []) acct.inv[r.item_id] = r.count;
+    if (Object.keys(prog).length) acct.prof = (await rpc('save_progress', { pr: progOf() })) || acct.prof;
+    if (acct.prof && !acct.prof.nickname) openNick('profile');
+  } catch (e) { toast(e.message); }
+}
+function initAuth() {
+  if (!window.supabase || acct.sb) return;
+  acct.sb = window.supabase.createClient(RANK.url.replace('/rest/v1/scores', ''), RANK.key, { auth: { flowType: 'pkce', detectSessionInUrl: true, persistSession: true, autoRefreshToken: true } });
+  acct.sb.auth.onAuthStateChange((ev, session) => {
+    const u = session ? session.user : null, changed = (u && u.id) !== (acct.user && acct.user.id);
+    acct.user = u;
+    if (!u) { acct.prof = null; acct.inv = {}; return; }
+    if (changed) { loadAccount(); if (/[?&]code=/.test(location.search)) history.replaceState(null, '', location.pathname + (room ? '?room=' + room : '')); }
+  });
+}
+function signIn(provider) {
+  if (!acct.sb) { toast('로그인 기능을 불러오지 못했어요'); return; }
+  acct.sb.auth.signInWithOAuth({ provider, options: { redirectTo: location.origin + location.pathname } }).catch(() => toast('로그인을 시작하지 못했어요'));
+}
+async function signOut() { if (acct.sb) await acct.sb.auth.signOut(); acct.user = null; acct.prof = null; acct.inv = {}; toast('로그아웃했어요'); }
+const myGear = () => (acct.prof && acct.prof.equip) || {};
+async function equip(slot, id) {
+  if (acct.busy) return; acct.busy = true;
+  try { acct.prof = await rpc('equip_item', { s: slot, item: id }); tone(880, 0.08, 'triangle', 0.2); } catch (e) { toast(e.message); }
+  acct.busy = false;
+}
+async function claim(code) {
+  if (acct.busy) return; acct.busy = true;
+  try { acct.prof = await rpc('claim_achievement', { c: code }); toast(`뽑기권 ${ACH_REWARD[code]}장을 받았어요`); tone(880, 0.1, 'triangle', 0.25); tone(1320, 0.18, 'triangle', 0.25, 0.1); } catch (e) { toast(e.message); }
+  acct.busy = false;
+}
+function pull() { // the machine: the crank turns while the server picks
+  const G = acct.g; if (G.phase !== 'idle' || !acct.prof) return;
+  if (acct.prof.tickets < 1) { toast('뽑기권이 없어요 · 업적에서 받을 수 있어요'); return; }
+  G.phase = 'turn'; G.t = 0; G.res = null; G.err = ''; tone(300, 0.6, 'square', 0.12, 0, 1.5);
+  rpc('gacha_pull').then(r => { G.res = r; acct.inv[r.item] = (acct.inv[r.item] || 0) + 1; acct.prof.tickets = r.tickets; }).catch(e => { G.err = e.message; });
+}
+function gachaStep(dt) {
+  const G = acct.g; G.t += dt; acct.msgT += dt;
+  if (G.phase === 'turn' && G.t > 1.1) { if (G.res) { G.phase = 'drop'; G.t = 0; tone(520, 0.12, 'sine', 0.2); } else if (G.err) { G.phase = 'idle'; toast(G.err); } }
+  if (G.phase === 'drop' && G.t > 0.8) { G.phase = 'reveal'; G.t = 0; const g = G.res.grade; tone(660 + g * 220, 0.15, 'triangle', 0.3); tone(990 + g * 220, 0.3, 'triangle', 0.25, 0.12); }
+}
+// ---- Drawing the gear: on an animal, and as a small picture on a card ----
+function drawHat(id) { // over the head, in the animal's own coordinates (the head's centre is 0, -70)
+  const it = item(id); if (!it) return; const L = it.look; ctx.lineWidth = 2.4; ctx.strokeStyle = OUT;
+  if (L.k === 'band') { rr(-27, -91, 54, 10, 5, L.c, OUT, 2.2); }
+  else if (L.k === 'cap') { ctx.beginPath(); ctx.arc(0, -86, 25, Math.PI, 0); ctx.closePath(); ctx.fillStyle = L.c; ctx.fill(); ctx.stroke(); E(0, -86, 32, 6, L.c); E(0, -111, 4, 4, '#fff'); }
+  else if (L.k === 'gat') { E(0, -90, 44, 8, L.c); rr(-14, -114, 28, 24, 7, L.c, OUT, 2.2); ctx.strokeStyle = '#7a6872'; ctx.beginPath(); ctx.moveTo(-18, -88); ctx.lineTo(-22, -60); ctx.moveTo(18, -88); ctx.lineTo(22, -60); ctx.stroke(); }
+  else if (L.k === 'crown') { poly([-22, -88, -24, -110, -12, -98, 0, -116, 12, -98, 24, -110, 22, -88], L.c); for (const x of [-12, 0, 12]) E(x, -94, 3, 3, '#e2574c'); }
+}
+function itemIcon(id, x, y, s) { // a little picture of an item, centred on x, y, about s across
+  const it = item(id); if (!it) return; const L = it.look, k = s / 60;
+  ctx.save(); ctx.translate(x, y); ctx.scale(k, k); ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; ctx.lineJoin = 'round';
+  if (it.slot === 'hat') { ctx.translate(0, 82); E(0, -70, 22, 18, '#efe3d3'); drawHat(id); }
+  else if (it.slot === 'uniform') { const cs = L.c; ctx.beginPath(); ctx.moveTo(-24, -20); ctx.lineTo(-10, -26); ctx.lineTo(10, -26); ctx.lineTo(24, -20); ctx.lineTo(28, -6); ctx.lineTo(18, -2); ctx.lineTo(18, 24); ctx.lineTo(-18, 24); ctx.lineTo(-18, -2); ctx.lineTo(-28, -6); ctx.closePath();
+    ctx.save(); ctx.clip(); cs.forEach((c, i) => { ctx.fillStyle = c; ctx.fillRect(-30, -26 + i * 50 / cs.length, 60, 50 / cs.length + 1); }); ctx.restore(); ctx.stroke(); }
+  else if (it.slot === 'shoes') { ctx.beginPath(); ctx.moveTo(-24, 10); ctx.lineTo(-20, -10); ctx.lineTo(-4, -10); ctx.lineTo(0, 0); ctx.lineTo(22, 4); ctx.lineTo(24, 14); ctx.closePath(); ctx.fillStyle = L.c; ctx.fill(); ctx.stroke(); rr(-25, 10, 50, 7, 3, '#fff', OUT, 2);
+    if (L.bolt) poly([-8, -8, -2, -1, -6, -1, 2, 8, -1, 1, 3, 1], '#f0a020'); if (L.wing) { ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(-26, -10, 12, 6, -0.6, 0, 7); ctx.fill(); ctx.stroke(); } }
+  else { ctx.rotate(0.5); ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(0, 26); ctx.lineTo(0, 6); ctx.stroke(); ctx.lineWidth = 3; ctx.strokeStyle = '#a97c50'; ctx.stroke();
+    ctx.lineWidth = 6.5; ctx.strokeStyle = OUT; ctx.beginPath(); ctx.ellipse(0, -10, 14, 18, 0, 0, 7); ctx.fillStyle = 'rgba(255,248,231,0.9)'; ctx.fill(); ctx.stroke(); ctx.lineWidth = 4; ctx.strokeStyle = L.c; ctx.stroke(); }
+  ctx.restore();
+}
+function gradeChip(g, x, y, h = 26) { const w = 46; rr(x, y, w, h, h / 2, GRADE[g].c, null); text(GRADE[g].ko, x + w / 2, y + h / 2 + 1, 15, '#fff', 'center', null, F_T); return w; }
+
+function drawEquipTab(y0, end) {
+  const gear = myGear(), b = gearBonus(gear), a = setup.animal, ph = 236;
+  panel(LY.m, y0, LY.w, ph);
+  ctx.fillStyle = 'rgba(70,90,140,0.2)'; ctx.beginPath(); ctx.ellipse(LY.m + 100, y0 + ph - 30, 56, 12, 0, 0, 7); ctx.fill();
+  ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(a, LY.m + 100, y0 + ph - 30, 1.35, { front: true, t: state.t, accent: CORAL, gear });
+  [[-1, '◀', LY.m + 16], [1, '▶', LY.m + 148]].forEach(([d, t, x]) => { if (btn(x, y0 + 14, 40, 40, () => { setup.animal = (setup.animal + d + 12) % 12; state.sel = setup.animal; })) rr(x, y0 + 14, 40, 40, 12, '#fff3c4', null); text(t, x + 20, y0 + 35, 20, '#7a6872', 'center', null, F_T); });
+  const tx = LY.m + 214;
+  STATS.forEach((s, i) => { const y = y0 + 40 + i * 38, v = stat(a, s, null), add = b[s] || 0;
+    text(STAT_KO[i], tx, y, 21, INK, 'left', null, F_T);
+    for (let k = 0; k < 5; k++) rr(tx + 96 + k * 34, y - 11, 28, 22, 6, k < v ? STAT_COL[i] : '#eadfd2', OUT, 2.2);
+    if (add) { const k = Math.min(v, 4), from = tx + 96 + k * 34 + (v >= 5 ? 28 : 0); rr(from, y - 11, 28 * Math.min(add, 1), 22, 5, '#3d8be0', OUT, 2.2); text('+' + Math.round(add * 100) / 100, tx + 96 + 5 * 34 + 14, y, 20, '#3d8be0', 'left', null, F_T); } });
+  // the four slots, then the items of the chosen one
+  const sy = y0 + ph + LY.gap, sw = (LY.w - LY.gap * 3) / 4;
+  SLOTS.forEach(([id, ko], i) => { const x = LY.m + i * (sw + LY.gap), on = id === acct.wslot, it = item(gear[id]);
+    const over = btn(x, sy, sw, 52, () => { acct.wslot = id; });
+    rr(x, sy, sw, 52, 14, on ? '#fff3c4' : over ? '#fffdf3' : 'rgba(255,248,231,0.85)', on ? CORAL : it ? GRADE[it.grade].c : OUT, on ? 4 : 2.6);
+    text(ko, x + sw / 2, sy + 27, 22, on ? INK : '#7a6872', 'center', null, F_T); });
+  const gy = sy + 52 + LY.gap, ids = Object.keys(ITEMS).filter(k => ITEMS[k][0] === acct.wslot), cw = (LY.w - LY.gap * 2) / 3, ch = Math.min(118, (end - gy - LY.gap) / 2);
+  ids.forEach((id, i) => { const it = item(id), have = acct.inv[id] || 0, on = gear[it.slot] === id, x = LY.m + (i % 3) * (cw + LY.gap), y = gy + Math.floor(i / 3) * (ch + LY.gap);
+    const over = btn(x, y, cw, ch, () => { if (!have) toast('뽑기 기계에서 얻을 수 있어요'); else equip(it.slot, on ? null : id); });
+    rr(x, y, cw, ch, 16, have ? (on ? '#fff3c4' : over ? '#fffdf3' : '#fffaf0') : 'rgba(234,223,210,0.7)', have ? GRADE[it.grade].c : '#b9aaa0', on ? 5 : 3);
+    if (have) { itemIcon(id, x + 40, y + ch / 2 - 4, 54); } else text('?', x + 40, y + ch / 2, 40, '#b9aaa0', 'center', null, F_T);
+    gradeChip(it.grade, x + cw - 56, y + 10);
+    text(have ? it.name : '???', x + 78, y + ch / 2 - 14, 19, have ? INK : '#9a8b93', 'left', null, F_T);
+    text(`${STAT_NAME[it.stat]} +${it.amt}`, x + 78, y + ch / 2 + 14, 17, GRADE[it.grade].c, 'left', null, F_B);
+    if (on) text('장착 중', x + cw - 12, y + ch - 16, 16, CORAL, 'right', null, F_T); else if (have > 1) text('×' + have, x + cw - 12, y + ch - 16, 16, '#7a6872', 'right', null, F_N);
+  });
+}
+function drawGachaTab(y0, end) {
+  const G = acct.g, cx = W / 2, h = end - y0, base = y0 + h - 30, k = Math.min(1, h / 470);
+  ctx.save(); ctx.translate(cx, base); ctx.scale(k, k); ctx.lineWidth = 3.4; ctx.strokeStyle = OUT; ctx.lineJoin = 'round';
+  // the stand and the body
+  rr(-150, -40, 300, 40, 12, '#c9573f', OUT, 3.4);
+  rr(-130, -210, 260, 176, 24, CORAL, OUT, 3.4);
+  rr(-96, -186, 120, 40, 10, '#fff8e7', OUT, 3); text('뽑기권 1장', -36, -165, 20, INK, 'center', null, F_T);
+  // the crank: it turns while the server picks
+  const turn = G.phase === 'turn' ? G.t * 7 : 0; E(70, -150, 30, 30, '#fff3c4');
+  ctx.save(); ctx.translate(70, -150); ctx.rotate(turn); rr(-6, -34, 12, 68, 6, '#fff8e7', OUT, 3); E(0, -34, 10, 10, '#e2574c'); ctx.restore();
+  // the mouth and the tray: a capsule rolls out in the result's colour
+  rr(-96, -126, 92, 70, 16, '#4a3d47', OUT, 3);
+  // the dome full of capsules
+  ctx.fillStyle = 'rgba(214,236,255,0.55)'; ctx.beginPath(); ctx.arc(0, -330, 130, 0, 7); ctx.fill(); ctx.stroke();
+  ctx.save(); ctx.beginPath(); ctx.arc(0, -330, 126, 0, 7); ctx.clip();
+  for (let i = 0; i < 26; i++) { const g = i % 9 === 0 ? 3 : i % 5 === 0 ? 2 : i % 3 === 0 ? 1 : 0, jig = G.phase === 'turn' ? Math.sin(G.t * 20 + i) * 4 : 0;
+    const x = -105 + (i * 47) % 210 + jig, y = -230 - Math.floor(i / 5) * 34 - (i % 2) * 10 + Math.abs(jig); capsule(x, y, 17, GRADE[g].c, i * 0.7); }
+  ctx.restore();
+  ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.beginPath(); ctx.ellipse(-60, -400, 24, 12, -0.7, 0, 7); ctx.fill();
+  rr(-60, -214, 120, 18, 8, '#c9573f', OUT, 3);
+  if (G.phase === 'drop' || G.phase === 'reveal') { const u = Math.min(1, G.t / 0.5), g = G.res.grade; capsule(-50, G.phase === 'drop' ? -118 + u * 40 : -80, 22, GRADE[g].c, G.t * 6); }
+  ctx.restore();
+  text(`뽑기권 ${acct.prof.tickets}장`, LY.m + LY.pad, y0 + 30, 26, '#3d8be0', 'left', null, F_T);
+  text('업적을 달성하면 뽑기권을 받아요', LY.m + LY.pad, y0 + 64, 19, '#7a6872', 'left', null, F_B);
+  if (G.phase === 'reveal') { // the prize, opened
+    const r = G.res, it = item(r.item), c = GRADE[it.grade].c, py = y0 + 40, ph = Math.min(380, h - 60);
+    ctx.fillStyle = 'rgba(59,51,64,0.45)'; ctx.fillRect(LY.m - 8, y0 - 8, LY.w + 16, h + 16);
+    const gl = ctx.createRadialGradient(W / 2, py + ph * 0.42, 10, W / 2, py + ph * 0.42, 220); gl.addColorStop(0, c + 'cc'); gl.addColorStop(1, c + '00'); ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(W / 2, py + ph * 0.42, 220, 0, 7); ctx.fill();
+    rr(LY.m + 60, py, LY.w - 120, ph, 26, '#fffaf0', c, 6);
+    gradeChip(it.grade, W / 2 - 23, py + 22, 30);
+    if (r.new) { rr(W / 2 + 40, py + 22, 70, 30, 15, '#e2574c', null); text('NEW', W / 2 + 75, py + 38, 17, '#fff', 'center', null, F_T); }
+    itemIcon(r.item, W / 2, py + ph * 0.42, 130 * Math.min(1, G.t * 4));
+    text(it.name, W / 2, py + ph - 96, 34, INK, 'center', null, F_T);
+    text(`${SLOTS.find(s => s[0] === it.slot)[1]} · ${STAT_NAME[it.stat]} +${it.amt}`, W / 2, py + ph - 52, 23, c, 'center', null, F_T);
+    for (let i = 0; i < 8; i++) { const a = i / 8 * 6.283 + G.t, rr2 = 150 + Math.sin(G.t * 3 + i) * 10; star(W / 2 + Math.cos(a) * rr2, py + ph * 0.42 + Math.sin(a) * rr2 * 0.7, 9, i % 2 ? '#fff' : c); }
+  }
+}
+function capsule(x, y, r, c, rot) { ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.lineWidth = 2.4; ctx.strokeStyle = OUT;
+  ctx.beginPath(); ctx.arc(0, 0, r, Math.PI, 0); ctx.closePath(); ctx.fillStyle = c; ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI); ctx.closePath(); ctx.fillStyle = '#fff8e7'; ctx.fill(); ctx.stroke(); ctx.restore(); }
+function drawAchTab(y0, end) {
+  const rows = ACH.length, rh = Math.min(48, (end - y0 - LY.pad) / rows), p = progOf();
+  panel(LY.m, y0, LY.w, rh * rows + LY.pad);
+  ACH.forEach(([code, name, desc, f], i) => { const y = y0 + LY.pad / 2 + i * rh + rh / 2, [c, g] = f(p), can = claimable(code), done = code === 'daily' ? !can : !!acct.prof.claimed[code];
+    if (i % 2 === 0) rr(LY.m + 10, y - rh / 2 + 2, LY.w - 20, rh - 4, 10, 'rgba(234,223,210,0.4)', null);
+    text(name, LY.m + LY.pad, y, 21, done ? '#9a8b93' : INK, 'left', null, F_T);
+    text(code === 'daily' ? '매일' : `${Math.min(c, g)}/${g}`, LY.m + 250, y, 18, '#7a6872', 'left', null, F_N);
+    text(`뽑기권 ${ACH_REWARD[code]}`, LY.m + 380, y, 18, '#3d8be0', 'left', null, F_B);
+    const bx = LY.m + LY.w - LY.pad - 96;
+    if (can) { const over = btn(bx, y - 17, 96, 34, () => claim(code)); rr(bx, y - 17, 96, 34, 17, over ? '#ffe9a8' : '#ffd36b', OUT, 2.4); text('받기', bx + 48, y + 1, 19, INK, 'center', null, F_T); }
+    else text(done ? '받음' : '진행 중', bx + 48, y, 18, '#9a8b93', 'center', null, F_B);
   });
 }
 
@@ -1459,7 +1690,13 @@ function playCore(dt) { // the match itself; the pause menu keeps it running whe
     return;
   }
   state.t += dt; simulate(dt); localFx(dt);
-  if (m.phase === 'done' && m.pt > 2.4) { state.gained = m.sc.winner === 0 ? '승리!' : '패배'; scene = 'results'; }
+  if (m.phase === 'done' && m.pt > 2.4) { state.gained = m.sc.winner === 0 ? '승리!' : '패배'; scene = 'results'; matchProgress(); }
+}
+function matchProgress() { // what this match adds to the account's counts
+  if (m.online && view !== 0) return;
+  const d = { sweet: m.stats.sweet[0], aces: m.stats.aces[0] };
+  if (m.sc.winner === 0 && !m.online) { d.wins = 1; d['win_' + ['', 'easy', 'normal', 'hard'][m.level]] = 1; d['win_' + (m.format || 'regular')] = 1; }
+  addProgress(d);
 }
 const scenes = {
   figures: {
@@ -1502,7 +1739,16 @@ const scenes = {
       rows.forEach((c, i) => { text(c[0], 334, ly(i + 1), 21, '#7a6872', 'right', null, F_B); text(c[1], 352, ly(i + 1), 22, INK, 'left', null, F_B); });
       text(touchUI ? '모바일에서는 조이스틱과 버튼으로 해요' : '버튼은 마우스로 눌러도 돼요', W / 2, ly(5), 23, '#3d9be0', 'center', null, F_H);
       if (room) wideBtn('초대받은 방에 들어가기', () => { scene = 'select'; });
-      else { sideBtn('랭킹', () => { scene = 'ranking'; loadRanking(); }); mainBtn('시작하기', () => { scene = 'format'; }); }
+      else { // the ranking, the wardrobe, the match
+        const bw = (LY.w - LY.gap * 2) / 3;
+        button('랭킹', LY.m, LY.bot, bw, LY.btnH, () => { scene = 'ranking'; loadRanking(); }, { size: 28 });
+        button('옷장', LY.m + bw + LY.gap, LY.bot, bw, LY.btnH, () => { scene = 'wardrobe'; }, { size: 28, fill: '#eef7ff' });
+        if (anyClaimable()) E(LY.m + bw * 2 + LY.gap - 16, LY.bot + 14, 8, 8, '#e2574c');
+        button('시작하기', LY.m + (bw + LY.gap) * 2, LY.bot, bw, LY.btnH, () => { scene = 'format'; }, { size: 29, fill: '#fff3c4' });
+      }
+      { const P = acct.prof, t = acct.user ? (P && P.nickname ? P.nickname + ' · 뽑기권 ' + P.tickets : '로그인됨') : '로그인', cw = Math.max(132, t.length * 17 + 44), cx = W - LY.m - cw, cy = 14;
+        const over = btn(cx, cy, cw, 50, () => { scene = 'account'; });
+        rr(cx, cy, cw, 50, 25, over ? '#fff3c4' : 'rgba(255,248,231,0.95)', OUT, 2.6); text(t, cx + cw / 2, cy + 26, 21, acct.user ? INK : '#3d8be0', 'center', null, F_T); }
       text('© 2026 IGNUZNIM. All rights reserved.', W / 2, LY.copy, 16, 'rgba(59,51,64,0.6)', 'center', null, F_B);
       menuEnd('Enter 를 눌러도 시작해요');
     },
@@ -1546,6 +1792,8 @@ const scenes = {
           ctx.lineWidth = 2; ctx.strokeStyle = OUT;
           drawAnimal(r.animal, x0 + 88, y + 18, 0.32, { front: true, t: 0.4, accent: CORAL });
           text(r.nickname, x0 + 128, y, 25, INK, 'left', null, F_T);
+          if (r.gear) { ctx.font = `25px ${F_T}`; let gx = x0 + 138 + ctx.measureText(r.nickname).width; // what they wore, as grade colours
+            for (const id of r.gear.split(',')) { const it = item(id); if (it) { rr(gx, y - 9, 13, 18, 4, GRADE[it.grade].c, OUT, 1.6); gx += 16; } } }
           text(LEVEL_KO[r.level] || '', 470, y, 21, ['', '#3d9be0', '#4f9a6a', '#e2574c'][r.level] || INK, 'center', null, F_T);
           text(r.score.toLocaleString(), LY.m + LY.w - LY.pad, y, 27, INK, 'right', null, F_N);
         });
@@ -1554,6 +1802,62 @@ const scenes = {
       mainBtn(rank.loading ? '불러오는 중…' : '새로고침', () => { if (!rank.loading) loadRanking(); });
       const now = new Date();
       menuEnd(rank.period === 'month' ? `${now.getFullYear()}년 ${now.getMonth() + 1}월 기록 · 매달 1일에 새로 시작해요` : '지금까지 컴퓨터를 이긴 모든 기록 중 TOP 10');
+    },
+  },
+  account: { // signing in and out; the nickname
+    update(dt) { state.t += dt; acct.msgT += dt; if (pressed('Escape')) scene = 'title'; },
+    draw() {
+      menuBegin('계정', true);
+      const py = LY.top, ph = 420; panel(LY.m, py, LY.w, ph);
+      if (!acct.user) {
+        text('로그인하면', W / 2, py + 56, 28, INK, 'center', null, F_T);
+        text('옷장 · 뽑기 기계 · 업적을 쓸 수 있고', W / 2, py + 100, 22, '#5d4f58', 'center', null, F_B);
+        text('기기를 바꿔도 그대로 이어져요', W / 2, py + 132, 22, '#5d4f58', 'center', null, F_B);
+        button('Google로 로그인', LY.m + LY.pad, py + 182, LY.w - LY.pad * 2, 76, () => signIn('google'), { size: 28, fill: '#ffffff' });
+        button('카카오로 로그인', LY.m + LY.pad, py + 282, LY.w - LY.pad * 2, 76, () => signIn('kakao'), { size: 28, fill: '#fee500' });
+      } else {
+        const P = acct.prof;
+        text('닉네임', W / 2, py + 50, 21, '#7a6872', 'center', null, F_B);
+        text(P && P.nickname ? P.nickname : '정하는 중…', W / 2, py + 96, 40, INK, 'center', null, F_T);
+        text(`뽑기권 ${P ? P.tickets : '-'}장`, W / 2, py + 150, 26, '#3d8be0', 'center', null, F_T);
+        text(acct.user.app_metadata && acct.user.app_metadata.provider === 'kakao' ? '카카오 계정으로 로그인됨' : 'Google 계정으로 로그인됨', W / 2, py + 190, 19, '#7a6872', 'center', null, F_B);
+        button('닉네임 바꾸기', LY.m + LY.pad, py + 236, LY.w - LY.pad * 2, 68, () => openNick('profile'), { size: 26 });
+        button('로그아웃', LY.m + LY.pad, py + 320, LY.w - LY.pad * 2, 68, signOut, { size: 26 });
+      }
+      if (acct.msg && acct.msgT < 3) text(acct.msg, W / 2, py + ph + 40, 22, '#c0605a', 'center', null, F_H);
+      sideBtn('뒤로', () => { scene = 'title'; });
+      menuEnd(acct.user ? '' : '처음 로그인하면 뽑기권 3장을 드려요');
+    },
+  },
+  wardrobe: { // equip / the gacha machine / achievements
+    update(dt) {
+      state.t += dt; gachaStep(dt);
+      if (pressed('Escape')) { if (acct.g.phase === 'reveal') acct.g.phase = 'idle'; else scene = 'title'; }
+      const tabs = ['equip', 'gacha', 'ach'], d = anyHit(...K_R) ? 1 : anyHit(...K_L) ? 2 : 0;
+      if (d && acct.g.phase === 'idle') acct.wtab = tabs[(tabs.indexOf(acct.wtab) + d) % 3];
+      if (acct.wtab === 'gacha' && anyHit(...K_OK)) { if (acct.g.phase === 'reveal') acct.g.phase = 'idle'; else pull(); }
+    },
+    draw() {
+      menuBegin('옷장', true);
+      if (acct.prof) { rr(LY.m + LY.w - 150, LY.titleY - 22, 150, 44, 22, 'rgba(255,248,231,0.95)', OUT, 2.4); text(`뽑기권 ${acct.prof.tickets}`, LY.m + LY.w - 75, LY.titleY + 1, 22, '#3d8be0', 'center', null, F_T); }
+      const tw = (LY.w - LY.gap * 2) / 3;
+      [['equip', '장착'], ['gacha', '뽑기 기계'], ['ach', '업적']].forEach(([id, t], i) => { const x = LY.m + i * (tw + LY.gap), on = id === acct.wtab;
+        const over = btn(x, LY.top, tw, 56, () => { if (acct.g.phase === 'idle' || acct.g.phase === 'reveal') { acct.g.phase = 'idle'; acct.wtab = id; } });
+        rr(x, LY.top, tw, 56, 16, on ? '#fff3c4' : over ? '#fffdf3' : 'rgba(255,248,231,0.8)', on ? CORAL : OUT, on ? 4 : 2.6);
+        text(t, x + tw / 2, LY.top + 29, 25, on ? INK : '#7a6872', 'center', null, F_T);
+        if (id === 'ach' && anyClaimable()) E(x + tw - 18, LY.top + 14, 8, 8, '#e2574c'); });
+      const y0 = LY.top + 56 + LY.gap, end = contentEnd();
+      if (!acct.user || !acct.prof) {
+        panel(LY.m, y0, LY.w, 300);
+        text(acct.user ? '불러오는 중…' : '로그인이 필요해요', W / 2, y0 + 70, 30, INK, 'center', null, F_T);
+        if (!acct.user) { text('아이템과 뽑기권은 계정에 저장돼요', W / 2, y0 + 116, 22, '#5d4f58', 'center', null, F_B); button('로그인하러 가기', W / 2 - 170, y0 + 170, 340, 72, () => { scene = 'account'; }, { size: 28, fill: '#fff3c4' }); }
+      } else if (acct.wtab === 'equip') drawEquipTab(y0, end);
+      else if (acct.wtab === 'gacha') drawGachaTab(y0, end);
+      else drawAchTab(y0, end);
+      if (acct.msg && acct.msgT < 2.6) { ctx.font = `24px ${F_B}`; const w = ctx.measureText(acct.msg).width + 60; rr(W / 2 - w / 2, LY.bot - 62, w, 46, 23, 'rgba(59,51,64,0.9)', null); text(acct.msg, W / 2, LY.bot - 38, 21, CREAM, 'center', null, F_B); }
+      sideBtn('뒤로', () => { acct.g.phase = 'idle'; scene = 'title'; });
+      if (acct.prof && acct.wtab === 'gacha') mainBtn(acct.g.phase === 'reveal' ? '확인' : acct.g.phase === 'idle' ? '뽑기 (뽑기권 1장)' : '뽑는 중…', () => { if (acct.g.phase === 'reveal') acct.g.phase = 'idle'; else pull(); });
+      menuEnd(acct.wtab === 'gacha' ? `확률  일반 ${ODDS[0]}% · 희귀 ${ODDS[1]}% · 영웅 ${ODDS[2]}% · 전설 ${ODDS[3]}%` : '장착한 아이템은 모든 선수와 경기(랭킹 포함)에 적용돼요');
     },
   },
   select: {
@@ -1890,6 +2194,7 @@ window.game = {
 };
 
 reset();
+initAuth();
 scene = params.get('scene') || 'title';
 last = clock.now();
 if (params.get('manual') === '1') drawFrame();
