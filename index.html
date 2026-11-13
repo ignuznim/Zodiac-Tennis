@@ -321,9 +321,9 @@ function drawRacket(A, hand, an, t, accent) {
   ctx.save(); ctx.translate(hx, hy); ctx.rotate(ang);
   ctx.lineWidth = 6; ctx.strokeStyle = OUT; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -19); ctx.stroke();
   ctx.lineWidth = 3; ctx.strokeStyle = '#a97c50'; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -19); ctx.stroke();
-  ctx.lineWidth = 6.5; ctx.strokeStyle = OUT; ctx.beginPath(); ctx.ellipse(0, -32, 11, 14, 0, 0, 7); ctx.fillStyle = 'rgba(255,248,231,0.8)'; ctx.fill(); ctx.stroke();
+  ctx.lineWidth = 6.5; ctx.strokeStyle = OUT; ctx.beginPath(); ctx.ellipse(0, -32, 11, 14, 0, 0, 7); ctx.fillStyle = 'rgba(255,248,231,0.12)'; ctx.fill(); ctx.stroke(); // a see-through face: the ball shows behind it
   ctx.lineWidth = 3.5; ctx.strokeStyle = accent; ctx.stroke();
-  ctx.lineWidth = 0.8; ctx.strokeStyle = '#c9b8a8'; ctx.beginPath();
+  ctx.lineWidth = 0.8; ctx.strokeStyle = 'rgba(201,184,168,0.45)'; ctx.beginPath();
   for (let i = -1; i <= 1; i++) { ctx.moveTo(i * 5, -44); ctx.lineTo(i * 5, -20); ctx.moveTo(-9, -32 + i * 6); ctx.lineTo(9, -32 + i * 6); }
   ctx.stroke(); ctx.restore();
   ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; E(hx, hy, 6.5, 6.5, A.c);
@@ -1058,6 +1058,9 @@ function drawMatch() {
   const far = m.P[1 - view], near = m.P[view], b = m.ball, bv = view ? -b.y : b.y, ny = view ? -near.y : near.y;
   drawPlayer(far); if (bv < 0) drawBall(); drawNet(); if (bv >= 0 && bv < ny) drawBall();
   drawPlayer(near); if (bv >= ny) drawBall();
+  else if (bv >= 0 && b.live && Math.hypot(b.x - near.x, b.y - near.y) < 3.5) { // behind my own animal: show it through, faintly
+    const s = proj(b.x, b.y, Math.max(0, b.z)); ctx.globalAlpha = 0.7; ctx.lineWidth = 2.2; ctx.strokeStyle = OUT; E(s.x, s.y, 10 * s.s, 10 * s.s, BALL); ctx.globalAlpha = 1;
+  }
   for (const q of m.pops) { const s = proj(q.x, q.y, q.z); ctx.globalAlpha = clamp((0.9 - q.t) * 4, 0, 1); text(q.s, clamp(s.x, 70, W - 70), s.y - q.t * 40, q.s.startsWith('딱') ? 44 : 30, q.c, 'center', OUT, F_H); ctx.globalAlpha = 1; }
   ctx.restore();
   if (m.practice) { drawLesson(); drawPracticeResult(); } else drawScoreboard();
