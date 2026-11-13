@@ -1473,6 +1473,8 @@ async function loadAccount() {
 }
 function initAuth() {
   if (!window.supabase || acct.sb) return;
+  fetch(RANK.url.replace('/rest/v1/scores', '/auth/v1/settings'), { headers: { apikey: RANK.key } }).then(r => r.json()) // which sign-ins are switched on
+    .then(d => { acct.providers = Object.keys(d.external || {}).filter(k => d.external[k] && (k === 'google' || k === 'kakao' || k === 'apple')); }).catch(() => {});
   acct.sb = window.supabase.createClient(RANK.url.replace('/rest/v1/scores', ''), RANK.key, { auth: { flowType: 'pkce', detectSessionInUrl: true, persistSession: true, autoRefreshToken: true } });
   acct.sb.auth.onAuthStateChange((ev, session) => {
     const u = session ? session.user : null, changed = (u && u.id) !== (acct.user && acct.user.id);
@@ -1813,8 +1815,9 @@ const scenes = {
         text('로그인하면', W / 2, py + 56, 28, INK, 'center', null, F_T);
         text('옷장 · 뽑기 기계 · 업적을 쓸 수 있고', W / 2, py + 100, 22, '#5d4f58', 'center', null, F_B);
         text('기기를 바꿔도 그대로 이어져요', W / 2, py + 132, 22, '#5d4f58', 'center', null, F_B);
-        button('Google로 로그인', LY.m + LY.pad, py + 182, LY.w - LY.pad * 2, 76, () => signIn('google'), { size: 28, fill: '#ffffff' });
-        button('카카오로 로그인', LY.m + LY.pad, py + 282, LY.w - LY.pad * 2, 76, () => signIn('kakao'), { size: 28, fill: '#fee500' });
+        const on = acct.providers || ['google', 'kakao']; // until the list arrives, show both
+        [['google', 'Google로 로그인', '#ffffff'], ['kakao', '카카오로 로그인', '#fee500'], ['apple', 'Apple로 로그인', '#f2f2f2']].filter(q => on.includes(q[0]))
+          .forEach(([id, t, f], i) => button(t, LY.m + LY.pad, py + 182 + i * 100, LY.w - LY.pad * 2, 76, () => signIn(id), { size: 28, fill: f }));
       } else {
         const P = acct.prof;
         text('닉네임', W / 2, py + 50, 21, '#7a6872', 'center', null, F_B);
