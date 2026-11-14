@@ -1,0 +1,17 @@
+{
+  "name": "십이지 테니스",
+  "short_name": "십이지 테니스",
+  "description": "열두 동물의 진짜 테니스 승부",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#a2e3c8",
+  "theme_color": "#5fb49a",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

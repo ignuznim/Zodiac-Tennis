@@ -51,3 +51,8 @@
   licence: {id: MIT}
   date: 2026-11-13
   ships: true
+- path: icons/icon-512.png
+  origin: code
+  tool: "drawn by the game's own drawAnimal code (the tiger) and resized for 180, 192, 512, maskable and favicon sizes"
+  date: 2026-11-14
+  ships: true
