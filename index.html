@@ -656,11 +656,13 @@ function drawAnimal(a, X, Y, k, o) {
     if (!front && !tailHolds) drawTail(A, -hand, false);
     if (tailHolds && front) E(hand * 21, -36, 6.5, 6.5, A.c);
   }
-  if (front || tailHolds || A.id === 'snake') drawRacket(A, hand, an, t, rk ? rk.look.c : accent, rk && rk.look);
   ctx.translate(0, droop);
   drawEars(A, front, t, an);
   drawHead(A, front, t + a);
   if (G.hat) drawHat(G.hat);
+  ctx.translate(0, -droop);
+  if (front || tailHolds || A.id === 'snake') drawRacket(A, hand, an, t, rk ? rk.look.c : accent, rk && rk.look); // in front of the head: a swing passes over the face, not behind it
+  ctx.translate(0, droop);
   if (A.id === 'pig' && an === 'cheer' && front) { const u = (t % 0.7) / 0.7; ctx.globalAlpha = 1 - u; for (const sd of [-1, 1]) E(sd * (12 + u * 14), -58 + u * 6, 4 + u * 5, 3 + u * 4, '#ffffff', 0, true); ctx.globalAlpha = 1; } // a happy snort
   if ((o.tired || 0) > 0.75 && front) { ctx.fillStyle = '#9ad7ff'; ctx.beginPath(); ctx.ellipse(24, -86 + (t * 30 % 14), 3, 5, 0, 0, 7); ctx.fill(); ctx.stroke(); }
   ctx.restore();
@@ -2011,7 +2013,27 @@ function scrollView(S, v0, v1, key, height, draw) { // draw() paints the content
   if (S.max > 0) { const th = Math.max(40, (v1 - v0) * (v1 - v0) / S.h), ty = v0 + (v1 - v0 - th) * S.scroll / S.max; rr(LY.m + LY.w + 10, ty, 6, th, 3, 'rgba(74,61,71,0.35)', null); }
   if (S.scroll < S.max - 4) { const g = ctx.createLinearGradient(0, v1 - 36, 0, v1); g.addColorStop(0, 'rgba(162,227,200,0)'); g.addColorStop(1, 'rgba(162,227,200,0.9)'); ctx.fillStyle = g; ctx.fillRect(LY.m - 10, v1 - 36, LY.w + 20, 36); }
 }
-const SHADOW = 'filter' in CanvasRenderingContext2D.prototype; // a true silhouette where the browser can draw one
+const GHOSTS = new Map();
+function ghostIcon(id, x, y, s) { // an item not yet owned: only its outline, dashed, round a pale grey shape; none of the details show
+  const r = Math.max(1, Math.abs(ctx.getTransform().a)), key = id + '|' + s + '|' + r;
+  let g = GHOSTS.get(key);
+  if (!g) {
+    const n = Math.ceil(s * 1.7 * r), mk = () => { const c = document.createElement('canvas'); c.width = c.height = n; return c; };
+    const A = mk(), keep = ctx; ctx = A.getContext('2d'); ctx.setTransform(r, 0, 0, r, 0, 0);
+    try { itemIcon(id, n / r / 2, n / r / 2, s); } finally { ctx = keep; }
+    const ac = A.getContext('2d'), d = ac.getImageData(0, 0, n, n), p = d.data; // the shape, in one flat colour
+    for (let i = 0; i < p.length; i += 4) { const on = p[i + 3] > 24; p[i] = 0xe2; p[i + 1] = 0xda; p[i + 2] = 0xd2; p[i + 3] = on ? 255 : 0; }
+    ac.putImageData(d, 0, 0);
+    const R = mk(), rc = R.getContext('2d'), w = 2.4 * r; // a ring: the shape grown a little, less the shape
+    for (let i = 0; i < 16; i++) { const q = i / 16 * 6.283; rc.drawImage(A, Math.cos(q) * w, Math.sin(q) * w); }
+    rc.globalCompositeOperation = 'source-in'; rc.fillStyle = '#9d8f96'; rc.fillRect(0, 0, n, n);
+    rc.globalCompositeOperation = 'destination-out'; rc.drawImage(A, 0, 0);
+    const c = n / 2, k = 56; rc.fillStyle = '#000'; for (let i = 0; i < k; i += 2) { rc.beginPath(); rc.moveTo(c, c); rc.arc(c, c, n, i / k * 6.283, (i + 1) / k * 6.283); rc.closePath(); rc.fill(); } // cut into dashes
+    ac.setTransform(1, 0, 0, 1, 0, 0); ac.drawImage(R, 0, 0);
+    g = { c: A, n: n / r }; GHOSTS.set(key, g);
+  }
+  ctx.drawImage(g.c, x - g.n / 2, y - g.n / 2, g.n, g.n);
+}
 function drawClosetList(gear, eh, chh, coll) { // the closet's whole list, from y 0: worn gear big (for one animal), then each slot four across
   let y = 0;
   if (!coll) {
@@ -2041,9 +2063,7 @@ function drawClosetList(gear, eh, chh, coll) { // the closet's whole list, from 
         else if (others.length && free <= 0) { rr(x + 8, yy + 8, cw - 16, 24, 12, 'rgba(122,104,114,0.85)', null); text(`${ANIMALS[others[0]].ko}${others.length > 1 ? ' 외' : ''} 착용`, x + cw / 2, yy + 21, 13, '#fff', 'center', null, F_T); } // worn by another: tapping takes it over
         if (have > 1) text('×' + have, x + cw - 10, yy + (on || (others.length && free <= 0) ? 46 : 18), 15, '#7a6872', 'right', null, F_N); }
       else { // a silhouette: the shape in shadow, the name a mystery
-        ctx.save(); ctx.beginPath(); ctx.rect(x + 4, yy + 4, cw - 8, chh - 56); ctx.clip(); ctx.globalAlpha = 0.28; if (SHADOW) ctx.filter = 'brightness(0)'; itemIcon(id, x + cw / 2, yy + 52, 70); ctx.restore();
-        if (!SHADOW) text('?', x + cw / 2, yy + 52, 44, '#a8999f', 'center', null, F_T);
-        rr(x + cw / 2 - 16, yy + 64, 32, 28, 14, '#ffffff', '#b9aaa0', 2); text('?', x + cw / 2, yy + 79, 20, '#7a6872', 'center', null, F_T);
+        ctx.save(); ctx.beginPath(); ctx.rect(x + 4, yy + 4, cw - 8, chh - 56); ctx.clip(); ghostIcon(id, x + cw / 2, yy + 52, 70); ctx.restore();
         text('???', x + cw / 2, yy + chh - 42, 17, '#9a8b93', 'center', null, F_T); text(GRADE[it.grade].ko, x + cw / 2, yy + chh - 18, 15, GRADE[it.grade].c, 'center', null, F_T); }
       E(x + cw - 14, yy + chh - 14, 5, 5, GRADE[it.grade].c);
     });
