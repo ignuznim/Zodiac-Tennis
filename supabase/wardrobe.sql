@@ -124,7 +124,13 @@ insert into public.achievements (code, reward, daily) values
   ('daily', 1, true), ('first_win', 1, false), ('win_easy', 1, false), ('win_normal', 1, false), ('win_hard', 2, false),
   ('win_flash', 1, false), ('win_short', 1, false), ('win_regular', 3, false), ('lessons_all', 2, false), ('ranked', 1, false),
   ('sweet_50', 1, false), ('aces_10', 1, false), ('wins_10', 2, false), ('sweet_300', 2, false), ('hard_5', 3, false),
-  ('rally_30', 2, false), ('wins_50', 5, false), ('sweet_1000', 5, false)
+  ('rally_30', 2, false), ('wins_50', 5, false), ('sweet_1000', 5, false), ('play_5', 1, false), ('play_20', 2, false),
+  ('play_100', 4, false), ('wins_25', 3, false), ('wins_100', 6, false), ('hard_20', 5, false), ('court_hard', 1, false),
+  ('court_grass', 1, false), ('court_clay', 1, false), ('animals_3', 1, false), ('animals_6', 2, false), ('animals_12', 5, false),
+  ('power_50', 1, false), ('power_300', 2, false), ('aces_50', 2, false), ('aces_200', 4, false), ('sweet_3000', 5, false),
+  ('rally_15', 1, false), ('rally_50', 3, false), ('online_1', 1, false), ('online_win', 2, false), ('online_10', 3, false),
+  ('ranked_10', 2, false), ('pulls_10', 1, false), ('pulls_50', 3, false), ('own_10', 1, false), ('own_30', 2, false),
+  ('own_60', 4, false), ('own_100', 10, false), ('legend_1', 2, false), ('full_set', 1, false)
 on conflict (code) do update set reward = excluded.reward, daily = excluded.daily;
 
 -- ---- One profile per account ----

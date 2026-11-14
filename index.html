@@ -1811,8 +1811,43 @@ const ACH = [ // the achievements: what counts, the goal; the server holds the r
   ['rally_30', '긴 랠리', '한 포인트에 30번 주고받기', p => [p.rally || 0, 30]],
   ['wins_50', '50승', '컴퓨터를 50번 이기기', p => [p.wins || 0, 50]],
   ['sweet_1000', "'딱!' 1000번", '스위트 스폿 1000번', p => [p.sweet || 0, 1000]],
+  ['play_5', '몸풀기', '경기 5번 끝까지 하기', p => [p.matches || 0, 5]],
+  ['play_20', '꾸준한 선수', '경기 20번 끝까지 하기', p => [p.matches || 0, 20]],
+  ['play_100', '코트의 터줏대감', '경기 100번 끝까지 하기', p => [p.matches || 0, 100]],
+  ['wins_25', '25승', '컴퓨터를 25번 이기기', p => [p.wins || 0, 25]],
+  ['wins_100', '100승', '컴퓨터를 100번 이기기', p => [p.wins || 0, 100]],
+  ['hard_20', '어려움 20승', '어려움 컴퓨터를 20번 이기기', p => [p.win_hard || 0, 20]],
+  ['court_hard', '하드 코트 승리', '하드 코트에서 이기기', p => [p.court_hard || 0, 1]],
+  ['court_grass', '잔디 코트 승리', '잔디 코트에서 이기기', p => [p.court_grass || 0, 1]],
+  ['court_clay', '클레이 코트 승리', '클레이 코트에서 이기기', p => [p.court_clay || 0, 1]],
+  ['animals_3', '새 친구', '서로 다른 동물 3마리로 이기기', p => [ANIMALS.filter(A => p['wa_' + A.id]).length, 3]],
+  ['animals_6', '반쪽 십이지', '서로 다른 동물 6마리로 이기기', p => [ANIMALS.filter(A => p['wa_' + A.id]).length, 6]],
+  ['animals_12', '십이지 완성', '열두 동물 모두로 이기기', p => [ANIMALS.filter(A => p['wa_' + A.id]).length, 12]],
+  ['power_50', '파워 히터', '파워샷 50번', p => [p.power || 0, 50]],
+  ['power_300', '대포알', '파워샷 300번', p => [p.power || 0, 300]],
+  ['aces_50', '에이스 50개', '서브 에이스 50번', p => [p.aces || 0, 50]],
+  ['aces_200', '서브의 달인', '서브 에이스 200번', p => [p.aces || 0, 200]],
+  ['sweet_3000', "'딱!' 3000번", '스위트 스폿 3000번', p => [p.sweet || 0, 3000]],
+  ['rally_15', '랠리 시작', '한 포인트에 15번 주고받기', p => [p.rally || 0, 15]],
+  ['rally_50', '끝나지 않는 랠리', '한 포인트에 50번 주고받기', p => [p.rally || 0, 50]],
+  ['online_1', '첫 온라인 경기', '온라인 경기 끝까지 하기', p => [p.online || 0, 1]],
+  ['online_win', '온라인 첫 승', '온라인 경기에서 이기기', p => [p.online_wins || 0, 1]],
+  ['online_10', '온라인 단골', '온라인 경기 10번 하기', p => [p.online || 0, 10]],
+  ['ranked_10', '랭킹 단골', '랭킹에 10번 기록 남기기', p => [p.ranked || 0, 10]],
+  ['pulls_10', '뽑기 10번', '뽑기 기계 10번 돌리기', p => [p.pulls || 0, 10]],
+  ['pulls_50', '뽑기 50번', '뽑기 기계 50번 돌리기', p => [p.pulls || 0, 50]],
+  ['own_10', '수집 시작', '서로 다른 아이템 10개 모으기', () => [ownedKinds(), 10]],
+  ['own_30', '수집가', '서로 다른 아이템 30개 모으기', () => [ownedKinds(), 30]],
+  ['own_60', '큰손 수집가', '서로 다른 아이템 60개 모으기', () => [ownedKinds(), 60]],
+  ['own_100', '도감 완성', '아이템 100개 모두 모으기', () => [ownedKinds(), Object.keys(ITEMS).length]],
+  ['legend_1', '전설과의 만남', '전설 아이템 얻기', () => [Object.keys(acct.inv).some(k => acct.inv[k] > 0 && ITEMS[k] && ITEMS[k][1] === 3) ? 1 : 0, 1]],
+  ['full_set', '풀 착장', '한 동물에게 4종 모두 입히기', () => [Object.values((acct.prof && acct.prof.equip) || {}).some(g => g && typeof g === 'object' && SLOTS.every(q => g[q[0]])) ? 1 : 0, 1]],
 ];
-const ACH_REWARD = { daily: 1, first_win: 1, win_easy: 1, win_normal: 1, win_hard: 2, win_flash: 1, win_short: 1, win_regular: 3, lessons_all: 2, ranked: 1, sweet_50: 1, aces_10: 1, wins_10: 2, sweet_300: 2, hard_5: 3, rally_30: 2, wins_50: 5, sweet_1000: 5 };
+const ownedKinds = () => Object.keys(acct.inv).filter(k => acct.inv[k] > 0 && ITEMS[k]).length;
+const ACH_REWARD = { daily: 1, first_win: 1, win_easy: 1, win_normal: 1, win_hard: 2, win_flash: 1, win_short: 1, win_regular: 3, lessons_all: 2, ranked: 1, sweet_50: 1, aces_10: 1, wins_10: 2, sweet_300: 2, hard_5: 3, rally_30: 2, wins_50: 5, sweet_1000: 5,
+  play_5: 1, play_20: 2, play_100: 4, wins_25: 3, wins_100: 6, hard_20: 5, court_hard: 1, court_grass: 1, court_clay: 1, animals_3: 1, animals_6: 2, animals_12: 5,
+  power_50: 1, power_300: 2, aces_50: 2, aces_200: 4, sweet_3000: 5, rally_15: 1, rally_50: 3, online_1: 1, online_win: 2, online_10: 3, ranked_10: 2,
+  pulls_10: 1, pulls_50: 3, own_10: 1, own_30: 2, own_60: 4, own_100: 10, legend_1: 2, full_set: 1 };
 const acct = { sb: null, user: null, prof: null, inv: {}, busy: false, msg: '', msgT: 0, wtab: 'gacha', wslot: 'hat', g: { phase: 'idle', t: 0, res: null, err: '' } };
 let prog = {}; try { prog = JSON.parse(store('zt_prog') || '{}') || {}; } catch (e) { prog = {}; }
 const progOf = () => { const s = (acct.prof && acct.prof.progress) || {}, o = Object.assign({}, prog); for (const k in s) o[k] = Math.max(o[k] || 0, s[k]); return o; };
@@ -1877,7 +1912,7 @@ function pull() { // the machine: the crank turns while the server picks
   const G = acct.g; if (G.phase !== 'idle' || !acct.prof) return;
   if (acct.prof.tickets < 1) { toast('뽑기권이 없어요 · 업적에서 받을 수 있어요'); return; }
   G.phase = 'turn'; G.t = 0; G.res = null; G.err = ''; tone(300, 0.6, 'square', 0.12, 0, 1.5);
-  rpc('gacha_pull').then(r => { G.res = r; acct.inv[r.item] = (acct.inv[r.item] || 0) + 1; acct.prof.tickets = r.tickets; }).catch(e => { G.err = e.message; });
+  rpc('gacha_pull').then(r => { G.res = r; addProgress({ pulls: 1 }); acct.inv[r.item] = (acct.inv[r.item] || 0) + 1; acct.prof.tickets = r.tickets; }).catch(e => { G.err = e.message; });
 }
 function gachaStep(dt) {
   const G = acct.g; G.t += dt; acct.msgT += dt;
@@ -2157,20 +2192,21 @@ function drawAchTab(y0, end) {
   const ready = ACH.filter(a => claimable(a[0])), sum = ready.reduce((n, a) => n + ACH_REWARD[a[0]], 0);
   text(ready.length ? `받을 보상 ${ready.length}개 · 뽑기권 ${sum}장` : '받을 보상이 없어요', LY.m, y0 + 26, 21, ready.length ? INK : '#9a8b93', 'left', null, F_T);
   if (ready.length) button('모두 받기', LY.m + LY.w - 170, y0, 170, 52, claimAll, { size: 23, fill: '#ffd36b' });
-  const rh = 92, key = JSON.stringify([acct.prof.claimed, progOf(), new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10)]);
+  const rh = 92, key = JSON.stringify([acct.prof.claimed, progOf(), acct.inv, acct.prof.equip, new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10)]);
+  const isDone = code => code === 'daily' ? !claimable(code) : !!acct.prof.claimed[code], rank = a => claimable(a[0]) ? 0 : isDone(a[0]) ? 2 : 1, LIST = ACH.slice().sort((a, b) => rank(a) - rank(b)); // ready first, finished last
   scrollView(SCR.ach, y0 + 68, end, key, ACH.length * rh + 8, () => {
     const p = progOf();
-    ACH.forEach(([code, name, desc, f], i) => { const y = i * rh, [c, g] = f(p), can = claimable(code), done = code === 'daily' ? !can : !!acct.prof.claimed[code], cy = y + rh / 2;
+    LIST.forEach(([code, name, desc, f], i) => { const y = i * rh, [c, g] = f(p), can = claimable(code), done = code === 'daily' ? !can : !!acct.prof.claimed[code], cy = y + rh / 2;
       rr(LY.m, y + 5, LY.w, rh - 10, 18, done ? 'rgba(255,248,231,0.6)' : '#fffaf0', can ? '#f0a020' : '#d9cbbd', can ? 3.4 : 2.2);
       text(name, LY.m + LY.pad, cy - 14, 25, done ? '#9a8b93' : INK, 'left', null, F_T);
       text(desc, LY.m + LY.pad, cy + 18, 18, '#7a6872', 'left', null, F_B);
-      const bx0 = LY.m + 318, bw = 150;
+      const bx0 = LY.m + 318, bw = 168;
       text(`뽑기권 ${ACH_REWARD[code]}`, bx0, cy - 16, 18, '#3d8be0', 'left', null, F_T);
       if (code !== 'daily' && g > 1) { // the bar: a plain track, filled from the left by a clipped rectangle (no dots at nought, no ripples)
         const fw = Math.round(bw * Math.min(1, c / g));
         rr(bx0, cy + 2, bw, 14, 7, '#eadfd2', null);
         if (fw > 0) { ctx.save(); rr(bx0, cy + 2, bw, 14, 7, null, null); ctx.clip(); ctx.fillStyle = '#3d8be0'; ctx.fillRect(bx0, cy + 2, fw, 14); ctx.restore(); }
-        text(`${Math.min(c, g)} / ${g}`, bx0 + bw + 10, cy + 9, 15, '#7a6872', 'left', null, F_N);
+        text(`${Math.min(c, g)} / ${g}`, bx0 + bw, cy - 16, 15, '#7a6872', 'right', null, F_N);
       }
       const bx = LY.m + LY.w - LY.pad - 96;
       if (can) { btn(bx, cy - 20, 96, 40, () => claim(code)); rr(bx, cy - 20, 96, 40, 20, '#ffd36b', OUT, 2.4); text('받기', bx + 48, cy + 1, 21, INK, 'center', null, F_T); }
@@ -2263,16 +2299,17 @@ function copyLink() { if (net && navigator.clipboard) navigator.clipboard.writeT
 function playCore(dt) { // the match itself; the pause menu keeps it running when the match is online
   if (net && net.role === 'guest') {
     guestStep(); localFx(dt);
-    if (m.phase === 'done' && m.pt > 2.4) { state.gained = m.sc.winner === 1 ? '승리!' : '패배'; scene = 'results'; }
+    if (m.phase === 'done' && m.pt > 2.4) { state.gained = m.sc.winner === 1 ? '승리!' : '패배'; scene = 'results'; matchProgress(); }
     return;
   }
   state.t += dt; simulate(dt); localFx(dt);
   if (m.phase === 'done' && m.pt > 2.4) { state.gained = m.sc.winner === 0 ? '승리!' : '패배'; scene = 'results'; matchProgress(); }
 }
-function matchProgress() { // what this match adds to the account's counts
-  if (m.online && view !== 0) return;
-  const d = { sweet: m.stats.sweet[0], aces: m.stats.aces[0] }; setProgress('rally', m.stats.longest);
-  if (m.sc.winner === 0 && !m.online) { d.wins = 1; d['win_' + ['', 'easy', 'normal', 'hard'][m.level]] = 1; d['win_' + (m.format || 'regular')] = 1; }
+function matchProgress() { // what this match adds to the account's counts (online, each side counts its own)
+  const me = m.online && view ? 1 : 0, won = m.sc.winner === me;
+  const d = { sweet: m.stats.sweet[me], aces: m.stats.aces[me], power: m.stats.power[me], matches: 1 }; setProgress('rally', m.stats.longest);
+  if (m.online) { d.online = 1; if (won) d.online_wins = 1; }
+  else if (won) { d.wins = 1; d['win_' + ['', 'easy', 'normal', 'hard'][m.level]] = 1; d['win_' + (m.format || 'regular')] = 1; if (m.court) d['court_' + m.court] = 1; d['wa_' + ANIMALS[m.P[0].a].id] = 1; }
   addProgress(d);
 }
 const scenes = {
