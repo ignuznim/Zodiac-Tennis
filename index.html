@@ -408,15 +408,17 @@ function drawAnimal(a, X, Y, k, o) {
     if (A.id === 'sheep') { const w = 1 + Math.sin(t * (an === 'run' ? 14 : 4)) * 0.05; for (let i = 0; i < 8; i++) { const q = i / 8 * 6.283; E(Math.cos(q) * 17 * w, -30 + Math.sin(q) * 19 * w, 10, 10, A.c); } } // the wool bounces
     E(0, -30, 21, 24, A.c);
     if (front) E(0, -26, 12, 15, A.l, 0, true);
-    const cs = shirt ? shirt.look.c : [accent];
+    const cs = shirt ? shirt.look.c : [accent], bare = o.bare && !shirt;
+    if (!bare) {
     ctx.save(); ctx.beginPath(); ctx.ellipse(0, -30, 20, 23, 0, 0, 7); ctx.clip();
     band(-24, -54, 48, 30); // the shirt, chest to waist
     ctx.fillStyle = 'rgba(74,61,71,0.18)'; ctx.fillRect(-24, -26, 48, 3); // the hem
-    if (front) { poly([-7, -55, 7, -55, 0, -45], '#ffffff'); ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(0, -45); ctx.lineTo(0, -38); ctx.stroke(); ctx.lineWidth = 2.6; } // collar and placket
+    if (front) { ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(0, -55, 8, 0, Math.PI); ctx.fill(); ctx.lineWidth = 1.8; ctx.stroke(); ctx.lineWidth = 2.6; } // a round (U) neck
     ctx.restore();
+    }
     shade(0, -30, 21, 24);
     E(0, -30, 21, 24, 'rgba(0,0,0,0)');
-    for (const sd of [-1, 1]) { E(sd * 17, -44, 8, 6.5, cs[0], sd * 0.4); } // the sleeves
+    if (!bare) for (const sd of [-1, 1]) { E(sd * 17, -44, 8, 6.5, cs[0], sd * 0.4); } // the sleeves
     if (!front && !tailHolds) drawTail(A, -hand, false);
     if (A.id === 'rooster') wing(-hand * 21, -36, -hand, A); else { E(-hand * 21, -36, 6.5, 6.5, A.c); shade(-hand * 21, -36, 6.5, 6.5); }
     if (tailHolds) E(hand * 21, -36, 6.5, 6.5, A.c);
@@ -1472,7 +1474,7 @@ function drawTitleShow(t, ly = 136, gy = 412) { // ly: the name's line, gy: the 
     ctx.fillStyle = 'rgba(40,70,50,0.25)'; ctx.beginPath(); ctx.ellipse(px, 412, 40, 10, 0, 0, 7); ctx.fill();
     ctx.lineWidth = 2.6; ctx.strokeStyle = OUT;
     const swingT = hitter ? u * leg : u > 0.8 ? 0 : 1, an = hitter && u < 0.3 ? 'hit' : !hitter && u > 0.8 ? 'swing' : 'idle';
-    drawAnimal(L[side], px, 412, 1.05, { front: true, hand, t: an === 'hit' ? swingT : t + side, anim: an, accent: side ? SKY : CORAL });
+    drawAnimal(L[side], px, 412, 1.05, { front: true, hand, t: an === 'hit' ? swingT : t + side, anim: an, accent: side ? SKY : CORAL, bare: true });
   });
   for (let k = 5; k >= 1; k--) { const [tx, ty] = ballAt(Math.max(0, u - k * 0.035)); ctx.globalAlpha = 0.12 * (6 - k); star(tx, ty, 4 + (6 - k), CREAM); } ctx.globalAlpha = 1;
   const [bx, by] = ballAt(u);
@@ -1654,12 +1656,12 @@ function itemIcon(id, x, y, s) { // a little picture of an item, centred on x, y
   ctx.save(); ctx.translate(x, y); ctx.scale(k, k); ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; ctx.lineJoin = 'round';
   if (it.slot === 'hat') { ctx.translate(0, 96); drawHat(id); }
   else if (it.slot === 'uniform') { const cs = L.c;
-    const tee = () => { ctx.beginPath(); ctx.moveTo(-10, -26); ctx.quadraticCurveTo(0, -18, 10, -26); ctx.lineTo(24, -20); ctx.lineTo(30, -6); ctx.lineTo(19, -2); ctx.lineTo(19, 25); ctx.lineTo(-19, 25); ctx.lineTo(-19, -2); ctx.lineTo(-30, -6); ctx.lineTo(-24, -20); ctx.closePath(); };
+    const tee = () => { ctx.beginPath(); ctx.moveTo(-10, -26); ctx.quadraticCurveTo(0, -12, 10, -26); ctx.lineTo(24, -20); ctx.lineTo(30, -6); ctx.lineTo(19, -2); ctx.lineTo(19, 25); ctx.lineTo(-19, 25); ctx.lineTo(-19, -2); ctx.lineTo(-30, -6); ctx.lineTo(-24, -20); ctx.closePath(); };
     tee(); ctx.save(); ctx.clip(); cs.forEach((c, i) => { ctx.fillStyle = c; ctx.fillRect(-32, -26 + i * 52 / cs.length, 64, 52 / cs.length + 1); });
     const g = ctx.createLinearGradient(-30, -26, 30, 26); g.addColorStop(0, 'rgba(255,255,255,0.35)'); g.addColorStop(1, 'rgba(0,0,0,0.12)'); ctx.fillStyle = g; ctx.fillRect(-32, -28, 64, 56);
     ctx.fillStyle = 'rgba(74,61,71,0.18)'; ctx.fillRect(-20, 20, 40, 4); ctx.restore(); tee(); ctx.stroke();
     ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(-19, -2); ctx.lineTo(-21, -14); ctx.moveTo(19, -2); ctx.lineTo(21, -14); ctx.stroke(); // where the sleeves meet
-    ctx.lineWidth = 2.2; poly([-9, -25, 0, -14, 9, -25], '#ffffff'); }
+    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.beginPath(); ctx.moveTo(-9, -24); ctx.quadraticCurveTo(0, -12, 9, -24); ctx.stroke(); ctx.strokeStyle = OUT; ctx.lineWidth = 2.6; } // a ribbed U neck
   else if (it.slot === 'shoes') {
     const shoe = () => { ctx.beginPath(); ctx.moveTo(-24, 10); ctx.lineTo(-21, -10); ctx.quadraticCurveTo(-12, -14, -4, -10); ctx.quadraticCurveTo(2, 0, 20, 2); ctx.quadraticCurveTo(26, 4, 25, 12); ctx.closePath(); };
     shoe(); ctx.fillStyle = L.c; ctx.fill(); ctx.save(); shoe(); ctx.clip(); const g = ctx.createLinearGradient(0, -12, 0, 12); g.addColorStop(0, 'rgba(255,255,255,0.4)'); g.addColorStop(1, 'rgba(0,0,0,0.12)'); ctx.fillStyle = g; ctx.fillRect(-26, -14, 54, 28); ctx.restore(); shoe(); ctx.stroke();
@@ -1769,26 +1771,46 @@ function drawClosetList(gear, eh, chh, coll) { // the closet's whole list, from 
 }
 function openCloset(back, a = null) { if (!acct.user) { toast('로그인하면 옷장을 쓸 수 있어요'); return; } closetBack = back; closet.animal = a; closet.sel = null; SCR.closet.scroll = 0; SCR.closet.vel = 0; scene = 'closet'; tone(660, 0.06, 'sine', 0.15); }
 function drawGachaTab(y0, end) {
-  const G = acct.g, cx = W / 2, h = end - y0, base = y0 + h - 30, k = Math.min(1, h / 470);
+  const G = acct.g, cx = W / 2, h = end - y0, base = y0 + h - 12, k = Math.min(1, (h - 96) / 545);
   ctx.save(); ctx.translate(cx, base); ctx.scale(k, k); ctx.lineWidth = 3.4; ctx.strokeStyle = OUT; ctx.lineJoin = 'round';
-  // the stand and the body
-  rr(-150, -40, 300, 40, 12, '#c9573f', OUT, 3.4);
-  rr(-130, -210, 260, 176, 24, CORAL, OUT, 3.4);
-  rr(-96, -186, 120, 40, 10, '#fff8e7', OUT, 3); text('뽑기권 1장', -36, -165, 20, INK, 'center', null, F_T);
-  // the crank: it turns while the server picks
-  const turn = G.phase === 'turn' ? G.t * 7 : 0; E(70, -150, 30, 30, '#fff3c4');
-  ctx.save(); ctx.translate(70, -150); ctx.rotate(turn); rr(-6, -34, 12, 68, 6, '#fff8e7', OUT, 3); E(0, -34, 10, 10, '#e2574c'); ctx.restore();
-  // the mouth and the tray: a capsule rolls out in the result's colour
-  rr(-96, -126, 92, 70, 16, '#4a3d47', OUT, 3);
-  // the dome full of capsules
-  ctx.fillStyle = 'rgba(214,236,255,0.55)'; ctx.beginPath(); ctx.arc(0, -330, 130, 0, 7); ctx.fill(); ctx.stroke();
-  ctx.save(); ctx.beginPath(); ctx.arc(0, -330, 126, 0, 7); ctx.clip();
-  for (let i = 0; i < 26; i++) { const g = i % 9 === 0 ? 3 : i % 5 === 0 ? 2 : i % 3 === 0 ? 1 : 0, jig = G.phase === 'turn' ? Math.sin(G.t * 20 + i) * 4 : 0;
-    const x = -105 + (i * 47) % 210 + jig, y = -230 - Math.floor(i / 5) * 34 - (i % 2) * 10 + Math.abs(jig); capsule(x, y, 17, GRADE[g].c, i * 0.7); }
+  const lin = (x0, y0, x1, y1, stops) => { const g = ctx.createLinearGradient(x0, y0, x1, y1); stops.forEach(([o, c]) => g.addColorStop(o, c)); return g; };
+  const chrome = (x0, x1) => lin(x0, 0, x1, 0, [[0, '#8f99a3'], [0.3, '#f4f7fa'], [0.55, '#c3ccd5'], [1, '#7d8792']]);
+  // the base: a little stand on two feet
+  rr(-128, -12, 44, 14, 6, '#8a3b2a', OUT, 3); rr(84, -12, 44, 14, 6, '#8a3b2a', OUT, 3);
+  rr(-150, -50, 300, 42, 16, lin(0, -50, 0, -8, [[0, '#e8785a'], [1, '#b8492f']]), OUT, 3.4);
+  // the body: a rounded cabinet, lit from the upper left
+  rr(-128, -232, 256, 188, 30, lin(-128, -232, 128, -44, [[0, '#ffb3a3'], [0.45, CORAL], [1, '#d9644a']]), OUT, 3.4);
+  ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.beginPath(); ctx.ellipse(-80, -206, 34, 9, -0.2, 0, 7); ctx.fill();
+  // the label plate
+  rr(-108, -214, 132, 44, 12, '#fff8e7', OUT, 3); text('뽑기권 1장', -42, -191, 20, INK, 'center', null, F_T); star(-96, -202, 5, BALL); star(14, -182, 4, BALL);
+  // the dial: a chrome ring, a knob with four grips; it turns while the server picks
+  const turn = G.phase === 'turn' ? G.t * 7 : 0;
+  E(74, -146, 40, 40, chrome(34, 114)); E(74, -146, 31, 31, lin(0, -177, 0, -115, [[0, '#fff3c4'], [1, '#f6c445']]));
+  ctx.save(); ctx.translate(74, -146); ctx.rotate(turn);
+  for (let q = 0; q < 4; q++) { ctx.save(); ctx.rotate(q * Math.PI / 2); rr(-7, -30, 14, 24, 6, '#fff8e7', OUT, 2.6); ctx.restore(); }
+  E(0, 0, 12, 12, '#e2574c'); E(-3, -4, 4, 3, 'rgba(255,255,255,0.7)', 0, true); ctx.restore();
+  // the chute: a dark mouth behind a see-through flap, and a lip to catch the capsule
+  rr(-106, -148, 108, 84, 22, lin(0, -148, 0, -64, [[0, '#2b2229'], [1, '#55474f']]), OUT, 3);
+  rr(-112, -74, 120, 16, 8, chrome(-112, 8), OUT, 2.6);
+  // the neck: a chrome collar between the cabinet and the globe
+  rr(-74, -258, 148, 30, 12, chrome(-74, 74), OUT, 3);
+  // the globe: tinted glass over a heap of capsules
+  const GY = -380, GR = 134;
+  E(0, GY, GR, GR, 'rgba(214,236,255,0.45)');
+  ctx.save(); ctx.beginPath(); ctx.arc(0, GY, GR - 4, 0, 7); ctx.clip();
+  const heap = []; for (let row = 0; row < 6; row++) { const n = 7 - (row > 3 ? row - 2 : 0); for (let c = 0; c < n; c++) heap.push([(c - (n - 1) / 2) * 34 + (row % 2) * 9, GY + GR - 22 - row * 30]); }
+  heap.forEach(([x, y], i) => { const g = i % 11 === 0 ? 3 : i % 6 === 0 ? 2 : i % 3 === 0 ? 1 : 0, jig = G.phase === 'turn' ? Math.sin(G.t * 22 + i * 1.7) * 5 : 0; capsule(x + jig * 0.6, y - Math.abs(jig), 16, GRADE[g].c, i * 0.9 + (G.phase === 'turn' ? G.t * 3 : 0)); });
+  const sh = ctx.createRadialGradient(-50, GY - 60, 10, 0, GY, GR); sh.addColorStop(0, 'rgba(255,255,255,0.35)'); sh.addColorStop(0.5, 'rgba(255,255,255,0)'); sh.addColorStop(1, 'rgba(80,110,160,0.25)'); ctx.fillStyle = sh; ctx.fillRect(-GR, GY - GR, GR * 2, GR * 2);
   ctx.restore();
-  ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.beginPath(); ctx.ellipse(-60, -400, 24, 12, -0.7, 0, 7); ctx.fill();
-  rr(-60, -214, 120, 18, 8, '#c9573f', OUT, 3);
-  if (G.phase === 'drop' || G.phase === 'reveal') { const u = Math.min(1, G.t / 0.5), g = G.res.grade; capsule(-50, G.phase === 'drop' ? -118 + u * 40 : -80, 22, GRADE[g].c, G.t * 6); }
+  ctx.lineWidth = 3.6; ctx.strokeStyle = OUT; ctx.beginPath(); ctx.arc(0, GY, GR, 0, 7); ctx.stroke();
+  ctx.lineWidth = 9; ctx.lineCap = 'round'; ctx.strokeStyle = 'rgba(255,255,255,0.65)'; ctx.beginPath(); ctx.arc(0, GY, GR - 18, Math.PI * 1.08, Math.PI * 1.38); ctx.stroke(); // the glass's gleam
+  ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.beginPath(); ctx.arc(0, GY, GR - 18, Math.PI * 1.45, Math.PI * 1.52); ctx.stroke();
+  star(70, GY - 80, 8, '#ffffff');
+  // the cap on top
+  ctx.lineWidth = 3; ctx.strokeStyle = OUT; ctx.beginPath(); ctx.ellipse(0, GY - GR + 2, 46, 16, 0, Math.PI, 0); ctx.closePath(); ctx.fillStyle = chrome(-46, 46); ctx.fill(); ctx.stroke();
+  E(0, GY - GR - 16, 12, 10, '#e2574c'); E(-3, GY - GR - 19, 4, 3, 'rgba(255,255,255,0.7)', 0, true);
+  // the prize rolling out
+  if (G.phase === 'drop' || G.phase === 'reveal') { const u = Math.min(1, G.t / 0.5), g = G.res.grade; capsule(-52, G.phase === 'drop' ? -124 + u * 42 : -84, 22, GRADE[g].c, G.t * 6); }
   ctx.restore();
   text(`뽑기권 ${acct.prof.tickets}장`, LY.m + LY.pad, y0 + 30, 26, '#3d8be0', 'left', null, F_T);
   if (G.phase === 'idle') iconButton('hanger', '내 아이템', LY.m + LY.w - 110, y0, 110, 92, () => openCloset('wardrobe', null));
@@ -1809,7 +1831,10 @@ function drawGachaTab(y0, end) {
 }
 function capsule(x, y, r, c, rot) { ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.lineWidth = 2.4; ctx.strokeStyle = OUT;
   ctx.beginPath(); ctx.arc(0, 0, r, Math.PI, 0); ctx.closePath(); ctx.fillStyle = c; ctx.fill(); ctx.stroke();
-  ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI); ctx.closePath(); ctx.fillStyle = '#fff8e7'; ctx.fill(); ctx.stroke(); ctx.restore(); }
+  ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI); ctx.closePath(); ctx.fillStyle = '#fff8e7'; ctx.fill(); ctx.stroke();
+  ctx.fillStyle = 'rgba(74,61,71,0.15)'; ctx.fillRect(-r + 2, 0, r * 2 - 4, 2.5); // the seam
+  ctx.fillStyle = 'rgba(255,255,255,0.75)'; ctx.beginPath(); ctx.ellipse(-r * 0.38, -r * 0.5, r * 0.28, r * 0.16, -0.5, 0, 7); ctx.fill(); // a shine
+  ctx.restore(); }
 async function claimAll() { // every reward that is ready, one after another
   if (acct.busy) return; const codes = ACH.map(a => a[0]).filter(claimable); if (!codes.length) { toast('받을 보상이 없어요'); return; }
   acct.busy = true; let got = 0;
@@ -2261,13 +2286,13 @@ const scenes = {
   lobby: {
     update(dt) {
       state.t += dt;
-      if (pressed('Escape')) { goHome(); return; }
-      if (!net) { scene = 'title'; return; }
+      if (pressed('Escape')) { netClose(); scene = 'online'; return; }
+      if (!net) { scene = 'online'; return; }
       if (net.role === 'host' && pressed('KeyC')) copyLink();
 
     },
     draw() {
-      menuBegin(net && net.role === 'guest' ? '방에 들어가는 중' : '친구를 기다리는 중', true);
+      menuBegin(net && net.role === 'guest' ? '방에 들어가는 중' : '친구를 기다리는 중');
       const py = LY.top, ph = SZ().lobby;
       panel(LY.m, py, LY.w, ph);
       const dots = '.'.repeat(1 + Math.floor(state.t * 2) % 3);
@@ -2291,7 +2316,7 @@ const scenes = {
         text(net.status === 'joined' ? '연결됐어요! 방장이 경기 방식과 코트를 고르는 중' + dots : '방 ' + net.code + ' 에 연결하는 중' + dots, W / 2, py + 170, 29, INK, 'center', null, F_H);
         ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(setup.animal, W / 2, py + 440, 1.5, { front: true, t: state.t, anim: 'run', accent: CORAL });
       }
-      sideBtn('홈으로', goHome);
+      sideBtn('뒤로', () => { netClose(); scene = 'online'; }); // back to make or join, e.g. when both made a room at once
       menuEnd('Esc 를 눌러도 돌아가요');
     },
   },
