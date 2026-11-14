@@ -1864,7 +1864,7 @@ function toast(s) { acct.msg = s; acct.msgT = 0; }
 async function rpc(fn, args) {
   if (!acct.sb || !acct.user) return null;
   const { data, error } = await acct.sb.rpc(fn, args || {});
-  if (error) { const m = error.message || ''; throw new Error(/no tickets/.test(m) ? '뽑기권이 없어요' : /nickname taken/.test(m) ? '이미 쓰는 닉네임이에요' : /already claimed/.test(m) ? '이미 받았어요' : /not owned/.test(m) ? '갖고 있지 않은 아이템이에요' : '서버와 연결하지 못했어요'); }
+  if (error) { const m = error.message || ''; throw new Error(/no tickets/.test(m) ? '뽑기권이 없어요' : /nickname taken/.test(m) ? '이미 쓰는 닉네임이에요' : /already claimed/.test(m) ? '이미 받았어요' : /not owned/.test(m) ? '갖고 있지 않은 아이템이에요' : /no such achievement/.test(m) ? '서버에 아직 없는 업적이에요 (서버 업데이트 필요)' : '서버와 연결하지 못했어요'); }
   return data;
 }
 async function loadAccount() {
@@ -2185,8 +2185,9 @@ function capsule(x, y, r, c, rot) { ctx.save(); ctx.translate(x, y); ctx.rotate(
 async function claimAll() { // every reward that is ready, one after another
   if (acct.busy) return; const codes = ACH.map(a => a[0]).filter(claimable); if (!codes.length) { toast('받을 보상이 없어요'); return; }
   acct.busy = true; let got = 0;
-  for (const c of codes) { try { acct.prof = await rpc('claim_achievement', { c }); got += ACH_REWARD[c]; } catch (e) { /* claimed elsewhere */ } }
-  acct.busy = false; toast(`뽑기권 ${got}장을 받았어요`); tone(880, 0.1, 'triangle', 0.25); tone(1320, 0.18, 'triangle', 0.25, 0.1);
+  let err = '';
+  for (const c of codes) { try { acct.prof = await rpc('claim_achievement', { c }); got += ACH_REWARD[c]; } catch (e) { err = e.message; } }
+  acct.busy = false; if (!got) { toast(err || '받을 보상이 없어요'); return; } toast(`뽑기권 ${got}장을 받았어요`); tone(880, 0.1, 'triangle', 0.25); tone(1320, 0.18, 'triangle', 0.25, 0.1);
 }
 function drawAchTab(y0, end) {
   const ready = ACH.filter(a => claimable(a[0])), sum = ready.reduce((n, a) => n + ACH_REWARD[a[0]], 0);
