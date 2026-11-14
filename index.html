@@ -328,7 +328,7 @@ function drawHead(A, front, t) {
 function drawRacket(A, hand, an, t, accent) {
   let hx = hand * 21, hy = -40, ang = hand * 0.65;
   if (A.id === 'snake') { hx = hand * 36; hy = -24; } // no hands: the tail's tip holds it
-  if (A.id === 'monkey') { hx = hand * 32; hy = -18; } // a monkey uses its tail
+  if (A.id === 'monkey' && an !== 'smash' && an !== 'toss') { hx = hand * 32; hy = -18; } // a monkey rallies with its tail
   const u = Math.min(1, t / 0.2);
   if (an === 'hit' || an === 'lob') ang = hand * (2.5 - 3.9 * u);
   else if (an === 'drop') { ang = hand * (2.9 - 1.6 * u); hy = -30; }
@@ -347,7 +347,7 @@ function drawRacket(A, hand, an, t, accent) {
   for (let i = -1; i <= 1; i++) { ctx.moveTo(i * 5, -44); ctx.lineTo(i * 5, -20); ctx.moveTo(-9, -32 + i * 6); ctx.lineTo(9, -32 + i * 6); }
   ctx.stroke(); ctx.restore();
   ctx.lineWidth = 2.6; ctx.strokeStyle = OUT;
-  if (A.id === 'rooster') wing(hx, hy, hand, A); else E(hx, hy, A.id === 'monkey' ? 4.5 : 6.5, A.id === 'monkey' ? 4.5 : 6.5, A.c); // a rooster grips with its wing
+  if (A.id === 'rooster') wing(hx, hy, hand, A); else { const tip = A.id === 'monkey' && an !== 'smash' && an !== 'toss'; E(hx, hy, tip ? 4.5 : 6.5, tip ? 4.5 : 6.5, A.c); } // a rooster grips with its wing
 }
 function wing(x, y, s, A) { // a feathered wing tip in place of a hand
   ctx.lineWidth = 2.4; ctx.strokeStyle = OUT;
@@ -378,7 +378,8 @@ function drawAnimal(a, X, Y, k, o) {
     curve(hand * 18, -6, hand * 46, -2, hand * 36, -24, A.c, 8); E(hand * 36, -24, 4.5, 4.5, A.c); // the tail curls up to hold the racket
     ctx.save(); ctx.beginPath(); ctx.rect(-14, -46, 28, 7); ctx.clip(); band(-14, -46, 28, 7); ctx.restore(); rr(-14, -46, 28, 7, 3, null, OUT, 2.2);
   } else {
-    if (A.id === 'monkey') curve(hand * 6, -16, hand * 44, -2, hand * 32, -18, A.c, 5); // the tail curls round to hold the racket
+    const tailHolds = A.id === 'monkey' && !(an === 'smash' || an === 'toss'); // a monkey serves and smashes by hand, rallies with its tail
+    if (tailHolds) curve(hand * 6, -16, hand * 44, -2, hand * 32, -18, A.c, 5); // the tail curls round to hold the racket
     else if (front) drawTail(A, -hand, true);
     const fc = shoes ? shoes.look.c : A.c, fy = s => -5 - Math.max(0, s) * 0.5;
     if (shoes && shoes.look.wing) for (const sd of [-1, 1]) { ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.ellipse(sd * 20, fy(sd * step) - 6, 9, 4, sd * 0.6, 0, 7); ctx.fill(); ctx.stroke(); }
@@ -392,9 +393,9 @@ function drawAnimal(a, X, Y, k, o) {
     if (front) E(0, -26, 12, 15, A.l, 0, true);
     ctx.save(); ctx.beginPath(); ctx.ellipse(0, -30, 21, 24, 0, 0, 7); ctx.clip(); band(-24, -38, 48, shirt ? 12 : 9); ctx.restore();
     E(0, -30, 21, 24, 'rgba(0,0,0,0)');
-    if (!front && A.id !== 'monkey') drawTail(A, -hand, false);
+    if (!front && !tailHolds) drawTail(A, -hand, false);
     if (A.id === 'rooster') wing(-hand * 21, -36, -hand, A); else E(-hand * 21, -36, 6.5, 6.5, A.c);
-    if (A.id === 'monkey') E(hand * 21, -36, 6.5, 6.5, A.c);
+    if (tailHolds) E(hand * 21, -36, 6.5, 6.5, A.c);
   }
   drawRacket(A, hand, an, t, rk ? rk.look.c : accent);
   ctx.translate(0, droop);
@@ -1047,7 +1048,8 @@ function drawLegend() { // the shot keys, always on screen; each is also a butto
   const y = H - 108, chips = [['Q', serving ? (m.phase === 'serve' ? '토스' : '서브!') : '스트로크', 'KeyJ', K_A], ['W', '슬라이스', 'KeyK', K_K], ['E', '로브', 'KeyL', K_LOB], ['R', '스매시', 'KeyI', K_S]];
   chips.forEach((c, i) => {
     const x = 14 + i * 174, on = anyDown(...c[3]), over = btn(x, y, 168, 46, null, c[2]);
-    rr(x, y, 168, 46, 14, on ? '#fff3c4' : over ? '#fffdf3' : 'rgba(255,248,231,0.93)', OUT, 2.6);
+    const sv = i === 0 && serving; // the serve key turns green while you serve
+    rr(x, y, 168, 46, 14, on ? '#fff3c4' : sv ? '#7fd69a' : over ? '#fffdf3' : 'rgba(255,248,231,0.93)', sv ? '#2f8a4f' : OUT, sv ? 3.4 : 2.6);
     keycap(x + 8, y + 6, c[0], on); text(c[1], x + 50, y + 24, 20, INK, 'left', null, F_T);
   });
   rr(14, H - 56, W - 28, 44, 12, 'rgba(74,61,71,0.82)', null);
@@ -1074,7 +1076,7 @@ function drawTouch() { // phones and tablets: a joystick on the left, the four s
   const serving = m.sc.server === view && (m.phase === 'serve' || m.phase === 'toss') && !m.sc.done;
   for (const [label0, code, x, y, r, col] of shotButtons()) {
     const on = down.has(code), big = r > 80, label = big && serving ? (m.phase === 'serve' ? '토스' : '서브!') : label0;
-    ctx.lineWidth = 4; ctx.strokeStyle = OUT; E(x, y + 5, r, r, OUT); E(x, y + (on ? 3 : 0), r, r, on ? '#fff3c4' : col);
+    ctx.lineWidth = 4; ctx.strokeStyle = OUT; E(x, y + 5, r, r, OUT); E(x, y + (on ? 3 : 0), r, r, on ? '#fff3c4' : big && serving ? '#4fc37a' : col); // green while it serves
     text(label, x, y - (big ? 10 : 0) + (on ? 3 : 0), big ? 32 : 25, INK, 'center', null, F_T);
     if (big) text(serving ? (m.phase === 'serve' ? '공 띄우기' : '꼭대기에서!') : '꾹: 파워샷', x, y + 28 + (on ? 3 : 0), 19, INK, 'center', null, F_B);
   }
@@ -1249,7 +1251,7 @@ function netHost() {
     net.peer.on('connection', c => {
       if (net.conn) { c.close(); return; }
       net.conn = c;
-      c.on('data', d => { if (!net) return; if (d.t === 'hello') { setup.guestAnimal = d.animal; setup.guestGear = d.gear && typeof d.gear === 'object' ? d.gear : {}; setup.mode = 'online'; net.status = 'playing'; reset(); scene = 'play'; } else if (d.t === 'i') net.rin = d; });
+      c.on('data', d => onHostData(d));
       c.on('close', () => netLost());
     });
   });
@@ -1264,12 +1266,38 @@ function netJoin(code) {
       if (!net) return;
       net.status = 'connecting';
       const c = net.conn = net.peer.connect('zodiac-tennis-' + code.toUpperCase(), { serialization: 'json' });
-      c.on('open', () => { net.status = 'joined'; c.send({ t: 'hello', animal: setup.animal, gear: myGear() }); });
-      c.on('data', d => { if (net && d.t === 's') net.snap = d.m; });
+      c.on('open', () => { net.status = 'joined'; c.send({ t: 'join' }); });
+      c.on('data', d => onGuestData(d));
       c.on('close', () => netLost());
     });
   });
 }
+// the conversation: guest -> host  join, pick, i (keys);  host -> guest  setup, ready, start, s (the match), again
+function onHostData(d) {
+  if (!net) return;
+  if (d.t === 'join') { net.status = 'setup'; net.guestPick = null; net.myPick = null; setup.practice = false; state.fm = FORMAT_IDS.indexOf(setup.format); scene = 'format'; tone(880, 0.12, 'triangle', 0.25); }
+  else if (d.t === 'pick') { net.guestPick = { animal: clamp(d.animal | 0, 0, 11), gear: d.gear && typeof d.gear === 'object' ? d.gear : {} }; onlineStart(); }
+  else if (d.t === 'i') net.rin = d;
+}
+function onGuestData(d) {
+  if (!net) return;
+  if (d.t === 'setup') { setup.format = FORMATS[d.format] ? d.format : 'short'; setup.court = COURTS[d.court] ? d.court : 'hard'; net.myPick = null; net.oppReady = false; net.status = 'picking'; scene = 'select'; tone(880, 0.12, 'triangle', 0.25); }
+  else if (d.t === 'ready') net.oppReady = true;
+  else if (d.t === 'start') { net.snap = null; net.myPick = null; net.oppReady = false; view = 1; seenFx = 0; hints = { hits: 0, power: 0, shots: 0 }; scene = 'play'; }
+  else if (d.t === 'again') { net.myPick = null; net.oppReady = false; scene = 'select'; }
+  else if (d.t === 's') net.snap = d.m;
+}
+const netSendMsg = o => { if (net && net.conn && net.conn.open) net.conn.send(o); };
+function onlinePick() { // this side has chosen its animal: tell the other, and start when both have
+  net.myPick = { animal: setup.animal, gear: myGear(setup.animal) };
+  if (net.role === 'guest') netSendMsg(Object.assign({ t: 'pick' }, net.myPick)); else { netSendMsg({ t: 'ready' }); onlineStart(); }
+}
+function onlineStart() {
+  if (!net || net.role !== 'host' || !net.myPick || !net.guestPick) return;
+  setup.guestAnimal = net.guestPick.animal; setup.guestGear = net.guestPick.gear; setup.mode = 'online'; setup.practice = false;
+  net.myPick = net.guestPick = null; net.status = 'playing'; reset(); netSendMsg({ t: 'start' }); scene = 'play';
+}
+function onlineAgain() { if (!net) return; net.myPick = net.guestPick = null; netSendMsg({ t: 'again' }); scene = 'select'; } // a rematch: both may change players
 function netLost() { if (!net) return; net.status = 'lost'; net.msg = '상대와의 연결이 끊겼어요 · Esc : 처음으로'; if (net.role === 'host' && m) for (const p of m.P) if (p.ctrl === 'remote') p.ctrl = 'ai'; }
 function netSend() { if (net && net.role === 'host' && net.conn && net.conn.open && m) net.conn.send({ t: 's', m }); }
 function guestStep() { // the guest draws what the host sends and sends its own keys back
@@ -1330,6 +1358,8 @@ function openNick(mode = 'rank') {
   nickBox.querySelector('h2').textContent = mode === 'profile' ? '닉네임 정하기' : '랭킹 등록';
   nickBox.querySelector('p').textContent = mode === 'profile' ? '랭킹과 옷장에 쓰일 이름 (1~10자)' : '랭킹에 표시할 닉네임 (1~10자)';
   nickBox.querySelector('.go').textContent = mode === 'profile' ? '저장' : '등록';
+  if (mode === 'code') { nickBox.querySelector('h2').textContent = '코드로 참가'; nickBox.querySelector('p').textContent = '친구에게 받은 방 코드 6자리'; nickBox.querySelector('.go').textContent = '참가'; nickIn.maxLength = 6; nickIn.value = ''; nickErr.textContent = ''; nickBox.classList.add('on'); down.clear(); setTimeout(() => nickIn.focus(), 30); return; }
+  nickIn.maxLength = 10;
   if (mode === 'rank') {
     if (rank.sent === m || rank.sending) return;
     if (acct.prof && acct.prof.nickname) { submitRecord(acct.prof.nickname); return; } // signed in: the account's name, no question
@@ -1346,6 +1376,11 @@ nickBox.querySelector('form').onsubmit = async e => {
   const name = nickIn.value.trim().replace(/\s+/g, ' ');
   if (!name) { nickErr.textContent = '닉네임을 입력해 주세요'; return; }
   if ([...name].length > 10) { nickErr.textContent = '10자까지 쓸 수 있어요'; return; }
+  if (nickMode === 'code') { // a room code: six letters and digits
+    const code = nickIn.value.trim().toUpperCase().replace(/\s/g, '');
+    if (!/^[A-HJ-NP-Z2-9]{6}$/.test(code)) { nickErr.textContent = '코드 6자리를 확인해 주세요'; return; }
+    closeNick(); joinRoom(code); return;
+  }
   if (nickMode === 'profile') {
     nickBox.querySelector('.go').disabled = true; nickErr.textContent = '저장하는 중…';
     try { acct.prof = await rpc('set_nickname', { n: name }); store('zt_nick', name); closeNick(); toast('닉네임을 저장했어요'); } catch (err) { nickErr.textContent = err.message; }
@@ -1535,10 +1570,14 @@ function signIn(provider) {
   acct.sb.auth.signInWithOAuth({ provider, options: { redirectTo: location.origin + location.pathname } }).catch(() => toast('로그인을 시작하지 못했어요'));
 }
 async function signOut() { if (acct.sb) await acct.sb.auth.signOut(); acct.user = null; acct.prof = null; acct.inv = {}; toast('로그아웃했어요'); }
-const myGear = () => (acct.prof && acct.prof.equip) || {};
-async function equip(slot, id) {
+const myGear = (a = setup.animal) => { const e = (acct.prof && acct.prof.equip) || {}; const g = e[String(a)]; return g && typeof g === 'object' ? g : {}; }; // each animal wears its own
+const wearers = id => Object.keys((acct.prof && acct.prof.equip) || {}).filter(k => /^\d+$/.test(k) && Object.values(acct.prof.equip[k] || {}).includes(id)).map(Number);
+async function equip(slot, id, a = closet.animal != null ? closet.animal : setup.animal) {
   if (acct.busy) return; acct.busy = true;
-  try { acct.prof = await rpc('equip_item', { s: slot, item: id }); tone(880, 0.08, 'triangle', 0.2); } catch (e) { toast(e.message); }
+  const from = id ? wearers(id).filter(k => k !== a) : [];
+  try { acct.prof = await rpc('equip_item', { s: slot, item: id, a }); tone(880, 0.08, 'triangle', 0.2);
+    const still = id ? wearers(id).filter(k => k !== a) : []; const took = from.find(k => !still.includes(k)); if (took != null) toast(`${ANIMALS[took].ko}에게서 가져왔어요`);
+  } catch (e) { toast(e.message); }
   acct.busy = false;
 }
 async function claim(code) {
@@ -1608,7 +1647,7 @@ function iconButton(kind, label, x, y, w, h, fn, dot) { // a small button: a pic
 }
 // ---- 옷장: what you wear on top, every item below; only what you own shows its shape ----
 let closetBack = 'select';
-const closet = { sel: null };
+const closet = { sel: null, animal: null }; // animal: whose gear (null: just the collection, from the gacha)
 const mkScroll = () => ({ scroll: 0, max: 0, v0: 0, v1: 0, drag: null, vel: 0, cache: null, key: '', rects: [], h: 0, r: 0 });
 const SCR = { closet: mkScroll(), ach: mkScroll() };
 function activeScroll() { return scene === 'closet' ? SCR.closet : scene === 'wardrobe' && acct.wtab === 'ach' && acct.prof ? SCR.ach : null; }
@@ -1633,8 +1672,9 @@ function scrollView(S, v0, v1, key, height, draw) { // draw() paints the content
   if (S.scroll < S.max - 4) { const g = ctx.createLinearGradient(0, v1 - 36, 0, v1); g.addColorStop(0, 'rgba(162,227,200,0)'); g.addColorStop(1, 'rgba(162,227,200,0.9)'); ctx.fillStyle = g; ctx.fillRect(LY.m - 10, v1 - 36, LY.w + 20, 36); }
 }
 const SHADOW = 'filter' in CanvasRenderingContext2D.prototype; // a true silhouette where the browser can draw one
-function drawClosetList(gear, eh, chh) { // the closet's whole list, from y 0: worn gear big, then each slot four across
+function drawClosetList(gear, eh, chh, coll) { // the closet's whole list, from y 0: worn gear big (for one animal), then each slot four across
   let y = 0;
+  if (!coll) {
   text('장착 중', LY.m, y + 16, 24, INK, 'left', null, F_T); y += 38;
   const ew = (LY.w - 14) / 2;
   SLOTS.forEach(([id, ko], i) => { const x = LY.m + (i % 2) * (ew + 14), yy = y + Math.floor(i / 2) * (eh + 14), it = item(gear[id]);
@@ -1646,16 +1686,20 @@ function drawClosetList(gear, eh, chh) { // the closet's whole list, from y 0: w
     else { text(ko, x + ew / 2, yy + eh / 2 - 14, 22, '#7a6872', 'center', null, F_T); text('비어 있음', x + ew / 2, yy + eh / 2 + 18, 18, '#a8999f', 'center', null, F_B); }
   });
   y += 2 * (eh + 14) + 16;
+  }
   const cw = (LY.w - 12 * 3) / 4;
   SLOTS.forEach(([sid, ko]) => {
     const ids = Object.keys(ITEMS).filter(k => ITEMS[k][0] === sid).sort((p, q) => ITEMS[p][1] - ITEMS[q][1]), got = ids.filter(id => acct.inv[id]).length;
     text(ko, LY.m, y + 18, 24, INK, 'left', null, F_T); text(`${got} / ${ids.length}`, LY.m + LY.w, y + 18, 19, '#7a6872', 'right', null, F_N); y += 40;
     ids.forEach((id, n) => { const it = item(id), have = acct.inv[id] || 0, on = gear[sid] === id, x = LY.m + (n % 4) * (cw + 12), yy = y + Math.floor(n / 4) * (chh + 12);
-      btn(x, yy, cw, chh, () => { closet.sel = id; if (!have) toast('뽑기 기계에서 얻을 수 있어요'); else equip(sid, on ? null : id); });
+      const others = wearers(id).filter(k => k !== closet.animal), free = have - others.length - (on ? 1 : 0);
+      btn(x, yy, cw, chh, () => { closet.sel = id; if (!have) toast('뽑기 기계에서 얻을 수 있어요'); else if (coll) toast(others.length ? `${others.map(k => ANIMALS[k].ko).join(', ')} 착용 중 · 선수 선택에서 바꿔요` : '선수 선택 화면의 옷걸이에서 입혀요'); else equip(sid, on ? null : id); });
       rr(x, yy, cw, chh, 16, have ? (on ? '#fff3c4' : closet.sel === id ? '#fffdf3' : '#ffffff') : '#e9e1d8', have ? GRADE[it.grade].c : closet.sel === id ? '#7a6872' : '#c9bdb2', on ? 5 : have ? 3.4 : 2.4);
       if (have) { ctx.save(); ctx.beginPath(); ctx.rect(x + 4, yy + 4, cw - 8, chh - 56); ctx.clip(); itemIcon(id, x + cw / 2, yy + 52, 70); ctx.restore();
         text(it.name, x + cw / 2, yy + chh - 42, 17, INK, 'center', null, F_T); text(`${STAT_NAME[it.stat]} +${it.amt}`, x + cw / 2, yy + chh - 18, 15, GRADE[it.grade].c, 'center', null, F_T);
-        if (on) { rr(x + 8, yy + 8, 44, 24, 12, CORAL, null); text('착용', x + 30, yy + 21, 14, '#fff', 'center', null, F_T); } else if (have > 1) text('×' + have, x + cw - 10, yy + 18, 15, '#7a6872', 'right', null, F_N); }
+        if (on) { rr(x + 8, yy + 8, 44, 24, 12, CORAL, null); text('착용', x + 30, yy + 21, 14, '#fff', 'center', null, F_T); }
+        else if (others.length && free <= 0) { rr(x + 8, yy + 8, cw - 16, 24, 12, 'rgba(122,104,114,0.85)', null); text(`${ANIMALS[others[0]].ko}${others.length > 1 ? ' 외' : ''} 착용`, x + cw / 2, yy + 21, 13, '#fff', 'center', null, F_T); } // worn by another: tapping takes it over
+        if (have > 1) text('×' + have, x + cw - 10, yy + (on || (others.length && free <= 0) ? 46 : 18), 15, '#7a6872', 'right', null, F_N); }
       else { // a silhouette: the shape in shadow, the name a mystery
         ctx.save(); ctx.beginPath(); ctx.rect(x + 4, yy + 4, cw - 8, chh - 56); ctx.clip(); ctx.globalAlpha = 0.28; if (SHADOW) ctx.filter = 'brightness(0)'; itemIcon(id, x + cw / 2, yy + 52, 70); ctx.restore();
         if (!SHADOW) text('?', x + cw / 2, yy + 52, 44, '#a8999f', 'center', null, F_T);
@@ -1667,7 +1711,7 @@ function drawClosetList(gear, eh, chh) { // the closet's whole list, from y 0: w
   });
   return y;
 }
-function openCloset(back) { if (!acct.user) { toast('로그인하면 옷장을 쓸 수 있어요'); return; } closetBack = back; closet.sel = null; SCR.closet.scroll = 0; SCR.closet.vel = 0; scene = 'closet'; tone(660, 0.06, 'sine', 0.15); }
+function openCloset(back, a = null) { if (!acct.user) { toast('로그인하면 옷장을 쓸 수 있어요'); return; } closetBack = back; closet.animal = a; closet.sel = null; SCR.closet.scroll = 0; SCR.closet.vel = 0; scene = 'closet'; tone(660, 0.06, 'sine', 0.15); }
 function drawGachaTab(y0, end) {
   const G = acct.g, cx = W / 2, h = end - y0, base = y0 + h - 30, k = Math.min(1, h / 470);
   ctx.save(); ctx.translate(cx, base); ctx.scale(k, k); ctx.lineWidth = 3.4; ctx.strokeStyle = OUT; ctx.lineJoin = 'round';
@@ -1691,6 +1735,7 @@ function drawGachaTab(y0, end) {
   if (G.phase === 'drop' || G.phase === 'reveal') { const u = Math.min(1, G.t / 0.5), g = G.res.grade; capsule(-50, G.phase === 'drop' ? -118 + u * 40 : -80, 22, GRADE[g].c, G.t * 6); }
   ctx.restore();
   text(`뽑기권 ${acct.prof.tickets}장`, LY.m + LY.pad, y0 + 30, 26, '#3d8be0', 'left', null, F_T);
+  if (G.phase === 'idle') iconButton('hanger', '내 아이템', LY.m + LY.w - 110, y0, 110, 92, () => openCloset('wardrobe', null));
   text('업적을 달성하면 뽑기권을 받아요', LY.m + LY.pad, y0 + 64, 19, '#7a6872', 'left', null, F_B);
   if (G.phase === 'reveal') { // the prize, opened
     const r = G.res, it = item(r.item), c = GRADE[it.grade].c, py = y0 + 20, ph = Math.min(360, h - 110);
@@ -1702,7 +1747,7 @@ function drawGachaTab(y0, end) {
     itemIcon(r.item, W / 2, py + ph * 0.42, 130 * Math.min(1, G.t * 4));
     text(it.name, W / 2, py + ph - 96, 34, INK, 'center', null, F_T);
     text(`${SLOTS.find(s => s[0] === it.slot)[1]} · ${STAT_NAME[it.stat]} +${it.amt}`, W / 2, py + ph - 52, 23, c, 'center', null, F_T);
-    button('전체 아이템 보기', W / 2 - 150, py + ph + 18, 300, 60, () => { G.phase = 'idle'; openCloset('wardrobe'); }, { size: 24, fill: '#eef7ff' });
+    button('전체 아이템 보기', W / 2 - 150, py + ph + 18, 300, 60, () => { G.phase = 'idle'; openCloset('wardrobe', null); }, { size: 24, fill: '#eef7ff' });
     for (let i = 0; i < 8; i++) { const a = i / 8 * 6.283 + G.t, rr2 = 150 + Math.sin(G.t * 3 + i) * 10; star(W / 2 + Math.cos(a) * rr2, py + ph * 0.42 + Math.sin(a) * rr2 * 0.7, 9, i % 2 ? '#fff' : c); }
   }
 }
@@ -1719,18 +1764,24 @@ function drawAchTab(y0, end) {
   const ready = ACH.filter(a => claimable(a[0])), sum = ready.reduce((n, a) => n + ACH_REWARD[a[0]], 0);
   text(ready.length ? `받을 보상 ${ready.length}개 · 뽑기권 ${sum}장` : '받을 보상이 없어요', LY.m, y0 + 26, 21, ready.length ? INK : '#9a8b93', 'left', null, F_T);
   if (ready.length) button('모두 받기', LY.m + LY.w - 170, y0, 170, 52, claimAll, { size: 23, fill: '#ffd36b' });
-  const rh = 72, key = JSON.stringify([acct.prof.claimed, progOf(), new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10)]);
+  const rh = 92, key = JSON.stringify([acct.prof.claimed, progOf(), new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10)]);
   scrollView(SCR.ach, y0 + 68, end, key, ACH.length * rh + 8, () => {
     const p = progOf();
-    ACH.forEach(([code, name, desc, f], i) => { const y = i * rh, [c, g] = f(p), can = claimable(code), done = code === 'daily' ? !can : !!acct.prof.claimed[code];
-      rr(LY.m, y + 4, LY.w, rh - 8, 16, done ? 'rgba(255,248,231,0.6)' : '#fffaf0', can ? '#f0a020' : '#d9cbbd', can ? 3 : 2);
-      text(name, LY.m + LY.pad, y + rh / 2 - 11, 21, done ? '#9a8b93' : INK, 'left', null, F_T);
-      text(desc, LY.m + LY.pad, y + rh / 2 + 14, 16, '#7a6872', 'left', null, F_B);
-      if (code !== 'daily' && g > 1) { const bw = 120, bx = LY.m + 330; rr(bx, y + rh / 2 - 6, bw, 12, 6, '#eadfd2', null); rr(bx, y + rh / 2 - 6, bw * Math.min(1, c / g), 12, 6, '#3d8be0', null); text(`${Math.min(c, g)}/${g}`, bx + bw / 2, y + rh / 2 + 18, 14, '#7a6872', 'center', null, F_N); }
-      text(`뽑기권 ${ACH_REWARD[code]}`, LY.m + 330 + (code !== 'daily' && g > 1 ? 0 : 60), y + rh / 2 - (code !== 'daily' && g > 1 ? 22 : 0), 16, '#3d8be0', code !== 'daily' && g > 1 ? 'left' : 'center', null, F_T);
-      const bx = LY.m + LY.w - LY.pad - 90;
-      if (can) { btn(bx, y + rh / 2 - 18, 90, 36, () => claim(code)); rr(bx, y + rh / 2 - 18, 90, 36, 18, '#ffd36b', OUT, 2.4); text('받기', bx + 45, y + rh / 2 + 1, 19, INK, 'center', null, F_T); }
-      else text(done ? '받음 ✓' : '진행 중', bx + 45, y + rh / 2, 17, '#9a8b93', 'center', null, F_B);
+    ACH.forEach(([code, name, desc, f], i) => { const y = i * rh, [c, g] = f(p), can = claimable(code), done = code === 'daily' ? !can : !!acct.prof.claimed[code], cy = y + rh / 2;
+      rr(LY.m, y + 5, LY.w, rh - 10, 18, done ? 'rgba(255,248,231,0.6)' : '#fffaf0', can ? '#f0a020' : '#d9cbbd', can ? 3.4 : 2.2);
+      text(name, LY.m + LY.pad, cy - 14, 25, done ? '#9a8b93' : INK, 'left', null, F_T);
+      text(desc, LY.m + LY.pad, cy + 18, 18, '#7a6872', 'left', null, F_B);
+      const bx0 = LY.m + 318, bw = 150;
+      text(`뽑기권 ${ACH_REWARD[code]}`, bx0, cy - 16, 18, '#3d8be0', 'left', null, F_T);
+      if (code !== 'daily' && g > 1) { // the bar: a plain track, filled from the left by a clipped rectangle (no dots at nought, no ripples)
+        const fw = Math.round(bw * Math.min(1, c / g));
+        rr(bx0, cy + 2, bw, 14, 7, '#eadfd2', null);
+        if (fw > 0) { ctx.save(); rr(bx0, cy + 2, bw, 14, 7, null, null); ctx.clip(); ctx.fillStyle = '#3d8be0'; ctx.fillRect(bx0, cy + 2, fw, 14); ctx.restore(); }
+        text(`${Math.min(c, g)} / ${g}`, bx0 + bw + 10, cy + 9, 15, '#7a6872', 'left', null, F_N);
+      }
+      const bx = LY.m + LY.w - LY.pad - 96;
+      if (can) { btn(bx, cy - 20, 96, 40, () => claim(code)); rr(bx, cy - 20, 96, 40, 20, '#ffd36b', OUT, 2.4); text('받기', bx + 48, cy + 1, 21, INK, 'center', null, F_T); }
+      else text(done ? '받음 ✓' : '진행 중', bx + 48, cy, 18, '#9a8b93', 'center', null, F_B);
     });
     return ACH.length * rh + 8;
   });
@@ -1797,20 +1848,24 @@ function statBars(a, x, y, bonus = {}) {
 // the way in: format, then who you play, then your animal, then the court (an invited guest only picks an animal)
 function pickFormat(i) {
   tone(880, 0.12, 'triangle', 0.25);
+  if (net) { if (i < FORMAT_IDS.length) { setup.format = FORMAT_IDS[i]; scene = 'court'; } return; } // the host sets the match up
   if (i >= FORMAT_IDS.length) { setup.practice = true; scene = 'select'; return; } // the ball machine: pick an animal and a court, then practise
   setup.practice = false; setup.format = FORMAT_IDS[i]; rank.mode = setup.format; scene = 'mode';
 }
 function pickMode(i) { tone(880, 0.12, 'triangle', 0.25); setup.pending = i; scene = 'select'; }
 function pickCourt(i) {
   tone(880, 0.12, 'triangle', 0.25); setup.court = COURT_IDS[i];
+  if (net) { netSendMsg({ t: 'setup', format: setup.format, court: setup.court }); net.status = 'picking'; net.myPick = null; scene = 'select'; return; } // both pick players knowing the court
   if (setup.practice) startPractice();
   else if (setup.pending < 3) { setup.mode = 'cpu'; setup.level = setup.pending + 1; reset(); scene = 'play'; }
   else { netHost(); scene = 'lobby'; }
 }
 function pickAnimal() {
   setup.animal = state.sel; tone(880, 0.12, 'triangle', 0.25);
-  if (room) { netJoin(room); scene = 'lobby'; } else scene = 'court';
+  if (net) { onlinePick(); return; }
+  scene = 'court';
 }
+function joinRoom(code) { netJoin(code); scene = 'lobby'; }
 function copyLink() { if (net && navigator.clipboard) navigator.clipboard.writeText(net.link).then(() => { if (net) net.copied = true; }).catch(() => {}); }
 function playCore(dt) { // the match itself; the pause menu keeps it running when the match is online
   if (net && net.role === 'guest') {
@@ -1855,7 +1910,7 @@ const scenes = {
     },
   },
   title: {
-    update(dt) { state.t += dt; if (anyHit(...K_OK)) { setup.practice = false; scene = room ? 'select' : 'format'; } },
+    update(dt) { state.t += dt; if (anyHit(...K_OK)) { setup.practice = false; if (room) joinRoom(room); else scene = 'format'; } },
     draw() {
       menuBegin();
       const rows = [['이동', '방향키 ← → ↑ ↓'], ['스트로크', 'Q  (꾹 눌렀다 놓으면 파워샷)'], ['슬라이스 · 로브 · 스매시', 'W  ·  E  ·  R'], ['일시정지 · 소리 · 낙하지점', 'P  ·  M  ·  G']];
@@ -1867,13 +1922,14 @@ const scenes = {
       text('조작 방법', W / 2, ly(0), 26, INK, 'center', null, F_T);
       rows.forEach((c, i) => { text(c[0], 334, ly(i + 1), 21, '#7a6872', 'right', null, F_B); text(c[1], 352, ly(i + 1), 22, INK, 'left', null, F_B); });
       text(touchUI ? '모바일에서는 조이스틱과 버튼으로 해요' : '버튼은 마우스로 눌러도 돼요', W / 2, ly(5), 23, '#3d9be0', 'center', null, F_H);
-      if (room) wideBtn('초대받은 방에 들어가기', () => { scene = 'select'; });
-      else { // one row: three small picture buttons, then the start, the biggest
-        const sq = 92, sh = 84, y = LY.bot - 8, sx = LY.m + (sq + 12) * 3;
+      if (room) wideBtn('초대받은 방에 들어가기', () => joinRoom(room));
+      else { // one row: three small picture buttons, then the two ways to start, solo the biggest
+        const sq = 84, sh = 84, y = LY.bot - 8, sx = LY.m + (sq + 12) * 3, rest = LY.m + LY.w - sx, bw2 = Math.round((rest - 12) * 0.62);
         iconButton('trophy', '랭킹', LY.m, y, sq, sh, () => { scene = 'ranking'; loadRanking(); });
         iconButton('capsule', '뽑기', LY.m + sq + 12, y, sq, sh, () => { acct.wtab = 'gacha'; scene = 'wardrobe'; });
         iconButton('medal', '업적', LY.m + (sq + 12) * 2, y, sq, sh, () => { acct.wtab = 'ach'; scene = 'wardrobe'; }, anyClaimable());
-        button('시작하기', sx, y, LY.m + LY.w - sx, sh, () => { scene = 'format'; }, { size: 36, fill: '#fff3c4' });
+        button('개인전', sx, y, bw2, sh, () => { scene = 'format'; }, { size: 33, fill: '#fff3c4' });
+        button('온라인', sx + bw2 + 12, y, rest - bw2 - 12, sh, () => { scene = 'online'; }, { size: 26, fill: '#efe6ff' });
       }
       { const P = acct.prof, t = acct.user ? (P && P.nickname ? P.nickname + ' · 뽑기권 ' + P.tickets : '로그인됨') : '로그인', cw = Math.max(132, t.length * 17 + 44), cx = W - LY.m - cw, cy = 14;
         const over = btn(cx, cy, cw, 50, () => { scene = 'account'; });
@@ -1994,15 +2050,15 @@ const scenes = {
       const S = SCR.closet; if (anyHit(...K_D)) S.vel = 900; if (anyHit(...K_U)) S.vel = -900;
     },
     draw() {
-      menuBegin('옷장', true);
-      const gear = myGear(), own = Object.keys(ITEMS).filter(id => acct.inv[id]).length;
+      menuBegin(closet.animal != null ? `${ANIMALS[closet.animal].ko}의 옷장` : '내 아이템', true);
+      const gear = closet.animal != null ? myGear(closet.animal) : {}, own = Object.keys(ITEMS).filter(id => acct.inv[id]).length, coll = closet.animal == null;
       text(`보유 ${own} / ${Object.keys(ITEMS).length}`, LY.m + LY.w, LY.titleY, 21, '#3d8be0', 'right', null, F_T);
-      const key = JSON.stringify([acct.inv, gear, closet.sel]), eh = 128, chh = 150, height = 38 + 2 * (eh + 14) + 16 + 4 * (40 + 3 * (chh + 12) + 14);
-      scrollView(SCR.closet, LY.top, contentEnd(), key, height, () => drawClosetList(gear, eh, chh));
+      const key = JSON.stringify([acct.inv, acct.prof && acct.prof.equip, closet.sel, closet.animal]), eh = 128, chh = 150, height = (coll ? 0 : 38 + 2 * (eh + 14) + 16) + 4 * (40 + 3 * (chh + 12) + 14);
+      scrollView(SCR.closet, LY.top, contentEnd(), key, height, () => drawClosetList(gear, eh, chh, coll));
       const sel = item(closet.sel);
       if (acct.msg && acct.msgT < 2.6) { ctx.font = `24px ${F_B}`; const w = ctx.measureText(acct.msg).width + 60; rr(W / 2 - w / 2, LY.bot - 62, w, 46, 23, 'rgba(59,51,64,0.9)', null); text(acct.msg, W / 2, LY.bot - 38, 21, CREAM, 'center', null, F_B); }
       sideBtn('뒤로', () => { scene = closetBack; });
-      menuEnd(sel ? `${acct.inv[sel.id] ? sel.name : '???'} · ${GRADE[sel.grade].ko} · ${STAT_NAME[sel.stat]} +${sel.amt}` : '위아래로 밀어서 전체 아이템을 볼 수 있어요');
+      menuEnd(sel ? `${acct.inv[sel.id] ? sel.name : '???'} · ${GRADE[sel.grade].ko} · ${STAT_NAME[sel.stat]} +${sel.amt}` : coll ? '입히기는 선수 선택 화면의 옷걸이에서 해요' : '같은 아이템은 가진 개수만큼 여러 선수가 입을 수 있어요');
     },
   },
   select: {
@@ -2011,7 +2067,7 @@ const scenes = {
       if (anyHit(...K_R)) state.sel = (state.sel + 1) % 12; if (anyHit(...K_L)) state.sel = (state.sel + 11) % 12;
       if (anyHit(...K_D)) state.sel = (state.sel + 6) % 12; if (anyHit(...K_U)) state.sel = (state.sel + 6) % 12;
       if (anyHit(...K_R, ...K_L, ...K_D, ...K_U)) tone(660, 0.05, 'sine', 0.15);
-      if (pressed('Escape')) { scene = room ? 'title' : setup.practice ? 'format' : 'mode'; return; }
+      if (pressed('Escape')) { if (net) goHome(); else scene = setup.practice ? 'format' : 'mode'; return; }
       if (anyHit(...K_OK)) pickAnimal();
     },
     draw() {
@@ -2026,7 +2082,7 @@ const scenes = {
         text(A.ko, cx, y + ch - 15, 20, INK, 'center', on ? '#fff3c4' : CREAM, F_T);
       });
       // the chosen animal: its card, wearing the account's gear, with the four slots along the bottom
-      const a = state.sel, A = ANIMALS[a], gear = myGear(), py = LY.top + 2 * (ch + LY.gap), ph = LY.tall ? 372 : 356;
+      const a = state.sel, A = ANIMALS[a], gear = myGear(a), py = LY.top + 2 * (ch + LY.gap), ph = LY.tall ? 372 : 356;
       panel(LY.m, py, LY.w, ph);
       ctx.font = `${Math.round(17 * 1.1)}px ${F_B}`; const dw = Math.max(...STAT_DO.map(d => ctx.measureText(d).width));
       // left: the hanger and the name at the top, the stats along the bottom; right: the animal, big, wearing its gear
@@ -2035,34 +2091,37 @@ const scenes = {
       ctx.fillStyle = 'rgba(70,90,140,0.2)'; ctx.beginPath(); ctx.ellipse(ax, ay, 26 * ks, 6 * ks, 0, 0, 7); ctx.fill();
       ctx.lineWidth = 2.6; ctx.strokeStyle = OUT;
       drawAnimal(a, ax, ay, ks, { front: true, t: state.t, accent: CORAL, gear });
-      { const hx = lx, hy = py + LY.pad, over = btn(hx, hy, 64, 64, () => openCloset('select')); // the hanger: the closet
+      { const hx = lx, hy = py + LY.pad, over = btn(hx, hy, 64, 64, () => openCloset('select', state.sel)); // the hanger: this animal's closet
         rr(hx, hy + 4, 64, 64, 16, OUT, null); rr(hx, hy, 64, 64, 16, over ? '#fff3c4' : '#ffffff', OUT, 2.8); icon('hanger', hx + 32, hy + 32, 46); }
       text(A.ko, lx, sy0 - 74, 34, INK, 'left', null, F_T);
       text(A.note, lx, sy0 - 38, 23, '#c0605a', 'left', null, F_H);
       statBars(a, lx, sy0, gearBonus(gear));
       if (acct.msg && acct.msgT < 2.6) { ctx.font = `24px ${F_B}`; const w = ctx.measureText(acct.msg).width + 60; rr(W / 2 - w / 2, py + ph - 60, w, 46, 23, 'rgba(59,51,64,0.9)', null); text(acct.msg, W / 2, py + ph - 36, 21, CREAM, 'center', null, F_B); }
-      sideBtn('뒤로', () => { scene = room ? 'title' : setup.practice ? 'format' : 'mode'; });
-      mainBtn('이 선수로 결정', pickAnimal);
-      menuEnd(room ? '초대받은 방 ' + room + ' 에 들어갑니다' : '← → ↑ ↓ 로 고르고 Enter · 옷걸이를 눌러 옷장 열기');
+      sideBtn(net ? '나가기' : '뒤로', () => { if (net) goHome(); else scene = setup.practice ? 'format' : 'mode'; });
+      mainBtn(net && net.myPick ? (net.myPick.animal === state.sel ? '준비 완료!' : '이 선수로 바꾸기') : '이 선수로 결정', pickAnimal);
+      if (net) { const me = !!net.myPick, opp = net.role === 'host' ? !!net.guestPick : !!net.oppReady;
+        rr(LY.m, LY.bot - 50, LY.w, 40, 20, 'rgba(59,51,64,0.85)', null);
+        text(`${FORMATS[setup.format].ko} · ${COURTS[setup.court].ko}  |  나 ${me ? '준비 완료' : '고르는 중'} · 상대 ${opp ? '준비 완료' : '고르는 중'}`, W / 2, LY.bot - 30, 19, CREAM, 'center', null, F_B); }
+      menuEnd(net ? (net.myPick ? '상대를 기다리는 중 · 다른 선수를 눌러 바꿀 수 있어요' : '선수를 고르고 결정을 눌러요') : '← → ↑ ↓ 로 고르고 Enter · 옷걸이를 눌러 옷장 열기');
     },
   },
   mode: {
     update(dt) {
       state.t += dt;
-      if (anyHit(...K_D)) state.cur = (state.cur + 1) % 4; if (anyHit(...K_U)) state.cur = (state.cur + 3) % 4;
+      state.cur = Math.min(state.cur, 2); if (anyHit(...K_D)) state.cur = (state.cur + 1) % 3; if (anyHit(...K_U)) state.cur = (state.cur + 2) % 3;
       if (anyHit(...K_D, ...K_U)) tone(660, 0.05, 'sine', 0.15);
       if (pressed('Escape')) { scene = 'format'; return; }
       if (anyHit(...K_OK)) pickMode(state.cur);
     },
     draw() {
-      menuBegin('누구와 겨룰까요?', true);
-      const rows = [['컴퓨터와 대결 · 쉬움', '받기 쉬운 공을 보내고 실수도 자주 해요'], ['컴퓨터와 대결 · 보통', '빈 곳을 노리고 가끔 변칙을 섞어요'], ['컴퓨터와 대결 · 어려움', '코너를 찌르고 드롭샷, 로브, 파워샷까지'], ['온라인 대결 · 방 만들기', '초대 링크를 보내 각자의 기기에서 겨뤄요']];
+      menuBegin('난이도를 골라 주세요', true);
+      const rows = [['쉬움', '받기 쉬운 공을 보내고 실수도 자주 해요'], ['보통', '빈 곳을 노리고 가끔 변칙을 섞어요'], ['어려움', '코너를 찌르고 드롭샷, 로브, 파워샷까지']];
       const ch = SZ().format4; // the same cards as the four ways to play
       const tags = [['쉬움', '#4fa86a'], ['보통', '#3d8be0'], ['어려움', '#e2574c'], ['온라인', '#9b5de5']];
       rows.forEach((r, i) => { const y = LY.top + i * (ch + LY.gap), [tg, c] = tags[i], x = LY.m + LY.pad;
         card(LY.m, y, LY.w, ch, () => pickMode(i), i === state.cur);
         rr(x, y + ch / 2 - 30, 132, 60, 18, c, OUT, 2.6); text(tg, x + 66, y + ch / 2 + 1, 30, '#ffffff', 'center', null, F_T); // the level, big and coloured
-        text(i < 3 ? '컴퓨터와 대결' : '방 만들기', x + 152, y + ch / 2 - 16, 26, INK, 'left', null, F_T);
+        text('컴퓨터와 대결', x + 152, y + ch / 2 - 16, 26, INK, 'left', null, F_T);
         text(r[1], x + 152, y + ch / 2 + 20, 19, '#7a6872', 'left', null, F_B); });
       sideBtn('뒤로', () => { scene = 'format'; });
       menuEnd(`${FORMATS[setup.format].ko} · ${{ flash: '10점 매치 타이브레이크', short: '4게임 짧은 세트', regular: '5세트 3선승' }[setup.format]}`);
@@ -2105,7 +2164,7 @@ const scenes = {
   format: {
     update(dt) {
       state.t += dt; if (state.fm == null) state.fm = FORMAT_IDS.indexOf(setup.format);
-      if (anyHit(...K_D)) state.fm = (state.fm + 1) % 4; if (anyHit(...K_U)) state.fm = (state.fm + 3) % 4;
+      const nf = net ? 3 : 4; if (anyHit(...K_D)) state.fm = (state.fm + 1) % nf; if (anyHit(...K_U)) state.fm = (state.fm + nf - 1) % nf;
       if (anyHit(...K_D, ...K_U)) tone(660, 0.05, 'sine', 0.15);
       if (pressed('Escape')) { scene = 'title'; return; }
       if (anyHit(...K_OK)) pickFormat(state.fm);
@@ -2114,7 +2173,7 @@ const scenes = {
       if (state.fm == null) state.fm = FORMAT_IDS.indexOf(setup.format);
       menuBegin('경기 방식을 골라 주세요', true);
       const how = { flash: '10점을 먼저 따면 승리 (2점 차)', short: '4게임 먼저 · 40-40이면 한 포인트로 결정', regular: '세트 3개를 먼저 따면 승리', practice: '샷마다 타이밍 · 속도 · 떨어진 곳을 알려 줘요' };
-      const ch = SZ().format4, ids = [...FORMAT_IDS, 'practice'];
+      const ch = SZ().format4, ids = net ? [...FORMAT_IDS] : [...FORMAT_IDS, 'practice'];
       ids.forEach((id, i) => {
         const y = LY.top + i * (ch + LY.gap), x = LY.m + LY.pad, by = y + LY.pad - 8; // three lines from the card's padding
         const name = id === 'practice' ? '볼머신장 가기' : FORMATS[id].ko, sub = id === 'practice' ? '볼머신과 레슨 9개 · 공 치는 법 익히기' : rules(id).sub;
@@ -2129,13 +2188,27 @@ const scenes = {
       menuEnd('↑ ↓ 로 고르고 Enter · 랭킹은 경기 방식마다 따로 집계돼요');
     },
   },
+  online: {
+    update(dt) { state.t += dt; if (pressed('Escape')) scene = 'title'; },
+    draw() {
+      menuBegin('온라인 대결', true);
+      const ch = SZ().format4;
+      [['방 만들기', '초대 링크와 방 코드를 친구에게 보내요', '#9b5de5', () => { netHost(); scene = 'lobby'; }], ['코드로 참가', '친구에게 받은 방 코드 6자리를 입력해요', '#3d8be0', () => openNick('code')]].forEach(([t, d, c, fn], i) => {
+        const y = LY.top + i * (ch + LY.gap), x = LY.m + LY.pad; card(LY.m, y, LY.w, ch, fn, false);
+        rr(x, y + ch / 2 - 30, 60, 60, 18, c, OUT, 2.6); text(i ? '#' : '+', x + 30, y + ch / 2 + 1, 34, '#fff', 'center', null, F_T);
+        text(t, x + 82, y + ch / 2 - 16, 30, INK, 'left', null, F_T); text(d, x + 82, y + ch / 2 + 20, 19, '#7a6872', 'left', null, F_B); });
+      text('연결되면 방장이 경기 방식과 코트를 고르고, 둘 다 선수를 골라요', W / 2, LY.top + 2 * (ch + LY.gap) + 24, 19, '#4f6f63', 'center', null, F_B);
+      sideBtn('뒤로', () => { scene = 'title'; });
+      menuEnd('링크로 받았다면 그 링크를 열면 바로 들어가요');
+    },
+  },
   lobby: {
     update(dt) {
       state.t += dt;
       if (pressed('Escape')) { goHome(); return; }
       if (!net) { scene = 'title'; return; }
       if (net.role === 'host' && pressed('KeyC')) copyLink();
-      if (net.role === 'guest') { guestStep(); if (net.snap) { view = 1; scene = 'play'; seenFx = 0; hints = { hits: 0, power: 0, shots: 0 }; } }
+
     },
     draw() {
       menuBegin(net && net.role === 'guest' ? '방에 들어가는 중' : '친구를 기다리는 중', true);
@@ -2159,7 +2232,7 @@ const scenes = {
           else text('이 창을 닫거나 다른 탭으로 가리면 경기가 멈춰요', W / 2, y + 282, 20, '#7a6872', 'center', null, F_B);
         }
       } else if (net) {
-        text(net.status === 'joined' ? '연결됐어요! 경기를 준비하는 중' + dots : '방 ' + net.code + ' 에 연결하는 중' + dots, W / 2, py + 170, 29, INK, 'center', null, F_H);
+        text(net.status === 'joined' ? '연결됐어요! 방장이 경기 방식과 코트를 고르는 중' + dots : '방 ' + net.code + ' 에 연결하는 중' + dots, W / 2, py + 170, 29, INK, 'center', null, F_H);
         ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(setup.animal, W / 2, py + 440, 1.5, { front: true, t: state.t, anim: 'run', accent: CORAL });
       }
       sideBtn('홈으로', goHome);
@@ -2268,9 +2341,9 @@ const scenes = {
     update(dt) {
       state.t += dt;
       const guest = net && net.role === 'guest';
-      if (guest) { guestStep(); if (m.phase !== 'done') { scene = 'play'; return; } }
+      if (guest) guestStep();
       if (pressed('Escape')) { goHome(); return; }
-      if (pressed('Enter') && !guest) { reset(); scene = 'play'; }
+      if (pressed('Enter') && !guest) { if (net) onlineAgain(); else { reset(); scene = 'play'; } }
     },
     draw() {
       menuBegin();
@@ -2298,8 +2371,8 @@ const scenes = {
         else button(rank.sending ? '등록하는 중…' : '랭킹에 기록 등록하기', LY.m, ry, LY.w, 68, openNick, { size: 28, fill: '#ffe1a8' });
       }
       sideBtn('홈으로', goHome);
-      if (guest) text('방장이 다시 시작하길 기다리는 중', 468, LY.bot + 34, 24, INK, 'center', CREAM, F_H);
-      else mainBtn('다시 하기', () => { reset(); scene = 'play'; });
+      if (guest) text('방장이 다시 하기를 누르면 선수를 다시 골라요', 468, LY.bot + 34, 24, INK, 'center', CREAM, F_H);
+      else mainBtn(net ? '다시 하기 (선수 다시 고르기)' : '다시 하기', () => { if (net) onlineAgain(); else { reset(); scene = 'play'; } });
       menuEnd(guest ? '' : 'Enter : 다시 하기 · Esc : 홈으로');
     },
   },

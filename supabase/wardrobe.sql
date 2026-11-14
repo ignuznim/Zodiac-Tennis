@@ -149,22 +149,35 @@ begin
     'tickets', (select tickets from public.profiles where id = auth.uid()));
 end $$;
 
--- Put an item on (it must be owned and fit the slot), or take the slot off with null
-create or replace function public.equip_item(s text, item text) returns public.profiles
+-- Each animal (0-11) wears its own gear: equip is {"2": {"hat": "h5", ...}, ...}. One copy dresses one animal at a time:
+-- if every copy owned is already worn by others, it is taken from one of them. A null item takes the slot off.
+drop function if exists public.equip_item(text, text);
+create or replace function public.equip_item(s text, item text, a integer) returns public.profiles
 language plpgsql security definer set search_path = public as $$
-declare p public.profiles;
+declare p public.profiles; ak text := a::text; owned integer; worn integer; k text;
 begin
   perform public.me();
   if s not in ('hat', 'uniform', 'shoes', 'racket') then raise exception 'bad slot'; end if;
+  if a is null or a not between 0 and 11 then raise exception 'bad animal'; end if;
+  select * into p from public.profiles where id = auth.uid();
   if item is null then
-    update public.profiles set equip = equip - s where id = auth.uid() returning * into p;
+    p.equip := jsonb_set(p.equip, array[ak], coalesce(p.equip -> ak, '{}'::jsonb) - s, true);
   else
-    if not exists (select 1 from public.inventory v join public.items i on i.id = v.item_id
-                   where v.user_id = auth.uid() and v.item_id = item and i.slot = s) then raise exception 'not owned'; end if;
-    update public.profiles set equip = equip || jsonb_build_object(s, item) where id = auth.uid() returning * into p;
+    select v.count into owned from public.inventory v join public.items i on i.id = v.item_id
+      where v.user_id = auth.uid() and v.item_id = item and i.slot = s;
+    if owned is null then raise exception 'not owned'; end if;
+    select count(*) into worn from jsonb_each(p.equip) e where e.key <> ak and jsonb_typeof(e.value) = 'object' and e.value ->> s = item;
+    if worn >= owned then
+      select e.key into k from jsonb_each(p.equip) e where e.key <> ak and jsonb_typeof(e.value) = 'object' and e.value ->> s = item limit 1;
+      p.equip := jsonb_set(p.equip, array[k], (p.equip -> k) - s);
+    end if;
+    p.equip := jsonb_set(p.equip, array[ak], coalesce(p.equip -> ak, '{}'::jsonb) || jsonb_build_object(s, item), true);
   end if;
+  update public.profiles set equip = p.equip where id = auth.uid() returning * into p;
   return p;
 end $$;
+-- gear saved the old way (one set for everyone) moves to the rat (0); it can be moved from there
+update public.profiles set equip = jsonb_build_object('0', equip) where equip ?| array['hat', 'uniform', 'shoes', 'racket'];
 
 -- Progress kept with the account: each number only ever grows
 create or replace function public.save_progress(pr jsonb) returns public.profiles
@@ -199,9 +212,9 @@ begin
   return p;
 end $$;
 
-revoke all on function public.me(), public.set_nickname(text), public.gacha_pull(), public.equip_item(text, text),
+revoke all on function public.me(), public.set_nickname(text), public.gacha_pull(), public.equip_item(text, text, integer),
   public.save_progress(jsonb), public.claim_achievement(text) from public, anon;
-grant execute on function public.me(), public.set_nickname(text), public.gacha_pull(), public.equip_item(text, text),
+grant execute on function public.me(), public.set_nickname(text), public.gacha_pull(), public.equip_item(text, text, integer),
   public.save_progress(jsonb), public.claim_achievement(text) to authenticated;
 
 -- ---- The ranking shows what a player wore ----
