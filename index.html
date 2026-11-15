@@ -92,6 +92,7 @@ function viewBox() { // the part of the screen really visible: the visual viewpo
   return { x: il, y: it, w: Math.max(1, w - il - ir), h: Math.max(1, h - it - ib) };
 }
 function fit(force) { // fills the visible screen at any shape and pixel ratio, never past its edges
+  if (force !== true && document.querySelector('#nick.on')) return; // the on-screen keyboard is up: keep the game and the dialog the size they were
   const v = viewBox(), dpr = devicePixelRatio || 1, key = [v.x, v.y, v.w, v.h, dpr].join();
   if (key === fitKey && force !== true) return; fitKey = key;
   H = COVER ? 571 : Math.round(W * Math.max(1.25, Math.min(2.4, v.h / v.w))); // the page reshapes itself: 4:5 to 12:5 tall; past that, bars
@@ -223,7 +224,7 @@ const ANIMALS = [
   { id: 'dragon', ko: '용', c: '#7fd1a3', d: '#ffd166', l: '#d9f5e3', note: '휘감기는 스핀, 짧은 호흡' },
   { id: 'snake', ko: '뱀', c: '#b6dd6a', d: '#6fa23c', l: '#f0f9c9', note: '뚝 떨어지는 드롭샷의 명수' },
   { id: 'horse', ko: '말', c: '#c98f5f', d: '#6b4630', l: '#f3ddc7', note: '끝없이 달리는 다리' },
-  { id: 'sheep', ko: '양', c: '#fbf4e6', d: '#5d5560', l: '#ffffff', note: '실수를 기다리는 끈질긴 랠리' },
+  { id: 'sheep', ko: '양', c: '#fbf4e6', d: '#f2cfc4', l: '#ffffff', note: '실수를 기다리는 끈질긴 랠리' },
   { id: 'monkey', ko: '원숭이', c: '#a9744f', d: '#f6d3b0', l: '#f6d3b0', note: '번개 같은 반응 속도' },
   { id: 'rooster', ko: '닭', c: '#fffaf0', d: '#f25f5c', l: '#ffd166', note: '빈틈없는 만능 선수' },
   { id: 'dog', ko: '개', c: '#f0c98d', d: '#a5673f', l: '#fff3dc', note: '뛰고 또 뛰는 집념' },
@@ -283,7 +284,7 @@ function drawEars(A, front, t = 0, an = 'idle') {
     case 'dragon': for (const s of [-1, 1]) { poly([s * 10, hy - 22, s * 14, hy - 48, s * 20, hy - 34, s * 28, hy - 44, s * 22, hy - 18], A.d); E(s * 27, hy - 4, 8, 5, A.c, s * -0.5); } break;
     case 'snake': break;
     case 'horse': for (const s of [-1, 1]) poly([s * 8, hy - 26, s * 15, hy - 46, s * 22, hy - 22], A.c); break;
-    case 'sheep': for (const s of [-1, 1]) E(s * 28, hy - 2, 11, 6, A.d, s * 0.5); break;
+    case 'sheep': for (const s of [-1, 1]) { E(s * 40, hy + 4, 13, 7, '#ffe9df', s * 0.35); if (front) E(s * 41, hy + 4, 8, 3.6, '#f6a9b4', s * 0.35, true); } break; // soft drooping ears, pink inside
     case 'monkey': for (const s of [-1, 1]) { E(s * 28, hy - 2, 12, 12, A.c); if (front) E(s * 28, hy - 2, 7, 7, A.d, 0, true); } break;
     case 'rooster': break;
     case 'dog': for (const s of [-1, 1]) E(s * 25, hy - 2, 9, 20, A.d, s * -0.25); break;
@@ -296,7 +297,7 @@ function drawHead(A, front, t) {
   if (A.id === 'horse') { rx = 22; ry = 30; } else if (A.id === 'snake') { rx = 27; ry = 22; } else if (A.id === 'ox') rx = 29;
   if (A.id === 'sheep') { for (let i = 0; i < 9; i++) { const a = i / 9 * 6.283; E(Math.cos(a) * 25, hy - 4 + Math.sin(a) * 23, 12, 12, A.c); } E(0, hy - 4, 26, 24, A.c, 0, true); }
   if (A.id === 'horse') { for (let i = 0; i < 5; i++) E((front ? -4 + i * 2 : 0) + Math.sin(t * 9 + i * 0.9) * 2.5, hy - 30 + i * 9, front ? 9 : 12, 9, A.d); } // the mane flutters
-  if (A.id === 'sheep' && front) { E(0, hy + 2, 19, 18, A.d); shade(0, hy + 2, 19, 18); } else if (A.id !== 'sheep') { E(0, hy, rx, ry, A.c); shade(0, hy, rx, ry); }
+  if (A.id === 'sheep' && front) { E(0, hy + 4, 20, 18, '#ffe9df'); shade(0, hy + 4, 20, 18); } // the face: white, under a fringe of wool else if (A.id !== 'sheep') { E(0, hy, rx, ry, A.c); shade(0, hy, rx, ry); }
   // what sits on top, in both views
   if (A.id === 'tiger') for (const s of [-1, 0, 1]) poly([s * 11 - 3, hy - 25, s * 11 + 3, hy - 25, s * 11, hy - 13], A.d);
   if (A.id === 'rooster') { for (let i = -1; i <= 1; i++) E(i * 8, hy - 28 - (i === 0 ? 5 : 0), 7, 9, A.d); }
@@ -319,8 +320,8 @@ function drawHead(A, front, t) {
     case 'snake': eye(-11, hy - 4, 4.5); eye(11, hy - 4, 4.5); cheeks(hy + 5, 19); smile(hy + 9, 6);
       ctx.save(); ctx.strokeStyle = '#f25f5c'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(0, hy + 13); ctx.lineTo(0, hy + 21); ctx.lineTo(-4, hy + 26); ctx.moveTo(0, hy + 21); ctx.lineTo(4, hy + 26); ctx.stroke(); ctx.restore(); break;
     case 'horse': E(-3, hy - 26, 9, 7, A.d, -0.3); E(5, hy - 23, 8, 6, A.d, 0.4); E(0, hy + 14, 15, 12, A.l); eye(-10, hy - 6); eye(10, hy - 6); E(-5, hy + 13, 2, 3, OUT, 0, true); E(5, hy + 13, 2, 3, OUT, 0, true); smile(hy + 20, 5); break;
-    case 'sheep': E(-6, hy, 3.5, 4, '#fff', 0, true); E(6, hy, 3.5, 4, '#fff', 0, true); E(-6, hy + 1, 1.8, 2, INK, 0, true); E(6, hy + 1, 1.8, 2, INK, 0, true);
-      ctx.save(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; smile(hy + 9, 4); ctx.restore(); for (let i = -1; i <= 1; i++) E(i * 11, hy - 22, 9, 8, A.c); break;
+    case 'sheep': eye(-8, hy + 1, 3.6); eye(8, hy + 1, 3.6); cheeks(hy + 10, 13); E(0, hy + 10, 3.4, 2.6, '#f39aa8'); smile(hy + 16, 3.5);
+      for (let i = -1; i <= 1; i++) E(i * 10, hy - 14, 9, 8, A.c); break; // a fringe of wool over the brow
     case 'monkey': E(0, hy + 4, 19, 17, A.d); E(-8, hy - 6, 10, 10, A.d, 0, true); E(8, hy - 6, 10, 10, A.d, 0, true); eye(-9, hy - 4); eye(9, hy - 4); E(0, hy + 6, 2.5, 2, OUT, 0, true); smile(hy + 12, 7); cheeks(hy + 7, 15); break;
     case 'rooster': eye(-10, hy - 4); eye(10, hy - 4); poly([-7, hy + 4, 7, hy + 4, 0, hy + 15], A.l); E(0, hy + 20, 4, 6, A.d); cheeks(hy + 6, 19); break;
     case 'dog': E(-11, hy - 4, 10, 11, A.d, 0, true); E(0, hy + 10, 13, 10, A.l, 0, true); eye(-10, hy - 3); eye(10, hy - 3); E(0, hy + 5, 5, 3.6, INK); smile(hy + 13, 5); E(0, hy + 18, 3.5, 5, '#ff9aa8'); break;
@@ -1812,7 +1813,7 @@ function openNick(mode = 'rank') {
   nickIn.value = (acct.prof && acct.prof.nickname) || store('zt_nick') || ''; nickErr.textContent = ''; nickBox.classList.add('on'); down.clear();
   setTimeout(() => nickIn.focus(), 30);
 }
-function closeNick() { nickBox.classList.remove('on'); nickIn.blur(); down.clear(); }
+function closeNick() { nickBox.classList.remove('on'); nickIn.blur(); down.clear(); setTimeout(() => fit(true), 350); } // the keyboard has gone: fit again
 document.getElementById('nickNo').onclick = closeNick;
 nickBox.addEventListener('pointerdown', e => e.stopPropagation()); nickBox.addEventListener('click', e => e.stopPropagation());
 nickBox.addEventListener('keydown', e => { if (e.key === 'Escape') closeNick(); e.stopPropagation(); });
