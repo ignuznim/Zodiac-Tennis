@@ -944,7 +944,7 @@ function launch(p, kind, q, charge, aimX, aimD, late = 0) {
   if (ai && kind !== 'drop' && rng() < ai('gentle')) tx = clamp(m.P[1 - p.i].x + (rng() - 0.5) * 1.6, -3.2, 3.2); // a kind computer plays it back to you
   const an = rng() * 6.283, r = e * Math.sqrt(rng());
   tx += Math.cos(an) * r; let ty = opp * depth + Math.sin(an) * r * 1.3;
-  let slip = ai && rng() < ai('miss') + ai('catchup') * aiLead(p) ? rng() : -1; // the computer's own unforced error: long, wide or into the net (a little likelier while it leads)
+  let slip = ai && rng() < ai('miss') + (ai('catchup') * aiLead(p) + ai('catchpts') * Math.max(0, m.stats.pts[p.i] - m.stats.pts[1 - p.i])) * (rules().matchTb ? ai('flash') : 1) ? rng() : -1; // the computer's own unforced error: long, wide or into the net (a little likelier while it leads)
   if (slip >= 0 && slip < 0.4) ty = opp * (CL + 0.5 + rng() * 1.8);
   else if (slip >= 0.4 && slip < 0.75) tx = (tx >= 0 ? 1 : -1) * (CW + 0.4 + rng() * 1.4);
   const dist = Math.hypot(tx - b.x, ty - b.y);
