@@ -1053,7 +1053,8 @@ function doServe(p, q, aimX) {
   q = clamp(q, 0.1, 1);
   const v = (tune.serve_v + pow * tune.serve_v_pow) * (0.78 + 0.22 * q) * (second ? tune.second_serve : 1) * (1 - tune.fatigue_pace * fat) * (p.ctrl === 'ai' ? tune['ai' + m.level + '_serve'] : 1);
   const wide = Math.sign(aimX) * m.boxX;
-  let tx = (wide > 0 ? 3.25 : wide < 0 ? 0.75 : 2.0) * m.boxX; let ty = -p.side * 5.0;
+  const u = clamp((Math.abs(p.x) - 0.25) / (courtW() - 0.25), 0, 1) * 2 - 1; // where the server stands: -1 by the centre mark, +1 out by the sideline
+  let tx = (wide > 0 ? 3.25 + 0.35 * u : wide < 0 ? 0.75 + 0.25 * Math.max(0, u) : 2.0 + 0.9 * u) * m.boxX; let ty = -p.side * 5.0; // from the middle it goes down the T, from out wide it swings wide
   const e = tune.err_serve * (1.9 - 1.4 * q) * (second ? 0.45 : 1) * (1.3 - tune.err_spin * spin) * (1 + tune.fatigue_err * fat);
   const an = rng() * 6.283, r = e * Math.sqrt(rng()); tx += Math.cos(an) * r; ty += Math.sin(an) * r * 1.4;
   if (bad && early) ty = -p.side * (SVC + 1.2 + rng() * 2.4);          // too soon: it sails past the service line
@@ -1367,7 +1368,7 @@ function hintText() {
   if (m.practice) return LESSONS[m.prac.li].tip(touchUI);
   const srv = serverIdx() === view;
   if (m.phase === 'serve' && srv) return (m.fault ? '세컨드 서브! ' : '') + (touchUI ? '좌우로 자리 잡고, 스트로크로 공 띄우기' : '← → 로 자리 잡고, Q 로 공 띄우기');
-  if (m.phase === 'toss' && srv) return touchUI ? '고리가 초록일 때 한 번 더! 빨강이면 폴트' : '고리가 초록일 때 Q! 빨강이면 폴트';
+  if (m.phase === 'toss' && srv) return touchUI ? '초록일 때 한 번 더! 조이스틱으로 방향' : '초록일 때 Q! ← → 를 함께 누르면 방향';
   if (m.phase === 'rally' || m.phase === 'serve' || m.phase === 'toss') {
     if (hints.hits < 3) return touchUI ? '조이스틱으로 따라가, 몸에 닿는 순간 스트로크!' : '공을 따라가, 몸에 닿는 순간 Q!';
     if (hints.power < 1) return (touchUI ? '스트로크를' : 'Q 를') + ' 꾹 모았다가 공이 올 때 놓으면 파워샷';
