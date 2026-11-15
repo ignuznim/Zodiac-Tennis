@@ -139,6 +139,9 @@ window.CONFIG = {
   dbl_volley: { value: 1.25, min: 1, max: 1.6, step: 0.05 }, // doubles: a volley at the net is struck this much harder
   dbl_lob: { value: 0.35, min: 0, max: 1.6, step: 0.05 },   // doubles: someone always stands at the net, so the computer lobs over them only now and then
   dbl_pace: { value: 1.08, min: 1, max: 1.3, step: 0.01 },  // doubles: every shot a little quicker
+  ace_q: { value: 0.95, min: 0.9, max: 1, step: 0.01 },      // a first serve timed at least this well is a cannonball
+  ace_v: { value: 1.25, min: 1, max: 1.5, step: 0.02 },      // how much faster a cannonball flies
+  ace_react: { value: 0.7, min: 0, max: 1, step: 0.02 },  // how much later the computer starts after one (s)
   ai1_window: { value: 0.42, min: 0.12, max: 0.5, step: 0.01 }, // your swing buffer against this level (online: tap_window)
   ai2_window: { value: 0.3, min: 0.12, max: 0.5, step: 0.01 },
   ai3_window: { value: 0.26, min: 0.12, max: 0.5, step: 0.01 },

@@ -1052,13 +1052,13 @@ function doServe(p, q, aimX) {
   const bad = q < (second ? tune.serve_fault_q2 : tune.serve_fault_q); // mistimed: this serve is a fault
   q = clamp(q, 0.1, 1);
   const v = (tune.serve_v + pow * tune.serve_v_pow) * (0.78 + 0.22 * q) * (second ? tune.second_serve : 1) * (1 - tune.fatigue_pace * fat) * (p.ctrl === 'ai' ? tune['ai' + m.level + '_serve'] : 1);
-  const wide = Math.sign(aimX) * m.boxX;
+  const wide = Math.sign(aimX) * m.boxX, ace = !second && !bad && q >= tune.ace_q && p.ctrl !== 'ai'; // a person's perfectly timed first serve: a cannonball
   const u = clamp((Math.abs(p.x) - 0.25) / (courtW() - 0.25), 0, 1) * 2 - 1; // where the server stands: -1 by the centre mark, +1 out by the sideline
   let tx = (wide > 0 ? 3.25 + 0.35 * u : wide < 0 ? 0.75 + 0.25 * Math.max(0, u) : 2.0 + 0.9 * u) * m.boxX; let ty = -p.side * 5.0; // from the middle it goes down the T, from out wide it swings wide
   const e = tune.err_serve * (1.9 - 1.4 * q) * (second ? 0.45 : 1) * (1.3 - tune.err_spin * spin) * (1 + tune.fatigue_err * fat);
   const an = rng() * 6.283, r = e * Math.sqrt(rng()); tx += Math.cos(an) * r; ty += Math.sin(an) * r * 1.4;
   if (bad && early) ty = -p.side * (SVC + 1.2 + rng() * 2.4);          // too soon: it sails past the service line
-  let T = Math.max(0.3, Math.hypot(tx - b.x, ty - b.y) / v);
+  let T = Math.max(0.3, Math.hypot(tx - b.x, ty - b.y) / (ace ? v * tune.ace_v : v));
   const t0 = () => T * Math.abs(b.y) / Math.abs(ty - b.y);
   if (bad && !early) b.vz = (tune.net_height * 0.55 - b.z + 0.5 * g * t0() * t0()) / t0(); // too late: into the net
   else {
@@ -1066,10 +1066,11 @@ function doServe(p, q, aimX) {
     b.vz = (0.5 * g * T * T - b.z) / T;
   }
   b.vx = (tx - b.x) / T; b.vy = (ty - b.y) / T;
-  b.last = p.team; b.by = p.i; b.bounces = 0; b.kind = 'serve'; b.live = true; b.fly = true; b.power = q >= 0.95 && !second ? 0.7 : 0;
+  b.last = p.team; b.by = p.i; b.bounces = 0; b.kind = 'serve'; b.live = true; b.fly = true; b.power = ace ? 1 : q >= 0.95 && !second ? 0.7 : 0; b.ace = ace;
   m.phase = 'rally'; m.rally = 0; m.hitId++; m.land = bad && !early ? null : { x: tx, y: ty };
   p.stam = Math.max(0, p.stam - tune.stam_shot); p.hand = 1; setAnim(p, 'smash');
-  if (q >= 0.95) { m.stats.sweet[p.i]++; pop('딱!', b.x, b.y, b.z + 0.8, BALL); }
+  if (ace) { m.stats.sweet[p.i]++; pop('강서브!', b.x, b.y, b.z + 0.8, BALL); shake = 0.18; }
+  else if (q >= 0.95) { m.stats.sweet[p.i]++; pop('딱!', b.x, b.y, b.z + 0.8, BALL); }
   else if (bad) pop(early ? '너무 빨랐어!' : '너무 늦었어!', p.x, p.y, 3.4, '#f25f5c');
   if (m.practice && p.i === 0) m.prac.shot = { kind: 'serve', hand: '서브', q, perfect: q >= 0.95, late: 0, dir: Math.sign(aimX), speed: Math.round(Math.hypot(b.vx, b.vy, b.vz) * 3.6), bad, early };
   fx('hit', p.i, { kind: 'serve', q });
@@ -1145,7 +1146,7 @@ function aiThink(p, dt) {
   const mate = m.doubles ? m.P.find(q => q.team === p.team && q !== p) : null;
   const home = () => ({ x: (p.x >= mate.x ? 1 : -1) * 2.6, y: p.side * (p.role === 'net' ? 5.2 : 11.6) }); // my half, at the net or at the back
   if (m.phase === 'rally' && b.live && b.last !== p.team) {
-    if (A.for !== m.hitId) { A.for = m.hitId; A.wait = T('react'); A.tgt = predict(p); A.set = 0; A.q = clamp(T('timing') + (rng() - 0.5) * 0.5, 0.2, 1);
+    if (A.for !== m.hitId) { A.for = m.hitId; A.wait = T('react') + (b.kind === 'serve' && b.ace ? tune.ace_react : 0); A.tgt = predict(p); A.set = 0; A.q = clamp(T('timing') + (rng() - 0.5) * 0.5, 0.2, 1);
       if (mate) { const mt = predict(mate), mine = Math.hypot(A.tgt.x - p.x, A.tgt.y - p.y), theirs = Math.hypot(mt.x - mate.x, mt.y - mate.y); // whoever is nearer takes it
         A.mine = b.kind === 'serve' ? p.i === m.recv : mine < theirs - (mate.ctrl === 'ai' ? 0 : tune.dbl_yield) || (mine < theirs + 0.6 && p.i < mate.i && mate.ctrl === 'ai'); } else A.mine = true; }
     A.wait -= dt; if (A.wait <= 0) tgt = A.mine ? A.tgt : home();
