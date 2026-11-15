@@ -54,7 +54,7 @@
 'use strict';
 // ---- Built to be checked ----------------------------------------------------------------
 const params = new URLSearchParams(location.search);
-const APP_VERSION = '1.6.0'; // shown on the home screen: raise it with every update (big change: 1.x, feature: x.1, fix: x.x.1)
+const APP_VERSION = '1.7.0'; // shown on the home screen: raise it with every update (big change: 1.x, feature: x.1, fix: x.x.1)
 const tune = new Proxy({}, { get: (_, k) => CONFIG[k].value }); // live: tune.speed is CONFIG.speed.value
 const STEP = 1 / 60;            // simulation step in seconds; motion is per second, never per frame
 const W = 720; let H = 1280;    // logical size: a portrait page 720 wide, as tall as the window's shape asks (900 to 1580)
@@ -688,9 +688,9 @@ function rules(f) { // regular reads its numbers live from the tuning
   const F = FORMATS[f || (m && m.format) || 'regular'];
   return F.sets ? F : Object.assign({}, F, { sets: tune.sets_to_win, games: tune.games_per_set });
 }
-let view = 0; // 1 draws the court from the far player's end (the online guest)
+let view = 0; // my player's index online; an odd one (the other team) draws the court from the far end
 function proj(x, y, z = 0) {
-  if (view) { x = -x; y = -y; }
+  if (view % 2) { x = -x; y = -y; }
   const t = (y + 17) / 34, s = 0.66 + 0.36 * t;
   return { x: W / 2 + x * s * PXM, y: 176 + t * (H - (touchUI ? 520 : 426)) - z * s * PXM * 0.92, s };
 }
@@ -834,20 +834,25 @@ function newPlayer(i, a, ctrl, gearIds) {
   return { i, team: i % 2, side: i % 2 === 0 ? 1 : -1, a, ctrl, gearIds: gearIds || {}, gear, x: 0, y: 0, vx: 0, vy: 0, stam: max, max, sw: null, cool: 0, anim: 'idle', at: 0, hand: 1,
     pa: false, pk: false, pl: false, ps: false, streak: 0, ai: { for: -1, wait: 0, tgt: null, set: 0, st: 0, q: 1 } };
 }
+function seatPlayers(S) { // online: each seat a friend's choice, or a computer on a random animal, wearing nothing
+  const free = [...Array(12).keys()].filter(a => !S.some(q => q && q.a === a));
+  return S.map((q, i) => q ? newPlayer(i, q.a, q.ctrl, q.gear) : newPlayer(i, free.splice(Math.floor(rng() * free.length), 1)[0], 'ai', {}));
+}
 function newMatch() {
   let opp = setup.guestAnimal;
-  const dbl = setup.mode === 'cpu' && setup.doubles && !setup.practice, pool = [...Array(12).keys()].filter(a => a !== setup.animal), draw = () => pool.splice(Math.floor(rng() * pool.length), 1)[0];
+  const seats = setup.mode === 'online' && setup.seats ? setup.seats : null;
+  const dbl = seats ? seats.length === 4 : setup.mode === 'cpu' && setup.doubles && !setup.practice, pool = [...Array(12).keys()].filter(a => a !== setup.animal), draw = () => pool.splice(Math.floor(rng() * pool.length), 1)[0];
   if (setup.mode === 'cpu') opp = draw();
   m = {
-    t: 0, phase: 'serve', pt: 0, pause: 1.7, doubles: dbl, recv: 1, level: setup.level, format: setup.format || 'regular', online: setup.mode !== 'cpu', court: setup.court, land: null,
+    t: 0, phase: 'serve', pt: 0, pause: 1.7, doubles: dbl, coop: !!seats && setup.kind === 'coop', recv: 1, level: setup.level, format: setup.format || 'regular', online: setup.mode !== 'cpu', court: setup.court, land: null,
     ball: { x: 0, y: 0, z: 1, vx: 0, vy: 0, vz: 0, last: -1, bounces: 0, live: false, fly: false, kind: '', power: 0 },
-    P: [newPlayer(0, setup.animal, 'human', myGear()), newPlayer(1, opp, setup.practice ? 'machine' : setup.mode === 'cpu' ? 'ai' : 'remote', setup.mode === 'cpu' ? {} : setup.guestGear)],
+    P: seats ? seatPlayers(seats) : [newPlayer(0, setup.animal, 'human', myGear()), newPlayer(1, opp, setup.practice ? 'machine' : setup.mode === 'cpu' ? 'ai' : 'remote', setup.mode === 'cpu' ? {} : setup.guestGear)],
     practice: !!setup.practice, prac: setup.practice ? { li: 0, done: 0, wait: 0, shot: null, res: null, resT: 9, next: false } : null,
     sc: { pts: [0, 0], games: [0, 0], sets: [], won: [0, 0], server: 0, turn: [0, 0], tb: false, tbFirst: 0, done: false, winner: -1 }, // server: the team; turn: which of its players
     fault: 0, refault: false, boxX: 1, rally: 0, hitId: 0, banner: null, pops: [], fx: [], fxId: 0, mark: null,
     stats: { pts: [0, 0], sweet: [0, 0, 0, 0], power: [0, 0, 0, 0], longest: 0, aces: [0, 0, 0, 0], setPts: [0, 0] }, // pts, setPts: by team; the rest by player
   };
-  if (dbl) m.P.push(newPlayer(2, draw(), 'ai', {}), newPlayer(3, draw(), 'ai', {})); // a random partner and a second opponent: computers wear nothing
+  if (dbl && !seats) m.P.push(newPlayer(2, draw(), 'ai', {}), newPlayer(3, draw(), 'ai', {})); // a random partner and a second opponent: computers wear nothing
   setupPoint();
   if (m.practice) { m.level = 2; m.online = false; practiceNext(); m.banner = { text: '볼머신장', sub: '레슨을 따라 공 치는 법을 익혀요', t: 0, big: 0 }; return m; }
   const R = rules();
@@ -955,7 +960,7 @@ function launch(p, kind, q, charge, aimX, aimD, late = 0) {
   const e = err * (tune.err_bad + (tune.err_sweet - tune.err_bad) * q) * (1.3 - tune.err_spin * spin) * (1 + tune.fatigue_err * fat);
   let tx = aimX * tune.aim_x; if (aimX === 0) tx = clamp(b.x * 0.35 + (rng() - 0.5) * 2.4, -2.2, 2.2);
   tx += Math.sign(b.x - p.x || 1) * Math.min(2.2, late * tune.late_pull); // a late hit drags the ball wide, to the side it was struck on
-  const foe = p.team !== m.P[0].team; // the computer on the other side; a partner plays to win
+  const foe = m.online ? m.coop && p.team === 1 : p.team !== m.P[0].team; // the computer facing you; a partner, or a stand-in in a friends' match, just plays
   if (ai && foe && kind !== 'drop' && rng() < ai('gentle')) tx = clamp(m.P[0].x + (rng() - 0.5) * 1.6, -3.2, 3.2); // a kind computer plays it back to you
   const an = rng() * 6.283, r = e * Math.sqrt(rng());
   tx += Math.cos(an) * r; let ty = opp * depth + Math.sin(an) * r * 1.3;
@@ -1201,7 +1206,7 @@ function localInput(v) { // screen directions turned into court directions for t
 function simulate(dt) {
   m.t += dt; m.pt += dt;
   for (const p of m.P) {
-    const inp = p.ctrl === 'ai' ? aiThink(p, dt) : p.ctrl === 'remote' ? net.rin : p.ctrl === 'machine' ? NOINPUT : localInput(0);
+    const inp = p.ctrl === 'ai' ? aiThink(p, dt) : p.ctrl === 'remote' ? (net && net.rin[p.i]) || NOINPUT : p.ctrl === 'machine' ? NOINPUT : localInput(0);
     updatePlayer(p, inp, dt);
   }
   ballStep(dt);
@@ -1241,7 +1246,7 @@ function localFx(dt) {
     else if (f.k === 'charge') tone(300 + f.a * 600, 0.06, 'sine', 0.12);
     else if (f.k === 'call') tone(300, 0.2, 'square', 0.15);
     else if (f.k === 'point') {
-      const up = f.a === view, n = up ? [523, 659, 784, 1047] : [392, 330, 262, 196];
+      const up = f.a === view % 2, n = up ? [523, 659, 784, 1047] : [392, 330, 262, 196];
       for (let i = 0; i < (f.b ? 4 : 2); i++) tone(n[i], 0.16, 'triangle', 0.25, 0.25 + i * 0.13);
     }
   }
@@ -1260,7 +1265,7 @@ function drawPlayer(p) {
   const s = proj(p.x, p.y, 0), me = p.team === m.P[view].team; // my side is seen from behind
   ctx.fillStyle = 'rgba(70,90,140,0.22)'; ctx.beginPath(); ctx.ellipse(s.x, s.y, 30 * s.s, 9 * s.s, 0, 0, 7); ctx.fill();
   const glow = p.sw && p.sw.mode !== 'tap' ? 0.25 + p.sw.charge * 0.75 : 0;
-  drawAnimal(p.a, s.x, s.y, s.s * 1.02, { gear: p.gearIds, front: !me, anim: p.anim, t: p.at + viewT * 0.0001, hand: (view ? -1 : 1) * p.hand, glow, accent: me ? CORAL : SKY, tired: 1 - p.stam / p.max });
+  drawAnimal(p.a, s.x, s.y, s.s * 1.02, { gear: p.gearIds, front: !me, anim: p.anim, t: p.at + viewT * 0.0001, hand: (view % 2 ? -1 : 1) * p.hand, glow, accent: me ? CORAL : SKY, tired: 1 - p.stam / p.max });
   if (glow > 0) { // the charge ring fills as the shot powers up
     ctx.lineWidth = 5 * s.s; ctx.strokeStyle = 'rgba(107,85,96,0.35)'; ctx.beginPath(); ctx.arc(s.x, s.y - 128 * s.s, 13 * s.s, 0, 7); ctx.stroke();
     ctx.strokeStyle = p.sw.charge >= 1 ? CORAL : BALL; ctx.beginPath(); ctx.arc(s.x, s.y - 128 * s.s, 13 * s.s, -1.57, -1.57 + 6.283 * p.sw.charge); ctx.stroke();
@@ -1380,7 +1385,7 @@ function drawMatch() {
     ctx.setLineDash([7, 5]); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,0.95)'; ctx.stroke(); ctx.setLineDash([]);
     ctx.fillStyle = 'rgba(74,61,71,0.5)'; ctx.beginPath(); ctx.ellipse(s.x, s.y, 3.5 * s.s, 1.8 * s.s, 0, 0, 7); ctx.fill();
   }
-  const near = m.P[view], b = m.ball, dep = y => view ? -y : y, bv = dep(b.y), ny = dep(near.y);
+  const near = m.P[view], b = m.ball, dep = y => view % 2 ? -y : y, bv = dep(b.y), ny = dep(near.y);
   const order = m.P.slice().sort((p, q) => dep(p.y) - dep(q.y)); let netDone = false, ballDone = false; // far to near: the net and the ball in their places
   for (const p of order) {
     if (!ballDone && bv < dep(p.y) && (bv < 0 || netDone)) { drawBall(); ballDone = true; }
@@ -1533,22 +1538,23 @@ function loadPeer(cb) {
 function netHost() {
   const al = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789', r = new Uint32Array(6); crypto.getRandomValues(r);
   const code = Array.from(r, n => al[n % al.length]).join('');
-  net = { role: 'host', status: 'opening', code, link: location.href.split('?')[0].split('#')[0] + '?room=' + code, rin: { dx: 0, dy: 0, a: false, k: false, l: false, s: false }, msg: '', peer: null, conn: null };
+  net = { role: 'host', status: 'opening', code, link: location.href.split('?')[0].split('#')[0] + '?room=' + code, msg: '', peer: null, guests: [], kind: null, picks: {}, rin: {}, locked: false };
   loadPeer(() => {
     if (!net) return;
     net.peer = new Peer('zodiac-tennis-' + code);
     net.peer.on('open', () => { if (net) net.status = 'waiting'; });
     net.peer.on('error', e => { if (net) { net.status = 'error'; net.msg = '연결 오류: ' + (e.type || e); } });
     net.peer.on('connection', c => {
-      if (net.conn) { c.close(); return; }
-      net.conn = c;
-      c.on('data', d => onHostData(d));
-      c.on('close', () => netLost());
+      if (!net) return;
+      if (net.locked || net.guests.length >= 3) { c.on('open', () => { c.send({ t: 'full' }); setTimeout(() => c.close(), 400); }); return; } // the room is full or already playing
+      const g = { conn: c, seat: null }; net.guests.push(g);
+      c.on('data', d => onHostData(d, g));
+      c.on('close', () => guestLeft(g));
     });
   });
 }
 function netJoin(code) {
-  net = { role: 'guest', status: 'opening', code, msg: '', peer: null, conn: null, snap: null, lastSent: '', tick: 0 };
+  net = { role: 'guest', status: 'opening', code, msg: '', peer: null, conn: null, snap: null, lastSent: '', tick: 0, lobbyN: 1, ready: null, seat: 1 };
   loadPeer(() => {
     if (!net) return;
     net.peer = new Peer();
@@ -1563,37 +1569,68 @@ function netJoin(code) {
     });
   });
 }
-// the conversation: guest -> host  join, pick, i (keys);  host -> guest  setup, ready, start, s (the match), again
-function onHostData(d) {
+// guests -> host: join, pick, i (keys);  host -> guests: lobby (how many), setup (with your seat), ready, start, s (the match), again, relobby, full
+const sendAll = o => { if (net && net.guests) for (const g of net.guests) if (g.conn.open) g.conn.send(o); };
+const humans = () => 1 + net.guests.filter(g => g.seat != null).length;
+const KINDS = { single: { ko: '1 : 1 단식', sub: '친구와 1:1', seats: [1] }, coop: { ko: '2 : 2 협동', sub: '친구와 한 팀 · 상대는 컴퓨터', seats: [2] }, versus: { ko: '2 : 2 대전', sub: '빈 자리는 컴퓨터가 채워요', seats: [1, 2, 3] } };
+function kindOk(k) { const n = net && net.guests ? net.guests.length : 0; return k === 'versus' ? n >= 1 : n === 1; }
+function formatBack() { // from the format page: home, or online back to the lobby to choose again
+  if (net && net.role === 'host') { net.locked = false; net.kind = null; net.picks = {}; for (const g of net.guests) g.seat = null; sendAll({ t: 'relobby', n: net.guests.length }); scene = 'lobby'; }
+  else scene = 'title';
+}
+function hostKind(k) { // the host chooses how to play: everyone gets a seat, then the format, the computer's level when there is one, the court
+  if (!net || !kindOk(k)) return;
+  net.kind = k; net.locked = true; net.picks = {}; net.rin = {};
+  net.guests.forEach((g, i) => { g.seat = KINDS[k].seats[i]; });
+  setup.kind = k; setup.practice = false; state.fm = FORMAT_IDS.indexOf(setup.format); scene = 'format'; tone(880, 0.12, 'triangle', 0.25);
+}
+const netCpu = () => net && (net.kind === 'coop' || (net.kind === 'versus' && humans() < 4)); // a computer will play: its level is asked
+function onHostData(d, g) {
   if (!net) return;
-  if (d.t === 'join') { net.status = 'setup'; net.guestPick = null; net.myPick = null; setup.practice = false; state.fm = FORMAT_IDS.indexOf(setup.format); scene = 'format'; tone(880, 0.12, 'triangle', 0.25); }
-  else if (d.t === 'pick') { net.guestPick = { animal: clamp(d.animal | 0, 0, 11), gear: d.gear && typeof d.gear === 'object' ? d.gear : {} }; onlineStart(); }
-  else if (d.t === 'i') net.rin = d;
+  if (d.t === 'join') { sendAll({ t: 'lobby', n: net.guests.length }); tone(880, 0.12, 'triangle', 0.25); }
+  else if (d.t === 'pick' && g.seat != null) { net.picks[g.seat] = { a: clamp(d.animal | 0, 0, 11), gear: d.gear && typeof d.gear === 'object' ? d.gear : {}, ctrl: 'remote' }; sendReady(); onlineStart(); }
+  else if (d.t === 'i' && g.seat != null) net.rin[g.seat] = d;
+}
+function guestLeft(g) { // a friend has gone: mid-match the computer takes over; before it, back to the lobby
+  if (!net) return;
+  net.guests = net.guests.filter(q => q !== g);
+  if (scene === 'play' || scene === 'pause' || scene === 'help' || scene === 'results') {
+    if (m && g.seat != null && m.P[g.seat]) { m.P[g.seat].ctrl = 'ai'; net.msg = '친구가 나가서 컴퓨터가 대신해요'; }
+  } else { net.locked = false; net.kind = null; net.picks = {}; for (const q of net.guests) q.seat = null; sendAll({ t: 'relobby', n: net.guests.length }); scene = 'lobby'; }
+  if (!net.guests.length && !(m && m.online && scene === 'play')) { net.status = 'waiting'; }
 }
 function onGuestData(d) {
   if (!net) return;
-  if (d.t === 'setup') { setup.format = FORMATS[d.format] ? d.format : 'short'; setup.court = COURTS[d.court] ? d.court : 'hard'; net.myPick = null; net.oppReady = false; net.status = 'picking'; scene = 'select'; tone(880, 0.12, 'triangle', 0.25); }
-  else if (d.t === 'ready') net.oppReady = true;
-  else if (d.t === 'start') { net.snap = null; net.myPick = null; net.oppReady = false; view = 1; seenFx = 0; hints = { hits: 0, power: 0, shots: 0 }; scene = 'play'; }
-  else if (d.t === 'again') { net.myPick = null; net.oppReady = false; scene = 'select'; }
+  if (d.t === 'lobby') net.lobbyN = d.n + 1;
+  else if (d.t === 'relobby') { net.lobbyN = d.n + 1; net.myPick = null; net.status = 'joined'; scene = 'lobby'; }
+  else if (d.t === 'full') { net.status = 'error'; net.msg = '방이 가득 찼거나 이미 경기 중이에요'; }
+  else if (d.t === 'setup') { setup.format = FORMATS[d.format] ? d.format : 'short'; setup.court = COURTS[d.court] ? d.court : 'hard'; setup.level = clamp(d.level | 0, 1, 3); net.seat = clamp(d.seat | 0, 1, 3); net.kind = KINDS[d.kind] ? d.kind : 'single'; net.myPick = null; net.ready = null; net.status = 'picking'; scene = 'select'; tone(880, 0.12, 'triangle', 0.25); }
+  else if (d.t === 'ready') net.ready = { n: d.n | 0, need: d.need | 0 };
+  else if (d.t === 'start') { net.snap = null; net.myPick = null; net.ready = null; view = net.seat; seenFx = 0; hints = { hits: 0, power: 0, shots: 0 }; scene = 'play'; }
+  else if (d.t === 'again') { net.myPick = null; net.ready = null; scene = 'select'; }
   else if (d.t === 's') net.snap = d.m;
 }
-const netSendMsg = o => { if (net && net.conn && net.conn.open) net.conn.send(o); };
-function onlinePick() { // this side has chosen its animal: tell the other, and start when both have
+const netSendMsg = o => { if (!net) return; if (net.role === 'guest') { if (net.conn && net.conn.open) net.conn.send(o); } else sendAll(o); };
+function sendReady() { const n = Object.keys(net.picks).length, need = humans(); net.ready = { n, need }; sendAll({ t: 'ready', n, need }); }
+function onlinePick() { // this side has chosen its animal: tell the host, and start when everyone has
   net.myPick = { animal: setup.animal, gear: myGear(setup.animal) };
-  if (net.role === 'guest') netSendMsg(Object.assign({ t: 'pick' }, net.myPick)); else { netSendMsg({ t: 'ready' }); onlineStart(); }
+  if (net.role === 'guest') netSendMsg(Object.assign({ t: 'pick' }, net.myPick));
+  else { net.picks[0] = { a: setup.animal, gear: net.myPick.gear, ctrl: 'human' }; sendReady(); onlineStart(); }
 }
 function onlineStart() {
-  if (!net || net.role !== 'host' || !net.myPick || !net.guestPick) return;
-  setup.guestAnimal = net.guestPick.animal; setup.guestGear = net.guestPick.gear; setup.mode = 'online'; setup.practice = false;
-  net.myPick = net.guestPick = null; net.status = 'playing'; reset(); netSendMsg({ t: 'start' }); scene = 'play';
+  if (!net || net.role !== 'host' || Object.keys(net.picks).length < humans()) return;
+  const n = net.kind === 'single' ? 2 : 4;
+  setup.seats = Array.from({ length: n }, (_, i) => net.picks[i] || null); setup.kind = net.kind; setup.mode = 'online'; setup.practice = false;
+  net.picks = {}; net.ready = null; net.status = 'playing'; view = 0; reset();
+  for (const g of net.guests) if (g.conn.open) g.conn.send({ t: 'start', seat: g.seat });
+  scene = 'play';
 }
-function onlineAgain() { if (!net) return; net.myPick = net.guestPick = null; netSendMsg({ t: 'again' }); scene = 'select'; } // a rematch: both may change players
-function netLost() { if (!net) return; net.status = 'lost'; net.msg = '상대와의 연결이 끊겼어요 · Esc : 처음으로'; if (net.role === 'host' && m) for (const p of m.P) if (p.ctrl === 'remote') p.ctrl = 'ai'; }
-function netSend() { if (net && net.role === 'host' && net.conn && net.conn.open && m) net.conn.send({ t: 's', m }); }
+function onlineAgain() { if (!net) return; net.picks = {}; net.ready = null; net.myPick = null; sendAll({ t: 'again' }); scene = 'select'; } // a rematch: everyone may change players
+function netLost() { if (!net) return; net.status = 'lost'; net.msg = '방장과의 연결이 끊겼어요 · Esc : 처음으로'; }
+function netSend() { if (net && net.role === 'host' && m) sendAll({ t: 's', m }); }
 function guestStep() { // the guest draws what the host sends and sends its own keys back
   if (net.snap) { m = state.m = net.snap; for (const p of m.P) if (p.team == null) p.team = p.i; }
-  const i = localInput(1), s = JSON.stringify(i); net.tick++;
+  const i = localInput(view % 2), s = JSON.stringify(i); net.tick++;
   if (net.conn && net.conn.open && (s !== net.lastSent || net.tick % 6 === 0)) { net.lastSent = s; net.conn.send(Object.assign({ t: 'i' }, i)); }
 }
 
@@ -2308,14 +2345,14 @@ function statBars(a, x, y, bonus = {}) {
 // the way in: format, then who you play, then your animal, then the court (an invited guest only picks an animal)
 function pickFormat(i) {
   tone(880, 0.12, 'triangle', 0.25);
-  if (net) { if (i < FORMAT_IDS.length) { setup.format = FORMAT_IDS[i]; scene = 'court'; } return; } // the host sets the match up
+  if (net) { if (i < FORMAT_IDS.length) { setup.format = FORMAT_IDS[i]; scene = netCpu() ? 'mode' : 'court'; } return; } // the host sets the match up
   if (i >= FORMAT_IDS.length) { setup.practice = true; scene = 'select'; return; } // the ball machine: pick an animal and a court, then practise
   setup.practice = false; setup.format = FORMAT_IDS[i]; rank.mode = setup.format; scene = 'mode';
 }
-function pickMode(i) { tone(880, 0.12, 'triangle', 0.25); setup.pending = i; scene = 'select'; }
+function pickMode(i) { tone(880, 0.12, 'triangle', 0.25); if (net) { setup.level = i + 1; scene = 'court'; return; } setup.pending = i; scene = 'select'; }
 function pickCourt(i) {
   tone(880, 0.12, 'triangle', 0.25); setup.court = COURT_IDS[i];
-  if (net) { netSendMsg({ t: 'setup', format: setup.format, court: setup.court }); net.status = 'picking'; net.myPick = null; scene = 'select'; return; } // both pick players knowing the court
+  if (net) { for (const g of net.guests) if (g.conn.open && g.seat != null) g.conn.send({ t: 'setup', format: setup.format, court: setup.court, seat: g.seat, kind: net.kind, level: setup.level }); net.status = 'picking'; net.myPick = null; net.picks = {}; sendReady(); scene = 'select'; return; } // everyone picks knowing the court
   if (setup.practice) startPractice();
   else if (setup.pending < 3) { setup.mode = 'cpu'; setup.level = setup.pending + 1; reset(); scene = 'play'; }
   else { netHost(); scene = 'lobby'; }
@@ -2337,7 +2374,7 @@ function playCore(dt) { // the match itself; the pause menu keeps it running whe
   if (m.phase === 'done' && m.pt > 2.4) { state.gained = m.sc.winner === 0 ? '승리!' : '패배'; scene = 'results'; matchProgress(); }
 }
 function matchProgress() { // what this match adds to the account's counts (online, each side counts its own)
-  const me = m.online && view ? 1 : 0, won = m.sc.winner === me;
+  const me = m.online ? view : 0, won = m.sc.winner === me % 2;
   const d = { sweet: m.stats.sweet[me], aces: m.stats.aces[me], power: m.stats.power[me], matches: 1 }; setProgress('rally', m.stats.longest);
   if (m.online) { d.online = 1; if (won) d.online_wins = 1; }
   else if (won) { d.wins = 1; d['win_' + ['', 'easy', 'normal', 'hard'][m.level]] = 1; d['win_' + (m.format || 'regular')] = 1; if (m.court) d['court_' + m.court] = 1; d['wa_' + ANIMALS[m.P[0].a].id] = 1; }
@@ -2559,10 +2596,10 @@ const scenes = {
       if (acct.msg && acct.msgT < 2.6) { ctx.font = `24px ${F_B}`; const w = ctx.measureText(acct.msg).width + 60; rr(W / 2 - w / 2, py + ph - 60, w, 46, 23, 'rgba(59,51,64,0.9)', null); text(acct.msg, W / 2, py + ph - 36, 21, CREAM, 'center', null, F_B); }
       sideBtn(net ? '나가기' : '뒤로', () => { if (net) goHome(); else scene = setup.practice ? 'format' : 'mode'; });
       mainBtn(net && net.myPick ? (net.myPick.animal === state.sel ? '준비 완료!' : '이 선수로 바꾸기') : '이 선수로 결정', pickAnimal);
-      if (net) { const me = !!net.myPick, opp = net.role === 'host' ? !!net.guestPick : !!net.oppReady;
+      if (net) { const me = !!net.myPick, R = net.ready || { n: 0, need: 2 }, team = net.kind === 'single' ? '' : (net.role === 'host' ? 0 : net.seat) % 2 === 0 ? 'A팀 · ' : 'B팀 · ';
         rr(LY.m, LY.bot - 50, LY.w, 40, 20, 'rgba(59,51,64,0.85)', null);
-        text(`${FORMATS[setup.format].ko} · ${COURTS[setup.court].ko}  |  나 ${me ? '준비 완료' : '고르는 중'} · 상대 ${opp ? '준비 완료' : '고르는 중'}`, W / 2, LY.bot - 30, 19, CREAM, 'center', null, F_B); }
-      menuEnd(net ? (net.myPick ? '상대를 기다리는 중 · 다른 선수를 눌러 바꿀 수 있어요' : '선수를 고르고 결정을 눌러요') : '← → ↑ ↓ 로 고르고 Enter · 옷걸이를 눌러 옷장 열기');
+        text(`${KINDS[net.kind] ? KINDS[net.kind].ko + ' · ' : ''}${FORMATS[setup.format].ko} · ${COURTS[setup.court].ko}  |  ${team}나 ${me ? '준비 완료' : '고르는 중'} · 준비 ${R.n}/${R.need}`, W / 2, LY.bot - 30, 18, CREAM, 'center', null, F_B); }
+      menuEnd(net ? (net.myPick ? '모두 고르면 시작해요 · 다른 선수를 눌러 바꿀 수 있어요' : '선수를 고르고 결정을 눌러요') : '← → ↑ ↓ 로 고르고 Enter · 옷걸이를 눌러 옷장 열기');
     },
   },
   mode: {
@@ -2570,28 +2607,28 @@ const scenes = {
       state.t += dt;
       state.cur = Math.min(state.cur, 2); if (anyHit(...K_D)) state.cur = (state.cur + 1) % 3; if (anyHit(...K_U)) state.cur = (state.cur + 2) % 3;
       if (anyHit(...K_D, ...K_U)) tone(660, 0.05, 'sine', 0.15);
-      if (anyHit(...K_L, ...K_R)) { setup.doubles = !setup.doubles; tone(760, 0.06, 'sine', 0.18); }
+      if (!net && anyHit(...K_L, ...K_R)) { setup.doubles = !setup.doubles; tone(760, 0.06, 'sine', 0.18); }
       if (pressed('Escape')) { scene = 'format'; return; }
       if (anyHit(...K_OK)) pickMode(state.cur);
     },
     draw() {
-      menuBegin('난이도를 골라 주세요', true);
+      menuBegin(net ? '컴퓨터 실력을 골라 주세요' : '난이도를 골라 주세요', true);
       const rows = [['쉬움', '받기 쉬운 공을 보내고 실수도 자주 해요'], ['보통', '빈 곳을 노리고 가끔 변칙을 섞어요'], ['어려움', '코너를 찌르고 드롭샷, 로브, 파워샷까지']];
       const ch = SZ().format4; // the same cards as the four ways to play
       const tags = [['쉬움', '#4fa86a'], ['보통', '#3d8be0'], ['어려움', '#e2574c'], ['온라인', '#9b5de5']];
       const tw = (LY.w - LY.gap) / 2; // singles or doubles: two tabs above the levels
-      [['단식', '1 : 1', false], ['복식', '2 : 2 · 랜덤 파트너', true]].forEach(([t, sub, d], k) => { const x = LY.m + k * (tw + LY.gap), on = setup.doubles === d;
+      if (!net) [['단식', '1 : 1', false], ['복식', '2 : 2 · 랜덤 파트너', true]].forEach(([t, sub, d], k) => { const x = LY.m + k * (tw + LY.gap), on = setup.doubles === d;
         btn(x, LY.top, tw, 64, () => { setup.doubles = d; tone(760, 0.06, 'sine', 0.18); });
         rr(x, LY.top + 4, tw, 64, 18, OUT, null); rr(x, LY.top, tw, 64, 18, on ? '#fff3c4' : 'rgba(255,248,231,0.7)', on ? CORAL : OUT, on ? 3.6 : 2.4);
         text(t, x + 26, LY.top + 33, 28, on ? INK : '#9a8b93', 'left', null, F_T); text(sub, x + tw - 22, LY.top + 34, 18, on ? '#c0605a' : '#9a8b93', 'right', null, F_B); });
-      const top = LY.top + 64 + LY.gap + 8;
+      const top = net ? LY.top : LY.top + 64 + LY.gap + 8;
       rows.forEach((r, i) => { const y = top + i * (ch + LY.gap), [tg, c] = tags[i], x = LY.m + LY.pad;
         card(LY.m, y, LY.w, ch, () => pickMode(i), i === state.cur);
         rr(x, y + ch / 2 - 30, 132, 60, 18, c, OUT, 2.6); text(tg, x + 66, y + ch / 2 + 1, 30, '#ffffff', 'center', null, F_T); // the level, big and coloured
-        text(setup.doubles ? '파트너와 함께 컴퓨터 2명과' : '컴퓨터와 대결', x + 152, y + ch / 2 - 16, 26, INK, 'left', null, F_T);
+        text(net ? (net.kind === 'coop' ? '친구와 함께 컴퓨터 2명과' : '빈 자리를 채울 컴퓨터') : setup.doubles ? '파트너와 함께 컴퓨터 2명과' : '컴퓨터와 대결', x + 152, y + ch / 2 - 16, 26, INK, 'left', null, F_T);
         text(r[1], x + 152, y + ch / 2 + 20, 19, '#7a6872', 'left', null, F_B); });
       sideBtn('뒤로', () => { scene = 'format'; });
-      menuEnd(`${setup.doubles ? '복식 · ' : ''}${FORMATS[setup.format].ko} · ${{ flash: '10점 매치 타이브레이크', short: '4게임 짧은 세트', regular: '5세트 3선승' }[setup.format]} · ← → 단식/복식`);
+      menuEnd(net ? `${KINDS[net.kind].ko} · ${FORMATS[setup.format].ko}` : `${setup.doubles ? '복식 · ' : ''}${FORMATS[setup.format].ko} · ${{ flash: '10점 매치 타이브레이크', short: '4게임 짧은 세트', regular: '5세트 3선승' }[setup.format]} · ← → 단식/복식`);
     },
   },
   court: {
@@ -2633,7 +2670,7 @@ const scenes = {
       state.t += dt; if (state.fm == null) state.fm = FORMAT_IDS.indexOf(setup.format);
       const nf = net ? 3 : 4; if (anyHit(...K_D)) state.fm = (state.fm + 1) % nf; if (anyHit(...K_U)) state.fm = (state.fm + nf - 1) % nf;
       if (anyHit(...K_D, ...K_U)) tone(660, 0.05, 'sine', 0.15);
-      if (pressed('Escape')) { scene = 'title'; return; }
+      if (pressed('Escape')) { formatBack(); return; }
       if (anyHit(...K_OK)) pickFormat(state.fm);
     },
     draw() {
@@ -2651,7 +2688,7 @@ const scenes = {
         text(sub, x, by + 60, 22, id === 'practice' ? '#3d7fc0' : '#c0605a', 'left', null, F_H);
         text(how[id], x, by + 92, 20, '#7a6872', 'left', null, F_B);
       });
-      sideBtn('뒤로', () => { scene = 'title'; });
+      sideBtn('뒤로', formatBack);
       menuEnd('↑ ↓ 로 고르고 Enter · 랭킹은 경기 방식마다 따로 집계돼요');
     },
   },
@@ -2664,7 +2701,7 @@ const scenes = {
         const y = LY.top + i * (ch + LY.gap), x = LY.m + LY.pad; card(LY.m, y, LY.w, ch, fn, false);
         rr(x, y + ch / 2 - 30, 60, 60, 18, c, OUT, 2.6); text(i ? '#' : '+', x + 30, y + ch / 2 + 1, 34, '#fff', 'center', null, F_T);
         text(t, x + 82, y + ch / 2 - 16, 30, INK, 'left', null, F_T); text(d, x + 82, y + ch / 2 + 20, 19, '#7a6872', 'left', null, F_B); });
-      text('연결되면 방장이 경기 방식과 코트를 고르고, 둘 다 선수를 골라요', W / 2, LY.top + 2 * (ch + LY.gap) + 24, 19, '#4f6f63', 'center', null, F_B);
+      text('최대 4명 · 방장이 1:1 단식, 2:2 협동, 2:2 대전 중에 골라요', W / 2, LY.top + 2 * (ch + LY.gap) + 24, 19, '#4f6f63', 'center', null, F_B);
       sideBtn('뒤로', () => { scene = 'title'; });
       menuEnd('링크로 받았다면 그 링크를 열면 바로 들어가요');
     },
@@ -2675,6 +2712,7 @@ const scenes = {
       if (pressed('Escape')) { netClose(); scene = 'online'; return; }
       if (!net) { scene = 'online'; return; }
       if (net.role === 'host' && pressed('KeyC')) copyLink();
+      if (net.role === 'host') { if (pressed('Digit1')) hostKind('single'); if (pressed('Digit2')) hostKind('coop'); if (pressed('Digit3')) hostKind('versus'); }
 
     },
     draw() {
@@ -2686,20 +2724,29 @@ const scenes = {
       else if (net && net.role === 'host') {
         if (net.status === 'opening') text('방을 여는 중' + dots, W / 2, py + ph / 2, 32, INK, 'center', null, F_H);
         else {
-          text('이 링크를 친구에게 보내 주세요', W / 2, py + 46, 29, INK, 'center', null, F_T);
-          const Ln = net.link, per = 44, n = Math.ceil(Ln.length / per);
-          rr(LY.m + LY.pad, py + 80, LY.w - LY.pad * 2, 28 + n * 28, 12, '#fff', OUT, 2.5);
-          for (let i = 0; i < n; i++) text(Ln.slice(i * per, i * per + per), W / 2, py + 108 + i * 28, 20, '#3d6fb0', 'center', null, F_B);
-          const y = py + 128 + n * 28;
-          button(net.copied ? '복사했어요!' : '링크 복사', W / 2 - 160, y, 320, 68, copyLink, { size: 28, fill: net.copied ? '#d8f3dc' : '#fff3c4' });
-          text('방 코드', W / 2, y + 120, 22, '#7a6872', 'center', null, F_B);
-          text(net.code, W / 2, y + 166, 54, CORAL, 'center', OUT, F_N);
-          text('친구가 들어오면 바로 경기가 시작돼요' + dots, W / 2, y + 232, 27, INK, 'center', null, F_H);
-          if (location.protocol === 'file:') text('내 PC 안의 파일이라 다른 기기에서는 열리지 않아요', W / 2, y + 282, 20, '#e2574c', 'center', null, F_B);
-          else text('이 창을 닫거나 다른 탭으로 가리면 경기가 멈춰요', W / 2, y + 282, 20, '#7a6872', 'center', null, F_B);
+          text('링크나 방 코드를 친구에게 보내 주세요', W / 2, py + 38, 26, INK, 'center', null, F_T);
+          const Ln = net.link, per = 46, n = Math.ceil(Ln.length / per);
+          rr(LY.m + LY.pad, py + 62, LY.w - LY.pad * 2, 20 + n * 26, 12, '#fff', OUT, 2.5);
+          for (let i = 0; i < n; i++) text(Ln.slice(i * per, i * per + per), W / 2, py + 86 + i * 26, 19, '#3d6fb0', 'center', null, F_B);
+          let y = py + 96 + n * 26;
+          button(net.copied ? '복사했어요!' : '링크 복사', LY.m + LY.pad, y, 250, 60, copyLink, { size: 25, fill: net.copied ? '#d8f3dc' : '#fff3c4' });
+          text('방 코드', LY.m + LY.w - LY.pad - 160, y + 14, 18, '#7a6872', 'center', null, F_B); text(net.code, LY.m + LY.w - LY.pad - 160, y + 44, 38, CORAL, 'center', OUT, F_N);
+          y += 92; const ng = net.guests.length;
+          text(ng ? `참가 ${ng + 1}명 · 나 + 친구 ${ng}명` : '친구를 기다리는 중' + dots, W / 2, y, 25, ng ? '#3f9a5c' : INK, 'center', null, F_H);
+          for (let i = 0; i < 4; i++) { ctx.lineWidth = 2.4; ctx.strokeStyle = OUT; E(W / 2 - 66 + i * 44, y + 38, 15, 15, i <= ng ? (i ? SKY : CORAL) : 'rgba(255,248,231,0.6)'); }
+          y += 70; const bw = (LY.w - LY.pad * 2 - 24) / 3;
+          ['single', 'coop', 'versus'].forEach((k, i) => { const x = LY.m + LY.pad + i * (bw + 12), ok = kindOk(k), K = KINDS[k];
+            const over = ok && btn(x, y, bw, 104, () => hostKind(k));
+            rr(x, y + 4, bw, 104, 18, ok ? OUT : 'rgba(107,85,96,0.3)', null); rr(x, y, bw, 104, 18, !ok ? '#ebe2d8' : over ? '#fff3c4' : '#ffffff', ok ? OUT : '#cdbfb3', 2.6);
+            text(K.ko, x + bw / 2, y + 34, 24, ok ? INK : '#b3a4ac', 'center', null, F_T);
+            const words = K.sub.split(' · '); words.forEach((w2, j) => text(w2, x + bw / 2, y + 66 + j * 22, 16, ok ? '#7a6872' : '#b3a4ac', 'center', null, F_B)); });
+          y += 128;
+          if (location.protocol === 'file:') text('내 PC 안의 파일이라 다른 기기에서는 열리지 않아요', W / 2, y, 19, '#e2574c', 'center', null, F_B);
+          else text(ng ? '방식을 누르면 경기 설정으로 넘어가요' : '단식·협동은 친구 1명, 대전은 1~3명이 필요해요', W / 2, y, 19, '#7a6872', 'center', null, F_B);
         }
       } else if (net) {
-        text(net.status === 'joined' ? '연결됐어요! 방장이 경기 방식과 코트를 고르는 중' + dots : '방 ' + net.code + ' 에 연결하는 중' + dots, W / 2, py + 170, 29, INK, 'center', null, F_H);
+        text(net.status === 'joined' ? '연결됐어요! 방장이 경기 방식을 고르는 중' + dots : '방 ' + net.code + ' 에 연결하는 중' + dots, W / 2, py + 150, 28, INK, 'center', null, F_H);
+        if (net.status === 'joined') text(`지금 방에 ${net.lobbyN || 2}명`, W / 2, py + 200, 24, '#3f9a5c', 'center', null, F_H);
         ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(setup.animal, W / 2, py + 440, 1.5, { front: true, t: state.t, anim: 'run', accent: CORAL });
       }
       sideBtn('뒤로', () => { netClose(); scene = 'online'; }); // back to make or join, e.g. when both made a room at once
@@ -2814,7 +2861,7 @@ const scenes = {
     },
     draw() {
       menuBegin();
-      const sc = m.sc, w = sc.winner, me = w === view, guest = net && net.role === 'guest';
+      const sc = m.sc, w = sc.winner, vt = view % 2, me = w === vt, guest = net && net.role === 'guest';
       text(me ? '승리!' : '패배', W / 2, LY.titleY + 8, 76, me ? CORAL : '#7f8fb5', 'center', OUT, F_T);
       const RR = rules(), fin = sc.sets[sc.sets.length - 1] || [0, 0];
       const reg = canRank(), py = LY.top + 36, pb = py + SZ().result;
@@ -2822,14 +2869,14 @@ const scenes = {
       panel(LY.m, py, LY.w, pb - py);
       const bh = 400, by = py + (pb - py - bh) / 2; // the block of scores and stats, centred in the panel
       for (let r = 0; r < 2; r++) {
-        const i = r === 0 ? view : 1 - view, y = by + 24 + r * 66;
+        const i = r === 0 ? vt : 1 - vt, y = by + 24 + r * 66;
         ctx.lineWidth = 2.6; ctx.strokeStyle = OUT;
         const tp = mates(i);
-        tp.slice().reverse().forEach((q, k) => drawAnimal(q.a, LY.m + 52 + (tp.length > 1 ? (1 - k) * 34 - 6 : 0), y + 26, tp.length > 1 ? 0.42 : 0.5, { front: true, accent: i === view ? CORAL : SKY, anim: i === w ? 'cheer' : 'sad', t: state.t + k }));
+        tp.slice().reverse().forEach((q, k) => drawAnimal(q.a, LY.m + 52 + (tp.length > 1 ? (1 - k) * 34 - 6 : 0), y + 26, tp.length > 1 ? 0.42 : 0.5, { front: true, accent: i === vt ? CORAL : SKY, anim: i === w ? 'cheer' : 'sad', t: state.t + k }));
         text(NAME(i), LY.m + (tp.length > 1 ? 124 : 92), y, NAME(i).length > 5 ? 24 : 28, INK, 'left', null, F_T);
         sc.sets.forEach((g, n) => text('' + g[i], 400 + n * 54, y, 33, g[i] > g[1 - i] ? INK : '#b3a4ac', 'center', null, F_N));
       }
-      const S = m.stats, a = view, b = 1 - view, sy = by + 170;
+      const S = m.stats, a = vt, b = 1 - vt, sy = by + 170;
       text(NAME(a), 180, sy, 22, CORAL, 'center', null, F_T); text(NAME(b), 540, sy, 22, '#3d9be0', 'center', null, F_T);
       [['딴 포인트', S.pts], ['스위트 스폿', [teamStat(S.sweet, 0), teamStat(S.sweet, 1)]], ['파워샷', [teamStat(S.power, 0), teamStat(S.power, 1)]], ['에이스', [teamStat(S.aces, 0), teamStat(S.aces, 1)]]].forEach((row, i) => { const y = sy + 44 + i * 40; text(row[0], W / 2, y, 21, '#7a6872', 'center', null, F_B); text('' + row[1][a], 180, y, 30, INK, 'center', null, F_N); text('' + row[1][b], 540, y, 30, INK, 'center', null, F_N); });
       text(`가장 긴 랠리  ${S.longest}번`, W / 2, sy + 44 + 4 * 40 + 6, 25, '#c0605a', 'center', null, F_H);
@@ -2839,7 +2886,7 @@ const scenes = {
         else button(rank.sending ? '등록하는 중…' : '랭킹에 기록 등록하기', LY.m, ry, LY.w, 68, openNick, { size: 28, fill: '#ffe1a8' });
       }
       sideBtn('홈으로', goHome);
-      if (guest) text('방장이 다시 하기를 누르면 선수를 다시 골라요', 468, LY.bot + 34, 24, INK, 'center', CREAM, F_H);
+      if (guest) { const gx = LY.m + LY.side + LY.gap, gw = LY.m + LY.w - gx; rr(gx, LY.bot, gw, LY.btnH, 18, 'rgba(255,248,231,0.7)', '#cdbfb3', 2.4); text('방장이 다시 하기를 누르면', gx + gw / 2, LY.bot + LY.btnH / 2 - 13, 21, INK, 'center', null, F_H); text('선수를 다시 골라요', gx + gw / 2, LY.bot + LY.btnH / 2 + 15, 21, INK, 'center', null, F_H); }
       else mainBtn('다시 하기', () => { if (net) onlineAgain(); else { reset(); scene = 'play'; } });
       menuEnd(guest ? '' : 'Enter : 다시 하기 · Esc : 홈으로');
     },
