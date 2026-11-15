@@ -1620,9 +1620,15 @@ function onGuestData(d) {
   else if (d.t === 'full') { net.status = 'error'; net.msg = '방이 가득 찼거나 이미 경기 중이에요'; }
   else if (d.t === 'setup') { setup.format = FORMATS[d.format] ? d.format : 'short'; setup.court = COURTS[d.court] ? d.court : 'hard'; setup.level = clamp(d.level | 0, 1, 3); net.seat = clamp(d.seat | 0, 1, 3); net.kind = KINDS[d.kind] ? d.kind : 'single'; net.myPick = null; net.ready = null; net.status = 'picking'; scene = 'select'; tone(880, 0.12, 'triangle', 0.25); }
   else if (d.t === 'ready') net.ready = { n: d.n | 0, need: d.need | 0 };
-  else if (d.t === 'start') { net.snap = null; net.myPick = null; net.ready = null; view = net.seat; seenFx = 0; hints = { hits: 0, power: 0, shots: 0 }; scene = 'play'; }
+  else if (d.t === 'start') { net.snap = null; net.buf = []; net.rt = null; net.myPick = null; net.ready = null; view = net.seat; seenFx = 0; hints = { hits: 0, power: 0, shots: 0 }; net.starting = true; } // the match shows once the host's first picture arrives
   else if (d.t === 'again') { net.myPick = null; net.ready = null; scene = 'select'; }
-  else if (d.t === 's') net.snap = d.m;
+  else if (d.t === 's') { // every picture is kept a moment, with where things stood in it, so the screen can play them back evenly
+    const M = d.m, B = net.buf || (net.buf = []);
+    if (B.length && M.t < B[B.length - 1].t - 1) B.length = 0; // time went back a long way: a new match started
+    const e = { t: M.t, m: M, b: [M.ball.x, M.ball.y, M.ball.z], P: M.P.map(p => [p.x, p.y]) };
+    let k = B.length; while (k > 0 && B[k - 1].t > e.t) k--; // a picture that came a little late goes in its place
+    if (!(k > 0 && B[k - 1].t === e.t)) B.splice(k, 0, e); if (B.length > 30) B.shift();
+    net.snap = B[B.length - 1].m; if (net.starting) { net.starting = false; scene = 'play'; } }
 }
 const netSendMsg = o => { if (!net) return; if (net.role === 'guest') { if (net.conn && net.conn.open) net.conn.send(o); } else sendAll(o); };
 function sendReady() { const n = Object.keys(net.picks).length, need = humans(); net.ready = { n, need }; sendAll({ t: 'ready', n, need }); }
@@ -1642,8 +1648,23 @@ function onlineStart() {
 function onlineAgain() { if (!net) return; net.picks = {}; net.ready = null; net.myPick = null; sendAll({ t: 'again' }); scene = 'select'; } // a rematch: everyone may change players
 function netLost() { if (!net) return; net.status = 'lost'; net.msg = '방장과의 연결이 끊겼어요 · Esc : 처음으로'; }
 function netSend() { if (net && net.role === 'host' && m) sendAll({ t: 's', m }); }
+const NET_DELAY = 0.1; // the guest plays the host's pictures a tenth of a second behind, so an uneven arrival never shows
+function netPlayback() {
+  const B = net.buf; if (!B || !B.length) return null;
+  const last = B[B.length - 1], now = clock.now();
+  const dt = Math.min(0.1, now - (net.rtAt || now)); net.rtAt = now;
+  if (net.rt == null || Math.abs(last.t - NET_DELAY - net.rt) > 0.4) net.rt = last.t - NET_DELAY;
+  else net.rt += dt + (last.t - NET_DELAY - net.rt) * 0.08; // real time, eased towards a tenth of a second behind the host
+  if (net.rt > last.t) net.rt = last.t;
+  let i = B.length - 1; while (i > 0 && B[i - 1].t > net.rt) i--;
+  const a = B[Math.max(0, i - 1)], b = B[i]; if (a === b || b.t <= a.t) return b.m;
+  const u = clamp((net.rt - a.t) / (b.t - a.t), 0, 1), M = a.m, L = (x, y) => x + (y - x) * u;
+  if (Math.hypot(b.b[0] - a.b[0], b.b[1] - a.b[1]) < 3) { M.ball.x = L(a.b[0], b.b[0]); M.ball.y = L(a.b[1], b.b[1]); M.ball.z = L(a.b[2], b.b[2]); } // a new point jumps
+  M.P.forEach((p, k) => { if (a.P[k] && b.P[k]) { p.x = L(a.P[k][0], b.P[k][0]); p.y = L(a.P[k][1], b.P[k][1]); } });
+  return M;
+}
 function guestStep() { // the guest draws what the host sends and sends its own keys back
-  if (net.snap) { m = state.m = net.snap; for (const p of m.P) if (p.team == null) p.team = p.i; }
+  if (net.snap) { m = state.m = netPlayback() || net.snap; for (const p of m.P) if (p.team == null) p.team = p.i; }
   const i = localInput(view % 2), s = JSON.stringify(i); net.tick++;
   if (net.conn && net.conn.open && (s !== net.lastSent || net.tick % 6 === 0)) { net.lastSent = s; net.conn.send(Object.assign({ t: 'i' }, i)); }
 }
@@ -2465,7 +2486,8 @@ function copyLink() { if (net && navigator.clipboard) navigator.clipboard.writeT
 function playCore(dt) { // the match itself; the pause menu keeps it running when the match is online
   if (net && net.role === 'guest') {
     guestStep(); localFx(dt);
-    if (m.phase === 'done' && m.pt > 2.4) { state.gained = m.sc.winner === 1 ? '승리!' : '패배'; scene = 'results'; matchProgress(); }
+    const Lm = net.snap || m; // the newest picture decides: the one drawn runs a tenth of a second behind
+    if (Lm.phase === 'done' && Lm.pt > 2.4) { m = state.m = Lm; state.gained = Lm.sc.winner === view % 2 ? '승리!' : '패배'; scene = 'results'; matchProgress(); }
     return;
   }
   state.t += dt; simulate(dt); localFx(dt);
