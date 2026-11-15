@@ -132,6 +132,9 @@ window.CONFIG = {
   ai1_flash: { value: 1, min: 1, max: 6, step: 0.5 },   // the catch-up counts this many times over in a one tie-break match, which is short
   ai2_flash: { value: 1, min: 1, max: 6, step: 0.5 },
   ai3_flash: { value: 2.5, min: 1, max: 6, step: 0.5 },
+  ai1_dbl: { value: 0, min: 0, max: 1, step: 0.05 },   // how much of the catch-up the computer keeps in doubles, where your partner already helps
+  ai2_dbl: { value: 0.5, min: 0, max: 1, step: 0.05 },
+  ai3_dbl: { value: 0.35, min: 0, max: 1, step: 0.05 },
   ai1_window: { value: 0.42, min: 0.12, max: 0.5, step: 0.01 }, // your swing buffer against this level (online: tap_window)
   ai2_window: { value: 0.3, min: 0.12, max: 0.5, step: 0.01 },
   ai3_window: { value: 0.26, min: 0.12, max: 0.5, step: 0.01 },
