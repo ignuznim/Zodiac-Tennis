@@ -95,10 +95,10 @@ window.CONFIG = {
   // ---- The computer, three levels: 1 easy, 2 normal, 3 hard ----
   ai1_react: { value: 0.4, min: 0, max: 0.8, step: 0.02 },  // s before it starts to move
   ai2_react: { value: 0.22, min: 0, max: 0.8, step: 0.02 },
-  ai3_react: { value: 0.1, min: 0, max: 0.8, step: 0.02 },
+  ai3_react: { value: 0.085, min: 0, max: 0.8, step: 0.02 },
   ai1_timing: { value: 0.7, min: 0, max: 1, step: 0.02 },   // its average timing, 1 is sweet
   ai2_timing: { value: 0.72, min: 0, max: 1, step: 0.02 },
-  ai3_timing: { value: 0.86, min: 0, max: 1, step: 0.02 },
+  ai3_timing: { value: 0.91, min: 0, max: 1, step: 0.02 },
   ai1_smart: { value: 0.1, min: 0, max: 1, step: 0.05 },    // how often it aims away from you
   ai2_smart: { value: 0.55, min: 0, max: 1, step: 0.05 },
   ai3_smart: { value: 0.8, min: 0, max: 1, step: 0.05 },
@@ -110,7 +110,7 @@ window.CONFIG = {
   ai3_run: { value: 1, min: 0.5, max: 1, step: 0.02 },
   ai1_pace: { value: 0.68, min: 0.5, max: 1.1, step: 0.02 },  // its stroke speed, as a share of a player's
   ai2_pace: { value: 0.92, min: 0.5, max: 1.1, step: 0.02 },
-  ai3_pace: { value: 1, min: 0.5, max: 1.1, step: 0.02 },
+  ai3_pace: { value: 0.975, min: 0.5, max: 1.1, step: 0.02 },
   ai1_serve: { value: 0.66, min: 0.5, max: 1.1, step: 0.02 }, // its serve speed, as a share of a player's
   ai2_serve: { value: 0.9, min: 0.5, max: 1.1, step: 0.02 },
   ai3_serve: { value: 1, min: 0.5, max: 1.1, step: 0.02 },
@@ -119,13 +119,16 @@ window.CONFIG = {
   ai3_gentle: { value: 0, min: 0, max: 1, step: 0.05 },
   ai1_miss: { value: 0.16, min: 0, max: 0.4, step: 0.01 },    // chance a shot is its own error: long, wide or in the net
   ai2_miss: { value: 0.065, min: 0, max: 0.4, step: 0.01 },
-  ai3_miss: { value: 0, min: 0, max: 0.4, step: 0.01 },
+  ai3_miss: { value: 0.012, min: 0, max: 0.4, step: 0.01 },
   ai1_catchup: { value: 0, min: 0, max: 0.3, step: 0.005 },  // extra error chance per game it leads by, so a match stays within reach
   ai2_catchup: { value: 0.22, min: 0, max: 0.3, step: 0.005 },
   ai3_catchup: { value: 0.1, min: 0, max: 0.3, step: 0.005 },
   ai1_catchpts: { value: 0, min: 0, max: 0.1, step: 0.001 }, // extra error chance per point it leads by over the whole match
   ai2_catchpts: { value: 0, min: 0, max: 0.1, step: 0.001 },
   ai3_catchpts: { value: 0.06, min: 0, max: 0.1, step: 0.001 },
+  ai1_catchcap: { value: 0, min: 0, max: 0.6, step: 0.01 },  // the most the catch-up can add, so a better player still wins more
+  ai2_catchcap: { value: 0.3, min: 0, max: 0.6, step: 0.01 },
+  ai3_catchcap: { value: 0.22, min: 0, max: 0.6, step: 0.01 },
   ai1_flash: { value: 1, min: 1, max: 6, step: 0.5 },   // the catch-up counts this many times over in a one tie-break match, which is short
   ai2_flash: { value: 1, min: 1, max: 6, step: 0.5 },
   ai3_flash: { value: 2.5, min: 1, max: 6, step: 0.5 },
