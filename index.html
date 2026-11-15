@@ -54,7 +54,7 @@
 'use strict';
 // ---- Built to be checked ----------------------------------------------------------------
 const params = new URLSearchParams(location.search);
-const APP_VERSION = '1.8.6'; // shown on the home screen: raise it with every update (big change: 1.x, feature: x.1, fix: x.x.1)
+const APP_VERSION = '1.8.7'; // shown on the home screen: raise it with every update (big change: 1.x, feature: x.1, fix: x.x.1)
 const tune = new Proxy({}, { get: (_, k) => CONFIG[k].value }); // live: tune.speed is CONFIG.speed.value
 const STEP = 1 / 60;            // simulation step in seconds; motion is per second, never per frame
 const W = 720; let H = 1280;    // logical size: a portrait page 720 wide, as tall as the window's shape asks (900 to 1580)
@@ -1677,7 +1677,7 @@ function drawHall() {
     text(MODE_KO[id], x + tw / 2, fy + 24, 21, on ? '#fff3d0' : '#d6c8dd', 'center', null, F_T); });
   // the top three on their tablets, the first in the middle and tallest
   const L = rank.list || [], col = ['#f6c445', '#cfd8e3', '#e6a46a'];
-  for (const pos of [0, 2, 1]) { const r = L[[1, 0, 2][pos]], rank1 = pos === 1, kk = k * (rank1 ? 1 : 0.86), w = 150 * kk, h = 250 * kk, cx = W / 2 + (pos - 1) * 170, yy = base - 40 - h + (rank1 ? 0 : 30 * k), c = col[[1, 0, 2][pos]];
+  for (const pos of [0, 2, 1]) { const r = L[[1, 0, 2][pos]], rank1 = pos === 1, kk = k * (rank1 ? 1 : 0.86), w = 150 * kk, h = 250 * kk, cx = W / 2 + (pos - 1) * (140 * k + 36), yy = base - 40 - h + (rank1 ? 0 : 30 * k), c = col[[1, 0, 2][pos]];
     const glow = ctx.createRadialGradient(cx, yy + h / 2, 10, cx, yy + h / 2, 140 * kk); glow.addColorStop(0, rank1 ? `rgba(246,196,69,${0.28 + 0.1 * Math.sin(t * 2.2)})` : 'rgba(255,240,220,0.16)'); glow.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = glow; ctx.fillRect(cx - 160 * kk, yy - 60, 320 * kk, h + 140);
     rr(cx - w / 2 - 14, yy + h - 6, w + 28, 34 * kk, 6, '#3a2f3e', '#1e1822', 3);
     ctx.beginPath(); ctx.moveTo(cx - w / 2, yy + h); ctx.lineTo(cx - w / 2, yy + 40 * kk); ctx.quadraticCurveTo(cx - w / 2, yy, cx, yy); ctx.quadraticCurveTo(cx + w / 2, yy, cx + w / 2, yy + 40 * kk); ctx.lineTo(cx + w / 2, yy + h); ctx.closePath();
