@@ -1620,10 +1620,9 @@ function onGuestData(d) {
   else if (d.t === 'full') { net.status = 'error'; net.msg = '방이 가득 찼거나 이미 경기 중이에요'; }
   else if (d.t === 'setup') { setup.format = FORMATS[d.format] ? d.format : 'short'; setup.court = COURTS[d.court] ? d.court : 'hard'; setup.level = clamp(d.level | 0, 1, 3); net.seat = clamp(d.seat | 0, 1, 3); net.kind = KINDS[d.kind] ? d.kind : 'single'; net.myPick = null; net.ready = null; net.status = 'picking'; scene = 'select'; tone(880, 0.12, 'triangle', 0.25); }
   else if (d.t === 'ready') net.ready = { n: d.n | 0, need: d.need | 0 };
-  else if (d.t === 'start') { net.snap = null; net.to = null; net.myPick = null; net.ready = null; view = net.seat; seenFx = 0; hints = { hits: 0, power: 0, shots: 0 }; net.starting = true; } // the match shows once the host's first picture arrives
+  else if (d.t === 'start') { net.snap = null; net.myPick = null; net.ready = null; view = net.seat; seenFx = 0; hints = { hits: 0, power: 0, shots: 0 }; scene = 'play'; }
   else if (d.t === 'again') { net.myPick = null; net.ready = null; scene = 'select'; }
-  else if (d.t === 's') { net.snap = d.m; netTarget(); if (net.starting) { net.starting = false; m = state.m = net.snap; scene = 'play'; } }
-  else if (d.t === 'd' && net.snap) { mergeLite(net.snap, d.d); netTarget(); }
+  else if (d.t === 's') net.snap = d.m;
 }
 const netSendMsg = o => { if (!net) return; if (net.role === 'guest') { if (net.conn && net.conn.open) net.conn.send(o); } else sendAll(o); };
 function sendReady() { const n = Object.keys(net.picks).length, need = humans(); net.ready = { n, need }; sendAll({ t: 'ready', n, need }); }
@@ -1642,42 +1641,9 @@ function onlineStart() {
 }
 function onlineAgain() { if (!net) return; net.picks = {}; net.ready = null; net.myPick = null; sendAll({ t: 'again' }); scene = 'select'; } // a rematch: everyone may change players
 function netLost() { if (!net) return; net.status = 'lost'; net.msg = '방장과의 연결이 끊겼어요 · Esc : 처음으로'; }
-// The host sends the match 30 times a second: in full once a second, and in between only what moves
-const P_LIVE = ['x', 'y', 'vx', 'vy', 'stam', 'anim', 'at', 'hand', 'streak', 'ctrl'];
-function liteOf(M, fxFrom) {
-  const o = {}; for (const k of ['t', 'phase', 'pt', 'pause', 'recv', 'land', 'ball', 'sc', 'fault', 'refault', 'boxX', 'rally', 'hitId', 'banner', 'pops', 'fxId', 'mark', 'stats']) o[k] = M[k];
-  o.fx = M.fx.filter(f => f.id > fxFrom);
-  const r3 = v => typeof v === 'number' ? Math.round(v * 1000) / 1000 : v; // millimetres are plenty
-  o.t = r3(M.t); o.pt = r3(M.pt); o.ball = Object.assign({}, M.ball); for (const k of ['x', 'y', 'z', 'vx', 'vy', 'vz']) o.ball[k] = r3(M.ball[k]);
-  o.P = M.P.map(p => { const q = {}; for (const k of P_LIVE) q[k] = r3(p[k]); q.sw = p.sw ? { mode: p.sw.mode, charge: r3(p.sw.charge) } : null; return q; });
-  return o;
-}
-function mergeLite(B, d) {
-  for (const k in d) if (k !== 'P' && k !== 'fx') B[k] = d[k];
-  d.P.forEach((q, i) => { if (B.P[i]) Object.assign(B.P[i], q); });
-  for (const f of d.fx) if (!B.fx.some(g => g.id === f.id)) B.fx.push(f); while (B.fx.length > 14) B.fx.shift();
-}
-function netSend() {
-  if (!net || net.role !== 'host' || !m) return;
-  net.sendTick = (net.sendTick || 0) + 1; if (net.sendTick % 2) return; // 30 a second is plenty to draw from
-  const full = net.sendTick % 60 === 0 || net.lastM !== m;
-  if (full) { net.lastM = m; sendAll({ t: 's', m }); } else sendAll({ t: 'd', d: liteOf(m, net.fxSent || 0) });
-  net.fxSent = m.fxId;
-}
-function netTarget() { // the guest glides from where things are drawn to where the host says they are
-  const B = net.snap, now = clock.now(), cur = { b: [B.ball.x, B.ball.y, B.ball.z], P: B.P.map(p => [p.x, p.y]) };
-  net.from = net.to && net.drawn ? net.drawn : cur; net.to = cur; net.span = clamp(now - (net.tA || now), 0.02, 0.12); net.tA = now;
-}
-function netGlide() {
-  const B = net.snap; if (!B || !net.to) return;
-  const u = clamp((clock.now() - net.tA) / net.span, 0, 1), L = (a, b) => a + (b - a) * u, F = net.from, T = net.to;
-  const jump = Math.hypot(T.b[0] - F.b[0], T.b[1] - F.b[1]) > 6; // a new point: no gliding across the court
-  B.ball.x = jump ? T.b[0] : L(F.b[0], T.b[0]); B.ball.y = jump ? T.b[1] : L(F.b[1], T.b[1]); B.ball.z = jump ? T.b[2] : L(F.b[2], T.b[2]);
-  B.P.forEach((p, i) => { if (!T.P[i] || !F.P[i]) return; p.x = L(F.P[i][0], T.P[i][0]); p.y = L(F.P[i][1], T.P[i][1]); });
-  net.drawn = { b: [B.ball.x, B.ball.y, B.ball.z], P: B.P.map(p => [p.x, p.y]) };
-}
+function netSend() { if (net && net.role === 'host' && m) sendAll({ t: 's', m }); }
 function guestStep() { // the guest draws what the host sends and sends its own keys back
-  if (net.snap) { m = state.m = net.snap; for (const p of m.P) if (p.team == null) p.team = p.i; netGlide(); }
+  if (net.snap) { m = state.m = net.snap; for (const p of m.P) if (p.team == null) p.team = p.i; }
   const i = localInput(view % 2), s = JSON.stringify(i); net.tick++;
   if (net.conn && net.conn.open && (s !== net.lastSent || net.tick % 6 === 0)) { net.lastSent = s; net.conn.send(Object.assign({ t: 'i' }, i)); }
 }
