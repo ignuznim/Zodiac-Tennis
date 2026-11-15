@@ -3032,13 +3032,13 @@ const scenes = {
       drawMatch(); hot = []; OY = 0;
       ctx.fillStyle = 'rgba(59,51,64,0.6)'; ctx.fillRect(0, 0, W, H);
       const cy = Math.round(H / 2);
-      rr(110, cy - 226, 500, 452, 26, 'rgba(255,248,231,0.97)', OUT, 4);
+      rr(110, cy - 226, 500, 458, 26, 'rgba(255,248,231,0.97)', OUT, 4);
       text(m.online ? '잠깐!' : '일시정지', W / 2, cy - 168, 52, INK, 'center', null, F_T);
       text(m.online ? '온라인 경기는 멈추지 않아요' : '숨 한번 고르고 가요', W / 2, cy - 118, 24, '#c0605a', 'center', null, F_T);
       button('계속하기', 170, cy - 84, 380, 68, () => { scene = 'play'; }, { size: 30, fill: '#fff3c4' });
       button('홈으로', 170, cy - 2, 380, 68, goHome, { size: 28 });
-      button('의견 보내기', 170, cy + 80, 380, 60, openFeedback, { size: 25 });
-      text('P 계속하기 · Backspace 홈으로 · H 도움말', W / 2, cy + 184, 20, '#7a6872', 'center', null, F_B);
+      button('의견 보내기', 170, cy + 80, 380, 68, openFeedback, { size: 28 }); // the same size as the two above
+      text('P 계속하기 · Backspace 홈으로 · H 도움말', W / 2, cy + 192, 20, '#7a6872', 'center', null, F_B);
     },
   },
   results: {
