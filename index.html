@@ -238,10 +238,10 @@ const ANIMALS = [
   { id: 'snake', ko: '스네키', c: '#b6dd6a', d: '#6fa23c', l: '#f0f9c9', note: '뚝 떨어지는 드롭샷의 명수' },
   { id: 'horse', ko: '포니', c: '#c98f5f', d: '#6b4630', l: '#f3ddc7', note: '끝없이 달리는 다리' },
   { id: 'sheep', ko: '보송이', c: '#fbf4e6', d: '#f2cfc4', l: '#ffffff', note: '실수를 기다리는 끈질긴 랠리' },
-  { id: 'monkey', ko: '원숭이', c: '#a9744f', d: '#f6d3b0', l: '#f6d3b0', note: '번개 같은 반응 속도' },
+  { id: 'monkey', ko: '키키', c: '#a9744f', d: '#f6d3b0', l: '#f6d3b0', note: '번개 같은 반응 속도' },
   { id: 'rooster', ko: '꼬꼬', c: '#fffaf0', d: '#f25f5c', l: '#ffd166', note: '빈틈없는 만능 선수' },
-  { id: 'dog', ko: '개', c: '#f0c98d', d: '#a5673f', l: '#fff3dc', note: '뛰고 또 뛰는 집념' },
-  { id: 'pig', ko: '돼지', c: '#f9b7c4', d: '#e98aa0', l: '#ffdbe3', note: '든든한 체력, 묵직한 힘' },
+  { id: 'dog', ko: '댕댕', c: '#f0c98d', d: '#a5673f', l: '#fff3dc', note: '뛰고 또 뛰는 집념' },
+  { id: 'pig', ko: '도니', c: '#f9b7c4', d: '#e98aa0', l: '#ffdbe3', note: '든든한 체력, 묵직한 힘' },
 ];
 const STATS = ['power', 'stamina', 'spin', 'reflex', 'speed'], STAT_KO = ['파워', '체력', '스핀', '순발력', '스피드'];
 // Each animal has a court it loves (its signature stat a little higher) and one it dislikes (a little lower)
@@ -1302,7 +1302,7 @@ function drawBall() {
   ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(s.x - 11 * s.s, s.y, 11 * s.s, -0.7, 0.7); ctx.stroke();
 }
 function drawScoreboard() { // one row a side: sets won, a cell for each of the five sets, then the point
-  const R = rules(), sc = m.sc, tbOnly = R.matchTb, n = tbOnly ? 0 : 2 * R.sets - 1, x0 = 12, y0 = 10, nx = x0 + 44, wx = nx + 150, sx = wx + (tbOnly ? 0 : 44), px = tbOnly ? wx + 10 : sx + n * 30 + 6, w = px + 60 - x0 + (tbOnly ? 6 : 0);
+  const R = rules(), sc = m.sc, tbOnly = R.matchTb, n = tbOnly ? 0 : 2 * R.sets - 1, x0 = 12, y0 = 10, nx = x0 + 44, nameW = m.doubles ? 196 : 150, wx = nx + nameW, sx = wx + (tbOnly ? 0 : 44), px = tbOnly ? wx + 10 : sx + n * 30 + 6, w = px + 60 - x0 + (tbOnly ? 6 : 0);
   rr(x0, y0, w, 112, 16, '#4a3d47', OUT);
   if (!tbOnly) text('세트', wx + 17, y0 + 14, 13, '#cbbcc4', 'center', null, F_B);
   for (let k = 0; k < n; k++) text('' + (k + 1), sx + k * 30 + 13, y0 + 14, 13, k === sc.sets.length && !sc.done ? BALL : '#cbbcc4', 'center', null, F_N);
@@ -1312,11 +1312,12 @@ function drawScoreboard() { // one row a side: sets won, a cell for each of the 
     ctx.lineWidth = 2.6; ctx.strokeStyle = OUT;
     if (Q) drawAnimal(Q.a, x0 + 30, y + 13, 0.24, { front: true, accent: col });
     drawAnimal(P.a, x0 + (Q ? 16 : 22), y + 15, Q ? 0.27 : 0.3, { front: true, accent: col });
-    const nm = NAME(i), nsz = nm.length > 5 ? 17 : 20;
+    const nm = NAME(i), lab = P.ctrl === 'ai' ? '컴퓨터' : r === 0 ? (Q ? '우리' : '나') : '상대';
+    ctx.font = `13px ${F_B}`; const lw = ctx.measureText(lab).width; ctx.font = `20px ${F_T}`; const nw0 = ctx.measureText(nm).width, room = nameW - 22 - lw - 6;
+    const nsz = nw0 > room ? 20 * room / nw0 : 20, nw = Math.min(nw0, room); // the name shrinks to fit beside its label, never into the score
     text(nm, nx, y - 5, nsz, CREAM, 'left', null, F_T);
-    ctx.font = `${nsz}px ${F_T}`; const nw = ctx.measureText(nm).width;
-    text(P.ctrl === 'ai' ? '컴퓨터' : r === 0 ? (Q ? '우리' : '나') : '상대', nx + nw + 6, y - 4, 13, '#b9a8b1', 'left', null, F_B);
-    rr(nx, y + 9, 116, 6, 3, '#2f262d', null); if (f > 0.03) rr(nx, y + 9, 116 * f, 6, 3, f < 0.25 ? '#f25f5c' : col, null);
+    text(lab, nx + nw + 6, y - 4, 13, '#b9a8b1', 'left', null, F_B);
+    const bw = nameW - 34; rr(nx, y + 9, bw, 6, 3, '#2f262d', null); if (f > 0.03) rr(nx, y + 9, bw * f, 6, 3, f < 0.25 ? '#f25f5c' : col, null);
     if (sc.server === i && !sc.done) { ctx.lineWidth = 1.6; ctx.strokeStyle = OUT; E(tbOnly ? px - 12 : wx - 12, y - 4, 6, 6, BALL); }
     if (!tbOnly) { rr(wx, y - 16, 34, 32, 8, col, OUT, 2.2); text('' + sc.won[i], wx + 17, y + 1, 24, '#3b2f38', 'center', null, F_N); }
     for (let k = 0; k < n; k++) {
