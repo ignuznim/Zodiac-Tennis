@@ -2406,10 +2406,9 @@ const scenes = {
           if (medal) { ctx.lineWidth = 2.4; ctx.strokeStyle = OUT; E(x0 + 28, y, 18, 18, medal); }
           text('' + (i + 1), x0 + 28, y + 1, 23, INK, 'center', null, F_N);
           ctx.lineWidth = 2; ctx.strokeStyle = OUT;
-          drawAnimal(r.animal, x0 + 88, y + 18, 0.32, { front: true, t: 0.4, accent: CORAL });
+          const worn = {}; for (const id of (r.gear || '').split(',')) { const it = item(id); if (it) worn[it.slot] = id; } // dressed as they were for this record
+          drawAnimal(r.animal, x0 + 88, y + 18, 0.32, { front: true, t: 0.4, accent: CORAL, gear: worn });
           text(r.nickname, x0 + 128, y, 25, INK, 'left', null, F_T);
-          if (r.gear) { ctx.font = `25px ${F_T}`; let gx = x0 + 138 + ctx.measureText(r.nickname).width; // what they wore, as grade colours
-            for (const id of r.gear.split(',')) { const it = item(id); if (it) { rr(gx, y - 9, 13, 18, 4, GRADE[it.grade].c, OUT, 1.6); gx += 16; } } }
           text(LEVEL_KO[r.level] || '', 470, y, 21, ['', '#3d9be0', '#4f9a6a', '#e2574c'][r.level] || INK, 'center', null, F_T);
           text(r.score.toLocaleString(), LY.m + LY.w - LY.pad, y, 27, INK, 'right', null, F_N);
         });
