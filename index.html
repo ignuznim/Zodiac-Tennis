@@ -54,7 +54,7 @@
 'use strict';
 // ---- Built to be checked ----------------------------------------------------------------
 const params = new URLSearchParams(location.search);
-const APP_VERSION = '1.8.5'; // shown on the home screen: raise it with every update (big change: 1.x, feature: x.1, fix: x.x.1)
+const APP_VERSION = '1.8.6'; // shown on the home screen: raise it with every update (big change: 1.x, feature: x.1, fix: x.x.1)
 const tune = new Proxy({}, { get: (_, k) => CONFIG[k].value }); // live: tune.speed is CONFIG.speed.value
 const STEP = 1 / 60;            // simulation step in seconds; motion is per second, never per frame
 const W = 720; let H = 1280;    // logical size: a portrait page 720 wide, as tall as the window's shape asks (900 to 1580)
@@ -1713,7 +1713,7 @@ function drawHall() {
       E(sd < 0 ? x + half - 26 : x + 26, (dTop + dBot) / 2, 12, 12, '#c8963a'); E(sd < 0 ? x + half - 26 : x + 26, (dTop + dBot) / 2, 6, 6, '#5a1f22', 0, true); } }
   // buttons, where every menu keeps them
   const gb = (label, x, w, fill, ink, fn) => { const over = btn(x, LY.bot, w, LY.btnH, fn); rr(x, LY.bot + 5, w, LY.btnH, 18, '#1a1218', null); rr(x, LY.bot, w, LY.btnH, 18, over ? (fill === '#c8963a' ? '#dcaa4c' : '#3a2428') : fill, fill === '#c8963a' ? '#3a2010' : '#c8963a', 3); text(label, x + w / 2, LY.bot + LY.btnH / 2 + 1, 28, ink, 'center', null, F_T); };
-  gb('월간 랭킹', LY.m, LY.side, '#2a1a1c', '#f6c445', () => { scene = 'ranking'; rank.list = null; loadRanking(null, 'month'); });
+  gb('랭킹', LY.m, LY.side, '#2a1a1c', '#f6c445', () => { scene = 'ranking'; rank.list = null; loadRanking(null, 'month'); });
   gb(rank.loading ? '불러오는 중…' : '새로고침', LY.m + LY.side + LY.gap, LY.w - LY.side - LY.gap, '#c8963a', '#2a1a1c', () => { if (!rank.loading) loadRanking(null, 'all'); });
   text('지금까지 컴퓨터를 이긴 모든 기록 중 TOP 10', W / 2, LY.foot, 20, '#e9dcef', 'center', null, F_B);
 }
