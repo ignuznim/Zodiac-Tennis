@@ -135,6 +135,10 @@ window.CONFIG = {
   ai1_dbl: { value: 0, min: 0, max: 1, step: 0.05 },   // how much of the catch-up the computer keeps in doubles, where your partner already helps
   ai2_dbl: { value: 0.5, min: 0, max: 1, step: 0.05 },
   ai3_dbl: { value: 0.35, min: 0, max: 1, step: 0.05 },
+  dbl_yield: { value: 0.1, min: 0, max: 1, step: 0.05 },   // doubles: how much nearer you must be before your computer partner leaves a ball to you (m)
+  dbl_volley: { value: 1.25, min: 1, max: 1.6, step: 0.05 }, // doubles: a volley at the net is struck this much harder
+  dbl_lob: { value: 0.35, min: 0, max: 1.6, step: 0.05 },   // doubles: someone always stands at the net, so the computer lobs over them only now and then
+  dbl_pace: { value: 1.08, min: 1, max: 1.3, step: 0.01 },  // doubles: every shot a little quicker
   ai1_window: { value: 0.42, min: 0.12, max: 0.5, step: 0.01 }, // your swing buffer against this level (online: tap_window)
   ai2_window: { value: 0.3, min: 0.12, max: 0.5, step: 0.01 },
   ai3_window: { value: 0.26, min: 0.12, max: 0.5, step: 0.01 },

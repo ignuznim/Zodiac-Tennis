@@ -66,7 +66,7 @@
 'use strict';
 // ---- Built to be checked ----------------------------------------------------------------
 const params = new URLSearchParams(location.search);
-const APP_VERSION = '1.8.0'; // shown on the home screen: a new feature raises the middle number; the small fixes after it are bundled into one last-number step
+const APP_VERSION = '1.8.1'; // shown on the home screen: a new feature raises the middle number; the small fixes after it are bundled into one last-number step
 const tune = new Proxy({}, { get: (_, k) => CONFIG[k].value }); // live: tune.speed is CONFIG.speed.value
 const STEP = 1 / 60;            // simulation step in seconds; motion is per second, never per frame
 const W = 720; let H = 1280;    // logical size: a portrait page 720 wide, as tall as the window's shape asks (900 to 1580)
@@ -962,19 +962,21 @@ function launch(p, kind, q, charge, aimX, aimD, late = 0) {
   if (kind === 'power') { v *= 1 + tune.power_bonus * charge; err *= tune.err_power; depth += tune.power_overhit * charge * (1 - q); } // more power, worse timing: it flies long
   else if (kind === 'smash') { v *= 1 + tune.smash_bonus; depth = 7.6; }
   else if (kind === 'wild') { v *= 1.2; err *= tune.wild_err; }
-  else if (kind === 'volley') { depth = 8.6; err *= 0.85; }
+  else if (kind === 'volley') { depth = 8.6; err *= 0.85; if (m.doubles) { v *= tune.dbl_volley; depth = 7.2; } } // in doubles the net player puts it away: harder, shorter, at an angle
   else if (kind === 'slice') { v *= tune.slice_v; err *= 0.7; }
   else if (kind === 'drop') { v = tune.drop_v; depth = aimD > 0 ? 2.8 : 2.0; err *= 0.7; }
   else if (kind === 'lob') { depth = 10.0; err *= 1.2; T = tune.lob_time; }
   const ai = p.ctrl === 'ai' ? n => tune['ai' + m.level + '_' + n] : null; // the computer's level: its pace, its aim, its slips
   if (ai) v *= ai('pace');
+  if (m.doubles) v *= tune.dbl_pace;
   const perfect = q >= 0.95; p.streak = perfect ? p.streak + 1 : 0; // perfect hits in a row sharpen the next one
   v *= (0.8 + 0.2 * q) * (1 - tune.fatigue_pace * fat) * (1 + tune.sweet_bonus * Math.min(p.streak, tune.sweet_streak_max));
   const e = err * (tune.err_bad + (tune.err_sweet - tune.err_bad) * q) * (1.3 - tune.err_spin * spin) * (1 + tune.fatigue_err * fat);
   let tx = aimX * tune.aim_x; if (aimX === 0) tx = clamp(b.x * 0.35 + (rng() - 0.5) * 2.4, -2.2, 2.2);
+  if (m.doubles && kind === 'volley') tx = (aimX || (rng() < 0.5 ? -1 : 1)) * (DW - 1.2); // into the alley, away from both
   tx += Math.sign(b.x - p.x || 1) * Math.min(2.2, late * tune.late_pull); // a late hit drags the ball wide, to the side it was struck on
   const foe = m.online ? m.coop && p.team === 1 : p.team !== m.P[0].team; // the computer facing you; a partner, or a stand-in in a friends' match, just plays
-  if (ai && foe && kind !== 'drop' && rng() < ai('gentle')) tx = clamp(m.P[0].x + (rng() - 0.5) * 1.6, -3.2, 3.2); // a kind computer plays it back to you
+  if (ai && foe && kind !== 'drop' && rng() < ai('gentle')) { const ts = m.P.filter(q => q.team !== p.team), to = ts[Math.floor(rng() * ts.length)]; tx = clamp(to.x + (rng() - 0.5) * 1.6, -3.2, 3.2); } // to either player in doubles, not only you // a kind computer plays it back to you
   const an = rng() * 6.283, r = e * Math.sqrt(rng());
   tx += Math.cos(an) * r; let ty = opp * depth + Math.sin(an) * r * 1.3;
   let slip = ai && rng() < ai('miss') + (foe ? (m.doubles ? ai('dbl') : 1) * Math.min(ai('catchcap'), (ai('catchup') * aiLead(p) + ai('catchpts') * Math.max(0, m.stats.setPts[p.team] - m.stats.setPts[1 - p.team])) * (rules().matchTb ? ai('flash') : 1)) : 0) ? rng() : -1; // the computer's own unforced error: long, wide or into the net (a little likelier while it leads)
@@ -1143,18 +1145,18 @@ function aiThink(p, dt) {
   if (m.phase === 'rally' && b.live && b.last !== p.team) {
     if (A.for !== m.hitId) { A.for = m.hitId; A.wait = T('react'); A.tgt = predict(p); A.set = 0; A.q = clamp(T('timing') + (rng() - 0.5) * 0.5, 0.2, 1);
       if (mate) { const mt = predict(mate), mine = Math.hypot(A.tgt.x - p.x, A.tgt.y - p.y), theirs = Math.hypot(mt.x - mate.x, mt.y - mate.y); // whoever is nearer takes it
-        A.mine = b.kind === 'serve' ? p.i === m.recv : mine < theirs - (mate.ctrl === 'ai' ? 0 : 0.6) || (mine < theirs + 0.6 && p.i < mate.i && mate.ctrl === 'ai'); } else A.mine = true; }
+        A.mine = b.kind === 'serve' ? p.i === m.recv : mine < theirs - (mate.ctrl === 'ai' ? 0 : tune.dbl_yield) || (mine < theirs + 0.6 && p.i < mate.i && mate.ctrl === 'ai'); } else A.mine = true; }
     A.wait -= dt; if (A.wait <= 0) tgt = A.mine ? A.tgt : home();
     const d = p.side * (b.y - p.y);
     if (canHit(p) && d >= -0.45 && !(A.tgt.out && L >= 2 && b.bounces === 0)) {
       let kind = 'stroke', charge = 0, aimDy = rng() < 0.3 ? -p.side : 0; const v = T('variety'), r = rng();
-      const oy = o.side * o.y;
+      const oy = Math.min(...foes.map(q => q.side * q.y)); // how close the nearest opponent stands: a drop only when both are back, a lob over whoever is at the net
       if (b.z >= tune.smash_min_z + 0.15 && r < 0.45 + v) kind = 'smash';
-      else if (oy < 5.5 && r < v * 1.6) kind = 'lob';
+      else if (oy < 5.5 && r < v * (m.doubles ? tune.dbl_lob : 1.6)) kind = 'lob';
       else if (oy > 10.5 && p.side * p.y < 11.5 && r < v * 0.9) { kind = 'slice'; aimDy = p.side; } // short: a drop shot
       else if (r > 1 - v * 0.6) kind = 'slice';
       else if (A.set > 0.4 && rng() < v * 1.4 + 0.04) charge = 0.6 + rng() * 0.4;
-      const aimX = rng() < T('smart') ? (o.x > 0 ? -1 : 1) : Math.floor(rng() * 3) - 1;
+      const o2 = foes.length > 1 ? foes[Math.floor(rng() * 2)] : o, aimX = rng() < T('smart') ? (o2.x > 0 ? -1 : 1) : Math.floor(rng() * 3) - 1;
       tryHit(p, kind, A.q, charge, aimX, aimDy);
       return inp;
     }
