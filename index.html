@@ -1793,7 +1793,7 @@ fbBox.querySelector('form').onsubmit = async e => {
   e.preventDefault(); if (fbBusy) return;
   const msg = fbIn.value.trim(); if (!msg) { fbErr.textContent = '내용을 적어 주세요'; return; }
   fbBusy = true; fbErr.textContent = '보내는 중…';
-  try { await fbPost(fbKind, msg); closeFeedback(); toast('고마워요! 의견을 잘 받았어요'); tone(880, 0.1, 'triangle', 0.25); }
+  try { await fbPost(fbKind, msg); closeFeedback(); notify('고마워요! 의견을 잘 받았어요'); tone(880, 0.1, 'triangle', 0.25); }
   catch (er) { fbErr.textContent = er.message === '400' || er.message === '500' ? '잠시 뒤에 다시 보내 주세요' : '보내지 못했어요 · 인터넷 연결을 확인해 주세요'; }
   fbBusy = false;
 };
@@ -2609,7 +2609,7 @@ const scenes = {
         rr(cx, cy, cw, 50, 25, over ? '#fff3c4' : 'rgba(255,248,231,0.95)', OUT, 2.6); text(t, cx + cw / 2, cy + 26, 21, acct.user ? INK : '#3d8be0', 'center', null, F_T); }
       { const fw = 132, fx = LY.m, fy = 14, over = btn(fx, fy, fw, 50, openFeedback); // the other corner: tell us what's wrong
         rr(fx, fy, fw, 50, 25, over ? '#fff3c4' : 'rgba(255,248,231,0.95)', OUT, 2.6); text('의견 보내기', fx + fw / 2, fy + 26, 21, INK, 'center', null, F_T); }
-      if (acct.msg && acct.msgT < 2.6) { ctx.font = `24px ${F_B}`; const w = ctx.measureText(acct.msg).width + 60; rr(W / 2 - w / 2, LY.bot - 70, w, 46, 23, 'rgba(59,51,64,0.9)', null); text(acct.msg, W / 2, LY.bot - 46, 21, CREAM, 'center', null, F_B); }
+      if (acct.msg && acct.msgT < 2.6) { notify(acct.msg); acct.msg = ''; } // a message from the account (signing in, out) shows at the top too
       text(`v${APP_VERSION} · © 2026 IGNUZNIM. All rights reserved.`, W / 2, LY.copy, 16, 'rgba(59,51,64,0.6)', 'center', null, F_B);
       menuEnd('Enter 를 눌러도 시작해요');
     },
@@ -3097,8 +3097,17 @@ function tick() {
   ALPHA = acc / STEP;
   drawFrame();
 }
+let notice = null; // { s, at }: a short message over any screen
+function notify(s) { notice = { s, at: clock.now() }; }
+function drawNotice() {
+  if (!notice) return; const t = clock.now() - notice.at; if (t > 2.8) { notice = null; return; }
+  const a = Math.min(1, t * 6, (2.8 - t) * 3), y = (scene === 'play' || scene === 'pause' ? 138 : 82) + (1 - Math.min(1, t * 6)) * -16; // under the scoreboard in a match // drops in under the top row, then fades
+  ctx.save(); ctx.globalAlpha = a; ctx.font = `25px ${F_T}`; const w = Math.min(W - 40, ctx.measureText(notice.s).width + 64);
+  rr(W / 2 - w / 2, y + 4, w, 56, 28, 'rgba(59,51,64,0.35)', null); rr(W / 2 - w / 2, y, w, 56, 28, '#fff3c4', OUT, 2.6);
+  text(notice.s, W / 2, y + 29, 25, INK, 'center', null, F_T); ctx.restore();
+}
 function drawFrame() {
-  hot = []; scenes[scene].draw();
+  hot = []; scenes[scene].draw(); drawNotice();
   if (touchUI && !COVER && innerWidth > innerHeight * 1.1) { // a phone held sideways: the game is drawn for portrait
     rr(W / 2 - 210, H - 50, 420, 38, 19, 'rgba(59,51,64,0.88)', null);
     text('휴대폰을 세로로 돌리면 화면이 더 커져요', W / 2, H - 31, 19, CREAM, 'center', null, F_B);
