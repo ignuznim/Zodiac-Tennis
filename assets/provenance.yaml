@@ -53,6 +53,6 @@
   ships: true
 - path: icons/icon-512.png
   origin: code
-  tool: "drawn by the game's own drawAnimal code (the tiger) and resized for 180, 192, 512, maskable and favicon sizes"
-  date: 2026-11-14
+  tool: "drawn by the game's own drawAnimal code (the tiger, bare, with the wooden racket, on a court in perspective) and resized for 180, 192, 512, maskable and favicon sizes"
+  date: 2026-11-15
   ships: true
