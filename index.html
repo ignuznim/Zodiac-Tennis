@@ -54,7 +54,7 @@
 'use strict';
 // ---- Built to be checked ----------------------------------------------------------------
 const params = new URLSearchParams(location.search);
-const APP_VERSION = '1.7.1'; // shown on the home screen: a new feature raises the middle number; the small fixes after it are bundled into one last-number step
+const APP_VERSION = '1.7.2'; // shown on the home screen: a new feature raises the middle number; the small fixes after it are bundled into one last-number step
 const tune = new Proxy({}, { get: (_, k) => CONFIG[k].value }); // live: tune.speed is CONFIG.speed.value
 const STEP = 1 / 60;            // simulation step in seconds; motion is per second, never per frame
 const W = 720; let H = 1280;    // logical size: a portrait page 720 wide, as tall as the window's shape asks (900 to 1580)
@@ -1542,8 +1542,11 @@ function netHost() {
   loadPeer(() => {
     if (!net) return;
     net.peer = new Peer('zodiac-tennis-' + code);
-    net.peer.on('open', () => { if (net) net.status = 'waiting'; });
-    net.peer.on('error', e => { if (net) { net.status = 'error'; net.msg = '연결 오류: ' + (e.type || e); } });
+    net.peer.on('open', () => { if (net) { net.status = net.status === 'playing' ? 'playing' : 'waiting'; net.retry = 0; } });
+    net.peer.on('disconnected', () => peerRetry());
+    net.peer.on('error', e => { if (!net) return; const t = e.type || e;
+      if (t === 'network' || t === 'server-error' || t === 'socket-error' || t === 'socket-closed' || t === 'disconnected') { peerRetry(); return; } // the phone slept or the app was left: try again
+      net.status = 'error'; net.msg = t === 'unavailable-id' ? '방 코드를 다시 쓸 수 없어요 · 뒤로 가서 방을 새로 만들어 주세요' : '연결 오류: ' + t; });
     net.peer.on('connection', c => {
       if (!net) return;
       if (net.locked || net.guests.length >= 3) { c.on('open', () => { c.send({ t: 'full' }); setTimeout(() => c.close(), 400); }); return; } // the room is full or already playing
@@ -1553,15 +1556,26 @@ function netHost() {
     });
   });
 }
+function peerRetry() { // reconnect to the signalling server, a few times, while the page is in view
+  if (!net || !net.peer || net.peer.destroyed) return;
+  if (document.hidden) { net.status = net.status === 'error' ? 'error' : 'paused'; return; } // back when the page is shown again
+  if ((net.retry = (net.retry || 0) + 1) > 6) { net.status = 'error'; net.msg = '연결이 끊겼어요 · 인터넷을 확인하고 다시 시도해 주세요'; return; }
+  if (net.status !== 'playing') net.status = 'reconnecting';
+  setTimeout(() => { if (net && net.peer && net.peer.disconnected && !net.peer.destroyed) { try { net.peer.reconnect(); } catch (e) { /* tried */ } } else if (net && net.status === 'reconnecting') net.status = net.role === 'host' ? 'waiting' : 'connecting'; }, 400 * net.retry);
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden && net && net.peer && (net.peer.disconnected || net.status === 'paused')) { net.retry = 0; peerRetry(); } });
 function netJoin(code) {
   net = { role: 'guest', status: 'opening', code, msg: '', peer: null, conn: null, snap: null, lastSent: '', tick: 0, lobbyN: 1, ready: null, seat: 1 };
   loadPeer(() => {
     if (!net) return;
     net.peer = new Peer();
-    net.peer.on('error', e => { if (net) { net.status = 'error'; net.msg = e.type === 'peer-unavailable' ? '방을 찾을 수 없어요. 링크를 다시 확인해 주세요.' : '연결 오류: ' + (e.type || e); } });
+    net.peer.on('disconnected', () => { if (net && !(net.conn && net.conn.open)) peerRetry(); }); // once joined, the game runs browser to browser
+    net.peer.on('error', e => { if (!net) return; const t = e.type || e;
+      if ((t === 'network' || t === 'server-error' || t === 'socket-error' || t === 'socket-closed' || t === 'disconnected') && !(net.conn && net.conn.open)) { peerRetry(); return; }
+      net.status = 'error'; net.msg = t === 'peer-unavailable' ? '방을 찾을 수 없어요 · 방장이 방을 닫았거나 코드가 틀렸어요' : '연결 오류: ' + t; });
     net.peer.on('open', () => {
-      if (!net) return;
-      net.status = 'connecting';
+      if (!net || (net.conn && net.conn.open)) return;
+      net.status = 'connecting'; net.retry = 0;
       const c = net.conn = net.peer.connect('zodiac-tennis-' + code.toUpperCase(), { serialization: 'json' });
       c.on('open', () => { net.status = 'joined'; c.send({ t: 'join' }); });
       c.on('data', d => onGuestData(d));
@@ -1572,7 +1586,7 @@ function netJoin(code) {
 // guests -> host: join, pick, i (keys);  host -> guests: lobby (how many), setup (with your seat), ready, start, s (the match), again, relobby, full
 const sendAll = o => { if (net && net.guests) for (const g of net.guests) if (g.conn.open) g.conn.send(o); };
 const humans = () => 1 + net.guests.filter(g => g.seat != null).length;
-const KINDS = { single: { ko: '1 : 1 단식', sub: '친구와 1:1', seats: [1] }, coop: { ko: '2 : 2 협동', sub: '친구와 한 팀 · 상대는 컴퓨터', seats: [2] }, versus: { ko: '2 : 2 대전', sub: '빈 자리는 컴퓨터가 채워요', seats: [1, 2, 3] } };
+const KINDS = { single: { ko: '1 : 1 단식', sub: '친구 1명과 · 일대일', seats: [1] }, coop: { ko: '2 : 2 협동', sub: '친구와 한 팀 · 상대는 컴퓨터', seats: [2] }, versus: { ko: '2 : 2 대전', sub: '친구 1~3명 · 빈 자리는 컴퓨터', seats: [1, 2, 3] } };
 function kindOk(k) { const n = net && net.guests ? net.guests.length : 0; return k === 'versus' ? n >= 1 : n === 1; }
 function formatBack() { // from the format page: home, or online back to the lobby to choose again
   if (net && net.role === 'host') { net.locked = false; net.kind = null; net.picks = {}; for (const g of net.guests) g.seat = null; sendAll({ t: 'relobby', n: net.guests.length }); scene = 'lobby'; }
@@ -2311,9 +2325,8 @@ function drawGachaTab(y0, end) {
   // the prize rolling out
   if (G.phase === 'drop' || G.phase === 'reveal') { const u = Math.min(1, G.t / 0.5), g = G.res.grade; capsule(-52, G.phase === 'drop' ? -124 + u * 42 : -84, 22, GRADE[g].c, G.t * 6); }
   ctx.restore();
-  text(`뽑기권 ${acct.prof.tickets}장`, LY.m + LY.pad, y0 + 30, 26, '#3d8be0', 'left', null, F_T);
   if (G.phase === 'idle') iconButton('hanger', '내 아이템', LY.m + LY.w - 110, y0, 110, 92, () => openCloset('wardrobe', null));
-  text('업적을 달성하면 뽑기권을 받아요', LY.m + LY.pad, y0 + 64, 19, '#7a6872', 'left', null, F_B);
+  if (acct.prof.tickets < 1) text('업적을 달성하면 뽑기권을 받아요', LY.m + LY.pad, y0 + 40, 20, '#7a6872', 'left', null, F_B);
   if (G.phase === 'reveal') { // the prize, opened
     const r = G.res, it = item(r.item), c = GRADE[it.grade].c, py = y0 + 20, ph = Math.min(360, h - 110);
     ctx.fillStyle = 'rgba(59,51,64,0.45)'; ctx.fillRect(LY.m - 8, y0 - 8, LY.w + 16, h + 16);
@@ -2387,7 +2400,7 @@ function computeLayout() { // where the garden ends, the title row, the content 
   LY.top = end - clamp(room, 600, 680); LY.titleY = LY.top - 58; LY.sb = LY.titleY - 54; // the garden takes what the content does not need
 }
 // fixed sizes: a card is as tall as what it holds, never stretched to fill
-const SZ = () => ({ format: 150, format4: 132, mode: 116, court: 184, cell: LY.tall ? 120 : 96, info: 262, row: LY.tall ? 46 : 38, result: 448, lobby: 500 });
+const SZ = () => ({ format: 150, format4: 132, mode: 116, court: 184, cell: LY.tall ? 120 : 96, info: 262, row: LY.tall ? 46 : 38, result: 448, lobby: 540 });
 
 function menuBegin(title, home) {
   OY = 0; computeLayout();
@@ -2509,12 +2522,12 @@ const scenes = {
       else { // one row: three small picture buttons, then the two ways to start, solo the biggest
         const sq = 84, sh = 84, y = LY.bot - 8, sx = LY.m + (sq + 12) * 3, rest = LY.m + LY.w - sx, bw2 = Math.round((rest - 12) * 0.62);
         iconButton('trophy', '랭킹', LY.m, y, sq, sh, () => { scene = 'ranking'; loadRanking(); });
-        iconButton('capsule', '뽑기', LY.m + sq + 12, y, sq, sh, () => { acct.wtab = 'gacha'; scene = 'wardrobe'; });
+        iconButton('capsule', '뽑기', LY.m + sq + 12, y, sq, sh, () => { acct.wtab = 'gacha'; scene = 'wardrobe'; }, !!(acct.prof && acct.prof.tickets > 0)); // a red dot while a ticket waits
         iconButton('medal', '업적', LY.m + (sq + 12) * 2, y, sq, sh, () => { acct.wtab = 'ach'; scene = 'wardrobe'; }, anyClaimable());
         button('개인전', sx, y, bw2, sh, () => { scene = 'format'; }, { size: 33, fill: '#fff3c4' });
         button('온라인', sx + bw2 + 12, y, rest - bw2 - 12, sh, () => { scene = 'online'; }, { size: 26, fill: '#efe6ff' });
       }
-      { const P = acct.prof, t = acct.user ? (P && P.nickname ? P.nickname + ' · 뽑기권 ' + P.tickets : '로그인됨') : '로그인', cw = Math.max(132, t.length * 17 + 44), cx = W - LY.m - cw, cy = 14;
+      { const P = acct.prof, t = acct.user ? (P && P.nickname ? P.nickname : '로그인됨') : '로그인', cw = Math.max(132, t.length * 17 + 44), cx = W - LY.m - cw, cy = 14;
         const over = btn(cx, cy, cw, 50, () => { scene = 'account'; });
         rr(cx, cy, cw, 50, 25, over ? '#fff3c4' : 'rgba(255,248,231,0.95)', OUT, 2.6); text(t, cx + cw / 2, cy + 26, 21, acct.user ? INK : '#3d8be0', 'center', null, F_T); }
       text(`v${APP_VERSION} · © 2026 IGNUZNIM. All rights reserved.`, W / 2, LY.copy, 16, 'rgba(59,51,64,0.6)', 'center', null, F_B);
@@ -2616,7 +2629,7 @@ const scenes = {
         const over = btn(x, LY.top, tw, 56, () => { if (acct.g.phase === 'idle' || acct.g.phase === 'reveal') { acct.g.phase = 'idle'; acct.wtab = id; } });
         rr(x, LY.top, tw, 56, 16, on ? '#fff3c4' : over ? '#fffdf3' : 'rgba(255,248,231,0.8)', on ? CORAL : OUT, on ? 4 : 2.6);
         text(t, x + tw / 2, LY.top + 29, 25, on ? INK : '#7a6872', 'center', null, F_T);
-        if (id === 'ach' && anyClaimable()) E(x + tw - 18, LY.top + 14, 8, 8, '#e2574c'); });
+        if ((id === 'ach' && anyClaimable()) || (id === 'gacha' && acct.prof && acct.prof.tickets > 0)) E(x + tw - 18, LY.top + 14, 8, 8, '#e2574c'); });
       const y0 = LY.top + 56 + LY.gap, end = contentEnd();
       if (!acct.user || !acct.prof) {
         panel(LY.m, y0, LY.w, 300);
@@ -2813,29 +2826,33 @@ const scenes = {
       else if (net && net.role === 'host') {
         if (net.status === 'opening') text('방을 여는 중' + dots, W / 2, py + ph / 2, 32, INK, 'center', null, F_H);
         else {
-          text('링크나 방 코드를 친구에게 보내 주세요', W / 2, py + 38, 26, INK, 'center', null, F_T);
-          const Ln = net.link, per = 46, n = Math.ceil(Ln.length / per);
-          rr(LY.m + LY.pad, py + 62, LY.w - LY.pad * 2, 20 + n * 26, 12, '#fff', OUT, 2.5);
-          for (let i = 0; i < n; i++) text(Ln.slice(i * per, i * per + per), W / 2, py + 86 + i * 26, 19, '#3d6fb0', 'center', null, F_B);
-          let y = py + 96 + n * 26;
-          button(net.copied ? '복사했어요!' : '링크 복사', LY.m + LY.pad, y, 250, 60, copyLink, { size: 25, fill: net.copied ? '#d8f3dc' : '#fff3c4' });
-          text('방 코드', LY.m + LY.w - LY.pad - 160, y + 14, 18, '#7a6872', 'center', null, F_B); text(net.code, LY.m + LY.w - LY.pad - 160, y + 44, 38, CORAL, 'center', OUT, F_N);
-          y += 92; const ng = net.guests.length;
-          text(ng ? `참가 ${ng + 1}명 · 나 + 친구 ${ng}명` : '친구를 기다리는 중' + dots, W / 2, y, 25, ng ? '#3f9a5c' : INK, 'center', null, F_H);
-          for (let i = 0; i < 4; i++) { ctx.lineWidth = 2.4; ctx.strokeStyle = OUT; E(W / 2 - 66 + i * 44, y + 38, 15, 15, i <= ng ? (i ? SKY : CORAL) : 'rgba(255,248,231,0.6)'); }
-          y += 70; const bw = (LY.w - LY.pad * 2 - 24) / 3;
-          ['single', 'coop', 'versus'].forEach((k, i) => { const x = LY.m + LY.pad + i * (bw + 12), ok = kindOk(k), K = KINDS[k];
-            const over = ok && btn(x, y, bw, 104, () => hostKind(k));
-            rr(x, y + 4, bw, 104, 18, ok ? OUT : 'rgba(107,85,96,0.3)', null); rr(x, y, bw, 104, 18, !ok ? '#ebe2d8' : over ? '#fff3c4' : '#ffffff', ok ? OUT : '#cdbfb3', 2.6);
-            text(K.ko, x + bw / 2, y + 34, 24, ok ? INK : '#b3a4ac', 'center', null, F_T);
-            const words = K.sub.split(' · '); words.forEach((w2, j) => text(w2, x + bw / 2, y + 66 + j * 22, 16, ok ? '#7a6872' : '#b3a4ac', 'center', null, F_B)); });
-          y += 128;
+          const fit = (str, x, y, size, col, align, font, maxW) => { ctx.font = `${size}px ${font}`; const w = ctx.measureText(str).width; text(str, x, y, w > maxW ? size * maxW / w : size, col, align, null, font); };
+          const inner = LY.w - LY.pad * 2, x0 = LY.m + LY.pad;
+          text('링크나 방 코드를 친구에게 보내 주세요', W / 2, py + 40, 25, INK, 'center', null, F_T);
+          rr(x0, py + 66, inner, 46, 12, '#fff', OUT, 2.5); fit(net.link, W / 2, py + 90, 19, '#3d6fb0', 'center', F_B, inner - 28); // the link on one line
+          let y = py + 128;
+          button(net.copied ? '복사했어요!' : '링크 복사', x0, y, 250, 64, copyLink, { size: 25, fill: net.copied ? '#d8f3dc' : '#fff3c4' });
+          const cx = x0 + 250 + (inner - 250) / 2; text('방 코드', cx, y + 12, 17, '#7a6872', 'center', null, F_B); text(net.code, cx, y + 44, 36, CORAL, 'center', OUT, F_N);
+          y += 96; const ng = net.guests.length, st = net.status;
+          const head = st === 'reconnecting' || st === 'paused' ? '다시 연결하는 중' + dots : ng ? `참가 ${ng + 1}명 · 나 + 친구 ${ng}명` : '친구를 기다리는 중' + dots;
+          text(head, W / 2, y, 24, st === 'reconnecting' || st === 'paused' ? '#c0605a' : ng ? '#3f9a5c' : INK, 'center', null, F_T);
+          for (let i = 0; i < 4; i++) { ctx.lineWidth = 2.4; ctx.strokeStyle = OUT; E(W / 2 - 66 + i * 44, y + 38, 14, 14, i <= ng ? (i ? SKY : CORAL) : 'rgba(255,248,231,0.6)'); }
+          y += 72; const bw = (inner - 24) / 3;
+          ['single', 'coop', 'versus'].forEach((k, i) => { const x = x0 + i * (bw + 12), ok = kindOk(k), K = KINDS[k];
+            const over = ok && btn(x, y, bw, 108, () => hostKind(k));
+            rr(x, y + 4, bw, 108, 18, ok ? OUT : 'rgba(107,85,96,0.3)', null); rr(x, y, bw, 108, 18, !ok ? '#ebe2d8' : over ? '#fff3c4' : '#ffffff', ok ? OUT : '#cdbfb3', 2.6);
+            fit(K.ko, x + bw / 2, y + 32, 24, ok ? INK : '#b3a4ac', 'center', F_T, bw - 16);
+            K.sub.split(' · ').forEach((w2, j) => fit(w2, x + bw / 2, y + 66 + j * 24, 17, ok ? '#7a6872' : '#b3a4ac', 'center', F_B, bw - 14)); });
+          y += 140;
           if (location.protocol === 'file:') text('내 PC 안의 파일이라 다른 기기에서는 열리지 않아요', W / 2, y, 19, '#e2574c', 'center', null, F_B);
-          else text(ng ? '방식을 누르면 경기 설정으로 넘어가요' : '단식·협동은 친구 1명, 대전은 1~3명이 필요해요', W / 2, y, 19, '#7a6872', 'center', null, F_B);
+          else { fit(ng ? '방식을 누르면 경기 설정으로 넘어가요' : '단식·협동은 친구 1명, 대전은 1~3명이 필요해요', W / 2, y, 19, '#7a6872', 'center', F_B, inner);
+            fit('방 코드는 시간 제한 없이 이 화면이 열려 있는 동안 쓸 수 있어요', W / 2, y + 30, 17, '#9a8b93', 'center', F_B, inner);
+            fit('카톡으로 보내고 돌아오면 자동으로 다시 연결돼요', W / 2, y + 56, 17, '#9a8b93', 'center', F_B, inner); }
         }
       } else if (net) {
-        text(net.status === 'joined' ? '연결됐어요! 방장이 경기 방식을 고르는 중' + dots : '방 ' + net.code + ' 에 연결하는 중' + dots, W / 2, py + 150, 28, INK, 'center', null, F_H);
-        if (net.status === 'joined') text(`지금 방에 ${net.lobbyN || 2}명`, W / 2, py + 200, 24, '#3f9a5c', 'center', null, F_H);
+        const st = net.status, line = st === 'joined' ? '연결됐어요!' : st === 'reconnecting' || st === 'paused' ? '다시 연결하는 중' + dots : '방 ' + net.code + ' 에 연결하는 중' + dots;
+        text(line, W / 2, py + 130, 30, INK, 'center', null, F_T);
+        if (st === 'joined') { text('방장이 경기 방식을 고르는 중' + dots, W / 2, py + 174, 23, '#7a6872', 'center', null, F_B); text(`지금 방에 ${net.lobbyN || 2}명`, W / 2, py + 214, 23, '#3f9a5c', 'center', null, F_T); }
         ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(setup.animal, W / 2, py + 440, 1.5, { front: true, t: state.t, anim: 'run', accent: CORAL });
       }
       sideBtn('뒤로', () => { netClose(); scene = 'online'; }); // back to make or join, e.g. when both made a room at once
