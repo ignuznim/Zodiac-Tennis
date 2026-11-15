@@ -9,6 +9,11 @@ The owner reviews every change on a phone. These rules come from their repeated 
 - After any layout change, take a screenshot at phone size (390 x 844, and a short screen such as 390 x 600) and look at the margins before committing.
 - Use the plain fonts (F_T, F_B) for anything that must read cleanly; the handwritten font (F_H) has uneven spacing, so keep it to short accents.
 
+## Drawing
+- Work of one kind stays of one kind: a redrawn animal, item or button must match the others in style (outline, shading with shade(), proportions).
+- After touching any shared drawing code (drawAnimal, drawHead, drawEars, drawTail, items), render all twelve animals front and back and look at every one before committing, not just the one changed.
+- index.html is full of one-line chains like `if (...) { } else if (...) { }`: never add a `//` comment in the middle of such a line; it silently comments out the rest.
+
 ## Versions (APP_VERSION in index.html)
 - A new feature raises the middle number (1.8.0).
 - The small fixes after it are bundled into one last-number step (1.8.1). Do not raise the number for every small request.

@@ -266,7 +266,7 @@ function drawTail(A, s, front) { // s: the side the tail peeks from
     case 'dragon': curve(x, y, x + s * 34, y + 6, x + s * 34, y - 24, A.c, 8); poly([x + s * 34, y - 40, x + s * 26, y - 24, x + s * 42, y - 24], A.d); break;
     case 'snake': curve(x, y + 8, x + s * 30, y + 14, x + s * 36, y - 6, A.c, 7); break;
     case 'horse': curve(x, y - 4, x + s * 30, y - 10, x + s * 26, y + 16, A.d, 9); break;
-    case 'sheep': E(x + s * 8, y, 8, 8, A.c); break;
+    case 'sheep': E(x + s * 8, y, 8, 8, A.c); shade(x + s * 8, y, 8, 8); break;
     case 'monkey': curve(x, y, x + s * 36, y + 4, x + s * 30, y - 30, A.c, 5); E(x + s * 26, y - 32, 6, 6, A.c); break;
     case 'rooster': for (let i = 0; i < 3; i++) E(x + s * (10 + i * 5), y - 10 - i * 8, 7, 15, i === 1 ? A.l : A.d, s * (0.5 + i * 0.25)); break;
     case 'dog': curve(x, y, x + s * 22, y - 4, x + s * 20, y - 28, A.c, 7); break;
@@ -284,7 +284,7 @@ function drawEars(A, front, t = 0, an = 'idle') {
     case 'dragon': for (const s of [-1, 1]) { poly([s * 10, hy - 22, s * 14, hy - 48, s * 20, hy - 34, s * 28, hy - 44, s * 22, hy - 18], A.d); E(s * 27, hy - 4, 8, 5, A.c, s * -0.5); } break;
     case 'snake': break;
     case 'horse': for (const s of [-1, 1]) poly([s * 8, hy - 26, s * 15, hy - 46, s * 22, hy - 22], A.c); break;
-    case 'sheep': for (const s of [-1, 1]) { E(s * 40, hy + 4, 13, 7, '#ffe9df', s * 0.35); if (front) E(s * 41, hy + 4, 8, 3.6, '#f6a9b4', s * 0.35, true); } break; // soft drooping ears, pink inside
+    case 'sheep': for (const s of [-1, 1]) { E(s * 40, hy + 4, 13, 7, '#ffe9df', s * 0.35); shade(s * 40, hy + 4, 13, 7); if (front) E(s * 41, hy + 4, 8, 3.6, '#f6a9b4', s * 0.35, true); } break; // soft drooping ears, pink inside
     case 'monkey': for (const s of [-1, 1]) { E(s * 28, hy - 2, 12, 12, A.c); if (front) E(s * 28, hy - 2, 7, 7, A.d, 0, true); } break;
     case 'rooster': break;
     case 'dog': for (const s of [-1, 1]) E(s * 25, hy - 2, 9, 20, A.d, s * -0.25); break;
@@ -295,9 +295,9 @@ function drawHead(A, front, t) {
   const hy = -70, blink = (t % 3.4) > 3.25;
   let rx = 27, ry = 26;
   if (A.id === 'horse') { rx = 22; ry = 30; } else if (A.id === 'snake') { rx = 27; ry = 22; } else if (A.id === 'ox') rx = 29;
-  if (A.id === 'sheep') { for (let i = 0; i < 9; i++) { const a = i / 9 * 6.283; E(Math.cos(a) * 25, hy - 4 + Math.sin(a) * 23, 12, 12, A.c); } E(0, hy - 4, 26, 24, A.c, 0, true); }
+  if (A.id === 'sheep') { for (let i = 0; i < 9; i++) { const a = i / 9 * 6.283, x = Math.cos(a) * 25, y = hy - 4 + Math.sin(a) * 23; E(x, y, 12, 12, A.c); shade(x, y, 12, 12); } E(0, hy - 4, 26, 24, A.c, 0, true); shade(0, hy - 4, 26, 24); } // round tufts, each lit like every other animal
   if (A.id === 'horse') { for (let i = 0; i < 5; i++) E((front ? -4 + i * 2 : 0) + Math.sin(t * 9 + i * 0.9) * 2.5, hy - 30 + i * 9, front ? 9 : 12, 9, A.d); } // the mane flutters
-  if (A.id === 'sheep' && front) { E(0, hy + 4, 20, 18, '#ffe9df'); shade(0, hy + 4, 20, 18); } // the face: white, under a fringe of wool else if (A.id !== 'sheep') { E(0, hy, rx, ry, A.c); shade(0, hy, rx, ry); }
+  if (A.id === 'sheep' && front) { E(0, hy + 4, 20, 18, '#ffe9df'); shade(0, hy + 4, 20, 18); } else if (A.id !== 'sheep') { E(0, hy, rx, ry, A.c); shade(0, hy, rx, ry); }
   // what sits on top, in both views
   if (A.id === 'tiger') for (const s of [-1, 0, 1]) poly([s * 11 - 3, hy - 25, s * 11 + 3, hy - 25, s * 11, hy - 13], A.d);
   if (A.id === 'rooster') { for (let i = -1; i <= 1; i++) E(i * 8, hy - 28 - (i === 0 ? 5 : 0), 7, 9, A.d); }
@@ -321,7 +321,7 @@ function drawHead(A, front, t) {
       ctx.save(); ctx.strokeStyle = '#f25f5c'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(0, hy + 13); ctx.lineTo(0, hy + 21); ctx.lineTo(-4, hy + 26); ctx.moveTo(0, hy + 21); ctx.lineTo(4, hy + 26); ctx.stroke(); ctx.restore(); break;
     case 'horse': E(-3, hy - 26, 9, 7, A.d, -0.3); E(5, hy - 23, 8, 6, A.d, 0.4); E(0, hy + 14, 15, 12, A.l); eye(-10, hy - 6); eye(10, hy - 6); E(-5, hy + 13, 2, 3, OUT, 0, true); E(5, hy + 13, 2, 3, OUT, 0, true); smile(hy + 20, 5); break;
     case 'sheep': eye(-8, hy + 1, 3.6); eye(8, hy + 1, 3.6); cheeks(hy + 10, 13); E(0, hy + 10, 3.4, 2.6, '#f39aa8'); smile(hy + 16, 3.5);
-      for (let i = -1; i <= 1; i++) E(i * 10, hy - 14, 9, 8, A.c); break; // a fringe of wool over the brow
+      for (let i = -1; i <= 1; i++) { E(i * 10, hy - 14, 9, 8, A.c); shade(i * 10, hy - 14, 9, 8); } break; // a fringe of wool over the brow
     case 'monkey': E(0, hy + 4, 19, 17, A.d); E(-8, hy - 6, 10, 10, A.d, 0, true); E(8, hy - 6, 10, 10, A.d, 0, true); eye(-9, hy - 4); eye(9, hy - 4); E(0, hy + 6, 2.5, 2, OUT, 0, true); smile(hy + 12, 7); cheeks(hy + 7, 15); break;
     case 'rooster': eye(-10, hy - 4); eye(10, hy - 4); poly([-7, hy + 4, 7, hy + 4, 0, hy + 15], A.l); E(0, hy + 20, 4, 6, A.d); cheeks(hy + 6, 19); break;
     case 'dog': E(-11, hy - 4, 10, 11, A.d, 0, true); E(0, hy + 10, 13, 10, A.l, 0, true); eye(-10, hy - 3); eye(10, hy - 3); E(0, hy + 5, 5, 3.6, INK); smile(hy + 13, 5); E(0, hy + 18, 3.5, 5, '#ff9aa8'); break;
@@ -643,7 +643,7 @@ function drawAnimal(a, X, Y, k, o) {
     }
     if (shoes && shoes.look.flame) for (const sd of [-1, 1]) poly([sd * 10 - 6, fy(sd * step) + 4, sd * 10, fy(sd * step) + 13, sd * 10 + 6, fy(sd * step) + 4], '#ff8a3d');
     ctx.translate(0, -bob);
-    if (A.id === 'sheep') { const w = 1 + Math.sin(t * (an === 'run' ? 14 : 4)) * 0.05; for (let i = 0; i < 8; i++) { const q = i / 8 * 6.283; E(Math.cos(q) * 17 * w, -30 + Math.sin(q) * 19 * w, 10, 10, A.c); } } // the wool bounces
+    if (A.id === 'sheep') { const w = 1 + Math.sin(t * (an === 'run' ? 14 : 4)) * 0.05; for (let i = 0; i < 8; i++) { const q = i / 8 * 6.283, x = Math.cos(q) * 17 * w, y = -30 + Math.sin(q) * 19 * w; E(x, y, 10, 10, A.c); shade(x, y, 10, 10); } } // the wool bounces
     const arms = () => { // sleeves, the free hand
       if (shirt) for (const sd of [-1, 1]) sleeve(shirt.look, sd * 11, -47, sd * 20, sd === hand ? -40 : -36, 9, shirt.look.k === 'hanbok' ? 13 : 9);
       if (A.id === 'rooster') wing(-hand * 21, -36, -hand, A); else { E(-hand * 21, -36, 6.5, 6.5, A.c); shade(-hand * 21, -36, 6.5, 6.5); } };
