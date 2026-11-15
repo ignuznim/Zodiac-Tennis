@@ -1,6 +1,83 @@
--- Zodiac Tennis: accounts, the wardrobe, the gacha machine and achievements.
--- Run once in Supabase: SQL Editor -> New query -> paste -> Run. Safe to run again.
--- Everything that hands out items or tickets runs here, never in the browser.
+-- 십이지 테니스: everything the game keeps in Supabase, in one file.
+-- Run in Supabase: SQL Editor -> New query -> paste all of it -> Run.
+-- Safe to run again at any time: it only adds what is missing and replaces its own functions and rules;
+-- no ranking record, item, ticket or achievement already saved is removed.
+--
+--   1. Ranking      the scores table (wins against the computer)
+--   2. Wardrobe     items, achievements, profiles, inventory, the gacha machine, gear per animal
+--   3. Feedback     notes from players and errors the game hits
+
+
+-- ======================================================================
+-- 1. Ranking
+-- ======================================================================
+
+create table if not exists public.scores (
+  id          bigint generated always as identity primary key,
+  created_at  timestamptz not null default now(),
+  nickname    text     not null check (char_length(btrim(nickname)) between 1 and 10),
+  mode        text     not null default 'regular' check (mode in ('flash', 'short', 'regular')),
+  level       smallint not null check (level between 1 and 3),
+  animal      smallint not null check (animal between 0 and 11),
+  opponent    smallint not null check (opponent between 0 and 11),
+  court       text     not null check (court in ('hard', 'grass', 'clay')),
+  sets        text     not null check (char_length(sets) <= 60),
+  pts_for     smallint not null check (pts_for between 0 and 3000),
+  pts_against smallint not null check (pts_against between 0 and 3000),
+  sweet       smallint not null check (sweet between 0 and 30000),
+  duration_s  integer  not null check (duration_s between 0 and 86400),
+  client_id   uuid     not null,
+  score       integer  not null default 0
+);
+create index if not exists scores_mode_score on public.scores (mode, score desc);
+
+-- The score is worked out here, never taken from the browser, and a record that could not
+-- come from a real match is refused.
+create or replace function public.scores_check() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare min_pts int;
+begin
+  new.nickname   := btrim(new.nickname);
+  new.created_at := now();
+  min_pts := case new.mode when 'flash' then 10 when 'short' then 16 else 72 end; -- the fewest points a win can take
+  if new.pts_for < min_pts then raise exception 'not a finished win'; end if;
+  if new.duration_s < (new.pts_for + new.pts_against) * 3 then raise exception 'too fast'; end if;
+  if new.sweet > (new.pts_for + new.pts_against) * 25 then raise exception 'too many sweet hits'; end if;
+  if exists (select 1 from public.scores s where s.client_id = new.client_id and s.created_at > now() - interval '20 seconds') then
+    raise exception 'slow down';
+  end if;
+  new.score := (case new.level when 1 then 100 when 2 then 300 else 1000 end)
+             + greatest(0, new.pts_for - new.pts_against) * 10
+             + new.sweet * 2;
+  return new;
+end $$;
+drop trigger if exists scores_check on public.scores;
+create trigger scores_check before insert on public.scores for each row execute function public.scores_check();
+
+-- Anyone may read the board and add a record; nobody can change or delete one from the game.
+alter table public.scores enable row level security;
+drop policy if exists "read scores" on public.scores;
+create policy "read scores" on public.scores for select to anon, authenticated using (true);
+drop policy if exists "add scores" on public.scores;
+create policy "add scores" on public.scores for insert to anon, authenticated with check (true);
+
+revoke all on public.scores from anon, authenticated;
+grant select (id, created_at, nickname, mode, level, animal, opponent, court, sets, pts_for, pts_against, sweet, duration_s, score)
+  on public.scores to anon, authenticated;
+grant insert (nickname, mode, level, animal, opponent, court, sets, pts_for, pts_against, sweet, duration_s, client_id)
+  on public.scores to anon, authenticated;
+
+-- One record per match: a double tap once sent the same win twice. Drop the repeats, keep the first,
+-- and let the database refuse a repeat from now on (the game reads the refusal as "already sent").
+delete from public.scores a using public.scores b
+ where a.id > b.id and a.client_id = b.client_id and a.mode = b.mode and a.score = b.score
+   and a.duration_s = b.duration_s and a.pts_for = b.pts_for and a.pts_against = b.pts_against;
+create unique index if not exists scores_one_per_match on public.scores (client_id, mode, score, duration_s, pts_for, pts_against);
+
+
+-- ======================================================================
+-- 2. Wardrobe
+-- ======================================================================
 
 -- ---- The item catalogue: 100 items (27 hats, 25 uniforms, 24 shoes, 24 rackets), four grades (0 일반, 1 희귀, 2 영웅, 3 전설) ----
 create table if not exists public.items (
@@ -279,3 +356,43 @@ grant execute on function public.me(), public.set_nickname(text), public.gacha_p
 alter table public.scores add column if not exists gear text check (gear is null or char_length(gear) <= 40);
 grant select (gear) on public.scores to anon, authenticated;
 grant insert (gear) on public.scores to anon, authenticated;
+
+
+-- ======================================================================
+-- 3. Feedback
+-- ======================================================================
+
+create table if not exists public.feedback (
+  id         bigint generated always as identity primary key,
+  created_at timestamptz not null default now(),
+  kind       text not null check (kind in ('bug', 'ux', 'idea', 'error')),
+  message    text not null check (char_length(message) between 1 and 1000),
+  context    jsonb not null default '{}'::jsonb check (pg_column_size(context) < 4000),
+  client_id  text check (client_id is null or char_length(client_id) <= 40),
+  done       boolean not null default false  -- tick it in the dashboard once handled
+);
+create index if not exists feedback_recent on public.feedback (created_at desc);
+
+-- A brake on floods: a few notes a minute and a handful of error reports an hour from one device
+create or replace function public.feedback_limit() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if new.client_id is not null then
+    if new.kind <> 'error' and (select count(*) from public.feedback where client_id = new.client_id and kind <> 'error' and created_at > now() - interval '1 minute') >= 3 then
+      raise exception 'too many';
+    end if;
+    if new.kind = 'error' and (select count(*) from public.feedback where client_id = new.client_id and kind = 'error' and created_at > now() - interval '1 hour') >= 20 then
+      raise exception 'too many';
+    end if;
+  end if;
+  new.done := false; new.created_at := now();
+  return new;
+end $$;
+drop trigger if exists feedback_limit on public.feedback;
+create trigger feedback_limit before insert on public.feedback for each row execute function public.feedback_limit();
+
+alter table public.feedback enable row level security;
+drop policy if exists "send feedback" on public.feedback;
+create policy "send feedback" on public.feedback for insert to anon, authenticated with check (true);
+revoke all on public.feedback from anon, authenticated;
+grant insert (kind, message, context, client_id) on public.feedback to anon, authenticated;

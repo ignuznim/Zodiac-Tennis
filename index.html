@@ -1765,7 +1765,7 @@ function drawHall() {
   gb(rank.loading ? '불러오는 중…' : '새로고침', LY.m + LY.side + LY.gap, LY.w - LY.side - LY.gap, '#c8963a', '#2a1a1c', () => { if (!rank.loading) loadRanking(null, 'all'); });
   text('지금까지 컴퓨터를 이긴 모든 기록 중 TOP 10', W / 2, LY.foot, 20, '#e9dcef', 'center', null, F_B);
 }
-// ---- 의견 보내기: notes from players and errors the game hits, kept in Supabase (supabase/feedback.sql) ----
+// ---- 의견 보내기: notes from players and errors the game hits, kept in Supabase (supabase/setup.sql, part 3) ----
 const fbUrl = () => RANK.url.replace('/scores', '/feedback'), fbBox = document.getElementById('fb'), fbIn = document.getElementById('fbIn'), fbErr = document.getElementById('fbErr');
 let fbKind = 'bug', fbBusy = false;
 function fbContext() { // where the player was and on what: so nobody has to ask
