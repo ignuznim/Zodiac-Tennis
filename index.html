@@ -2839,11 +2839,11 @@ const scenes = {
           for (let i = 0; i < 4; i++) { ctx.lineWidth = 2.4; ctx.strokeStyle = OUT; E(W / 2 - 66 + i * 44, y + 38, 14, 14, i <= ng ? (i ? SKY : CORAL) : 'rgba(255,248,231,0.6)'); }
           y += 72; const bw = (inner - 24) / 3;
           ['single', 'coop', 'versus'].forEach((k, i) => { const x = x0 + i * (bw + 12), ok = kindOk(k), K = KINDS[k];
-            const over = ok && btn(x, y, bw, 108, () => hostKind(k));
-            rr(x, y + 4, bw, 108, 18, ok ? OUT : 'rgba(107,85,96,0.3)', null); rr(x, y, bw, 108, 18, !ok ? '#ebe2d8' : over ? '#fff3c4' : '#ffffff', ok ? OUT : '#cdbfb3', 2.6);
-            fit(K.ko, x + bw / 2, y + 32, 24, ok ? INK : '#b3a4ac', 'center', F_T, bw - 16);
-            K.sub.split(' · ').forEach((w2, j) => fit(w2, x + bw / 2, y + 66 + j * 24, 17, ok ? '#7a6872' : '#b3a4ac', 'center', F_B, bw - 14)); });
-          y += 140;
+            const bh = 116, over = ok && btn(x, y, bw, bh, () => hostKind(k)); // a name and two lines, the same space above and below
+            rr(x, y + 4, bw, bh, 18, ok ? OUT : 'rgba(107,85,96,0.3)', null); rr(x, y, bw, bh, 18, !ok ? '#ebe2d8' : over ? '#fff3c4' : '#ffffff', ok ? OUT : '#cdbfb3', 2.6);
+            fit(K.ko, x + bw / 2, y + 31, 24, ok ? INK : '#b3a4ac', 'center', F_T, bw - 20);
+            K.sub.split(' · ').forEach((w2, j) => fit(w2, x + bw / 2, y + 67 + j * 23, 17, ok ? '#7a6872' : '#b3a4ac', 'center', F_B, bw - 20)); });
+          y += 150;
           if (location.protocol === 'file:') text('내 PC 안의 파일이라 다른 기기에서는 열리지 않아요', W / 2, y, 19, '#e2574c', 'center', null, F_B);
           else { fit(ng ? '방식을 누르면 경기 설정으로 넘어가요' : '단식·협동은 친구 1명, 대전은 1~3명이 필요해요', W / 2, y, 19, '#7a6872', 'center', F_B, inner);
             fit('방 코드는 시간 제한 없이 이 화면이 열려 있는 동안 쓸 수 있어요', W / 2, y + 30, 17, '#9a8b93', 'center', F_B, inner);
