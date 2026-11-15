@@ -12,6 +12,8 @@ The owner reviews every change on a phone. These rules come from their repeated 
 ## Versions (APP_VERSION in index.html)
 - A new feature raises the middle number (1.8.0).
 - The small fixes after it are bundled into one last-number step (1.8.1). Do not raise the number for every small request.
+- Renaming things (items, labels) does not change the version at all.
+- Item names live in two places, index.html (ITEMS) and supabase/wardrobe.sql: change both, and give the owner the SQL to run.
 
 ## Other standing choices
 - Computers (partners and opponents) never wear items; items apply only to the player.
