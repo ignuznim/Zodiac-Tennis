@@ -944,7 +944,7 @@ function launch(p, kind, q, charge, aimX, aimD, late = 0) {
   if (ai && kind !== 'drop' && rng() < ai('gentle')) tx = clamp(m.P[1 - p.i].x + (rng() - 0.5) * 1.6, -3.2, 3.2); // a kind computer plays it back to you
   const an = rng() * 6.283, r = e * Math.sqrt(rng());
   tx += Math.cos(an) * r; let ty = opp * depth + Math.sin(an) * r * 1.3;
-  let slip = ai && rng() < ai('miss') ? rng() : -1; // the computer's own unforced error: long, wide or into the net
+  let slip = ai && rng() < ai('miss') + ai('catchup') * aiLead(p) ? rng() : -1; // the computer's own unforced error: long, wide or into the net (a little likelier while it leads)
   if (slip >= 0 && slip < 0.4) ty = opp * (CL + 0.5 + rng() * 1.8);
   else if (slip >= 0.4 && slip < 0.75) tx = (tx >= 0 ? 1 : -1) * (CW + 0.4 + rng() * 1.4);
   const dist = Math.hypot(tx - b.x, ty - b.y);
@@ -1090,6 +1090,10 @@ function predict(p) { // where the computer should stand to meet the ball
     if (bt >= 0 && t - bt >= 0.3) break;
   }
   return { x: clamp(x + (x > 0 ? -0.5 : 0.5), -5.4, 5.4), y: p.side * clamp(p.side * y + 0.4, 1, 16.3), out };
+}
+function aiLead(p) { // how far the computer is ahead: games in this set (points/3 in a tie-break), two games a set
+  const sc = m.sc, o = 1 - p.i, sets = sc.won[p.i] - sc.won[o], now = sc.tb ? (sc.pts[p.i] - sc.pts[o]) / 3 : sc.games[p.i] - sc.games[o];
+  return Math.max(0, now + 2 * sets);
 }
 function aiThink(p, dt) {
   const A = p.ai, b = m.ball, o = m.P[1 - p.i], L = m.level, inp = { dx: 0, dy: 0, a: false, k: false, l: false, s: false };
