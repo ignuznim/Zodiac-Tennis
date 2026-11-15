@@ -2458,7 +2458,9 @@ function statBars(a, x, y, bonus = {}) {
     for (let k = 0; k < BAR.n; k++) { const cx = x + BAR.lab + k * BAR.step, spare = k >= 5, fill = Math.max(0, Math.min(1, v + add - k));
       if (spare) { ctx.setLineDash([3, 3]); rr(cx, yy - 9, BAR.cell, 18, 5, 'rgba(234,223,210,0.45)', '#b9aaa0', 1.6); ctx.setLineDash([]); }
       else rr(cx, yy - 9, BAR.cell, 18, 5, k < v ? STAT_COL[i] : '#eadfd2', OUT, 2.2);
-      if (k >= v && fill > 0) rr(cx, yy - 9, BAR.cell * fill, 18, 4, '#3d8be0', OUT, 1.8); } // what the gear adds, in blue, into the spare cells
+      if (k >= v && fill > 0) { // what the gear adds, in blue: a straight fill clipped to the cell, then the cell's outline over it
+        ctx.save(); rr(cx, yy - 9, BAR.cell, 18, 5, null, null); ctx.clip(); ctx.fillStyle = '#3d8be0'; ctx.fillRect(cx, yy - 9, BAR.cell * fill, 18); ctx.restore();
+        if (spare) { ctx.setLineDash([3, 3]); rr(cx, yy - 9, BAR.cell, 18, 5, null, '#b9aaa0', 1.6); ctx.setLineDash([]); } else rr(cx, yy - 9, BAR.cell, 18, 5, null, OUT, 2.2); } }
     text(STAT_DO[i], x + BAR.lab + BAR.step * BAR.n + 10, yy, 17, '#7a6872', 'left', null, F_B);
   });
 }
