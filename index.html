@@ -54,7 +54,7 @@
 'use strict';
 // ---- Built to be checked ----------------------------------------------------------------
 const params = new URLSearchParams(location.search);
-const APP_VERSION = '1.8.0'; // shown on the home screen: raise it with every update (big change: 1.x, feature: x.1, fix: x.x.1)
+const APP_VERSION = '1.8.1'; // shown on the home screen: raise it with every update (big change: 1.x, feature: x.1, fix: x.x.1)
 const tune = new Proxy({}, { get: (_, k) => CONFIG[k].value }); // live: tune.speed is CONFIG.speed.value
 const STEP = 1 / 60;            // simulation step in seconds; motion is per second, never per frame
 const W = 720; let H = 1280;    // logical size: a portrait page 720 wide, as tall as the window's shape asks (900 to 1580)
@@ -804,7 +804,7 @@ function drawBackdrop(ground = '#7fc9ae', hb = 232, wall = true) {
 function drawCourt() {
   const C = COURTS[m.court] || COURTS.grass;
   drawBackdrop(C.ground);
-  quad(-7.9, -15.6, 7.9, 15.9, C.apron);
+  quad(-16, -15.6, 16, 15.9, C.apron); // the ground round the court, wider than the screen at every depth
   quad(-DW - 0.28, -CL - 0.28, DW + 0.28, CL + 0.28, C.edge); // a dark rim: where the court ends is plain at a glance
   for (let i = 0; i < 8; i++) { const y0 = -CL + i * (2 * CL / 8); quad(-DW, y0, DW, y0 + 2 * CL / 8, i % 2 ? C.b : C.a); }
   ctx.lineCap = 'butt';
