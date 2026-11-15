@@ -54,7 +54,7 @@
 'use strict';
 // ---- Built to be checked ----------------------------------------------------------------
 const params = new URLSearchParams(location.search);
-const APP_VERSION = '1.7.0'; // shown on the home screen: raise it with every update (big change: 1.x, feature: x.1, fix: x.x.1)
+const APP_VERSION = '1.8.0'; // shown on the home screen: raise it with every update (big change: 1.x, feature: x.1, fix: x.x.1)
 const tune = new Proxy({}, { get: (_, k) => CONFIG[k].value }); // live: tune.speed is CONFIG.speed.value
 const STEP = 1 / 60;            // simulation step in seconds; motion is per second, never per frame
 const W = 720; let H = 1280;    // logical size: a portrait page 720 wide, as tall as the window's shape asks (900 to 1580)
@@ -1635,6 +1635,88 @@ function guestStep() { // the guest draws what the host sends and sends its own 
 }
 
 // ---- Scenes: the menus are laid out in a 720 x 900 box, centred in whatever height the window gives ----
+// ---- 명예의 전당: the all-time top ten, kept like ancestral tablets in Jongmyo's long hall ----
+const HALL_TIME = 'night'; // 'night': a full moon; 'dusk': the sun going down
+const HALL_SKY = { night: ['#1d1b3a', '#3b2f5c', '#6a4a6e'], dusk: ['#3b2c58', '#b05a6a', '#f2a46a'] };
+function openHall() { scene = 'hall'; state.hallT = 0; rank.list = null; loadRanking(null, 'all'); tone(392, 0.4, 'sine', 0.18); tone(587, 0.6, 'sine', 0.14, 0.25); }
+function drawHall() {
+  OY = 0; computeLayout();
+  const t = state.hallT || 0, sky = HALL_SKY[HALL_TIME], dusk = HALL_TIME === 'dusk';
+  let g = ctx.createLinearGradient(0, 0, 0, H * 0.5); sky.forEach((c, i) => g.addColorStop(i / 2, c)); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  for (let i = 0; i < (dusk ? 18 : 60); i++) { const x = (i * 137) % W, y = (i * 71) % 300; ctx.globalAlpha = (0.3 + (i % 5) * 0.12) * (0.75 + 0.25 * Math.sin(t * 2 + i)); E(x, y, 1.2, 1.2, '#fff8e7', 0, true); } ctx.globalAlpha = 1;
+  const rowH = H > 1200 ? 44 : 38, listH = 58 + 7 * rowH + 14, listTop = LY.bot - 22 - listH, base = listTop - 26;
+  const ty = LY.tall ? 34 : LY.titleY - 39, fy = ty + 96; // the title board and the formats at the top; the hall fills the rest
+  const k = clamp((base - 40 - fy - 60) / 250, 0.6, 1.25);
+  const mx = dusk ? 140 : 600, my = dusk ? base - 236 : Math.max(fy + 120, base - 330 * k), mr = dusk ? 54 : 40; // the moon, or a low sun behind the roof
+  const mg = ctx.createRadialGradient(mx, my, 6, mx, my, mr * 3); mg.addColorStop(0, dusk ? 'rgba(255,200,120,0.7)' : 'rgba(255,240,200,0.55)'); mg.addColorStop(1, 'rgba(255,240,200,0)'); ctx.fillStyle = mg; ctx.fillRect(mx - mr * 3, my - mr * 3, mr * 6, mr * 6);
+  E(mx, my, mr, mr, dusk ? '#ffcf7a' : '#fff3d0', 0, true);
+  // the terrace, the doors between red columns, the dancheong band, one long roof
+  ctx.fillStyle = '#5b5068'; ctx.fillRect(0, base, W, 40); ctx.fillStyle = '#4a4058'; for (let x = 0; x < W; x += 36) ctx.fillRect(x, base, 1.5, 40);
+  const bay = 96, n = 9, x0 = W / 2 - bay * n / 2;
+  ctx.fillStyle = '#3a2430'; ctx.fillRect(x0 - 30, base - 150, bay * n + 60, 150);
+  for (let i = 0; i < n; i++) { const x = x0 + i * bay; ctx.fillStyle = '#5a1f22'; ctx.fillRect(x + 12, base - 138, bay - 24, 138);
+    ctx.strokeStyle = 'rgba(255,214,140,0.18)'; ctx.lineWidth = 1.2; ctx.beginPath(); for (let q = 1; q < 5; q++) { ctx.moveTo(x + 12 + q * (bay - 24) / 5, base - 136); ctx.lineTo(x + 12 + q * (bay - 24) / 5, base); } ctx.stroke(); }
+  for (let i = 0; i <= n; i++) { const x = x0 + i * bay; ctx.fillStyle = '#b8352e'; ctx.fillRect(x - 6, base - 160, 12, 160); ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(x + 2, base - 160, 4, 160); }
+  ctx.fillStyle = '#2f6b55'; ctx.fillRect(x0 - 40, base - 182, bay * n + 80, 22); for (let x = x0 - 40; x < x0 + bay * n + 40; x += 16) E(x + 8, base - 171, 5, 5, (x - x0) % 32 ? '#e2574c' : '#f6c445', 0, true);
+  ctx.beginPath(); ctx.moveTo(-20, base - 176); ctx.quadraticCurveTo(W / 2, base - 196, W + 20, base - 176); ctx.lineTo(W - 20, base - 250); ctx.quadraticCurveTo(W / 2, base - 262, 20, base - 250); ctx.closePath(); ctx.fillStyle = '#26222e'; ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1; ctx.beginPath(); for (let x = 0; x < W; x += 9) { ctx.moveTo(x, base - 248 + Math.abs(x - W / 2) / 60); ctx.lineTo(x + 4, base - 182); } ctx.stroke();
+  ctx.fillStyle = '#1a1720'; ctx.fillRect(10, base - 262, W - 20, 14);
+  if (dusk) { const rg = ctx.createLinearGradient(0, base - 262, 0, base - 176); rg.addColorStop(0, 'rgba(255,170,100,0.25)'); rg.addColorStop(1, 'rgba(255,170,100,0)'); ctx.fillStyle = rg; ctx.fillRect(0, base - 262, W, 86); } // the low sun on the tiles
+  const lg = ctx.createLinearGradient(0, base, 0, base + 120); lg.addColorStop(0, 'rgba(255,200,120,0.25)'); lg.addColorStop(1, 'rgba(255,200,120,0)'); ctx.fillStyle = lg; ctx.fillRect(0, base, W, 120);
+  // the stone court and the spirits' path down its middle
+  g = ctx.createLinearGradient(0, base + 40, 0, H); g.addColorStop(0, '#6f6577'); g.addColorStop(1, '#4b4352'); ctx.fillStyle = g; ctx.fillRect(0, base + 40, W, H);
+  ctx.strokeStyle = 'rgba(30,24,36,0.35)'; ctx.lineWidth = 1.4; for (let r = 0; base + 40 + r * 34 < H; r++) { const y = base + 40 + r * 34; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); for (let q = 0; q < 9; q++) { const x = (q * 97 + r * 53) % W; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 6, y + 34); ctx.stroke(); } }
+  ctx.fillStyle = 'rgba(160,150,170,0.35)'; ctx.fillRect(W / 2 - 30, base + 40, 60, H);
+  // the title board, the home key, the formats
+  rr(190, ty, 340, 76, 8, '#2a1a1c', '#c8963a', 5); rr(200, ty + 10, 320, 56, 4, null, 'rgba(246,196,69,0.5)', 1.5);
+  text('명예의 전당', W / 2, ty + 39, 44, '#f6c445', 'center', '#3a2010', F_T);
+  iconBtn(LY.m, ty + 11, 'home', goHome);
+  const tw = (LY.w - LY.gap * 2) / 3;
+  FORMAT_IDS.forEach((id, i) => { const x = LY.m + i * (tw + LY.gap), on = id === rank.mode, over = btn(x, fy, tw, 46, () => { if (!on) { rank.list = null; loadRanking(id, 'all'); } });
+    rr(x, fy, tw, 46, 14, on ? 'rgba(246,196,69,0.28)' : over ? 'rgba(255,248,231,0.2)' : 'rgba(255,248,231,0.1)', on ? '#f6c445' : 'rgba(255,248,231,0.35)', on ? 2.6 : 2);
+    text(MODE_KO[id], x + tw / 2, fy + 24, 21, on ? '#fff3d0' : '#d6c8dd', 'center', null, F_T); });
+  // the top three on their tablets, the first in the middle and tallest
+  const L = rank.list || [], col = ['#f6c445', '#cfd8e3', '#e6a46a'];
+  for (const pos of [0, 2, 1]) { const r = L[[1, 0, 2][pos]], rank1 = pos === 1, kk = k * (rank1 ? 1 : 0.86), w = 150 * kk, h = 250 * kk, cx = W / 2 + (pos - 1) * 170, yy = base - 40 - h + (rank1 ? 0 : 30 * k), c = col[[1, 0, 2][pos]];
+    const glow = ctx.createRadialGradient(cx, yy + h / 2, 10, cx, yy + h / 2, 140 * kk); glow.addColorStop(0, rank1 ? `rgba(246,196,69,${0.28 + 0.1 * Math.sin(t * 2.2)})` : 'rgba(255,240,220,0.16)'); glow.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = glow; ctx.fillRect(cx - 160 * kk, yy - 60, 320 * kk, h + 140);
+    rr(cx - w / 2 - 14, yy + h - 6, w + 28, 34 * kk, 6, '#3a2f3e', '#1e1822', 3);
+    ctx.beginPath(); ctx.moveTo(cx - w / 2, yy + h); ctx.lineTo(cx - w / 2, yy + 40 * kk); ctx.quadraticCurveTo(cx - w / 2, yy, cx, yy); ctx.quadraticCurveTo(cx + w / 2, yy, cx + w / 2, yy + 40 * kk); ctx.lineTo(cx + w / 2, yy + h); ctx.closePath();
+    ctx.fillStyle = '#4a1d22'; ctx.fill(); ctx.lineWidth = 5; ctx.strokeStyle = c; ctx.stroke();
+    ctx.lineWidth = 2.4; ctx.strokeStyle = OUT; E(cx, yy + 34 * kk, 22 * kk, 22 * kk, c); text(['2', '1', '3'][pos], cx, yy + 35 * kk, 26 * kk, '#3a2010', 'center', null, F_N);
+    if (r) { const worn = {}; for (const id of (r.gear || '').split(',')) { const it = item(id); if (it) worn[it.slot] = id; }
+      ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(r.animal, cx, yy + 168 * kk, 0.78 * kk, { front: true, t: rank1 ? t : 0.4, anim: rank1 ? 'cheer' : 'idle', accent: CORAL, gear: worn });
+      text(r.nickname, cx, yy + 196 * kk, Math.min(22 * kk, 140 * kk / Math.max(1, r.nickname.length) * 1.6), '#fff3d0', 'center', null, F_T); text(r.score.toLocaleString() + '점', cx, yy + 224 * kk, 22 * kk, c, 'center', null, F_N); }
+    else text('비어 있어요', cx, yy + 150 * kk, 20 * kk, 'rgba(255,240,220,0.5)', 'center', null, F_T); }
+  // incense burning at either end
+  for (const x of [70, W - 70]) { ctx.strokeStyle = 'rgba(255,255,255,0.13)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x, base + 30);
+    for (let q = 0; q < 8; q++) { const sw = Math.sin(t * 1.3 + q * 0.9 + x) * 14; ctx.quadraticCurveTo(x + sw, base + 10 - q * 22, x + sw * 0.3, base - 10 - q * 22); } ctx.stroke(); rr(x - 10, base + 26, 20, 16, 4, '#8a6a3a', '#3a2a1a', 2); E(x, base + 26, 2.5, 2.5, `rgba(255,140,60,${0.6 + 0.4 * Math.sin(t * 5)})`, 0, true); }
+  // fourth to tenth, cut into a long stone
+  rr(LY.m + 8, listTop, LY.w - 16, listH, 14, '#8a8191', '#3e3644', 4); rr(LY.m + 20, listTop + 12, LY.w - 40, listH - 24, 8, '#7a7182', 'rgba(255,255,255,0.18)', 1.5);
+  if (rank.loading && !rank.list) text('불러오는 중…', W / 2, listTop + listH / 2, 26, '#2e2733', 'center', null, F_H);
+  else if (rank.err && !L.length) text(rank.err, W / 2, listTop + listH / 2, 19, '#5a1f22', 'center', null, F_B);
+  else if (!L.length) text('아직 아무도 모셔지지 않았어요', W / 2, listTop + listH / 2, 24, '#2e2733', 'center', null, F_T);
+  else { text('4위 – 10위', W / 2, listTop + 38, 21, '#2e2733', 'center', null, F_T);
+    for (let i = 3; i < 10; i++) { const r = L[i], y = listTop + 58 + (i - 3) * rowH + rowH / 2;
+      text((i + 1) + '', LY.m + 60, y, 22, '#2e2733', 'center', null, F_N);
+      ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(LY.m + 44, y + rowH / 2); ctx.lineTo(LY.m + LY.w - 44, y + rowH / 2); ctx.stroke();
+      if (!r) continue; const worn = {}; for (const id of (r.gear || '').split(',')) { const it = item(id); if (it) worn[it.slot] = id; }
+      ctx.lineWidth = 2; ctx.strokeStyle = OUT; drawAnimal(r.animal, LY.m + 110, y + 12, 0.26, { front: true, t: 0.4, accent: CORAL, gear: worn });
+      text(r.nickname, LY.m + 142, y, 22, '#2a2330', 'left', null, F_T); text(LEVEL_KO[r.level] || '', LY.m + 430, y, 19, '#4a3d47', 'center', null, F_T); text(r.score.toLocaleString(), LY.m + LY.w - 44, y, 23, '#2a2330', 'right', null, F_N); } }
+  // the doors: shut when you come in, then they swing open
+  const op = clamp((t - 0.35) / 1.1, 0, 1), e = 1 - Math.pow(1 - op, 3);
+  if (op < 1) { const dTop = fy + 56, dBot = base + 40, half = W / 2;
+    for (const sd of [-1, 1]) { const x = sd < 0 ? -half * e : half + half * e;
+      ctx.fillStyle = '#5a1f22'; ctx.fillRect(x, dTop, half, dBot - dTop); ctx.strokeStyle = 'rgba(255,214,140,0.25)'; ctx.lineWidth = 2;
+      ctx.beginPath(); for (let q = 1; q < 6; q++) { ctx.moveTo(x + q * half / 6, dTop); ctx.lineTo(x + q * half / 6, dBot); } ctx.stroke();
+      for (let r = 0; r < 4; r++) for (let q = 0; q < 5; q++) E(x + (q + 0.5) * half / 5, dTop + 40 + r * (dBot - dTop - 80) / 3, 4, 4, '#c8963a', 0, true); // gilt studs
+      ctx.fillStyle = '#3a1416'; ctx.fillRect(sd < 0 ? x + half - 6 : x, dTop, 6, dBot - dTop);
+      E(sd < 0 ? x + half - 26 : x + 26, (dTop + dBot) / 2, 12, 12, '#c8963a'); E(sd < 0 ? x + half - 26 : x + 26, (dTop + dBot) / 2, 6, 6, '#5a1f22', 0, true); } }
+  // buttons, where every menu keeps them
+  const gb = (label, x, w, fill, ink, fn) => { const over = btn(x, LY.bot, w, LY.btnH, fn); rr(x, LY.bot + 5, w, LY.btnH, 18, '#1a1218', null); rr(x, LY.bot, w, LY.btnH, 18, over ? (fill === '#c8963a' ? '#dcaa4c' : '#3a2428') : fill, fill === '#c8963a' ? '#3a2010' : '#c8963a', 3); text(label, x + w / 2, LY.bot + LY.btnH / 2 + 1, 28, ink, 'center', null, F_T); };
+  gb('월간 랭킹', LY.m, LY.side, '#2a1a1c', '#f6c445', () => { scene = 'ranking'; rank.list = null; loadRanking(null, 'month'); });
+  gb(rank.loading ? '불러오는 중…' : '새로고침', LY.m + LY.side + LY.gap, LY.w - LY.side - LY.gap, '#c8963a', '#2a1a1c', () => { if (!rank.loading) loadRanking(null, 'all'); });
+  text('지금까지 컴퓨터를 이긴 모든 기록 중 TOP 10', W / 2, LY.foot, 20, '#e9dcef', 'center', null, F_B);
+}
 // ---- Ranking: wins against the computer, kept in Supabase (the key below is the public one) ----
 const RANK = { url: 'https://cvlsgzhprpabzchmoutn.supabase.co/rest/v1/scores', key: 'sb_publishable_H77zqwSZzj0pRkPleK8HnA_neZwJyUK' };
 const LEVEL_KO = ['', '쉬움', '보통', '어려움'], MODE_KO = { regular: '정규전', short: '단판전', flash: '번개전' };
@@ -2071,6 +2153,9 @@ function icon(kind, x, y, s) { // trophy, capsule, medal, hanger: drawn about s 
     ctx.beginPath(); ctx.arc(-18, -10, 10, Math.PI * 0.5, Math.PI * 1.5); ctx.stroke(); ctx.beginPath(); ctx.arc(18, -10, 10, -Math.PI * 0.5, Math.PI * 0.5); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(-20, -24); ctx.lineTo(20, -24); ctx.lineTo(16, 2); ctx.quadraticCurveTo(0, 14, -16, 2); ctx.closePath(); ctx.fillStyle = '#ffd34d'; ctx.fill(); ctx.stroke();
     rr(-5, 8, 10, 10, 2, '#ffd34d', OUT, 3); rr(-16, 18, 32, 9, 3, '#c98f5f', OUT, 3); star(0, -12, 7, '#fff8e7');
+  } else if (kind === 'shrine') {
+    ctx.beginPath(); ctx.moveTo(-30, -6); ctx.quadraticCurveTo(0, -12, 30, -6); ctx.lineTo(24, -20); ctx.quadraticCurveTo(0, -24, -24, -20); ctx.closePath(); ctx.fillStyle = '#f6c445'; ctx.fill(); ctx.stroke();
+    rr(-24, -6, 48, 6, 2, '#2f6b55', OUT, 2.4); for (const x of [-18, -6, 6, 18]) rr(x - 3, 0, 6, 22, 1, '#e2574c', OUT, 2.2); rr(-28, 22, 56, 6, 2, '#cfc6d6', OUT, 2.4);
   } else if (kind === 'capsule') { capsule(0, 0, 24, '#9b5de5', -0.4); star(20, -20, 7, BALL); }
   else if (kind === 'medal') {
     poly([-14, -28, -4, -28, 4, -6, -6, -6], '#3d8be0'); poly([14, -28, 4, -28, -4, -6, 6, -6], '#e2574c');
@@ -2441,21 +2526,20 @@ const scenes = {
       state.t += dt; if (pressed('Escape')) scene = 'title'; if (pressed('KeyR') && !rank.loading) loadRanking();
       const d = anyHit(...K_R) ? 1 : anyHit(...K_L) ? 2 : 0;
       if (d && !rank.loading) { rank.list = null; loadRanking(FORMAT_IDS[(FORMAT_IDS.indexOf(rank.mode) + d) % 3]); }
-      if (anyHit(...K_U, ...K_D) && !rank.loading) { rank.list = null; loadRanking(null, rank.period === 'month' ? 'all' : 'month'); }
+      if (anyHit(...K_U) || pressed('KeyH')) openHall();
     },
     draw() {
-      menuBegin(rank.period === 'month' ? '이번 달 랭킹' : '명예의 전당', true);
-      const pw = (LY.w - LY.gap) / 2; // the period: this month's race, or every record ever
-      [['month', '월간 랭킹'], ['all', '명예의 전당']].forEach(([id, t], i) => { const x = LY.m + i * (pw + LY.gap), on = id === rank.period;
-        const over = btn(x, LY.top, pw, 56, () => { if (!on) { rank.list = null; loadRanking(null, id); } });
-        rr(x, LY.top, pw, 56, 16, on ? '#fff3c4' : over ? '#fffdf3' : 'rgba(255,248,231,0.8)', on ? CORAL : OUT, on ? 4 : 2.6);
-        text(t, x + pw / 2, LY.top + 29, 26, on ? INK : '#7a6872', 'center', null, F_T); });
-      const tw = (LY.w - LY.gap * 2) / 3, fy = LY.top + 56 + 12; // then the format
+      if (rank.period !== 'month') { rank.period = 'month'; rank.list = null; loadRanking(null, 'month'); }
+      menuBegin('이번 달 랭킹', true);
+      { const hx = LY.m + LY.w - 96, hy = LY.titleY - 30, over = btn(hx, hy, 96, 60, openHall); // the hall of fame: its own gilded door, apart from the month's race
+        rr(hx, hy + 4, 96, 60, 16, '#1a1218', null); rr(hx, hy, 96, 60, 16, over ? '#3a2428' : '#2a1a1c', '#c8963a', 3);
+        icon('shrine', hx + 30, hy + 30, 40); text('명예의', hx + 70, hy + 20, 14, '#f6c445', 'center', null, F_T); text('전당', hx + 70, hy + 40, 14, '#f6c445', 'center', null, F_T); }
+      const tw = (LY.w - LY.gap * 2) / 3, fy = LY.top; // the format
       FORMAT_IDS.forEach((id, i) => { const x = LY.m + i * (tw + LY.gap), on = id === rank.mode;
         const over = btn(x, fy, tw, 44, () => { if (!on) { rank.list = null; loadRanking(id); } });
         rr(x, fy, tw, 44, 14, on ? '#fdf0d0' : over ? '#fffdf3' : 'rgba(255,248,231,0.7)', on ? '#e3a46a' : OUT, on ? 3 : 2.2);
         text(MODE_KO[id], x + tw / 2, fy + 23, 21, on ? INK : '#7a6872', 'center', null, F_T); });
-      const py = fy + 44 + LY.gap, ph = 64 + SZ().row * 10 + LY.pad;
+      const py = fy + 44 + LY.gap, ph = Math.min(64 + (SZ().row + 6) * 10 + LY.pad, contentEnd() - py);
       panel(LY.m, py, LY.w, ph);
       const L = rank.list, mid = py + ph / 2;
       if (rank.loading && !L) text('불러오는 중…', W / 2, mid, 30, '#7a6872', 'center', null, F_H);
@@ -2483,8 +2567,13 @@ const scenes = {
       sideBtn('뒤로', () => { scene = 'title'; });
       mainBtn(rank.loading ? '불러오는 중…' : '새로고침', () => { if (!rank.loading) loadRanking(); });
       const now = new Date();
-      menuEnd(rank.period === 'month' ? `${now.getFullYear()}년 ${now.getMonth() + 1}월 기록 · 매달 1일에 새로 시작해요` : '지금까지 컴퓨터를 이긴 모든 기록 중 TOP 10');
+      menuEnd(`${now.getFullYear()}년 ${now.getMonth() + 1}월 기록 · 매달 1일에 새로 시작해요 · ↑ 명예의 전당`);
     },
+  },
+  hall: {
+    update(dt) { state.hallT = (state.hallT || 0) + dt; if (pressed('Escape')) { scene = 'ranking'; rank.list = null; loadRanking(null, 'month'); } if (pressed('KeyR') && !rank.loading) loadRanking(null, 'all');
+      const d = anyHit(...K_R) ? 1 : anyHit(...K_L) ? 2 : 0; if (d && !rank.loading) { rank.list = null; loadRanking(FORMAT_IDS[(FORMAT_IDS.indexOf(rank.mode) + d) % 3], 'all'); } },
+    draw() { drawHall(); },
   },
   account: { // signing in and out; the nickname
     update(dt) { state.t += dt; acct.msgT += dt; if (pressed('Escape')) scene = 'title'; },
