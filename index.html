@@ -54,6 +54,7 @@
 'use strict';
 // ---- Built to be checked ----------------------------------------------------------------
 const params = new URLSearchParams(location.search);
+const APP_VERSION = '1.5.0'; // shown on the home screen: raise it with every update (big change: 1.x, feature: x.1, fix: x.x.1)
 const tune = new Proxy({}, { get: (_, k) => CONFIG[k].value }); // live: tune.speed is CONFIG.speed.value
 const STEP = 1 / 60;            // simulation step in seconds; motion is per second, never per frame
 const W = 720; let H = 1280;    // logical size: a portrait page 720 wide, as tall as the window's shape asks (900 to 1580)
@@ -2369,7 +2370,7 @@ const scenes = {
       { const P = acct.prof, t = acct.user ? (P && P.nickname ? P.nickname + ' · 뽑기권 ' + P.tickets : '로그인됨') : '로그인', cw = Math.max(132, t.length * 17 + 44), cx = W - LY.m - cw, cy = 14;
         const over = btn(cx, cy, cw, 50, () => { scene = 'account'; });
         rr(cx, cy, cw, 50, 25, over ? '#fff3c4' : 'rgba(255,248,231,0.95)', OUT, 2.6); text(t, cx + cw / 2, cy + 26, 21, acct.user ? INK : '#3d8be0', 'center', null, F_T); }
-      text('© 2026 IGNUZNIM. All rights reserved.', W / 2, LY.copy, 16, 'rgba(59,51,64,0.6)', 'center', null, F_B);
+      text(`v${APP_VERSION} · © 2026 IGNUZNIM. All rights reserved.`, W / 2, LY.copy, 16, 'rgba(59,51,64,0.6)', 'center', null, F_B);
       menuEnd('Enter 를 눌러도 시작해요');
     },
   },
