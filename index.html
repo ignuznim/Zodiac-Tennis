@@ -27,21 +27,22 @@
   canvas { display: block; position: absolute; left: 0; top: 0; box-shadow: 0 0 40px rgba(59,51,64,0.35); touch-action: none; }
   #nick, #fb { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(59,51,64,0.55); z-index: 5; }
   #nick.on, #fb.on { display: flex; }
-  #nick form, #fb form { width: calc(var(--u, 0.6) * 560px); max-width: 92vw; box-sizing: border-box; padding: calc(var(--u, 0.6) * 30px) calc(var(--u, 0.6) * 28px) calc(var(--u, 0.6) * 26px); background: #fff8e7; border: 3px solid #6b5560; border-radius: calc(var(--u, 0.6) * 24px); box-shadow: 0 4px 0 #6b5560; text-align: center; font-family: 'Jua', sans-serif; color: #4a3d47; }
+  #nick form, #fb form { width: calc(var(--u, 0.6) * 560px); max-width: 92vw; box-sizing: border-box; padding: calc(var(--u, 0.6) * 30px) calc(var(--u, 0.6) * 28px) calc(var(--u, 0.6) * 26px); background: #fff8e7; border: max(1.5px, calc(var(--u, 0.6) * 3px)) solid #6b5560; border-radius: calc(var(--u, 0.6) * 24px); box-shadow: 0 max(2px, calc(var(--u, 0.6) * 5px)) 0 #6b5560; text-align: center; font-family: 'Jua', sans-serif; color: #4a3d47; }
   #nick h2, #fb h2 { margin: 0 0 calc(var(--u, 0.6) * 6px); font-size: calc(var(--u, 0.6) * 34px); font-weight: normal; }
   #nick p, #fb p { margin: 0 0 calc(var(--u, 0.6) * 18px); font: calc(var(--u, 0.6) * 22px) 'Gowun Dodum', sans-serif; color: #7a6872; }
-  #nick input, #fb input { width: 100%; box-sizing: border-box; padding: calc(var(--u, 0.6) * 14px); font: max(16px, calc(var(--u, 0.6) * 30px)) 'Jua', sans-serif; color: #4a3d47; text-align: center; letter-spacing: 0.06em; border: 3px solid #6b5560; border-radius: calc(var(--u, 0.6) * 16px); background: #fff; outline: none; }
+  #nick input, #fb input { width: 100%; box-sizing: border-box; padding: calc(var(--u, 0.6) * 14px); font: max(16px, calc(var(--u, 0.6) * 30px)) 'Jua', sans-serif; color: #4a3d47; text-align: center; letter-spacing: 0.06em; border: max(1.5px, calc(var(--u, 0.6) * 3px)) solid #6b5560; border-radius: calc(var(--u, 0.6) * 16px); background: #fff; outline: none; }
   #nick input:focus, #fb input:focus { border-color: #ff8a7a; }
   #nick .row, #fb .row { display: flex; gap: calc(var(--u, 0.6) * 16px); margin-top: calc(var(--u, 0.6) * 18px); }
-  #nick button, #fb button { flex: 1; padding: calc(var(--u, 0.6) * 16px) 0; font: calc(var(--u, 0.6) * 28px) 'Jua', sans-serif; color: #4a3d47; border: 3px solid #6b5560; border-radius: calc(var(--u, 0.6) * 18px); background: #fff; cursor: pointer; }
+  #nick button, #fb button { flex: 1; padding: calc(var(--u, 0.6) * 16px) 0; font: calc(var(--u, 0.6) * 28px) 'Jua', sans-serif; color: #4a3d47; border: max(1.5px, calc(var(--u, 0.6) * 3px)) solid #6b5560; border-radius: calc(var(--u, 0.6) * 18px); background: #fff; cursor: pointer; }
   #nick button.go, #fb button.go { background: #fff3c4; border-color: #ff8a7a; }
   #nick .err, #fb .err { min-height: calc(var(--u, 0.6) * 24px); margin-top: calc(var(--u, 0.6) * 10px); font: calc(var(--u, 0.6) * 20px) 'Gowun Dodum', sans-serif; color: #e2574c; }
   #safe { position: fixed; visibility: hidden; pointer-events: none; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
   #fb .kinds { display: flex; gap: calc(var(--u, 0.6) * 10px); margin-bottom: calc(var(--u, 0.6) * 14px); }
   #fb .kinds button { padding: calc(var(--u, 0.6) * 12px) 0; font-size: calc(var(--u, 0.6) * 24px); }
   #fb .kinds button.on { background: #fff3c4; border-color: #ff8a7a; }
-  #fb textarea { width: 100%; box-sizing: border-box; padding: calc(var(--u, 0.6) * 14px); font: max(16px, calc(var(--u, 0.6) * 22px)) 'Gowun Dodum', sans-serif; color: #4a3d47; border: 3px solid #6b5560; border-radius: calc(var(--u, 0.6) * 16px); background: #fff; outline: none; resize: none; line-height: 1.45; }
+  #fb textarea { width: 100%; box-sizing: border-box; padding: calc(var(--u, 0.6) * 14px); font: max(16px, calc(var(--u, 0.6) * 22px)) 'Gowun Dodum', sans-serif; color: #4a3d47; border: max(1.5px, calc(var(--u, 0.6) * 3px)) solid #6b5560; border-radius: calc(var(--u, 0.6) * 16px); background: #fff; outline: none; resize: none; line-height: 1.45; }
   #fb textarea:focus { border-color: #ff8a7a; }
+  #fb .err { min-height: 0; margin-top: calc(var(--u, 0.6) * 8px); } #fb .err:empty { margin-top: 0; } #fb .row { margin-top: calc(var(--u, 0.6) * 14px); } /* the same gap under the box as between the others */
 </style>
 </head>
 <body>
