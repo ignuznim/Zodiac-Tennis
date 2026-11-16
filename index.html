@@ -1311,7 +1311,7 @@ function drawScoreboard() { // one row a side: sets won, a cell for each of the 
   for (let k = 0; k < n; k++) text('' + (k + 1), sx + k * 30 + 13, y0 + 14, MIN_TEXT, k === sc.sets.length && !sc.done ? BALL : '#cbbcc4', 'center', null, F_N);
   text(tbOnly ? '점수' : '포인트', px + 27, y0 + 14, MIN_TEXT, sc.tb && !tbOnly ? BALL : '#cbbcc4', 'center', null, F_B);
   if (sc.tb && !tbOnly && !sc.done) { ctx.font = `19px ${F_T}`; const tw = ctx.measureText('타이브레이크').width + 30; // in full words, on a tab under the board
-    rr(x0 + w - tw - 10, y0 + 100, tw, 28, 14, BALL, OUT, 2.4); text('타이브레이크', x0 + w - 10 - tw / 2, y0 + 114, 19, '#3b2f38', 'center', null, F_T); }
+    const ty = y0 + 112 + 8; rr(x0 + w - tw, ty + 4, tw, 30, 15, 'rgba(59,51,64,0.35)', null); rr(x0 + w - tw, ty, tw, 30, 15, BALL, OUT, 2.4); text('타이브레이크', x0 + w - tw / 2, ty + 15, 19, '#3b2f38', 'center', null, F_T); } // a little pop-up just under the board, clear of it
   for (let r = 0; r < 2; r++) {
     const i = r === 0 ? m.P[view].team : 1 - m.P[view].team, y = y0 + 46 + r * 40, P = r === 0 ? m.P[view] : m.P[i], f = P.stam / P.max, col = r === 0 ? CORAL : SKY, Q = m.doubles ? mates(i).find(q => q !== P) : null;
     ctx.lineWidth = 2.6; ctx.strokeStyle = OUT;
@@ -1436,7 +1436,7 @@ function drawMatch() {
     ctx.globalAlpha = 1;
   }
   const h = hintText();
-  if (h && !m.banner) { ctx.font = F_H.replace('1em', '29px'); const w = Math.min(W - 28, ctx.measureText(h).width + 48); const hy = touchUI ? 142 : H - 166; rr(W / 2 - w / 2, hy, w, 46, 23, 'rgba(255,243,196,0.96)', OUT, 2.6); text(h, W / 2, hy + 24, 25, INK, 'center', null, F_H); }
+  if (h && !m.banner) { ctx.font = F_H.replace('1em', '29px'); const w = Math.min(W - 28, ctx.measureText(h).width + 48); const hy = touchUI ? (m.sc.tb && !rules().matchTb ? 172 : 142) : H - 166; rr(W / 2 - w / 2, hy, w, 46, 23, 'rgba(255,243,196,0.96)', OUT, 2.6); text(h, W / 2, hy + 24, 25, INK, 'center', null, F_H); }
   if (touchUI) drawTouch(); else drawLegend();
   if (net && net.msg) text(net.msg, W / 2, 170, 20, CREAM, 'center', OUT, F_B);
 }
