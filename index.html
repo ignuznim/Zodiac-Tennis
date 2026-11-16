@@ -1311,7 +1311,7 @@ function drawScoreboard() { // one row a side: sets won, a cell for each of the 
   for (let k = 0; k < n; k++) text('' + (k + 1), sx + k * 30 + 13, y0 + 14, MIN_TEXT, k === sc.sets.length && !sc.done ? BALL : '#cbbcc4', 'center', null, F_N);
   text(tbOnly ? '점수' : '포인트', px + 27, y0 + 14, MIN_TEXT, sc.tb && !tbOnly ? BALL : '#cbbcc4', 'center', null, F_B);
   if (sc.tb && !tbOnly && !sc.done) { ctx.font = `19px ${F_T}`; const tw = ctx.measureText('타이브레이크').width + 30; // in full words, on a tab under the board
-    const ty = y0 + 112 + 8; rr(x0, ty + 4, tw, 30, 15, 'rgba(59,51,64,0.35)', null); rr(x0, ty, tw, 30, 15, BALL, OUT, 2.4); text('타이브레이크', x0 + tw / 2, ty + 15, 19, '#3b2f38', 'center', null, F_T); } // a little pop-up just under the board, clear of it
+    const ty = y0 + 112 + 8; rr(x0 + w - tw, ty + 4, tw, 30, 15, 'rgba(59,51,64,0.35)', null); rr(x0 + w - tw, ty, tw, 30, 15, BALL, OUT, 2.4); text('타이브레이크', x0 + w - tw / 2, ty + 15, 19, '#3b2f38', 'center', null, F_T); } // a little pop-up just under the board, clear of it
   for (let r = 0; r < 2; r++) {
     const i = r === 0 ? m.P[view].team : 1 - m.P[view].team, y = y0 + 46 + r * 40, P = r === 0 ? m.P[view] : m.P[i], f = P.stam / P.max, col = r === 0 ? CORAL : SKY, Q = m.doubles ? mates(i).find(q => q !== P) : null;
     ctx.lineWidth = 2.6; ctx.strokeStyle = OUT;
@@ -1573,7 +1573,7 @@ function netHost() {
       net.status = 'error'; net.msg = t === 'unavailable-id' ? '방 코드를 다시 쓸 수 없어요 · 뒤로 가서 방을 새로 만들어 주세요' : '연결 오류: ' + t; });
     net.peer.on('connection', c => {
       if (!net) return;
-      if (net.locked || net.guests.length >= 3) { c.on('open', () => { c.send({ t: 'full' }); setTimeout(() => c.close(), 400); }); return; } // the room is full or already playing
+      if (net.locked || net.guests.length >= (net.plan ? KINDS[net.plan].cap : 4) - 1) { c.on('open', () => { c.send({ t: 'full' }); setTimeout(() => c.close(), 400); }); return; } // the room is full or already playing
       const g = { conn: c, seat: null }; net.guests.push(g);
       c.on('data', d => onHostData(d, g));
       c.on('close', () => guestLeft(g));
@@ -1610,7 +1610,7 @@ function netJoin(code) {
 // guests -> host: join, pick, i (keys);  host -> guests: lobby (how many), setup (with your seat), ready, start, s (the match), again, relobby, full
 const sendAll = o => { if (net && net.guests) for (const g of net.guests) if (g.conn.open) g.conn.send(o); };
 const humans = () => 1 + net.guests.filter(g => g.seat != null).length;
-const KINDS = { single: { ko: '1 : 1 단식', sub: '친구 1명과 · 일대일', seats: [1] }, coop: { ko: '2 : 2 협동', sub: '친구와 한 팀 · 상대는 컴퓨터', seats: [2] }, versus: { ko: '2 : 2 대전', sub: '친구 1~3명 · 빈 자리는 컴퓨터', seats: [1, 2, 3] } };
+const KINDS = { single: { ko: '1 : 1 단식', sub: '친구 1명과 · 일대일', seats: [1], cap: 2 }, coop: { ko: '2 : 2 협동', sub: '친구와 한 팀 · 상대는 컴퓨터', seats: [2], cap: 2 }, versus: { ko: '2 : 2 대전', sub: '친구 1~3명 · 빈 자리는 컴퓨터', seats: [1, 2, 3], cap: 4 } };
 function kindOk(k) { const n = net && net.guests ? net.guests.length : 0; return k === 'versus' ? n >= 1 : n === 1; }
 function formatBack() { // from the format page: home, or online back to the lobby to choose again
   if (net && net.role === 'host') { net.locked = false; net.kind = null; net.picks = {}; for (const g of net.guests) g.seat = null; sendAll({ t: 'relobby', n: net.guests.length, names: roomNames() }); scene = 'lobby'; }
@@ -1625,7 +1625,7 @@ function hostKind(k) { // the host chooses how to play: everyone gets a seat, th
 const netCpu = () => net && (net.kind === 'coop' || (net.kind === 'versus' && humans() < 4)); // a computer will play: its level is asked
 function onHostData(d, g) {
   if (!net) return;
-  if (d.t === 'join') { g.nick = String(d.nick || '손님').slice(0, 10); g.a = clamp(d.a | 0, 0, 11); sendAll({ t: 'lobby', n: net.guests.length, names: roomNames() }); tone(880, 0.12, 'triangle', 0.25); if (net.quick && !net.quick.fillAt) net.quick.fillAt = clock.now() + 20; }
+  if (d.t === 'join') { g.nick = String(d.nick || '손님').slice(0, 10); g.a = clamp(d.a | 0, 0, 11); sendAll({ t: 'lobby', n: net.guests.length, names: roomNames(), plan: net.plan }); tone(880, 0.12, 'triangle', 0.25); if (net.quick && !net.quick.fillAt) net.quick.fillAt = clock.now() + 20; }
   else if (d.t === 'pick' && g.seat != null) { net.picks[g.seat] = { a: clamp(d.animal | 0, 0, 11), gear: d.gear && typeof d.gear === 'object' ? d.gear : {}, ctrl: 'remote' }; sendReady(); onlineStart(); }
   else if (d.t === 'i' && g.seat != null) net.rin[g.seat] = d;
   else if (d.t === 'emo' && g.seat != null && m && m.online) pushEmote(g.seat, d.e);
@@ -1640,9 +1640,9 @@ function guestLeft(g) { // a friend has gone: mid-match the computer takes over;
 }
 function onGuestData(d) {
   if (!net) return;
-  if (d.t === 'lobby') { net.lobbyN = d.n + 1; net.names = Array.isArray(d.names) ? d.names.slice(0, 4) : null; }
+  if (d.t === 'lobby') { net.lobbyN = d.n + 1; net.names = Array.isArray(d.names) ? d.names.slice(0, 4) : null; net.plan = KINDS[d.plan] ? d.plan : null; }
   else if (d.t === 'relobby') { net.lobbyN = d.n + 1; net.names = Array.isArray(d.names) ? d.names.slice(0, 4) : null; net.myPick = null; net.status = 'joined'; scene = 'lobby'; }
-  else if (d.t === 'full') { net.status = 'error'; net.msg = '방이 가득 찼거나 이미 경기 중이에요'; }
+  else if (d.t === 'full') { net.status = 'error'; net.msg = '방이 가득 찼거나 이미 경기 중이에요'; if (quick) { quick.bad.add(net.code); } }
   else if (d.t === 'setup') { setup.format = FORMATS[d.format] ? d.format : 'short'; setup.court = COURTS[d.court] ? d.court : 'hard'; setup.level = clamp(d.level | 0, 1, 3); net.seat = clamp(d.seat | 0, 1, 3); net.kind = KINDS[d.kind] ? d.kind : 'single'; net.myPick = null; net.ready = null; net.status = 'picking'; scene = 'select'; tone(880, 0.12, 'triangle', 0.25); }
   else if (d.t === 'ready') net.ready = { n: d.n | 0, need: d.need | 0 };
   else if (d.t === 'start') { net.snap = null; net.buf = []; net.rt = null; net.myPick = null; net.ready = null; view = net.seat; seenFx = 0; hints = { hits: 0, power: 0, shots: 0 }; net.starting = true; } // the match shows once the host's first picture arrives
@@ -1671,7 +1671,7 @@ function onlineStart() {
   scene = 'play';
 }
 function onlineAgain() { if (!net) return; net.picks = {}; net.ready = null; net.myPick = null; sendAll({ t: 'again' }); scene = 'select'; } // a rematch: everyone may change players
-function netLost() { if (!net) return; net.status = 'lost'; net.msg = '방장과의 연결이 끊겼어요 · Esc : 처음으로'; }
+function netLost() { if (!net || net.status === 'error') return; net.status = 'lost'; net.msg = '방장과의 연결이 끊겼어요 · Esc : 처음으로'; } // a full room has already said why: keep its message
 function netSend() { if (net && net.role === 'host' && m) sendAll({ t: 's', m }); }
 const NET_DELAY = 0.1; // the guest plays the host's pictures a tenth of a second behind, so an uneven arrival never shows
 function netPlayback() {
@@ -1793,8 +1793,8 @@ async function loadRooms() {
 }
 function roomRow() { // what the host's open room says about itself
   const n = 1 + net.guests.length, q = net.quick;
-  return { nickname: (acct.prof && acct.prof.nickname) || '방장', animal: setup.animal, kind: q ? q.kind : 'any', format: q ? q.format : 'any',
-    seats_taken: Math.min(4, n), seats_total: q ? QK[q.kind].seats : 4, status: net.locked ? 'playing' : 'waiting' };
+  return { nickname: (acct.prof && acct.prof.nickname) || '방장', animal: setup.animal, kind: q ? q.kind : net.plan || 'any', format: q ? q.format : 'any',
+    seats_taken: Math.min(4, n), seats_total: q ? QK[q.kind].seats : net.plan ? KINDS[net.plan].cap : 4, status: net.locked ? 'playing' : 'waiting' };
 }
 async function roomSync() { // the host keeps its row fresh; a closed or quiet room drops off the list by itself
   if (!net || net.role !== 'host' || !(net.public || net.quick) || !signedIn() || net.status === 'opening' || net.status === 'error') return;
@@ -1808,6 +1808,17 @@ setInterval(roomSync, 4000);
 function unlist(code) { if (signedIn() && code) acct.sb.from('rooms').delete().eq('code', code).then(() => {}, () => {}); }
 const myNick = () => (acct.prof && acct.prof.nickname) || '손님';
 function roomNames() { return [{ n: myNick(), a: setup.animal, host: true }].concat(net.guests.map(g => ({ n: g.nick || '손님', a: g.a | 0 }))); }
+function drawSeats(x0, y, inner, L, cap, me) { // who is in, as big cards: two in a row, four in two rows
+  const gap = 12, cw = (inner - gap) / 2, chh = 96;
+  for (let i = 0; i < cap; i++) { const p = L[i], x = x0 + (i % 2) * (cw + gap), yy = y + Math.floor(i / 2) * (chh + gap);
+    rr(x, yy, cw, chh, 18, p ? (i ? '#eef7ff' : '#fff3ec') : 'rgba(234,223,210,0.45)', p ? (i ? '#9ac8ee' : '#f5b9a8') : '#d9cbbd', 2.4);
+    if (p) { ctx.save(); rr(x + 2, yy + 2, cw - 4, chh - 4, 16, null, null); ctx.clip(); ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(p.a | 0, x + 48, yy + 110, 0.62, { front: true, t: 0.4, accent: CORAL }); ctx.restore();
+      ctx.font = `25px ${F_T}`; const nm = String(p.n).slice(0, 10), nw = ctx.measureText(nm).width, room = cw - 108;
+      text(nm, x + 96, yy + 38, Math.max(MIN_TEXT, nw > room ? 25 * room / nw : 25), INK, 'left', null, F_T);
+      text(i ? (me === i ? '참가 (나)' : '참가') : (me === 0 ? '방장 (나)' : '방장'), x + 96, yy + 70, 18, i ? '#3d8be0' : CORAL, 'left', null, F_T); }
+    else text('빈자리', x + cw / 2, yy + chh / 2, 20, '#a8999f', 'center', null, F_B); }
+  return Math.ceil(cap / 2) * (chh + gap) - gap;
+}
 function setPublic(on) { if (!net || net.role !== 'host') return; if (on && !signedIn()) { notify('로그인하면 공개 방으로 열 수 있어요'); return; }
   net.public = on; if (!on && net.listed) { unlist(net.code); net.listed = false; } tone(760, 0.06, 'sine', 0.18); }
 function drawPublicSwitch(x, y, w, on, fn) { // one row: what the room is, and a switch to change it
@@ -1816,7 +1827,7 @@ function drawPublicSwitch(x, y, w, on, fn) { // one row: what the room is, and a
   text(on ? '공개 방 · 방 목록에 보여요' : sw ? '비공개 방 · 코드로만 들어와요' : '비공개 방 · 로그인하면 공개할 수 있어요', x + 24, y + 34, 22, INK, 'left', null, F_T);
   rr(x + w - 90, y + 17, 70, 34, 17, on ? '#4fa86a' : '#cdbfb3', null); E(x + w - (on ? 37 : 73), y + 34, 13, 13, '#ffffff', 0, true);
 }
-function makeRoom() { const pub = !!state.pub && signedIn(); netHost(); net.public = pub; scene = 'lobby'; tone(880, 0.12, 'triangle', 0.25); }
+function makeRoom() { const pub = !!state.pub && signedIn(); netHost(); net.public = pub; net.plan = state.mk || 'single'; scene = 'lobby'; tone(880, 0.12, 'triangle', 0.25); }
 function quickOpen() { if (!signedIn()) { needSignIn(); return; } quick = { kind: 'single', format: 'short', phase: 'pick', t: 0, poll: 0, bad: new Set() }; scene = 'quick'; hello(); }
 function quickGo() { quick.phase = 'search'; quick.t = 0; quick.poll = 99; tone(880, 0.12, 'triangle', 0.25); }
 function quickStop(to = 'online') { if (net) netClose(); quick = null; scene = to; }
@@ -1848,7 +1859,7 @@ function quickBegin() { // the host sets the match up by itself: the kind and fo
 }
 // ---- 이모티콘: four quick reactions in an online match, no words ----
 const EMOS = ['👍', '😆', '😮', '🙏'];
-let emoOpen = false, emoLast = 0;
+let emoOpen = false, emoWas = false, emoAt = 0, emoLast = 0;
 function pushEmote(seat, e) { if (!m.emotes) m.emotes = []; m.emotes.push({ s: seat, e: clamp(e | 0, 0, 3), t: m.t }); if (m.emotes.length > 6) m.emotes.shift(); }
 function sendEmote(e) { if (!m || !m.online || clock.now() - emoLast < 1) return; emoLast = clock.now(); emoOpen = false; tone(990, 0.06, 'sine', 0.15);
   if (net && net.role === 'guest') netSendMsg({ t: 'emo', e }); else pushEmote(view, e); }
@@ -1858,13 +1869,21 @@ function drawEmotes() {
     ctx.globalAlpha = a; rr(s.x - 30, y - 30, 60, 56, 20, 'rgba(255,248,231,0.97)', OUT, 2.6); poly([s.x - 8, y + 25, s.x, y + 36, s.x + 8, y + 25], 'rgba(255,248,231,0.97)');
     text(EMOS[q.e], s.x, y - 1, 34, INK, 'center', null, F_T); ctx.globalAlpha = 1; }
 }
-function drawEmoteBar() { // the smiley key by the others; open, four reactions under the icons
+function drawEmoteBar() { // the smiley key grows downward into a column of four reactions
   if (!m.online) return;
-  iconBtn(W - 188, 10, 'emo', () => { emoOpen = !emoOpen; });
-  if (!emoOpen) return;
-  const bh = 54, eb = 42, gap = 6, bw = 4 * eb + 3 * gap + 12, bx = W - 12 - bw, by = 126; // a box as tall as the icon keys, under them
-  rr(bx, by, bw, bh, 14, 'rgba(255,248,231,0.95)', OUT, 2.6);
-  EMOS.forEach((e, i) => { const x = bx + 6 + i * (eb + gap), y = by + (bh - eb) / 2, over = btn(x, y, eb, eb, () => sendEmote(i)); rr(x, y, eb, eb, 11, over ? '#fff3c4' : '#ffffff', OUT, 2); text(e, x + eb / 2, y + eb / 2 + 1, 24, INK, 'center', null, F_T); });
+  const x = W - 188, y = 10, w = 56, k0 = 54, step = 50, full = k0 + 4 * step + 4, now = clock.now();
+  if (emoOpen !== emoWas) { emoWas = emoOpen; emoAt = now; }
+  const u = Math.min(1, (now - emoAt) / 0.16), e = 1 - Math.pow(1 - u, 3), h = emoOpen ? k0 + (full - k0) * e : full - (full - k0) * e;
+  const over = btn(x, y, w, k0, () => { emoOpen = !emoOpen; });
+  rr(x, y, w, h, 14, over && !emoOpen ? '#fff3c4' : 'rgba(255,248,231,0.97)', OUT, 2.6);
+  const cx = x + w / 2, cy = y + 28; ctx.lineWidth = 2.6; ctx.strokeStyle = OUT;
+  if (emoOpen) { ctx.beginPath(); ctx.moveTo(cx - 9, cy - 9); ctx.lineTo(cx + 9, cy + 9); ctx.moveTo(cx + 9, cy - 9); ctx.lineTo(cx - 9, cy + 9); ctx.stroke(); }
+  else { E(cx, cy, 16, 16, BALL); E(cx - 5.5, cy - 4, 2, 2.6, INK, 0, true); E(cx + 5.5, cy - 4, 2, 2.6, INK, 0, true); ctx.lineWidth = 2.4; ctx.beginPath(); ctx.arc(cx, cy + 1, 8, 0.35, Math.PI - 0.35); ctx.stroke(); }
+  if (h <= k0 + 2) return;
+  ctx.save(); ctx.beginPath(); ctx.rect(x, y + k0 - 2, w, h - k0); ctx.clip();
+  EMOS.forEach((em, i) => { const by = y + k0 + i * step, bx = x + 5, bs = w - 10, ov = emoOpen && e > 0.9 && btn(bx, by, bs, step - 6, () => sendEmote(i));
+    rr(bx, by, bs, step - 6, 11, ov ? '#fff3c4' : '#ffffff', OUT, 2); text(em, bx + bs / 2, by + (step - 6) / 2 + 1, 24, INK, 'center', null, F_T); });
+  ctx.restore();
 }
 
 // ---- 의견 보내기: notes from players and errors the game hits, kept in Supabase (supabase/3_feedback.sql) ----
@@ -3041,7 +3060,7 @@ const scenes = {
             rr(x, y + 2, w, rh - 10, 18, i % 2 ? 'rgba(234,223,210,0.45)' : '#ffffff', '#d9cbbd', 2);
             ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(r.animal, x + 46, y + 84, 0.42, { front: true, t: 0.4, accent: CORAL });
             text(r.nickname, x + 92, y + 32, 25, INK, 'left', null, F_T);
-            text('모이면 방장이 경기 방식을 정해요', x + 92, y + 64, 19, '#7a6872', 'left', null, F_B);
+            text(KINDS[r.kind] ? `${KINDS[r.kind].ko} · 경기 방식은 방장이 정해요` : '모이면 방장이 경기 방식을 정해요', x + 92, y + 64, 19, '#7a6872', 'left', null, F_B);
             text(`${r.seats_taken}/${r.seats_total}명`, x + w - 132, y + 46, 22, '#3f9a5c', 'right', null, F_T);
             button('참가', x + w - 116, y + 16, 104, 58, () => joinRoom(r.code), { size: 24, fill: '#fff3c4' }); });
           return L.length * rh + 4; }); }
@@ -3049,19 +3068,25 @@ const scenes = {
       menuEnd('매일 밤 9~11시 온라인 대결에서 이기면 뽑기권 +2 (업적)');
     },
   },
-  make: { // a room, before it opens: public or private, then 방 만들기
-    update(dt) { state.t += dt; if (pressed('Escape')) { scene = 'online'; return; } if (anyHit(...K_OK)) makeRoom(); },
+  make: { // a room, before it opens: how to play, public or private, then 방 만들기
+    update(dt) { state.t += dt; if (!state.mk) state.mk = 'single'; if (pressed('Escape')) { scene = 'online'; return; } if (anyHit(...K_OK)) makeRoom();
+      const ks = ['single', 'coop', 'versus'], d = anyHit(...K_R) ? 1 : anyHit(...K_L) ? 2 : 0; if (d) state.mk = ks[(ks.indexOf(state.mk) + d) % 3]; },
     draw() {
+      if (!state.mk) state.mk = 'single';
       menuBegin('방 만들기', true);
-      const py = LY.top, ph = 330, x0 = LY.m + LY.pad, inner = LY.w - LY.pad * 2; panel(LY.m, py, LY.w, ph);
-      text('방을 만들면 방 코드가 생겨요', W / 2, py + 46, 26, INK, 'center', null, F_T);
-      text('코드를 친구에게 보내거나, 공개 방으로 열어 기다려요', W / 2, py + 84, 20, '#7a6872', 'center', null, F_B);
-      drawPublicSwitch(x0, py + 120, inner, !!state.pub, () => { if (!state.pub && !signedIn()) { notify('로그인하면 공개 방으로 열 수 있어요'); return; } state.pub = !state.pub; tone(760, 0.06, 'sine', 0.18); });
-      text('최대 4명 · 모이면 1:1 단식 · 2:2 협동 · 2:2 대전 중에 골라요', W / 2, py + 232, 19, '#4f6f63', 'center', null, F_B);
-      text('공개·비공개는 방을 만든 뒤에도 바꿀 수 있어요', W / 2, py + 270, 19, '#4f6f63', 'center', null, F_B);
+      const x0 = LY.m + LY.pad, inner = LY.w - LY.pad * 2, py = LY.top, ph = 404; panel(LY.m, py, LY.w, ph);
+      text('어떻게 할까요?', x0, py + 36, 24, INK, 'left', null, F_T);
+      const bw = (inner - 24) / 3, by = py + 64;
+      ['single', 'coop', 'versus'].forEach((k, i) => { const x = x0 + i * (bw + 12), on = state.mk === k, K = KINDS[k], bh = 112, over = btn(x, by, bw, bh, () => { state.mk = k; tone(760, 0.06, 'sine', 0.18); });
+        rr(x, by + 4, bw, bh, 18, OUT, null); rr(x, by, bw, bh, 18, on ? '#fff3c4' : over ? '#fffdf3' : '#ffffff', on ? CORAL : OUT, on ? 3.6 : 2.6);
+        text(K.ko, x + bw / 2, by + 28, 23, INK, 'center', null, F_T); text(`최대 ${K.cap}명`, x + bw / 2, by + 60, 18, '#c0605a', 'center', null, F_T);
+        text(K.sub.split(' · ')[1], x + bw / 2, by + 88, 17, '#7a6872', 'center', null, F_B); });
+      drawPublicSwitch(x0, py + 210, inner, !!state.pub, () => { if (!state.pub && !signedIn()) { notify('로그인하면 공개 방으로 열 수 있어요'); return; } state.pub = !state.pub; tone(760, 0.06, 'sine', 0.18); });
+      text('방을 만들면 방 코드가 생겨요 · 친구에게 보내거나 공개 방으로 기다려요', W / 2, py + 318, 18, '#4f6f63', 'center', null, F_B);
+      text('공개·비공개는 방을 만든 뒤에도 바꿀 수 있어요', W / 2, py + 352, 18, '#4f6f63', 'center', null, F_B);
       sideBtn('뒤로', () => { scene = 'online'; });
-      mainBtn('방 만들기', makeRoom);
-      menuEnd('Enter 로 만들어요');
+      mainBtn(`${KINDS[state.mk].ko} 방 만들기`, makeRoom);
+      menuEnd('← → 로 방식, Enter 로 만들어요');
     },
   },
   quick: {
@@ -3110,7 +3135,7 @@ const scenes = {
       if (pressed('Escape')) { netClose(); scene = 'online'; return; }
       if (!net) { scene = 'online'; return; }
       if (net.role === 'host' && pressed('KeyC')) copyLink();
-      if (net.role === 'host') { if (pressed('Digit1')) hostKind('single'); if (pressed('Digit2')) hostKind('coop'); if (pressed('Digit3')) hostKind('versus'); }
+      if (net.role === 'host' && net.guests.length && pressed('Enter')) hostKind(net.plan || 'versus');
 
     },
     draw() {
@@ -3127,33 +3152,22 @@ const scenes = {
           let y = py + 20; // the room code and the link, up top
           text('방 코드', x0, y + 14, 18, '#7a6872', 'left', null, F_B); text(net.code, x0, y + 50, 40, CORAL, 'left', OUT, F_N);
           button(net.copied ? '복사했어요!' : '초대 링크 복사', x0 + inner - 230, y + 6, 230, 60, copyLink, { size: 23, fill: net.copied ? '#d8f3dc' : '#fff3c4' });
-          y += 88; const L = roomNames(), st = net.status, re = st === 'reconnecting' || st === 'paused';
-          text(re ? '다시 연결하는 중' + dots : `참가자 ${L.length} / 4`, x0, y + 14, 22, re ? '#c0605a' : INK, 'left', null, F_T);
-          y += 32;
-          for (let i = 0; i < 4; i++) { const p = L[i], ry = y + i * 46; // who is in: the host first
-            rr(x0, ry, inner, 40, 12, p ? (i ? '#eef7ff' : '#fff3ec') : 'rgba(234,223,210,0.45)', p ? '#d9cbbd' : null, 1.6);
-            if (p) { ctx.save(); ctx.beginPath(); ctx.rect(x0 + 6, ry + 2, 40, 36); ctx.clip(); ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(p.a, x0 + 26, ry + 52, 0.3, { front: true, t: 0.4, accent: CORAL }); ctx.restore();
-              text(p.n, x0 + 56, ry + 20, 21, INK, 'left', null, F_T); text(i ? '참가' : '방장 (나)', x0 + inner - 16, ry + 20, 18, i ? '#3d8be0' : CORAL, 'right', null, F_T); }
-            else text('빈자리', x0 + 56, ry + 20, 18, '#a8999f', 'left', null, F_B); }
-          y += 4 * 46 + 14; const bw = (inner - 24) / 3, ng = net.guests.length;
-          ['single', 'coop', 'versus'].forEach((k, i) => { const x = x0 + i * (bw + 12), ok = kindOk(k), K = KINDS[k];
-            const bh = 100, over = ok && btn(x, y, bw, bh, () => hostKind(k));
-            rr(x, y + 4, bw, bh, 18, ok ? OUT : 'rgba(107,85,96,0.3)', null); rr(x, y, bw, bh, 18, !ok ? '#ebe2d8' : over ? '#fff3c4' : '#ffffff', ok ? OUT : '#cdbfb3', 2.6);
-            fit(K.ko, x + bw / 2, y + 28, 23, ok ? INK : '#b3a4ac', 'center', F_T, bw - 20);
-            K.sub.split(' · ').forEach((w2, j) => fit(w2, x + bw / 2, y + 60 + j * 22, 17, ok ? '#7a6872' : '#b3a4ac', 'center', F_B, bw - 20)); });
-          y += 116;
+          y += 86; const L = roomNames(), st = net.status, re = st === 'reconnecting' || st === 'paused', K = KINDS[net.plan || 'versus'];
+          text(re ? '다시 연결하는 중' + dots : `${K.ko} · 참가 ${L.length} / ${K.cap}`, x0, y + 14, 23, re ? '#c0605a' : INK, 'left', null, F_T);
+          y += 36; y += drawSeats(x0, y, inner, L, K.cap, 0) + 20;
           drawPublicSwitch(x0, y, inner, !!net.public, () => setPublic(!net.public));
-          y += 92;
+          y += 96;
           if (location.protocol === 'file:') text('내 PC 안의 파일이라 다른 기기에서는 열리지 않아요', W / 2, y, 19, '#e2574c', 'center', null, F_B);
-          else fit(ng ? '방식을 누르면 경기 설정으로 넘어가요' : '단식·협동은 친구 1명, 대전은 1~3명이 필요해요', W / 2, y, 19, '#7a6872', 'center', F_B, inner);
+          else fit(L.length < 2 ? '친구가 들어오면 경기를 시작할 수 있어요' : net.plan === 'versus' && L.length < 4 ? '빈자리는 컴퓨터가 채워요' : '모두 모였어요!', W / 2, y, 20, '#7a6872', 'center', F_B, inner);
         }
       } else if (net) {
         const st = net.status, line = st === 'joined' ? '연결됐어요!' : st === 'reconnecting' || st === 'paused' ? '다시 연결하는 중' + dots : '방 ' + net.code + ' 에 연결하는 중' + dots;
         text(line, W / 2, py + 130, 30, INK, 'center', null, F_T);
-        if (st === 'joined' && net.names) { net.names.forEach((p, i) => { const ry = py + 250 + i * 46, x0 = LY.m + LY.pad, inner = LY.w - LY.pad * 2; rr(x0, ry, inner, 40, 12, i ? '#eef7ff' : '#fff3ec', '#d9cbbd', 1.6); text(String(p.n).slice(0, 10), x0 + 20, ry + 20, 21, INK, 'left', null, F_T); text(p.host ? '방장' : '참가', x0 + inner - 16, ry + 20, 18, p.host ? CORAL : '#3d8be0', 'right', null, F_T); }); }
-        if (st === 'joined') { text('방장이 경기 방식을 고르는 중' + dots, W / 2, py + 174, 23, '#7a6872', 'center', null, F_B); text(`지금 방에 ${net.lobbyN || 2}명`, W / 2, py + 214, 23, '#3f9a5c', 'center', null, F_T); }
+        if (st === 'joined' && net.names) { const K = KINDS[net.plan || 'versus']; text(K.ko, W / 2, py + 214, 22, INK, 'center', null, F_T); drawSeats(LY.m + LY.pad, py + 244, LY.w - LY.pad * 2, net.names, Math.max(K.cap, net.names.length), net.names.length - 1); }
+        if (st === 'joined') { text('방장이 경기 방식을 고르는 중' + dots, W / 2, py + 174, 23, '#7a6872', 'center', null, F_B); if (!net.names) text(`지금 방에 ${net.lobbyN || 2}명`, W / 2, py + 214, 23, '#3f9a5c', 'center', null, F_T); }
         if (!(st === 'joined' && net.names)) { ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(setup.animal, W / 2, py + 440, 1.5, { front: true, t: state.t, anim: 'run', accent: CORAL }); }
       }
+      if (net && net.role === 'host' && net.status !== 'opening' && net.status !== 'error') mainBtn(net.guests.length ? '경기 시작' : '친구를 기다리는 중…', () => { if (net.guests.length) hostKind(net.plan || 'versus'); });
       sideBtn(net && net.role === 'host' ? '방 닫기' : '뒤로', () => { netClose(); scene = 'online'; }); // back to make or join, e.g. when both made a room at once
       menuEnd('Esc 를 눌러도 돌아가요');
     },

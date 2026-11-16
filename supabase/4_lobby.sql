@@ -9,7 +9,7 @@ create table if not exists public.rooms (
   host        uuid not null default auth.uid() references auth.users (id) on delete cascade,
   nickname    text not null check (char_length(nickname) between 1 and 10),
   animal      smallint not null default 0 check (animal between 0 and 11),
-  kind        text not null check (kind in ('single', 'versus', 'any')),   -- 'any': the host chooses once friends are in
+  kind        text not null check (kind in ('single', 'coop', 'versus', 'any')),   -- chosen when the room is made
   format      text not null check (format in ('flash', 'short', 'regular', 'any')),
   quick       boolean not null default false,                               -- made by 빠른 대전: starts by itself when full
   seats_taken smallint not null default 1 check (seats_taken between 1 and 4),
@@ -19,6 +19,8 @@ create table if not exists public.rooms (
   updated_at  timestamptz not null default now()
 );
 create index if not exists rooms_open on public.rooms (status, updated_at desc);
+alter table public.rooms drop constraint if exists rooms_kind_check; -- older copies allowed no 2:2 협동
+alter table public.rooms add constraint rooms_kind_check check (kind in ('single', 'coop', 'versus', 'any'));
 
 -- the server keeps the clock and the owner; one open room per player
 create or replace function public.rooms_touch() returns trigger
