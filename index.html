@@ -67,7 +67,7 @@
 'use strict';
 // ---- Built to be checked ----------------------------------------------------------------
 const params = new URLSearchParams(location.search);
-const APP_VERSION = '1.8.1'; // shown on the home screen: a new feature raises the middle number; the small fixes after it are bundled into one last-number step
+const APP_VERSION = '1.9.0'; // shown on the home screen: a new feature raises the middle number; the small fixes after it are bundled into one last-number step
 const tune = new Proxy({}, { get: (_, k) => CONFIG[k].value }); // live: tune.speed is CONFIG.speed.value
 const STEP = 1 / 60;            // simulation step in seconds; motion is per second, never per frame
 const W = 720; let H = 1280;    // logical size: a portrait page 720 wide, as tall as the window's shape asks (900 to 1580)
@@ -2034,6 +2034,18 @@ const STAT_NAME = { power: '파워', stamina: '체력', spin: '스핀', reflex: 
 function gearBonus(ids) { const b = {}; for (const id of Object.values(ids || {})) { const it = item(id); if (it) b[it.stat] = (b[it.stat] || 0) + it.amt; } return b; }
 const ACH = [ // the achievements: what counts, the goal; the server holds the reward
   ['daily', '오늘의 출석', '하루에 한 번', () => [1, 1]],
+  ['d_play', '오늘의 경기', '오늘 경기 1번 끝까지 하기', () => [dayCount('play'), 1]],
+  ['d_win', '오늘의 승리', '오늘 컴퓨터를 1번 이기기', () => [dayCount('win'), 1]],
+  ['d_sweet', "오늘의 '딱!'", "오늘 '딱!' 10번", () => [dayCount('sweet'), 10]],
+  ['play_1', '첫 경기', '경기 1번 끝까지 하기', p => [p.matches || 0, 1]],
+  ['pulls_1', '첫 뽑기', '뽑기 기계 처음 돌리기', p => [p.pulls || 0, 1]],
+  ['equip_1', '첫 장착', '동물에게 아이템 하나 입히기', () => [Object.values((acct.prof && acct.prof.equip) || {}).some(g => g && typeof g === 'object' && Object.values(g).some(Boolean)) ? 1 : 0, 1]],
+  ['sweet_10', "'딱!' 10번", '스위트 스폿 10번', p => [p.sweet || 0, 10]],
+  ['power_10', '파워샷 10번', '파워샷 10번', p => [p.power || 0, 10]],
+  ['rally_10', '랠리 10번', '한 포인트에 10번 주고받기', p => [p.rally || 0, 10]],
+  ['aces_1', '첫 에이스', '서브 에이스 1번', p => [p.aces || 0, 1]],
+  ['win_doubles', '복식 첫 승', '복식에서 컴퓨터 이기기', p => [p.win_doubles || 0, 1]],
+  ['own_5', '수집 첫걸음', '서로 다른 아이템 5개 모으기', () => [ownedKinds(), 5]],
   ['first_win', '첫 승리', '컴퓨터를 처음 이기기', p => [p.wins || 0, 1]],
   ['win_easy', '쉬움 정복', '쉬움 컴퓨터 이기기', p => [p.win_easy || 0, 1]],
   ['win_normal', '보통 정복', '보통 컴퓨터 이기기', p => [p.win_normal || 0, 1]],
@@ -2084,7 +2096,7 @@ const ACH = [ // the achievements: what counts, the goal; the server holds the r
   ['full_set', '풀 착장', '한 동물에게 4종 모두 입히기', () => [Object.values((acct.prof && acct.prof.equip) || {}).some(g => g && typeof g === 'object' && SLOTS.every(q => g[q[0]])) ? 1 : 0, 1]],
 ];
 const ownedKinds = () => Object.keys(acct.inv).filter(k => acct.inv[k] > 0 && ITEMS[k]).length;
-const ACH_REWARD = { daily: 1, first_win: 1, win_easy: 1, win_normal: 1, win_hard: 2, win_flash: 1, win_short: 1, win_regular: 3, lessons_all: 2, ranked: 1, sweet_50: 1, aces_10: 1, wins_10: 2, sweet_300: 2, hard_5: 3, rally_30: 2, wins_50: 5, sweet_1000: 5,
+const ACH_REWARD = { daily: 1, d_play: 1, d_win: 1, d_sweet: 1, play_1: 1, pulls_1: 1, equip_1: 1, sweet_10: 1, power_10: 1, rally_10: 1, aces_1: 1, win_doubles: 1, own_5: 1, first_win: 1, win_easy: 1, win_normal: 1, win_hard: 2, win_flash: 1, win_short: 1, win_regular: 3, lessons_all: 2, ranked: 1, sweet_50: 1, aces_10: 1, wins_10: 2, sweet_300: 2, hard_5: 3, rally_30: 2, wins_50: 5, sweet_1000: 5,
   play_5: 1, play_20: 2, play_100: 4, wins_25: 3, wins_100: 6, hard_20: 5, court_hard: 1, court_grass: 1, court_clay: 1, animals_3: 1, animals_6: 2, animals_12: 5,
   power_50: 1, power_300: 2, aces_50: 2, aces_200: 4, sweet_3000: 5, rally_15: 1, rally_50: 3, online_1: 1, online_win: 2, online_10: 3, ranked_10: 2,
   pulls_10: 1, pulls_50: 3, own_10: 1, own_30: 2, own_60: 4, own_100: 10, legend_1: 2, full_set: 1 };
@@ -2097,8 +2109,13 @@ function addProgress(d) { // counts that only grow: kept on this device, and wit
   if (acct.user) rpc('save_progress', { pr: progOf() }).then(p => { if (p) acct.prof = p; });
 }
 function setProgress(k, v) { prog[k] = Math.max(prog[k] || 0, v); store('zt_prog', JSON.stringify(prog)); if (acct.user) rpc('save_progress', { pr: progOf() }).then(p => { if (p) acct.prof = p; }); }
+const DAILY = ['daily', 'd_play', 'd_win', 'd_sweet'];
+const todayKST = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+function dayData() { let d = {}; try { d = JSON.parse(store('zt_day') || '{}') || {}; } catch (e) { d = {}; } return d.date === todayKST() ? d : { date: todayKST() }; }
+const dayCount = k => dayData()[k] || 0;
+function addDay(o) { const d = dayData(); for (const k in o) d[k] = (d[k] || 0) + o[k]; store('zt_day', JSON.stringify(d)); }
 function claimable(code) { const P = acct.prof; if (!P) return false; const today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
-  if (code === 'daily') return P.claimed.daily !== today; if (P.claimed[code]) return false; const a = ACH.find(x => x[0] === code), [c, g] = a[3](progOf()); return c >= g; }
+  if (DAILY.includes(code)) { if (P.claimed[code] === today) return false; const a = ACH.find(x => x[0] === code), [c, g] = a[3](progOf()); return c >= g; } if (P.claimed[code]) return false; const a = ACH.find(x => x[0] === code), [c, g] = a[3](progOf()); return c >= g; }
 const anyClaimable = () => acct.prof && ACH.some(a => claimable(a[0]));
 function toast(s) { acct.msg = s; acct.msgT = 0; }
 async function rpc(fn, args) {
@@ -2436,10 +2453,10 @@ function drawAchTab(y0, end) {
   text(ready.length ? `받을 보상 ${ready.length}개 · 뽑기권 ${sum}장` : '받을 보상이 없어요', LY.m, y0 + 26, 21, ready.length ? INK : '#9a8b93', 'left', null, F_T);
   if (ready.length) button('모두 받기', LY.m + LY.w - 170, y0, 170, 52, claimAll, { size: 23, fill: '#ffd36b' });
   const rh = 92, key = JSON.stringify([acct.prof.claimed, progOf(), acct.inv, acct.prof.equip, new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10)]);
-  const isDone = code => code === 'daily' ? !claimable(code) : !!acct.prof.claimed[code], rank = a => claimable(a[0]) ? 0 : isDone(a[0]) ? 2 : 1, LIST = ACH.slice().sort((a, b) => rank(a) - rank(b)); // ready first, finished last
+  const today = todayKST(), isDone = code => DAILY.includes(code) ? acct.prof.claimed[code] === today : !!acct.prof.claimed[code], rank = a => claimable(a[0]) ? 0 : isDone(a[0]) ? 2 : 1, LIST = ACH.slice().sort((a, b) => rank(a) - rank(b)); // ready first, finished last
   scrollView(SCR.ach, y0 + 68, end, key, ACH.length * rh + 8, () => {
     const p = progOf();
-    LIST.forEach(([code, name, desc, f], i) => { const y = i * rh, [c, g] = f(p), can = claimable(code), done = code === 'daily' ? !can : !!acct.prof.claimed[code], cy = y + rh / 2;
+    LIST.forEach(([code, name, desc, f], i) => { const y = i * rh, [c, g] = f(p), can = claimable(code), done = isDone(code), cy = y + rh / 2;
       rr(LY.m, y + 5, LY.w, rh - 10, 18, done ? 'rgba(255,248,231,0.6)' : '#fffaf0', can ? '#f0a020' : '#d9cbbd', can ? 3.4 : 2.2);
       text(name, LY.m + LY.pad, cy - 14, 25, done ? '#9a8b93' : INK, 'left', null, F_T);
       text(desc, LY.m + LY.pad, cy + 18, 18, '#7a6872', 'left', null, F_B);
@@ -2555,7 +2572,9 @@ function matchProgress() { // what this match adds to the account's counts (onli
   const me = m.online ? view : 0, won = m.sc.winner === me % 2;
   const d = { sweet: m.stats.sweet[me], aces: m.stats.aces[me], power: m.stats.power[me], matches: 1 }; setProgress('rally', m.stats.longest);
   if (m.online) { d.online = 1; if (won) d.online_wins = 1; }
-  else if (won) { d.wins = 1; d['win_' + ['', 'easy', 'normal', 'hard'][m.level]] = 1; d['win_' + (m.format || 'regular')] = 1; if (m.court) d['court_' + m.court] = 1; d['wa_' + ANIMALS[m.P[0].a].id] = 1; }
+  addDay({ play: 1, win: won && !m.online ? 1 : 0, sweet: m.stats.sweet[me] });
+  if (!m.online && won && m.doubles) d.win_doubles = 1;
+  if (!m.online && won) { d.wins = 1; d['win_' + ['', 'easy', 'normal', 'hard'][m.level]] = 1; d['win_' + (m.format || 'regular')] = 1; if (m.court) d['court_' + m.court] = 1; d['wa_' + ANIMALS[m.P[0].a].id] = 1; }
   addProgress(d);
 }
 const scenes = {
