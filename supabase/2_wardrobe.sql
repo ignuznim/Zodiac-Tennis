@@ -120,6 +120,7 @@ create table if not exists public.achievements (
   reward smallint not null check (reward between 1 and 20),
   daily  boolean not null default false
 );
+alter table public.achievements add column if not exists weekly boolean not null default false; -- claimed once a week (Monday to Sunday, Korean time)
 insert into public.achievements (code, reward, daily) values
   ('daily', 1, true), ('first_win', 1, false), ('win_easy', 1, false), ('win_normal', 1, false), ('win_hard', 2, false),
   ('win_flash', 1, false), ('win_short', 1, false), ('win_regular', 3, false), ('lessons_all', 2, false), ('ranked', 1, false),
@@ -133,8 +134,13 @@ insert into public.achievements (code, reward, daily) values
   ('own_60', 4, false), ('own_100', 10, false), ('legend_1', 2, false), ('full_set', 1, false),
   ('d_play', 1, true), ('d_win', 1, true), ('d_sweet', 1, true),
   ('play_1', 1, false), ('pulls_1', 1, false), ('equip_1', 1, false), ('sweet_10', 1, false), ('power_10', 1, false),
-  ('rally_10', 1, false), ('aces_1', 1, false), ('win_doubles', 1, false), ('own_5', 1, false)
+  ('rally_10', 1, false), ('aces_1', 1, false), ('win_doubles', 1, false), ('own_5', 1, false),
+  ('d_play3', 2, true), ('d_win2', 1, true), ('d_power', 1, true)
 on conflict (code) do update set reward = excluded.reward, daily = excluded.daily;
+-- this week's: about two tickets a day on top of the daily eight
+insert into public.achievements (code, reward, daily, weekly) values
+  ('w_wins', 5, false, true), ('w_animals', 3, false, true), ('w_sweet', 3, false, true), ('w_days', 3, false, true)
+on conflict (code) do update set reward = excluded.reward, daily = excluded.daily, weekly = excluded.weekly;
 
 -- ---- One profile per account ----
 create table if not exists public.profiles (
@@ -202,7 +208,9 @@ begin
   if not found then raise exception 'no tickets'; end if;
   r := random();
   g := case when r < 0.56 then 0 when r < 0.84 then 1 when r < 0.96 then 2 else 3 end;
-  select * into it from public.items where grade = g order by random() limit 1;
+  -- within the grade, an item not yet owned is one and a half times as likely: a full set comes in about three months, and repeats still turn up
+  select i.* into it from public.items i left join public.inventory v on v.item_id = i.id and v.user_id = auth.uid()
+    where i.grade = g order by -ln(1 - random()) / (case when v.item_id is null then 1.5 else 1 end) limit 1;
   select count into was from public.inventory where user_id = auth.uid() and item_id = it.id;
   insert into public.inventory (user_id, item_id) values (auth.uid(), it.id)
     on conflict (user_id, item_id) do update set count = public.inventory.count + 1;
@@ -260,15 +268,17 @@ end $$;
 create or replace function public.claim_achievement(c text) returns public.profiles
 language plpgsql security definer set search_path = public as $$
 declare a public.achievements; p public.profiles; today text := to_char(now() at time zone 'Asia/Seoul', 'YYYY-MM-DD');
+  week text := to_char(date_trunc('week', now() at time zone 'Asia/Seoul'), 'YYYY-MM-DD'); -- the Monday of this week
 begin
   perform public.me();
   select * into a from public.achievements where code = c;
   if not found then raise exception 'no such achievement'; end if;
   select * into p from public.profiles where id = auth.uid();
+  if a.weekly and p.claimed ->> c = week then raise exception 'already claimed'; end if;
   if a.daily and p.claimed ->> c = today then raise exception 'already claimed'; end if;
-  if not a.daily and p.claimed ? c then raise exception 'already claimed'; end if;
+  if not a.daily and not a.weekly and p.claimed ? c then raise exception 'already claimed'; end if;
   update public.profiles set tickets = tickets + a.reward,
-    claimed = claimed || jsonb_build_object(c, case when a.daily then to_jsonb(today) else 'true'::jsonb end)
+    claimed = claimed || jsonb_build_object(c, case when a.weekly then to_jsonb(week) when a.daily then to_jsonb(today) else 'true'::jsonb end)
     where id = auth.uid() returning * into p;
   return p;
 end $$;

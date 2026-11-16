@@ -67,7 +67,7 @@
 'use strict';
 // ---- Built to be checked ----------------------------------------------------------------
 const params = new URLSearchParams(location.search);
-const APP_VERSION = '1.9.0'; // shown on the home screen: a new feature raises the middle number; the small fixes after it are bundled into one last-number step
+const APP_VERSION = '1.10.0'; // shown on the home screen: a new feature raises the middle number; the small fixes after it are bundled into one last-number step
 const tune = new Proxy({}, { get: (_, k) => CONFIG[k].value }); // live: tune.speed is CONFIG.speed.value
 const STEP = 1 / 60;            // simulation step in seconds; motion is per second, never per frame
 const W = 720; let H = 1280;    // logical size: a portrait page 720 wide, as tall as the window's shape asks (900 to 1580)
@@ -2037,6 +2037,13 @@ const ACH = [ // the achievements: what counts, the goal; the server holds the r
   ['d_play', '오늘의 경기', '오늘 경기 1번 끝까지 하기', () => [dayCount('play'), 1]],
   ['d_win', '오늘의 승리', '오늘 컴퓨터를 1번 이기기', () => [dayCount('win'), 1]],
   ['d_sweet', "오늘의 '딱!'", "오늘 '딱!' 10번", () => [dayCount('sweet'), 10]],
+  ['d_play3', '오늘의 세 경기', '오늘 경기 3번 끝까지 하기', () => [dayCount('play'), 3]],
+  ['d_win2', '오늘의 연승', '오늘 컴퓨터를 2번 이기기', () => [dayCount('win'), 2]],
+  ['d_power', '오늘의 파워샷', '오늘 파워샷 20번', () => [dayCount('power'), 20]],
+  ['w_wins', '이번 주 10승', '이번 주 컴퓨터를 10번 이기기', () => [weekCount('wins'), 10]],
+  ['w_animals', '이번 주 다섯 동물', '이번 주 서로 다른 동물 5마리로 경기', () => [weekCount('animals'), 5]],
+  ['w_sweet', "이번 주 '딱!' 100번", "이번 주 '딱!' 100번", () => [weekCount('sweet'), 100]],
+  ['w_days', '이번 주 5일', '이번 주 5일 동안 경기하기', () => [weekCount('days'), 5]],
   ['play_1', '첫 경기', '경기 1번 끝까지 하기', p => [p.matches || 0, 1]],
   ['pulls_1', '첫 뽑기', '뽑기 기계 처음 돌리기', p => [p.pulls || 0, 1]],
   ['equip_1', '첫 장착', '동물에게 아이템 하나 입히기', () => [Object.values((acct.prof && acct.prof.equip) || {}).some(g => g && typeof g === 'object' && Object.values(g).some(Boolean)) ? 1 : 0, 1]],
@@ -2096,7 +2103,7 @@ const ACH = [ // the achievements: what counts, the goal; the server holds the r
   ['full_set', '풀 착장', '한 동물에게 4종 모두 입히기', () => [Object.values((acct.prof && acct.prof.equip) || {}).some(g => g && typeof g === 'object' && SLOTS.every(q => g[q[0]])) ? 1 : 0, 1]],
 ];
 const ownedKinds = () => Object.keys(acct.inv).filter(k => acct.inv[k] > 0 && ITEMS[k]).length;
-const ACH_REWARD = { daily: 1, d_play: 1, d_win: 1, d_sweet: 1, play_1: 1, pulls_1: 1, equip_1: 1, sweet_10: 1, power_10: 1, rally_10: 1, aces_1: 1, win_doubles: 1, own_5: 1, first_win: 1, win_easy: 1, win_normal: 1, win_hard: 2, win_flash: 1, win_short: 1, win_regular: 3, lessons_all: 2, ranked: 1, sweet_50: 1, aces_10: 1, wins_10: 2, sweet_300: 2, hard_5: 3, rally_30: 2, wins_50: 5, sweet_1000: 5,
+const ACH_REWARD = { daily: 1, d_play: 1, d_win: 1, d_sweet: 1, d_play3: 2, d_win2: 1, d_power: 1, w_wins: 5, w_animals: 3, w_sweet: 3, w_days: 3, play_1: 1, pulls_1: 1, equip_1: 1, sweet_10: 1, power_10: 1, rally_10: 1, aces_1: 1, win_doubles: 1, own_5: 1, first_win: 1, win_easy: 1, win_normal: 1, win_hard: 2, win_flash: 1, win_short: 1, win_regular: 3, lessons_all: 2, ranked: 1, sweet_50: 1, aces_10: 1, wins_10: 2, sweet_300: 2, hard_5: 3, rally_30: 2, wins_50: 5, sweet_1000: 5,
   play_5: 1, play_20: 2, play_100: 4, wins_25: 3, wins_100: 6, hard_20: 5, court_hard: 1, court_grass: 1, court_clay: 1, animals_3: 1, animals_6: 2, animals_12: 5,
   power_50: 1, power_300: 2, aces_50: 2, aces_200: 4, sweet_3000: 5, rally_15: 1, rally_50: 3, online_1: 1, online_win: 2, online_10: 3, ranked_10: 2,
   pulls_10: 1, pulls_50: 3, own_10: 1, own_30: 2, own_60: 4, own_100: 10, legend_1: 2, full_set: 1 };
@@ -2109,13 +2116,17 @@ function addProgress(d) { // counts that only grow: kept on this device, and wit
   if (acct.user) rpc('save_progress', { pr: progOf() }).then(p => { if (p) acct.prof = p; });
 }
 function setProgress(k, v) { prog[k] = Math.max(prog[k] || 0, v); store('zt_prog', JSON.stringify(prog)); if (acct.user) rpc('save_progress', { pr: progOf() }).then(p => { if (p) acct.prof = p; }); }
-const DAILY = ['daily', 'd_play', 'd_win', 'd_sweet'];
+const DAILY = ['daily', 'd_play', 'd_win', 'd_sweet', 'd_play3', 'd_win2', 'd_power'], WEEKLY = ['w_wins', 'w_animals', 'w_sweet', 'w_days'];
+const weekKST = () => { const d = new Date(Date.now() + 9 * 3600e3); d.setUTCDate(d.getUTCDate() - (d.getUTCDay() + 6) % 7); return d.toISOString().slice(0, 10); }; // this week's Monday, as the server counts it
+function weekData() { let d = {}; try { d = JSON.parse(store('zt_week') || '{}') || {}; } catch (e) { d = {}; } return d.week === weekKST() ? d : { week: weekKST(), animals: [], days: [] }; }
+const weekCount = k => { const v = weekData()[k]; return Array.isArray(v) ? v.length : v || 0; };
+function addWeek(o, animal) { const d = weekData(); for (const k in o) d[k] = (d[k] || 0) + o[k]; if (!d.animals.includes(animal)) d.animals.push(animal); if (!d.days.includes(todayKST())) d.days.push(todayKST()); store('zt_week', JSON.stringify(d)); }
 const todayKST = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
 function dayData() { let d = {}; try { d = JSON.parse(store('zt_day') || '{}') || {}; } catch (e) { d = {}; } return d.date === todayKST() ? d : { date: todayKST() }; }
 const dayCount = k => dayData()[k] || 0;
 function addDay(o) { const d = dayData(); for (const k in o) d[k] = (d[k] || 0) + o[k]; store('zt_day', JSON.stringify(d)); }
 function claimable(code) { const P = acct.prof; if (!P) return false; const today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
-  if (DAILY.includes(code)) { if (P.claimed[code] === today) return false; const a = ACH.find(x => x[0] === code), [c, g] = a[3](progOf()); return c >= g; } if (P.claimed[code]) return false; const a = ACH.find(x => x[0] === code), [c, g] = a[3](progOf()); return c >= g; }
+  if (DAILY.includes(code) || WEEKLY.includes(code)) { if (P.claimed[code] === (WEEKLY.includes(code) ? weekKST() : today)) return false; const a = ACH.find(x => x[0] === code), [c, g] = a[3](progOf()); return c >= g; } if (P.claimed[code]) return false; const a = ACH.find(x => x[0] === code), [c, g] = a[3](progOf()); return c >= g; }
 const anyClaimable = () => acct.prof && ACH.some(a => claimable(a[0]));
 function toast(s) { acct.msg = s; acct.msgT = 0; }
 async function rpc(fn, args) {
@@ -2453,7 +2464,7 @@ function drawAchTab(y0, end) {
   text(ready.length ? `받을 보상 ${ready.length}개 · 뽑기권 ${sum}장` : '받을 보상이 없어요', LY.m, y0 + 26, 21, ready.length ? INK : '#9a8b93', 'left', null, F_T);
   if (ready.length) button('모두 받기', LY.m + LY.w - 170, y0, 170, 52, claimAll, { size: 23, fill: '#ffd36b' });
   const rh = 92, key = JSON.stringify([acct.prof.claimed, progOf(), acct.inv, acct.prof.equip, new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10)]);
-  const today = todayKST(), isDone = code => DAILY.includes(code) ? acct.prof.claimed[code] === today : !!acct.prof.claimed[code], rank = a => claimable(a[0]) ? 0 : isDone(a[0]) ? 2 : 1, LIST = ACH.slice().sort((a, b) => rank(a) - rank(b)); // ready first, finished last
+  const today = todayKST(), isDone = code => WEEKLY.includes(code) ? acct.prof.claimed[code] === weekKST() : DAILY.includes(code) ? acct.prof.claimed[code] === today : !!acct.prof.claimed[code], rank = a => claimable(a[0]) ? 0 : isDone(a[0]) ? 2 : 1, LIST = ACH.slice().sort((a, b) => rank(a) - rank(b)); // ready first, finished last
   scrollView(SCR.ach, y0 + 68, end, key, ACH.length * rh + 8, () => {
     const p = progOf();
     LIST.forEach(([code, name, desc, f], i) => { const y = i * rh, [c, g] = f(p), can = claimable(code), done = isDone(code), cy = y + rh / 2;
@@ -2504,7 +2515,7 @@ function menuBegin(title, home) {
   if (title) text(title, W / 2, LY.titleY, 40, INK, 'center', CREAM, F_T);
   if (home) iconBtn(LY.m, LY.titleY - 27, 'home', goHome);
 }
-function menuEnd(foot) { if (foot) text(foot, W / 2, LY.foot, 20, '#4f6f63', 'center', null, F_B); ctx.restore(); OY = 0; }
+function menuEnd(foot) { if (foot) { ctx.font = `20px ${F_B}`; const fw = ctx.measureText(foot).width; text(foot, W / 2, LY.foot, fw > LY.w ? 20 * LY.w / fw : 20, '#4f6f63', 'center', null, F_B); } ctx.restore(); OY = 0; } // the footnote shrinks to the page's margins
 const contentEnd = () => LY.bot - LY.gap * 2;
 const cardH = n => (contentEnd() - LY.top - LY.gap * (n - 1)) / n; // n cards filling the content area
 function panel(x, y, w, h) { rr(x, y, w, h, 24, 'rgba(255,248,231,0.96)', OUT); }
@@ -2572,7 +2583,8 @@ function matchProgress() { // what this match adds to the account's counts (onli
   const me = m.online ? view : 0, won = m.sc.winner === me % 2;
   const d = { sweet: m.stats.sweet[me], aces: m.stats.aces[me], power: m.stats.power[me], matches: 1 }; setProgress('rally', m.stats.longest);
   if (m.online) { d.online = 1; if (won) d.online_wins = 1; }
-  addDay({ play: 1, win: won && !m.online ? 1 : 0, sweet: m.stats.sweet[me] });
+  addDay({ play: 1, win: won && !m.online ? 1 : 0, sweet: m.stats.sweet[me], power: m.stats.power[me] });
+  addWeek({ wins: won && !m.online ? 1 : 0, sweet: m.stats.sweet[me] }, m.P[me].a);
   if (!m.online && won && m.doubles) d.win_doubles = 1;
   if (!m.online && won) { d.wins = 1; d['win_' + ['', 'easy', 'normal', 'hard'][m.level]] = 1; d['win_' + (m.format || 'regular')] = 1; if (m.court) d['court_' + m.court] = 1; d['wa_' + ANIMALS[m.P[0].a].id] = 1; }
   addProgress(d);
