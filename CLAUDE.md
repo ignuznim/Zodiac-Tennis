@@ -7,7 +7,7 @@ The owner reviews every change on a phone. These rules come from their repeated 
 - When a box holds several lines (a title and one or two lines under it), centre the whole block vertically and check the bottom margin as carefully as the top.
 - Text must never run past a box's edge or be cut off. Shrink it to fit (measure with `ctx.measureText`) rather than let it overflow.
 - After any layout change, take a screenshot at phone size (390 x 844, and a short screen such as 390 x 600) and look at the margins before committing.
-- No text is smaller than MIN_TEXT (16 in the 720-wide page, set beside text() in index.html). Shrink-to-fit stops there; if a label still does not fit, shorten the words or use two lines instead of going smaller.
+- No text is smaller than MIN_TEXT (16 in the 720-wide page, set beside text() in index.html). Shrink-to-fit stops there; if a label still does not fit, move it somewhere with room or use two lines instead of going smaller. Never cut a word into an abbreviation nobody can read (타이브레이크 is never 타이브).
 - Use the plain fonts (F_T, F_B) for anything that must read cleanly; the handwritten font (F_H) has uneven spacing, so keep it to short accents.
 
 ## Drawing

@@ -1309,7 +1309,9 @@ function drawScoreboard() { // one row a side: sets won, a cell for each of the 
   rr(x0, y0, w, 112, 16, '#4a3d47', OUT);
   if (!tbOnly) text('세트', wx + 17, y0 + 14, MIN_TEXT, '#cbbcc4', 'center', null, F_B);
   for (let k = 0; k < n; k++) text('' + (k + 1), sx + k * 30 + 13, y0 + 14, MIN_TEXT, k === sc.sets.length && !sc.done ? BALL : '#cbbcc4', 'center', null, F_N);
-  text(tbOnly ? '점수' : sc.tb ? '타이브' : '포인트', px + 27, y0 + 14, MIN_TEXT, sc.tb ? BALL : '#cbbcc4', 'center', null, F_B);
+  text(tbOnly ? '점수' : '포인트', px + 27, y0 + 14, MIN_TEXT, sc.tb && !tbOnly ? BALL : '#cbbcc4', 'center', null, F_B);
+  if (sc.tb && !tbOnly && !sc.done) { ctx.font = `19px ${F_T}`; const tw = ctx.measureText('타이브레이크').width + 30; // in full words, on a tab under the board
+    rr(x0 + w - tw - 10, y0 + 100, tw, 28, 14, BALL, OUT, 2.4); text('타이브레이크', x0 + w - 10 - tw / 2, y0 + 114, 19, '#3b2f38', 'center', null, F_T); }
   for (let r = 0; r < 2; r++) {
     const i = r === 0 ? m.P[view].team : 1 - m.P[view].team, y = y0 + 46 + r * 40, P = r === 0 ? m.P[view] : m.P[i], f = P.stam / P.max, col = r === 0 ? CORAL : SKY, Q = m.doubles ? mates(i).find(q => q !== P) : null;
     ctx.lineWidth = 2.6; ctx.strokeStyle = OUT;
