@@ -23,7 +23,7 @@ The owner reviews every change on a phone. These rules come from their repeated 
 - Item names live in two places, index.html (ITEMS) and supabase/2_wardrobe.sql: change both, and give the owner the SQL to run.
 
 ## The database
-- The database is kept in numbered files, one per part, so the owner can save them apart and re-run only the part that changed: supabase/1_ranking.sql, 2_wardrobe.sql, 3_feedback.sql. A new part gets the next number.
+- The database is kept in numbered files, one per part, so the owner can save them apart and re-run only the part that changed: supabase/1_ranking.sql, 2_wardrobe.sql, 3_feedback.sql, 4_lobby.sql (open rooms for quick match and the room list, who is online). A new part gets the next number.
 - When a part changes, give the owner that whole file again (not a fragment), and say which file it is.
 - Every file must stay safe to run again on the live database: create ... if not exists, create or replace, drop policy if exists, on conflict do update. Test it twice on an empty database and once on one that already has data.
 
