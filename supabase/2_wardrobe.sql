@@ -135,11 +135,11 @@ insert into public.achievements (code, reward, daily) values
   ('d_play', 1, true), ('d_win', 1, true), ('d_sweet', 1, true),
   ('play_1', 1, false), ('pulls_1', 1, false), ('equip_1', 1, false), ('sweet_10', 1, false), ('power_10', 1, false),
   ('rally_10', 1, false), ('aces_1', 1, false), ('win_doubles', 1, false), ('own_5', 1, false),
-  ('d_play3', 2, true), ('d_win2', 1, true), ('d_power', 1, true)
+  ('d_play3', 3, true), ('d_win2', 2, true), ('d_power', 1, true)
 on conflict (code) do update set reward = excluded.reward, daily = excluded.daily;
--- this week's: about two tickets a day on top of the daily eight
+-- this week's: twenty tickets a week on top of the daily ten
 insert into public.achievements (code, reward, daily, weekly) values
-  ('w_wins', 5, false, true), ('w_animals', 3, false, true), ('w_sweet', 3, false, true), ('w_days', 3, false, true)
+  ('w_wins', 7, false, true), ('w_animals', 5, false, true), ('w_sweet', 4, false, true), ('w_days', 4, false, true)
 on conflict (code) do update set reward = excluded.reward, daily = excluded.daily, weekly = excluded.weekly;
 
 -- ---- One profile per account ----

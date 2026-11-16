@@ -2103,7 +2103,7 @@ const ACH = [ // the achievements: what counts, the goal; the server holds the r
   ['full_set', '풀 착장', '한 동물에게 4종 모두 입히기', () => [Object.values((acct.prof && acct.prof.equip) || {}).some(g => g && typeof g === 'object' && SLOTS.every(q => g[q[0]])) ? 1 : 0, 1]],
 ];
 const ownedKinds = () => Object.keys(acct.inv).filter(k => acct.inv[k] > 0 && ITEMS[k]).length;
-const ACH_REWARD = { daily: 1, d_play: 1, d_win: 1, d_sweet: 1, d_play3: 2, d_win2: 1, d_power: 1, w_wins: 5, w_animals: 3, w_sweet: 3, w_days: 3, play_1: 1, pulls_1: 1, equip_1: 1, sweet_10: 1, power_10: 1, rally_10: 1, aces_1: 1, win_doubles: 1, own_5: 1, first_win: 1, win_easy: 1, win_normal: 1, win_hard: 2, win_flash: 1, win_short: 1, win_regular: 3, lessons_all: 2, ranked: 1, sweet_50: 1, aces_10: 1, wins_10: 2, sweet_300: 2, hard_5: 3, rally_30: 2, wins_50: 5, sweet_1000: 5,
+const ACH_REWARD = { daily: 1, d_play: 1, d_win: 1, d_sweet: 1, d_play3: 3, d_win2: 2, d_power: 1, w_wins: 7, w_animals: 5, w_sweet: 4, w_days: 4, play_1: 1, pulls_1: 1, equip_1: 1, sweet_10: 1, power_10: 1, rally_10: 1, aces_1: 1, win_doubles: 1, own_5: 1, first_win: 1, win_easy: 1, win_normal: 1, win_hard: 2, win_flash: 1, win_short: 1, win_regular: 3, lessons_all: 2, ranked: 1, sweet_50: 1, aces_10: 1, wins_10: 2, sweet_300: 2, hard_5: 3, rally_30: 2, wins_50: 5, sweet_1000: 5,
   play_5: 1, play_20: 2, play_100: 4, wins_25: 3, wins_100: 6, hard_20: 5, court_hard: 1, court_grass: 1, court_clay: 1, animals_3: 1, animals_6: 2, animals_12: 5,
   power_50: 1, power_300: 2, aces_50: 2, aces_200: 4, sweet_3000: 5, rally_15: 1, rally_50: 3, online_1: 1, online_win: 2, online_10: 3, ranked_10: 2,
   pulls_10: 1, pulls_50: 3, own_10: 1, own_30: 2, own_60: 4, own_100: 10, legend_1: 2, full_set: 1 };
