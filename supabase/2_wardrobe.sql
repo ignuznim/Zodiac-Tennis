@@ -208,9 +208,7 @@ begin
   if not found then raise exception 'no tickets'; end if;
   r := random();
   g := case when r < 0.56 then 0 when r < 0.84 then 1 when r < 0.96 then 2 else 3 end;
-  -- within the grade, an item not yet owned is one and a half times as likely: a full set comes in about three months, and repeats still turn up
-  select i.* into it from public.items i left join public.inventory v on v.item_id = i.id and v.user_id = auth.uid()
-    where i.grade = g order by -ln(1 - random()) / (case when v.item_id is null then 1.5 else 1 end) limit 1;
+  select * into it from public.items where grade = g order by random() limit 1; -- every item of the grade equally likely, owned or not
   select count into was from public.inventory where user_id = auth.uid() and item_id = it.id;
   insert into public.inventory (user_id, item_id) values (auth.uid(), it.id)
     on conflict (user_id, item_id) do update set count = public.inventory.count + 1;
