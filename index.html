@@ -1408,7 +1408,7 @@ function drawMatch() {
     ctx.setLineDash([7, 5]); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,0.95)'; ctx.stroke(); ctx.setLineDash([]);
     ctx.fillStyle = 'rgba(74,61,71,0.5)'; ctx.beginPath(); ctx.ellipse(s.x, s.y, 3.5 * s.s, 1.8 * s.s, 0, 0, 7); ctx.fill();
   }
-  const near = m.P[view], b = m.ball, dep = y => view % 2 ? -y : y, bv = dep(b.y), ny = dep(near.y);
+  const near = m.P[view] || m.P[0], b = m.ball, dep = y => view % 2 ? -y : y, bv = dep(b.y), ny = dep(near.y);
   const order = m.P.slice().sort((p, q) => dep(p.y) - dep(q.y)); let netDone = false, ballDone = false; // far to near: the net and the ball in their places
   for (const p of order) {
     if (!ballDone && bv < dep(p.y) && (bv < 0 || netDone)) { drawBall(); ballDone = true; }
@@ -1650,7 +1650,7 @@ function onGuestData(d) {
   else if (d.t === 'start') { net.snap = null; net.buf = []; net.rt = null; net.myPick = null; net.ready = null; view = net.seat; seenFx = 0; hints = { hits: 0, power: 0, shots: 0 }; net.starting = true; } // the match shows once the host's first picture arrives
   else if (d.t === 'again') { net.myPick = null; net.ready = null; net.ask = true; tone(880, 0.1, 'triangle', 0.2); }
   else if (d.t === 's') { // every picture is kept a moment, with where things stood in it, so the screen can play them back evenly
-    const M = d.m, B = net.buf || (net.buf = []);
+    const M = d.m, B = net.buf || (net.buf = []); if (!M || !M.P || !M.P[view]) return; // a late picture of the last match, with fewer players than this one
     if (B.length && M.t < B[B.length - 1].t - 1) B.length = 0; // time went back a long way: a new match started
     const e = { t: M.t, m: M, b: [M.ball.x, M.ball.y, M.ball.z], P: M.P.map(p => [p.x, p.y]) };
     let k = B.length; while (k > 0 && B[k - 1].t > e.t) k--; // a picture that came a little late goes in its place
@@ -1956,7 +1956,7 @@ fbBox.querySelector('form').onsubmit = async e => {
 };
 const fbSeen = new Set(); // each error once a session, at most five
 function reportError(msg, stack) {
-  const key = String(msg).slice(0, 120); if (fbSeen.has(key) || fbSeen.size >= 5 || location.protocol === 'file:') return; fbSeen.add(key);
+  const key = String(msg).slice(0, 120); if (fbSeen.has(key) || fbSeen.size >= 5 || location.protocol === 'file:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname)) return; // only errors from the real site fbSeen.add(key);
   fbPost('error', `${msg}\n${String(stack || '').slice(0, 700)}`).catch(() => {});
 }
 addEventListener('error', e => reportError(e.message, e.error && e.error.stack));
