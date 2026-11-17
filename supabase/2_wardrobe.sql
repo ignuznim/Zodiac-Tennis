@@ -192,7 +192,7 @@ language plpgsql security definer set search_path = public as $$
 declare p public.profiles;
 begin
   perform public.me();
-  if char_length(btrim(n)) not between 1 and 10 then raise exception 'bad nickname'; end if;
+  if char_length(btrim(n)) not between 1 and 8 then raise exception 'bad nickname'; end if; -- new names up to 8; older ones up to 10 stay
   if exists (select 1 from public.profiles where nickname = btrim(n) and id <> auth.uid()) then raise exception 'nickname taken'; end if;
   update public.profiles set nickname = btrim(n) where id = auth.uid() returning * into p;
   return p;
