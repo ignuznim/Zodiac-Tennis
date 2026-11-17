@@ -2344,6 +2344,18 @@ function pull() { // the machine: the crank turns while the server picks
     if (acct.prof.tickets < G.n) G.n = PULLS.filter(k => k <= Math.max(1, acct.prof.tickets)).pop(); })();
 }
 const PULLS = [1, 5, 10];
+function pullBtn() { // the 뽑기 button with − and + at its ends: how many at once, and the middle pulls
+  const G = acct.g, T = acct.prof.tickets, x = LY.m + LY.side + LY.gap, w = LY.w - LY.side - LY.gap, y = LY.bot, h = LY.btnH, sq = h - 20, zone = sq + 20;
+  if (!PULLS.includes(G.n)) G.n = 1; const i = PULLS.indexOf(G.n), canDown = i > 0, canUp = i < 2 && T >= PULLS[i + 1];
+  const mid = btn(x + zone, y, w - zone * 2, h, pull);
+  if (canDown) btn(x, y, zone, h, () => { G.n = PULLS[i - 1]; tone(660, 0.05, 'sine', 0.16); });
+  if (canUp) btn(x + w - zone, y, zone, h, () => { G.n = PULLS[i + 1]; tone(760, 0.05, 'sine', 0.16); });
+  rr(x, y + 5, w, h, 24, OUT, null); rr(x, y, w, h, 24, mid ? '#fff7d6' : '#fff3c4', OUT, 3);
+  [[-1, '−', canDown], [1, '+', canUp]].forEach(([d, t, on]) => { const bx = d < 0 ? x + 10 : x + w - 10 - sq;
+    rr(bx, y + 10, sq, sq, sq / 2, on ? '#ffffff' : '#f1e9df', on ? OUT : '#cdbfb3', 2.4); text(t, bx + sq / 2, y + h / 2 + 1, 34, on ? INK : '#c3b5bc', 'center', null, F_T); });
+  text(`${G.n}회 뽑기`, x + w / 2, y + h / 2 - 12, 30, INK, 'center', null, F_T);
+  text(`뽑기권 ${G.n}장`, x + w / 2, y + h / 2 + 20, 18, '#b0603a', 'center', null, F_T);
+}
 function gachaStep(dt) {
   const G = acct.g; G.t += dt; acct.msgT += dt;
   if (G.phase === 'turn' && G.t > 1.1) { if (G.res) { G.phase = 'drop'; G.t = 0; tone(520, 0.12, 'sine', 0.2); } else if (G.err) { G.phase = 'idle'; toast(G.err); } }
@@ -2560,7 +2572,7 @@ function drawClosetList(gear, eh, chh, coll) { // the closet's whole list, from 
 }
 function openCloset(back, a = null) { if (!acct.user) { toast('로그인하면 옷장을 쓸 수 있어요'); return; } closetBack = back; closet.animal = a; closet.sel = null; SCR.closet.scroll = 0; SCR.closet.vel = 0; scene = 'closet'; tone(660, 0.06, 'sine', 0.15); }
 function drawGachaTab(y0, end) {
-  const G = acct.g, cx = W / 2, h = end - y0, base = y0 + h - 12 - 68, k = Math.min(1, (h - 68 - 96) / 545); // the bottom 68 holds how many at once, right over the 뽑기 button
+  const G = acct.g, cx = W / 2, h = end - y0, base = y0 + h - 12, k = Math.min(1, (h - 96) / 545);
   ctx.save(); ctx.translate(cx, base); ctx.scale(k, k); ctx.lineWidth = 3.4; ctx.strokeStyle = OUT; ctx.lineJoin = 'round';
   const lin = (x0, y0, x1, y1, stops) => { const g = ctx.createLinearGradient(x0, y0, x1, y1); stops.forEach(([o, c]) => g.addColorStop(o, c)); return g; };
   const chrome = (x0, x1) => lin(x0, 0, x1, 0, [[0, '#8f99a3'], [0.3, '#f4f7fa'], [0.55, '#c3ccd5'], [1, '#7d8792']]);
@@ -2603,14 +2615,6 @@ function drawGachaTab(y0, end) {
   ctx.restore();
   if (G.phase === 'idle') iconButton('hanger', '내 아이템', LY.m + LY.w - 110, y0, 110, 92, () => openCloset('wardrobe', null));
   if (acct.prof.tickets < 1) text('업적을 달성하면 뽑기권을 받아요', LY.m + LY.pad, y0 + 40, 20, '#7a6872', 'left', null, F_B);
-  { // how many at once: a row right over the 뽑기 button, so the thumb only moves up and down
-    const bx = LY.m + LY.side + LY.gap, bw = LY.w - LY.side - LY.gap, g = 12, w = (bw - g * 2) / 3, y = end - 56, idle = G.phase === 'idle';
-    text('한 번에', LY.m + LY.side / 2, y + 28, 22, '#5d4f58', 'center', null, F_T);
-    PULLS.forEach((k, i) => { const x = bx + i * (w + g), can = acct.prof.tickets >= k, on = G.n === k, over = idle && can && btn(x, y, w, 56, () => { G.n = k; tone(760, 0.06, 'sine', 0.18); });
-      if (on) rr(x, y + 4, w, 56, 28, OUT, null);
-      rr(x, y, w, 56, 28, !can ? '#ebe2d8' : on ? '#ffd36b' : over ? '#fffdf3' : 'rgba(255,248,231,0.96)', !can ? '#cdbfb3' : OUT, on ? 3 : 2.4);
-      text(`${k}회`, x + w / 2, y + 29, 24, can ? INK : '#b3a4ac', 'center', null, F_T); });
-  }
   if (G.phase === 'reveal' && G.list && G.list.length > 1) { drawManyPrizes(G, y0, h); return; }
   if (G.phase === 'reveal') { // the prize, opened
     const r = G.res, it = item(r.item), c = GRADE[it.grade].c, py = y0 + 20, ph = Math.min(360, h - 110);
@@ -3030,7 +3034,7 @@ const scenes = {
       else drawAchTab(y0, end);
       if (acct.msg && acct.msgT < 2.6) { ctx.font = `24px ${F_B}`; const w = ctx.measureText(acct.msg).width + 60; rr(W / 2 - w / 2, LY.bot - 62, w, 46, 23, 'rgba(59,51,64,0.9)', null); text(acct.msg, W / 2, LY.bot - 38, 21, CREAM, 'center', null, F_B); }
       sideBtn('뒤로', () => { acct.g.phase = 'idle'; scene = 'title'; });
-      if (acct.prof && acct.wtab === 'gacha') mainBtn(acct.g.phase === 'reveal' ? '확인' : acct.g.phase === 'idle' ? `뽑기 (뽑기권 ${PULLS.includes(acct.g.n) ? acct.g.n : 1}장)` : '뽑는 중…', () => { if (acct.g.phase === 'reveal') acct.g.phase = 'idle'; else pull(); });
+      if (acct.prof && acct.wtab === 'gacha') { if (acct.g.phase === 'idle') pullBtn(); else mainBtn(acct.g.phase === 'reveal' ? '확인' : '뽑는 중…', () => { if (acct.g.phase === 'reveal') acct.g.phase = 'idle'; }); }
       menuEnd(acct.wtab === 'gacha' ? `확률  일반 ${ODDS[0]}% · 희귀 ${ODDS[1]}% · 영웅 ${ODDS[2]}% · 전설 ${ODDS[3]}%` : '아이템 장착은 선수 선택 화면에서 해요 · 모든 경기(랭킹 포함)에 적용돼요');
     },
   },
