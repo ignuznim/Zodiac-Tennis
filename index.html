@@ -21,10 +21,10 @@
   @font-face { font-family: 'Do Hyeon'; src: url('assets/DoHyeon-Regular.ttf'); }
   @font-face { font-family: 'Gowun Dodum'; src: url('assets/GowunDodum-Regular.ttf'); }
   @font-face { font-family: 'Gaegu'; src: url('assets/Gaegu-Bold.ttf'); font-weight: 700; }
-  html, body { margin: 0; height: 100%; background: #5fb49a; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
+  html, body { margin: 0; height: 100%; background: #5fb49a; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; overscroll-behavior: none; }
   body { font-variant-numeric: tabular-nums; }
   html, body { position: fixed; inset: 0; width: 100%; }
-  canvas { display: block; position: absolute; left: 0; top: 0; box-shadow: 0 0 40px rgba(59,51,64,0.35); touch-action: none; }
+  canvas { display: block; position: absolute; left: 0; top: 0; box-shadow: 0 0 40px rgba(59,51,64,0.35); touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
   #nick, #fb { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(59,51,64,0.55); z-index: 5; }
   #nick.on, #fb.on { display: flex; }
   #nick form, #fb form { width: calc(var(--u, 0.6) * 560px); max-width: 92vw; box-sizing: border-box; padding: calc(var(--u, 0.6) * 30px) calc(var(--u, 0.6) * 28px) calc(var(--u, 0.6) * 26px); background: #fff8e7; border: max(1.5px, calc(var(--u, 0.6) * 3px)) solid #6b5560; border-radius: calc(var(--u, 0.6) * 24px); box-shadow: 0 max(2px, calc(var(--u, 0.6) * 5px)) 0 #6b5560; text-align: center; font-family: 'Jua', sans-serif; color: #4a3d47; }
@@ -184,7 +184,7 @@ addEventListener('pointerdown', e => {
   if (h && h.key) { held.set(e.pointerId, h.key); down.add(h.key); hit.add(h.key); return; }
   if (touchUI && scene === 'play' && p.y > H - TOUCH_ZONE) { // the bottom strip: the stick on the left, the shots on the right, no dead space
     if (p.x >= TOUCH_SPLIT) { const k = nearestShot(p); held.set(e.pointerId, k); down.add(k); hit.add(k); return; }
-    if (stick.id === null && !h) { stick.id = e.pointerId; stickMove(p); return; }
+    if (!h) { stick.id = e.pointerId; stickMove(p); return; } // a new thumb on the stick always takes it, even if an old one never said it let go
   }
   tapAt = { id: e.pointerId, x: p.x, y: p.y };
 });
@@ -206,7 +206,14 @@ for (const n of ['pointerup', 'pointercancel']) addEventListener(n, e => {
 });
 addEventListener('click', e => { if (performance.now() - lastTap < 700) return; const p = toLogical(e), h = hitTest(p); if (!(h && h.key)) clicks.push(p); });
 addEventListener('contextmenu', e => e.preventDefault());
-addEventListener('blur', () => { down.clear(); held.clear(); stick.id = null; stick.x = stick.y = 0; });
+function releaseAll() { for (const k of held.values()) down.delete(k); held.clear(); stick.id = null; stick.x = stick.y = 0; } // every finger off: nothing held, the stick back in the middle
+addEventListener('blur', () => { down.clear(); releaseAll(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) { down.clear(); releaseAll(); } });
+// phones sometimes lose a finger's pointerup (a long press, a system gesture); the touch list is the truth: no fingers left means nothing is held
+for (const n of ['touchend', 'touchcancel']) addEventListener(n, e => { if (!e.touches || e.touches.length === 0) releaseAll(); });
+// on the game a long press must not open the iPhone's magnifier or text selection, nor a double tap zoom; taps are read from the pointer events
+document.addEventListener('touchstart', e => { if (e.cancelable && !(e.target && e.target.closest && e.target.closest('form, input, textarea, button, a'))) e.preventDefault(); }, { passive: false }); // the nickname and feedback boxes still take touches
+canvas.addEventListener('touchend', e => { startAudio(); }, { passive: true });
 // on a PC: the arrow keys move, Q W E R are the four shots (J K L I and Z X C V still work)
 const K_L = ['ArrowLeft'], K_R = ['ArrowRight'], K_U = ['ArrowUp'], K_D = ['ArrowDown'];
 const K_A = ['KeyQ', 'KeyJ', 'KeyZ', 'Space'], K_K = ['KeyW', 'KeyK', 'KeyX'], K_LOB = ['KeyE', 'KeyL', 'KeyC'], K_S = ['KeyR', 'KeyI', 'KeyV'], K_OK = ['Enter', 'KeyQ', 'KeyJ', 'KeyZ', 'Space'];
