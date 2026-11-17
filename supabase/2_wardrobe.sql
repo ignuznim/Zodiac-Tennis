@@ -201,7 +201,7 @@ insert into public.items (id, slot, grade, stat, amount, name) values
   ('r36', 'racket', 1, 'spin', 0.2, '국자'),
   ('r37', 'racket', 1, 'spin', 0.2, '바나나'),
   ('r38', 'racket', 1, 'speed', 0.2, '빗자루'),
-  ('r39', 'racket', 1, 'stamina', 0.2, '꼬치어묵'),
+  ('r39', 'racket', 1, 'stamina', 0.2, '떡꼬치'),
   ('r40', 'racket', 2, 'power', 0.3, '소고'),
   ('r41', 'racket', 2, 'reflex', 0.3, '합죽선'),
   ('r42', 'racket', 2, 'stamina', 0.3, '붕어빵 라켓'),
