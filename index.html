@@ -2812,15 +2812,18 @@ function matchProgress() { // what this match adds to the account's counts (onli
 }
 // ---- 공지사항: notes from the owner (updates, events), kept in Supabase (supabase/5_notice.sql) and written in its Table Editor ----
 const news = { list: null, loading: false, err: '', at: 0 };
-const NOTICE_KIND = { update: ['업데이트', '#3d8be0'], event: ['이벤트', CORAL], info: ['안내', '#3f9a5c'] };
-async function loadNotices() {
+const NOTICE_KIND = { update: ['업데이트', '#3d8be0'], patch: ['패치', '#9b5de5'], event: ['이벤트', CORAL], info: ['안내', '#3f9a5c'] };
+async function loadNotices() { // two sources: the owner's notes in Supabase, and the update and patch notes that ship with the game (notices.json)
   if (news.loading || location.protocol === 'file:') return; news.loading = true; news.err = '';
-  try { const r = await fetch(RANK.url.replace('/scores', '/notices') + '?select=id,created_at,kind,title,body,pinned,ends_at&order=pinned.desc,created_at.desc&limit=30', { headers: rankHeaders() });
-    if (!r.ok) throw new Error(r.status); const d = await r.json(); news.list = Array.isArray(d) ? d : []; news.at = Date.now(); SCR.notice.key = ''; }
-  catch (e) { news.err = '공지를 불러오지 못했어요'; if (!news.list) news.list = null; }
+  const get = async url => { const r = await fetch(url, url.includes('/rest/') ? { headers: rankHeaders() } : { cache: 'no-store' }); if (!r.ok) throw new Error(r.status); const d = await r.json(); return Array.isArray(d) ? d : []; };
+  const [db, file] = await Promise.allSettled([get(RANK.url.replace('/scores', '/notices') + '?select=id,created_at,kind,title,body,pinned,ends_at&order=pinned.desc,created_at.desc&limit=30'), get('notices.json')]);
+  if (db.status === 'rejected' && file.status === 'rejected') news.err = '공지를 불러오지 못했어요';
+  else { const all = [...(db.value || []), ...(file.value || []).filter(n => n && n.title && n.created_at)];
+    news.list = all.sort((p, q) => (!!q.pinned - !!p.pinned) || (Date.parse(q.created_at) - Date.parse(p.created_at))).slice(0, 40); news.at = Date.now(); SCR.notice.key = ''; }
   news.loading = false;
 }
-const noticeUnread = () => !!(news.list && news.list.length && Math.max(...news.list.map(n => n.id | 0)) > (parseInt(store('zt_notice')) || 0));
+const newsTop = () => Math.max(0, ...(news.list || []).map(n => Date.parse(n.created_at) || 0)); // the newest note's time
+const noticeUnread = () => newsTop() > (parseInt(store('zt_news_at')) || 0);
 function openNotices() { scene = 'notice'; SCR.notice.scroll = 0; SCR.notice.vel = 0; tone(760, 0.06, 'sine', 0.18); if (!news.list || Date.now() - news.at > 60e3) loadNotices(); }
 function wrapLines(str, size, font, maxW) { // words to lines that fit maxW; a word too long for a line is cut between letters
   const px = font === F_H ? Math.round(size * 1.15) : font === F_B ? Math.round(size * 1.1) : size; ctx.font = `${px}px ${font}`; const out = []; // measured as text() will draw it
@@ -2957,7 +2960,7 @@ const scenes = {
     draw() {
       menuBegin('공지사항', true);
       const L = news.list, v0 = LY.top, v1 = contentEnd();
-      if (L && L.length) { const top = Math.max(...L.map(n => n.id | 0)); if (top > (parseInt(store('zt_notice')) || 0)) store('zt_notice', String(top)); } // seen
+      if (L && L.length) { const top = newsTop(); if (top > (parseInt(store('zt_news_at')) || 0)) store('zt_news_at', String(top)); } // seen
       if (!L) { panel(LY.m, v0, LY.w, 240); text(news.loading ? '불러오는 중…' : news.err || '불러오는 중…', W / 2, v0 + 120, 26, news.err && !news.loading ? '#e2574c' : INK, 'center', null, F_T); }
       else if (!L.length) { panel(LY.m, v0, LY.w, 240); text('아직 공지가 없어요', W / 2, v0 + 120, 26, '#7a6872', 'center', null, F_T); }
       else { const pad = 28, inner = LY.w - pad * 2, { cards, height } = noticeCards(inner);

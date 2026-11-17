@@ -30,3 +30,9 @@ The owner reviews every change on a phone. These rules come from their repeated 
 ## Other standing choices
 - Computers (partners and opponents) never wear items; items apply only to the player.
 - 명예의 전당 stays at night.
+
+## 공지사항 (notices.json)
+- Every push that players can notice gets a note in notices.json, written by Claude without being asked; the owner's own notes (events, notices) live in Supabase (5_notice.sql) and both show together.
+- APP_VERSION raised: kind "update", title "1.9.4 업데이트". Not raised: kind "patch", title "1.9.3 패치"; patches on the same day go into one note (add lines, move created_at to now).
+- Short Korean lines starting with "· ", in players' words (what they will see or feel), no code or file names. Fixes for testing tools or invisible changes get no note.
+- created_at is UTC ISO (date -u); id is unique text such as "patch-2026-11-17" or "update-1.9.4". Newest first is not needed; the game sorts.
