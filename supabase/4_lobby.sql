@@ -50,7 +50,7 @@ grant select, delete on public.rooms to authenticated;
 grant insert (code, nickname, animal, kind, format, quick, seats_taken, seats_total, status) on public.rooms to authenticated;
 grant update (nickname, animal, kind, format, seats_taken, seats_total, status) on public.rooms to authenticated;
 
--- ---- Who is around: a signed-in player on the online pages says hello every 20 seconds ----
+-- ---- Who is around: a signed-in player with the game open says hello every 20 seconds ----
 create table if not exists public.presence (
   user_id uuid primary key references auth.users (id) on delete cascade,
   seen_at timestamptz not null default now()
