@@ -208,7 +208,7 @@ insert into public.items (id, slot, grade, stat, amount, name) values
   ('r43', 'racket', 2, 'reflex', 0.3, '우승 은쟁반'),
   ('r44', 'racket', 2, 'spin', 0.3, '요술봉'),
   ('r45', 'racket', 2, 'speed', 0.3, '파초선'),
-  ('r46', 'racket', 3, 'spin', 0.5, '여의주 라켓'),
+  ('r46', 'racket', 3, 'spin', 0.5, '야구 방망이'),
   ('r47', 'racket', 3, 'power', 0.5, '황금 대파'),
   ('r48', 'racket', 3, 'speed', 0.5, '광선검'),
   ('r49', 'racket', 3, 'reflex', 0.5, '여의봉')
