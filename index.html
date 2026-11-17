@@ -376,8 +376,9 @@ function hat2(L, front) {
   if (k === 'glove') { // a red rubber glove worn as a tall cap: a rolled cuff round the head, four stubby fingers standing up on top
     const finger = (x, a, len, w) => { ctx.save(); ctx.translate(x, -103); ctx.rotate(a); ctx.beginPath(); ctx.moveTo(-w / 2, 4); ctx.lineTo(-w / 2, -len + w / 2); ctx.arc(0, -len + w / 2, w / 2, Math.PI, 0); ctx.lineTo(w / 2, 4); ctx.closePath(); ctx.fillStyle = c; ctx.fill(); ctx.stroke(); ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.fillRect(-w * 0.25, -len + w * 0.4, 1.8, len * 0.6); ctx.restore(); };
     for (const [x, a, len, d] of [[10, 0.2, 21, 0.22], [3.5, 0.08, 26, 0.15], [-3, -0.03, 27, 0.07], [-9.5, -0.16, 22, 0]]) { finger(x, a + Math.sin(NOW() * 3 + x) * 0.03, len, 12); if (d) { ctx.save(); ctx.translate(x, -103); ctx.rotate(a); ctx.globalAlpha = d; ctx.fillStyle = '#3b3340'; ctx.beginPath(); ctx.moveTo(-6, 3); ctx.lineTo(-6, -len + 6); ctx.arc(0, -len + 6, 6, Math.PI, 0); ctx.lineTo(6, 3); ctx.closePath(); ctx.fill(); ctx.restore(); } }
-    const body = () => { ctx.beginPath(); ctx.moveTo(-22, -90); ctx.lineTo(-20, -103); ctx.quadraticCurveTo(0, -109, 20, -103); ctx.lineTo(22, -90); ctx.closePath(); };
-    ctx.lineWidth = 2.4; body(); ctx.fillStyle = c; ctx.fill(); ctx.save(); body(); ctx.clip(); const g = ctx.createLinearGradient(-22, 0, 22, 0); g.addColorStop(0, 'rgba(0,0,0,0.12)'); g.addColorStop(0.3, 'rgba(255,255,255,0.35)'); g.addColorStop(0.5, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(0,0,0,0.15)'); ctx.fillStyle = g; ctx.fillRect(-23, -117, 46, 28); ctx.restore(); body(); ctx.stroke();
+    const body = () => { ctx.beginPath(); ctx.moveTo(-22, -90); ctx.bezierCurveTo(-22, -98, -17, -100, -16.5, -107); ctx.lineTo(16, -107); ctx.bezierCurveTo(16.5, -100, 22, -98, 22, -90); ctx.closePath(); };
+    ctx.lineWidth = 2.4; body(); ctx.fillStyle = c; ctx.fill(); ctx.save(); body(); ctx.clip(); const g = ctx.createLinearGradient(-22, 0, 22, 0); g.addColorStop(0, 'rgba(0,0,0,0.12)'); g.addColorStop(0.3, 'rgba(255,255,255,0.35)'); g.addColorStop(0.5, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(0,0,0,0.15)'); ctx.fillStyle = g; ctx.fillRect(-23, -117, 46, 28); ctx.restore();
+    ctx.beginPath(); ctx.moveTo(-22, -90); ctx.bezierCurveTo(-22, -98, -17, -100, -16.5, -107); ctx.moveTo(22, -90); ctx.bezierCurveTo(22, -98, 16.5, -100, 16, -107); ctx.stroke();
     rr(-24, -95, 48, 9, 4.5, tint(c, '#3b3340', 0.18), OUT, 2.2); ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-20, -91); ctx.lineTo(20, -91); ctx.stroke(); ctx.strokeStyle = OUT; ctx.lineWidth = 2.4; return true; }
   if (k === 'pot') { // a cooking pot upside down, its two handles out to the sides
     for (const sd of [-1, 1]) rr(sd > 0 ? 22 : -31, -104, 9, 6, 3, '#3b3340', OUT, 2);
@@ -401,11 +402,10 @@ function hat2(L, front) {
     return true; }
   if (k === 'band70') { // a thick towelling headband, two stripes round it
     rr(-28, -97, 56, 16, 7, c, OUT, 2.4); ctx.save(); ctx.beginPath(); ctx.rect(-27, -96, 54, 14); ctx.clip(); ctx.fillStyle = '#d0565a'; ctx.fillRect(-28, -93, 56, 2.6); ctx.fillStyle = '#3d4f9a'; ctx.fillRect(-28, -88, 56, 2.6); ctx.strokeStyle = 'rgba(74,61,71,0.12)'; ctx.lineWidth = 1; ctx.beginPath(); for (let x = -26; x < 28; x += 3) { ctx.moveTo(x, -96); ctx.lineTo(x, -82); } ctx.stroke(); ctx.restore(); return true; }
-  if (k === 'yugeon') { // the yugeon: a tall square hood of black hemp, a flat top, a triangle folded out on each side near the top, the front panel standing straight, ties under the chin
-    const p = () => { ctx.beginPath(); ctx.moveTo(-17, -130); ctx.lineTo(17, -130); ctx.lineTo(31, -116); ctx.lineTo(18, -108); ctx.lineTo(18, -87); ctx.quadraticCurveTo(0, -84, -18, -87); ctx.lineTo(-18, -108); ctx.lineTo(-31, -116); ctx.closePath(); };
-    if (front) for (const sd of [-1, 1]) { ctx.lineWidth = 1.6; ctx.strokeStyle = c; ctx.beginPath(); ctx.moveTo(sd * 18, -88); ctx.quadraticCurveTo(sd * 21, -70, sd * 13, -58); ctx.stroke(); ctx.strokeStyle = OUT; }
+  if (k === 'yugeon') { // the yugeon: a square hood of black hemp, a flat top, a triangle folded out on each side near the top, white fold lines only
+    const p = () => { ctx.beginPath(); ctx.moveTo(-17, -119); ctx.lineTo(17, -119); ctx.lineTo(30, -108); ctx.lineTo(18, -102); ctx.lineTo(18, -87); ctx.quadraticCurveTo(0, -84, -18, -87); ctx.lineTo(-18, -102); ctx.lineTo(-30, -108); ctx.closePath(); };
     ctx.lineWidth = 2.4; p(); ctx.fillStyle = c; ctx.fill(); ctx.stroke();
-    ctx.lineWidth = 1.3; ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.beginPath(); ctx.moveTo(-13, -129); ctx.lineTo(-13, -89); ctx.moveTo(13, -129); ctx.lineTo(13, -89); ctx.moveTo(-16, -129); ctx.lineTo(-18, -109); ctx.moveTo(16, -129); ctx.lineTo(18, -109); ctx.stroke(); ctx.strokeStyle = OUT; ctx.lineWidth = 2.4; return true; }
+    ctx.lineWidth = 1.3; ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.beginPath(); ctx.moveTo(-13, -118); ctx.lineTo(-13, -89); ctx.moveTo(13, -118); ctx.lineTo(13, -89); ctx.moveTo(-16, -118); ctx.lineTo(-18, -103); ctx.moveTo(16, -118); ctx.lineTo(18, -103); ctx.stroke(); ctx.strokeStyle = OUT; ctx.lineWidth = 2.4; return true; }
   if (k === 'sangmo') { // a sangmo: a black felt hat with a long white ribbon that the dancer spins round
     const ph = NOW() * 5, pts = []; for (let i = 0; i <= 40; i++) { const q = i / 40, a = ph + q * 5.4, r = 5 + q * 40; pts.push([Math.cos(a) * r, -118 + Math.sin(a) * r * 0.28 - q * 3]); }
     const line = (w, col) => { ctx.lineWidth = w; ctx.strokeStyle = col; ctx.beginPath(); pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke(); };
@@ -413,8 +413,8 @@ function hat2(L, front) {
     E(0, -89, 32, 5.5, c); ctx.beginPath(); ctx.arc(0, -90, 19, Math.PI, 0); ctx.closePath(); ctx.fillStyle = c; ctx.fill(); ctx.save(); ctx.clip(); glossBox(-20, -110, 40, 20, 0.25); ctx.restore(); ctx.stroke();
     rr(-1.5, -118, 3, 10, 1.5, '#f6c445', OUT, 1.4); E(0, -118, 3, 3, '#f6c445'); for (const [x, cc] of [[-12, '#e2574c'], [0, '#f6c445'], [12, '#3d8be0']]) E(x, -95, 3, 3, cc); return true; }
   if (k === 'hahoe') { // the Hahoe scholar's mask pushed up on the head: black hair along the top, heavy arched brows, eyes shut in a grin, a big nose, an open laugh, a loose chin
-    if (!front) return true;
     const face = () => { ctx.beginPath(); ctx.moveTo(-21, -104); ctx.bezierCurveTo(-26, -144, 26, -144, 21, -104); ctx.quadraticCurveTo(14, -100, 10, -101); ctx.lineTo(-10, -101); ctx.quadraticCurveTo(-14, -100, -21, -104); ctx.closePath(); };
+    if (!front) { face(); ctx.fillStyle = tint(c, '#5a3a24', 0.3); ctx.fill(); ctx.save(); face(); ctx.clip(); ctx.fillStyle = '#2e2830'; ctx.beginPath(); ctx.ellipse(0, -139, 26, 9, 0, 0, 7); ctx.fill(); ctx.restore(); face(); ctx.stroke(); return true; }
     const chin = () => { ctx.beginPath(); ctx.moveTo(-12, -99); ctx.quadraticCurveTo(-13, -84, 0, -83); ctx.quadraticCurveTo(13, -84, 12, -99); ctx.quadraticCurveTo(0, -96, -12, -99); ctx.closePath(); };
     ctx.lineWidth = 2.2; chin(); ctx.fillStyle = tint(c, '#5a3a24', 0.15); ctx.fill(); ctx.stroke(); ctx.lineWidth = 0.9; ctx.beginPath(); ctx.moveTo(-4, -96); ctx.lineTo(-4.5, -85); ctx.moveTo(4, -96); ctx.lineTo(4.5, -85); ctx.stroke();
     ctx.lineWidth = 2.4; face(); ctx.fillStyle = c; ctx.fill(); ctx.save(); face(); ctx.clip(); const g = ctx.createRadialGradient(-6, -126, 2, 0, -118, 30); g.addColorStop(0, 'rgba(255,230,180,0.45)'); g.addColorStop(1, 'rgba(90,40,10,0.35)'); ctx.fillStyle = g; ctx.fillRect(-26, -144, 52, 46);
@@ -495,7 +495,8 @@ function shirt2(L, front, hm, c, dk) { // collars and the rest; true when drawn
       ctx.lineWidth = 1.3; ctx.strokeStyle = OUT; ctx.beginPath(); ctx.moveTo(0, -43); ctx.lineTo(0, -33); ctx.stroke(); E(1.8, -39, 1.3, 1.3, '#fff8e7', 0, true); E(1.8, -35, 1.3, 1.3, '#fff8e7', 0, true); return true; }
     if (k === 'blazer') { vneck('#ffffff', 8, -30); ctx.lineWidth = 1.2; poly([-1.6, -48, 1.6, -48, 2.4, -36, 0, -32, -2.4, -36], '#d0565a'); ctx.lineWidth = 1.6; for (const sd of [-1, 1]) poly([sd * 8, -52, sd * 13, -44, sd * 1, -26, 0, -30], tint(c, '#3b3340', 0.25)); for (const y of [-24, -18]) E(-2, y, 1.4, 1.4, '#f6c445', 0, true); poly([10, -36, 15, -36, 14, -33, 11, -33], '#ffffff'); return true; }
     if (k === 'cardigan') { vneck('#ffffff', 7, -30); ctx.lineWidth = 2.4; for (const [col, o] of [['#5b3e8a', 0], ['#4fae5a', 2.4]]) { ctx.strokeStyle = col; ctx.beginPath(); ctx.moveTo(-8 - o, -52); ctx.lineTo(0, -30 + o); ctx.lineTo(8 + o, -52); ctx.stroke(); } ctx.strokeStyle = OUT; ctx.lineWidth = 1.2; for (const y of [-26, -21, -16]) E(0, y, 1.5, 1.5, '#c9b08a'); ctx.beginPath(); ctx.moveTo(0, -30); ctx.lineTo(0, hm); ctx.stroke(); return true; }
-    if (k === 'nongak' || k === 'dopo' || k === 'hwarang' || k === 'yusaeng') { const col = k === 'dopo' ? '#2e2830' : k === 'yusaeng' ? '#ffffff' : k === 'hwarang' ? '#f6c445' : '#ffffff'; ctx.lineWidth = 6; ctx.strokeStyle = OUT; ctx.beginPath(); ctx.moveTo(-9, -48); ctx.quadraticCurveTo(-4, -36, 8, -30); ctx.stroke(); ctx.lineWidth = 3.6; ctx.strokeStyle = col; ctx.stroke(); ctx.strokeStyle = OUT; ctx.lineWidth = 1.6;
+    if (k === 'yusaeng') { poly([-6, -52, 0, -45, 6, -52], '#ffffff'); ctx.lineWidth = 1.6; ctx.strokeStyle = '#6b2338'; ctx.beginPath(); ctx.moveTo(-3, -23); ctx.lineTo(-4, -8); ctx.moveTo(1, -23); ctx.lineTo(1.5, -8); ctx.moveTo(-1, -23); ctx.quadraticCurveTo(-8, -18, -6, -12); ctx.stroke(); ctx.strokeStyle = OUT; ctx.lineWidth = 1.1; E(-4, -8, 1.4, 2.4, '#6b2338'); E(1.5, -8, 1.4, 2.4, '#6b2338'); return true; }
+    if (k === 'nongak' || k === 'dopo' || k === 'hwarang') { const col = k === 'dopo' ? '#2e2830' : k === 'yusaeng' ? '#ffffff' : k === 'hwarang' ? '#f6c445' : '#ffffff'; ctx.lineWidth = 6; ctx.strokeStyle = OUT; ctx.beginPath(); ctx.moveTo(-9, -48); ctx.quadraticCurveTo(-4, -36, 8, -30); ctx.stroke(); ctx.lineWidth = 3.6; ctx.strokeStyle = col; ctx.stroke(); ctx.strokeStyle = OUT; ctx.lineWidth = 1.6;
       if (k === 'dopo') { ctx.lineWidth = 2.2; ctx.strokeStyle = '#d0565a'; ctx.beginPath(); ctx.moveTo(-20, -27); ctx.quadraticCurveTo(0, -24, 20, -27); ctx.stroke(); ctx.strokeStyle = '#3d6fb0'; ctx.beginPath(); ctx.moveTo(6, -25); ctx.lineTo(8, -12); ctx.moveTo(9, -25); ctx.lineTo(12, -13); ctx.stroke(); ctx.strokeStyle = OUT; ctx.lineWidth = 1.2; E(8, -11, 2, 2.6, '#d0565a'); E(12, -12, 2, 2.6, '#3d6fb0'); }
       if (k === 'yusaeng') { ctx.lineWidth = 1.6; ctx.strokeStyle = '#6b2338'; ctx.beginPath(); ctx.moveTo(-3, -23); ctx.lineTo(-4, -8); ctx.moveTo(1, -23); ctx.lineTo(1.5, -8); ctx.moveTo(-1, -23); ctx.quadraticCurveTo(-8, -18, -6, -12); ctx.stroke(); ctx.strokeStyle = OUT; ctx.lineWidth = 1.1; E(-4, -8, 1.4, 2.4, '#6b2338'); E(1.5, -8, 1.4, 2.4, '#6b2338'); }
       if (k === 'hwarang') { E(6, -26, 4.5, 4.5, '#f6c445'); E(6, -26, 2, 2, '#e2574c', 0, true); } return true; }
@@ -644,6 +645,8 @@ function racket2(L, col) { // things swung like a racket; true when drawn
   if (k === 'ladle') { rod(0, 2, 0, -22, 3.4, c); E(0, -33, 12, 12, c); E(0, -33, 9, 8, tint(c, '#3b3340', 0.3), 0, true); ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.beginPath(); ctx.ellipse(-4, -37, 3, 2, -0.6, 0, 7); ctx.fill(); return true; }
   if (k === 'odeng') { // fish cake folded back and forth into a stack of soft bands on a long skewer, the folded edges showing at the sides
     rod(0, 4, 0, -72, 2.2, '#e4cf9a'); const n = 4, top = -70, h = 9, gap = 4.5;
+    for (let i = 0; i < n - 1; i++) { const sd = i % 2 ? 1 : -1, y0 = top + i * (h + gap) + h / 2, y1 = y0 + h + gap, x = sd * 11; const bend = () => { ctx.beginPath(); ctx.moveTo(x, y0); ctx.bezierCurveTo(x + sd * 9, y0, x + sd * 9, y1, x, y1); };
+      ctx.lineCap = 'round'; ctx.lineWidth = 7.4; ctx.strokeStyle = OUT; bend(); ctx.stroke(); ctx.lineWidth = 4.4; ctx.strokeStyle = tint(c, '#c98f5f', 0.15); bend(); ctx.stroke(); ctx.strokeStyle = OUT; }
     for (let i = n - 1; i >= 0; i--) { const y = top + i * (h + gap), w = 13 + (i % 2) * 0.8; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-w, y + 1); ctx.quadraticCurveTo(-w - 1.5, y + h / 2, -w, y + h - 0.5); ctx.quadraticCurveTo(0, y + h + 1.6, w, y + h - 0.5); ctx.quadraticCurveTo(w + 1.5, y + h / 2, w, y + 1); ctx.quadraticCurveTo(0, y - 0.8, -w, y + 1); ctx.closePath(); ctx.fillStyle = c; ctx.fill(); ctx.save(); ctx.clip(); ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(-w, y + 1.4, w * 2, 1.6); ctx.fillStyle = 'rgba(150,100,40,0.18)'; ctx.fillRect(-w, y + h - 2.2, w * 2, 2.4); ctx.fillStyle = 'rgba(150,100,40,0.35)'; for (let d = 0; d < 6; d++) ctx.fillRect(-w + 3 + d * 4.3, y + 3 + (d % 2) * 1.6, 0.9, 0.9); ctx.restore(); ctx.stroke();
       ctx.lineWidth = 1.2; for (const sd of [-1, 1]) { ctx.beginPath(); ctx.arc(sd * (w - 1.2), y + h - 0.6, 1.8, 0, 7); ctx.fillStyle = tint(c, '#c98f5f', 0.3); ctx.fill(); ctx.stroke(); } }
     rod(0, top + 1, 0, top - 4, 2.2, '#e4cf9a'); ctx.lineWidth = 2.4; return true; }
@@ -1059,9 +1062,11 @@ function drawAnimal(a, X, Y, k, o) {
     if (tailHolds && front) E(hand * 21, -36, 6.5, 6.5, A.c);
   }
   ctx.translate(0, droop);
+  const hatBehind = !front && G.hat && item(G.hat) && item(G.hat).look.k === 'hahoe'; // a mask worn on top faces forward: from behind, its back sits behind the head
+  if (hatBehind) drawHat(G.hat, false);
   drawEars(A, front, t, an);
   drawHead(A, front, t + a);
-  if (G.hat) drawHat(G.hat, front);
+  if (G.hat && !hatBehind) drawHat(G.hat, front);
   ctx.translate(0, -droop);
   if (front || tailHolds || A.id === 'snake') drawRacket(A, hand, an, t, rk ? rk.look.c : accent, rk && rk.look); // in front of the head: a swing passes over the face, not behind it
   ctx.translate(0, droop);
