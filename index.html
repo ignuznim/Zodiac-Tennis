@@ -67,7 +67,7 @@
 'use strict';
 // ---- Built to be checked ----------------------------------------------------------------
 const params = new URLSearchParams(location.search);
-const APP_VERSION = '1.9.2'; // shown on the home screen: a new feature raises the middle number; the small fixes after it are bundled into one last-number step
+const APP_VERSION = '1.9.3'; // shown on the home screen: a new feature raises the middle number; the small fixes after it are bundled into one last-number step
 const tune = new Proxy({}, { get: (_, k) => CONFIG[k].value }); // live: tune.speed is CONFIG.speed.value
 const STEP = 1 / 60;            // simulation step in seconds; motion is per second, never per frame
 const W = 720; let H = 1280;    // logical size: a portrait page 720 wide, as tall as the window's shape asks (900 to 1580)
@@ -2262,7 +2262,7 @@ const ACH_REWARD = { d_night: 2, daily: 1, d_play: 1, d_win: 1, d_sweet: 1, d_pl
   play_5: 1, play_20: 2, play_100: 4, wins_25: 3, wins_100: 6, hard_20: 5, court_hard: 1, court_grass: 1, court_clay: 1, animals_3: 1, animals_6: 2, animals_12: 5,
   power_50: 1, power_300: 2, aces_50: 2, aces_200: 4, sweet_3000: 5, rally_15: 1, rally_50: 3, online_1: 1, online_win: 2, online_10: 3, ranked_10: 2,
   pulls_10: 1, pulls_50: 3, own_10: 1, own_30: 2, own_60: 4, own_100: 10, legend_1: 2, full_set: 1 };
-const acct = { sb: null, user: null, prof: null, inv: {}, busy: false, msg: '', msgT: 0, wtab: 'gacha', wslot: 'hat', g: { phase: 'idle', t: 0, res: null, err: '' } };
+const acct = { sb: null, user: null, prof: null, inv: {}, busy: false, msg: '', msgT: 0, wtab: 'gacha', wslot: 'hat', g: { phase: 'idle', t: 0, res: null, list: null, sel: 0, n: 1, err: '' } };
 let prog = {}; try { prog = JSON.parse(store('zt_prog') || '{}') || {}; } catch (e) { prog = {}; }
 const progOf = () => { const s = (acct.prof && acct.prof.progress) || {}, o = Object.assign({}, prog); for (const k in s) o[k] = Math.max(o[k] || 0, s[k]); return o; };
 function addProgress(d) { // counts that only grow: kept on this device, and with the account when signed in
@@ -2334,9 +2334,16 @@ async function claim(code) {
 function pull() { // the machine: the crank turns while the server picks
   const G = acct.g; if (G.phase !== 'idle' || !acct.prof) return;
   if (acct.prof.tickets < 1) { toast('뽑기권이 없어요 · 업적에서 받을 수 있어요'); return; }
-  G.phase = 'turn'; G.t = 0; G.res = null; G.err = ''; tone(300, 0.6, 'square', 0.12, 0, 1.5);
-  rpc('gacha_pull').then(r => { G.res = r; addProgress({ pulls: 1 }); acct.inv[r.item] = (acct.inv[r.item] || 0) + 1; acct.prof.tickets = r.tickets; }).catch(e => { G.err = e.message; });
+  const n = PULLS.includes(G.n) ? G.n : 1; if (acct.prof.tickets < n) { toast(`뽑기권이 ${n}장 있어야 해요`); return; }
+  G.phase = 'turn'; G.t = 0; G.res = null; G.list = null; G.sel = 0; G.err = ''; tone(300, 0.6, 'square', 0.12, 0, 1.5);
+  (async () => { const out = []; let err = ''; // one ticket after another, so each draw is the same as a single one
+    for (let i = 0; i < n; i++) { try { const r = await rpc('gacha_pull'); if (!r) throw new Error('뽑기를 하지 못했어요'); out.push(r); acct.inv[r.item] = (acct.inv[r.item] || 0) + 1; acct.prof.tickets = r.tickets; } catch (e) { err = e.message; break; } }
+    if (!out.length) { G.err = err || '뽑기를 하지 못했어요'; return; }
+    addProgress({ pulls: out.length }); if (err) toast(`${out.length}개만 뽑았어요 · ${err}`);
+    G.list = out.slice().sort((a, b) => b.grade - a.grade); G.res = G.list[0]; // the best one rolls out of the machine
+    if (acct.prof.tickets < G.n) G.n = PULLS.filter(k => k <= Math.max(1, acct.prof.tickets)).pop(); })();
 }
+const PULLS = [1, 5, 10];
 function gachaStep(dt) {
   const G = acct.g; G.t += dt; acct.msgT += dt;
   if (G.phase === 'turn' && G.t > 1.1) { if (G.res) { G.phase = 'drop'; G.t = 0; tone(520, 0.12, 'sine', 0.2); } else if (G.err) { G.phase = 'idle'; toast(G.err); } }
@@ -2452,8 +2459,8 @@ function iconButton(kind, label, x, y, w, h, fn, dot) { // a small button: a pic
 let closetBack = 'select';
 const closet = { sel: null, animal: null }; // animal: whose gear (null: just the collection, from the gacha)
 const mkScroll = () => ({ scroll: 0, max: 0, v0: 0, v1: 0, drag: null, vel: 0, cache: null, key: '', rects: [], h: 0, r: 0 });
-const SCR = { closet: mkScroll(), ach: mkScroll(), rooms: mkScroll() };
-function activeScroll() { return scene === 'online' && signedIn() ? SCR.rooms : scene === 'closet' ? SCR.closet : scene === 'wardrobe' && acct.wtab === 'ach' && acct.prof ? SCR.ach : null; }
+const SCR = { closet: mkScroll(), ach: mkScroll(), rooms: mkScroll(), notice: mkScroll() };
+function activeScroll() { return scene === 'notice' ? SCR.notice : scene === 'online' && signedIn() ? SCR.rooms : scene === 'closet' ? SCR.closet : scene === 'wardrobe' && acct.wtab === 'ach' && acct.prof ? SCR.ach : null; }
 function scrollStep(dt) { // after a flick the list glides on and slows
   const S = activeScroll(); if (!S || S.drag) return;
   if (Math.abs(S.vel) > 8) { S.scroll = clamp(S.scroll + S.vel * dt, 0, S.max); S.vel *= Math.exp(-4.5 * dt); if (S.scroll <= 0 || S.scroll >= S.max) S.vel = 0; } else S.vel = 0;
@@ -2564,7 +2571,7 @@ function drawGachaTab(y0, end) {
   rr(-128, -232, 256, 188, 30, lin(-128, -232, 128, -44, [[0, '#ffb3a3'], [0.45, CORAL], [1, '#d9644a']]), OUT, 3.4);
   ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.beginPath(); ctx.ellipse(-80, -206, 34, 9, -0.2, 0, 7); ctx.fill();
   // the label plate
-  rr(-108, -214, 132, 44, 12, '#fff8e7', OUT, 3); text('뽑기권 1장', -42, -191, 20, INK, 'center', null, F_T); star(-96, -202, 5, BALL); star(14, -182, 4, BALL);
+  rr(-108, -214, 132, 44, 12, '#fff8e7', OUT, 3); text(`뽑기권 ${PULLS.includes(G.n) ? G.n : 1}장`, -42, -191, 20, INK, 'center', null, F_T); star(-96, -202, 5, BALL); star(14, -182, 4, BALL);
   // the dial: a chrome ring, a knob with four grips; it turns while the server picks
   const turn = G.phase === 'turn' ? G.t * 7 : 0;
   E(74, -146, 40, 40, chrome(34, 114)); E(74, -146, 31, 31, lin(0, -177, 0, -115, [[0, '#fff3c4'], [1, '#f6c445']]));
@@ -2596,6 +2603,13 @@ function drawGachaTab(y0, end) {
   ctx.restore();
   if (G.phase === 'idle') iconButton('hanger', '내 아이템', LY.m + LY.w - 110, y0, 110, 92, () => openCloset('wardrobe', null));
   if (acct.prof.tickets < 1) text('업적을 달성하면 뽑기권을 받아요', LY.m + LY.pad, y0 + 40, 20, '#7a6872', 'left', null, F_B);
+  else if (G.phase === 'idle') { // how many at once: the other top corner, opposite 내 아이템
+    PULLS.forEach((k, i) => { const y = y0 + i * 62, can = acct.prof.tickets >= k, on = G.n === k, over = can && btn(LY.m, y, 110, 52, () => { G.n = k; tone(760, 0.06, 'sine', 0.18); });
+      if (on) rr(LY.m, y + 4, 110, 52, 26, OUT, null);
+      rr(LY.m, y, 110, 52, 26, !can ? '#ebe2d8' : on ? '#ffd36b' : over ? '#fffdf3' : 'rgba(255,248,231,0.96)', !can ? '#cdbfb3' : OUT, on ? 3 : 2.4);
+      text(`${k}회`, LY.m + 55, y + 27, 23, can ? INK : '#b3a4ac', 'center', null, F_T); });
+  }
+  if (G.phase === 'reveal' && G.list && G.list.length > 1) { drawManyPrizes(G, y0, h); return; }
   if (G.phase === 'reveal') { // the prize, opened
     const r = G.res, it = item(r.item), c = GRADE[it.grade].c, py = y0 + 20, ph = Math.min(360, h - 110);
     ctx.fillStyle = 'rgba(59,51,64,0.45)'; ctx.fillRect(LY.m - 8, y0 - 8, LY.w + 16, h + 16);
@@ -2609,6 +2623,29 @@ function drawGachaTab(y0, end) {
     button('전체 아이템 보기', W / 2 - 150, py + ph + 18, 300, 60, () => { G.phase = 'idle'; openCloset('wardrobe', null); }, { size: 24, fill: '#eef7ff' });
     for (let i = 0; i < 8; i++) { const a = i / 8 * 6.283 + G.t, rr2 = 150 + Math.sin(G.t * 3 + i) * 10; star(W / 2 + Math.cos(a) * rr2, py + ph * 0.42 + Math.sin(a) * rr2 * 0.7, 9, i % 2 ? '#fff' : c); }
   }
+}
+function drawManyPrizes(G, y0, h) { // five or ten prizes: a grid, best first; tap one to read it
+  const L = G.list, n = L.length, cols = 5, rows = Math.ceil(n / cols), x0 = LY.m + 20, pw = LY.w - 40, inner = pw - 48, gap = 10, cw = (inner - gap * (cols - 1)) / cols, chh = cw + 14;
+  const ph = 70 + rows * chh + (rows - 1) * gap + 16 + 88 + 22, py = y0 + Math.max(0, (h - 76 - ph) / 2);
+  ctx.fillStyle = 'rgba(59,51,64,0.45)'; ctx.fillRect(LY.m - 8, y0 - 8, LY.w + 16, h + 16);
+  rr(x0, py, pw, ph, 26, '#fffaf0', GRADE[L[0].grade].c, 6);
+  const fresh = L.filter(r => r.new).length;
+  text(`${n}개를 뽑았어요`, x0 + 24, py + 37, 28, INK, 'left', null, F_T);
+  if (fresh) text(`새 아이템 ${fresh}개`, x0 + pw - 24, py + 37, 21, '#e2574c', 'right', null, F_T);
+  const gy = py + 70;
+  L.forEach((r, i) => { const it = item(r.item), c = GRADE[it.grade].c, x = x0 + 24 + (i % cols) * (cw + gap), y = gy + Math.floor(i / cols) * (chh + gap), on = G.sel === i, k = clamp(G.t * 6 - i * 0.5, 0, 1);
+    btn(x, y, cw, chh, () => { G.sel = i; tone(880, 0.05, 'sine', 0.15); });
+    rr(x, y, cw, chh, 16, on ? '#fff3c4' : '#ffffff', c, on ? 5 : 3);
+    if (k > 0) itemIcon(r.item, x + cw / 2, y + chh / 2 - 6, 62 * k);
+    if (r.new) { rr(x + cw - 50, y + 6, 44, 24, 12, '#e2574c', null); text('NEW', x + cw - 28, y + 18, MIN_TEXT, '#fff', 'center', null, F_T); }
+    rr(x + 10, y + chh - 16, cw - 20, 7, 3.5, c, null); }); // the grade's colour along the bottom
+  const r = L[G.sel] || L[0], it = item(r.item), c = GRADE[it.grade].c, dy = gy + rows * chh + (rows - 1) * gap + 16; // the chosen one, read out
+  rr(x0 + 24, dy, inner, 88, 18, '#fff8e7', '#e6d8c8', 2);
+  const gw = gradeChip(it.grade, x0 + 44, dy + 15, 28);
+  ctx.font = `26px ${F_T}`; const nw = ctx.measureText(it.name).width, room = inner - 40 - gw - 16;
+  text(it.name, x0 + 44 + gw + 14, dy + 29, Math.max(MIN_TEXT, nw > room ? 26 * room / nw : 26), INK, 'left', null, F_T);
+  text(`${SLOTS.find(s => s[0] === it.slot)[1]} · ${STAT_NAME[it.stat]} +${it.amt}`, x0 + 44, dy + 63, 21, c, 'left', null, F_T);
+  button('전체 아이템 보기', W / 2 - 150, py + ph + 14, 300, 60, () => { G.phase = 'idle'; openCloset('wardrobe', null); }, { size: 24, fill: '#eef7ff' });
 }
 function capsule(x, y, r, c, rot) { ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.lineWidth = 2.4; ctx.strokeStyle = OUT;
   ctx.beginPath(); ctx.arc(0, 0, r, Math.PI, 0); ctx.closePath(); ctx.fillStyle = c; ctx.fill(); ctx.stroke();
@@ -2767,6 +2804,34 @@ function matchProgress() { // what this match adds to the account's counts (onli
   if (!m.online && won) { d.wins = 1; d['win_' + ['', 'easy', 'normal', 'hard'][m.level]] = 1; d['win_' + (m.format || 'regular')] = 1; if (m.court) d['court_' + m.court] = 1; d['wa_' + ANIMALS[m.P[0].a].id] = 1; }
   addProgress(d);
 }
+// ---- 공지사항: notes from the owner (updates, events), kept in Supabase (supabase/5_notice.sql) and written in its Table Editor ----
+const news = { list: null, loading: false, err: '', at: 0 };
+const NOTICE_KIND = { update: ['업데이트', '#3d8be0'], event: ['이벤트', CORAL], info: ['안내', '#3f9a5c'] };
+async function loadNotices() {
+  if (news.loading || location.protocol === 'file:') return; news.loading = true; news.err = '';
+  try { const r = await fetch(RANK.url.replace('/scores', '/notices') + '?select=id,created_at,kind,title,body,pinned,ends_at&order=pinned.desc,created_at.desc&limit=30', { headers: rankHeaders() });
+    if (!r.ok) throw new Error(r.status); const d = await r.json(); news.list = Array.isArray(d) ? d : []; news.at = Date.now(); SCR.notice.key = ''; }
+  catch (e) { news.err = '공지를 불러오지 못했어요'; if (!news.list) news.list = null; }
+  news.loading = false;
+}
+const noticeUnread = () => !!(news.list && news.list.length && Math.max(...news.list.map(n => n.id | 0)) > (parseInt(store('zt_notice')) || 0));
+function openNotices() { scene = 'notice'; SCR.notice.scroll = 0; SCR.notice.vel = 0; tone(760, 0.06, 'sine', 0.18); if (!news.list || Date.now() - news.at > 60e3) loadNotices(); }
+function wrapLines(str, size, font, maxW) { // words to lines that fit maxW; a word too long for a line is cut between letters
+  const px = font === F_H ? Math.round(size * 1.15) : font === F_B ? Math.round(size * 1.1) : size; ctx.font = `${px}px ${font}`; const out = []; // measured as text() will draw it
+  for (const para of String(str || '').split('\n')) { let line = '';
+    for (const word of para.split(' ')) { const tryL = line ? line + ' ' + word : word;
+      if (ctx.measureText(tryL).width <= maxW) { line = tryL; continue; }
+      if (line) out.push(line); line = '';
+      for (const ch of word) { if (ctx.measureText(line + ch).width > maxW && line) { out.push(line); line = ''; } line += ch; } }
+    out.push(line); }
+  while (out.length && out[out.length - 1] === '') out.pop(); return out;
+}
+const kDate = t => { const d = new Date(new Date(t).getTime() + 9 * 3600e3); return `${d.getUTCMonth() + 1}월 ${d.getUTCDate()}일`; };
+function noticeCards(inner) { // each note as a card: kind and date, the title, the body; returns the cards and the whole height
+  let y = 0; const cards = (news.list || []).map(n => { const title = wrapLines(n.title, 27, F_T, inner), body = wrapLines(n.body, 21, F_B, inner), h = 24 + 32 + 14 + title.length * 36 + (body.length ? 10 + body.length * 32 : 0) + 22;
+    const c = { n, title, body, y, h }; y += h + 16; return c; });
+  return { cards, height: Math.max(0, y - 16) + 8 };
+}
 const scenes = {
   figures: {
     update(dt) { state.t += dt; },
@@ -2819,8 +2884,11 @@ const scenes = {
       { const P = acct.prof, t = acct.user ? (P && P.nickname ? P.nickname : '로그인됨') : '로그인', cw = Math.max(132, t.length * 17 + 44), cx = W - LY.m - cw, cy = 14;
         const over = btn(cx, cy, cw, 50, () => { scene = 'account'; });
         rr(cx, cy, cw, 50, 25, over ? '#fff3c4' : 'rgba(255,248,231,0.95)', OUT, 2.6); text(t, cx + cw / 2, cy + 26, 21, acct.user ? INK : '#3d8be0', 'center', null, F_T); }
-      { const fw = 132, fx = LY.m, fy = 14, over = btn(fx, fy, fw, 50, openFeedback); // the other corner: tell us what's wrong
-        rr(fx, fy, fw, 50, 25, over ? '#fff3c4' : 'rgba(255,248,231,0.95)', OUT, 2.6); text('의견 보내기', fx + fw / 2, fy + 26, 21, INK, 'center', null, F_T); }
+      { const fy = 14, nw = 116, over = btn(LY.m, fy, nw, 50, openNotices); // the other corner: news from us, and tell us what's wrong
+        rr(LY.m, fy, nw, 50, 25, over ? '#fff3c4' : 'rgba(255,248,231,0.95)', OUT, 2.6); text('공지사항', LY.m + nw / 2, fy + 26, 21, INK, 'center', null, F_T);
+        if (noticeUnread()) E(LY.m + nw - 10, fy + 6, 8, 8, '#e2574c');
+        const fw = 132, fx = LY.m + nw + 12, ov2 = btn(fx, fy, fw, 50, openFeedback);
+        rr(fx, fy, fw, 50, 25, ov2 ? '#fff3c4' : 'rgba(255,248,231,0.95)', OUT, 2.6); text('의견 보내기', fx + fw / 2, fy + 26, 21, INK, 'center', null, F_T); }
       if (acct.msg && acct.msgT < 2.6) { notify(acct.msg); acct.msg = ''; } // a message from the account (signing in, out) shows at the top too
       text(`v${APP_VERSION} · © 2026 IGNUZNIM. All rights reserved.`, W / 2, LY.copy, 16, 'rgba(59,51,64,0.6)', 'center', null, F_B);
       menuEnd('Enter 를 눌러도 시작해요');
@@ -2875,6 +2943,34 @@ const scenes = {
       menuEnd(`${now.getFullYear()}년 ${now.getMonth() + 1}월 기록 · 매달 1일에 새로 시작해요 · ↑ 명예의 전당`);
     },
   },
+  notice: {
+    update(dt) {
+      state.t += dt; if (pressed('Escape')) scene = 'title';
+      const S = SCR.notice; if (anyHit(...K_D)) S.vel = 900; if (anyHit(...K_U)) S.vel = -900;
+    },
+    draw() {
+      menuBegin('공지사항', true);
+      const L = news.list, v0 = LY.top, v1 = contentEnd();
+      if (L && L.length) { const top = Math.max(...L.map(n => n.id | 0)); if (top > (parseInt(store('zt_notice')) || 0)) store('zt_notice', String(top)); } // seen
+      if (!L) { panel(LY.m, v0, LY.w, 240); text(news.loading ? '불러오는 중…' : news.err || '불러오는 중…', W / 2, v0 + 120, 26, news.err && !news.loading ? '#e2574c' : INK, 'center', null, F_T); }
+      else if (!L.length) { panel(LY.m, v0, LY.w, 240); text('아직 공지가 없어요', W / 2, v0 + 120, 26, '#7a6872', 'center', null, F_T); }
+      else { const pad = 28, inner = LY.w - pad * 2, { cards, height } = noticeCards(inner);
+        scrollView(SCR.notice, v0, v1, 'n' + news.at + ':' + L.length, height, () => {
+          for (const c of cards) { const x = LY.m, n = c.n, [kname, kc] = NOTICE_KIND[n.kind] || NOTICE_KIND.info; let y = c.y + 24;
+            rr(x, c.y, LY.w, c.h, 20, n.pinned ? '#fff8dc' : '#fffaf0', n.pinned ? '#f0a020' : '#d9cbbd', n.pinned ? 3 : 2.4);
+            ctx.font = `19px ${F_T}`; const kw = ctx.measureText(kname).width + 28; rr(x + pad, y, kw, 32, 16, kc, null); text(kname, x + pad + kw / 2, y + 17, 19, '#fff', 'center', null, F_T);
+            let tx = x + pad + kw + 10; if (n.pinned) { rr(tx, y, 64, 32, 16, '#fff3c4', '#f0a020', 2); text('고정', tx + 32, y + 17, 18, '#b07a10', 'center', null, F_T); tx += 74; }
+            text(n.ends_at ? `${kDate(n.ends_at)}까지` : '', tx, y + 17, 19, '#c0605a', 'left', null, F_T);
+            text(kDate(n.created_at), x + LY.w - pad, y + 17, 19, '#9a8b93', 'right', null, F_B);
+            y += 32 + 14;
+            c.title.forEach(t => { text(t, x + pad, y + 18, 27, INK, 'left', null, F_T); y += 36; });
+            if (c.body.length) { y += 10; c.body.forEach(t => { text(t, x + pad, y + 16, 21, '#5d4f58', 'left', null, F_B); y += 32; }); } }
+          return height; }); }
+      sideBtn('뒤로', () => { scene = 'title'; });
+      mainBtn(news.loading ? '불러오는 중…' : '새로고침', () => { if (!news.loading) loadNotices(); });
+      menuEnd(news.err && L ? news.err : '업데이트 소식과 이벤트를 알려 드려요');
+    },
+  },
   hall: {
     update(dt) { state.hallT = (state.hallT || 0) + dt; if (pressed('Escape')) { scene = 'ranking'; rank.list = null; loadRanking(null, 'month'); } if (pressed('KeyR') && !rank.loading) loadRanking(null, 'all');
       const d = anyHit(...K_R) ? 1 : anyHit(...K_L) ? 2 : 0; if (d && !rank.loading) { rank.list = null; loadRanking(FORMAT_IDS[(FORMAT_IDS.indexOf(rank.mode) + d) % 3], 'all'); } },
@@ -2911,6 +3007,7 @@ const scenes = {
       state.t += dt; gachaStep(dt);
       if (pressed('Escape')) { if (acct.g.phase === 'reveal') acct.g.phase = 'idle'; else scene = 'title'; }
       if (anyHit(...K_R, ...K_L) && acct.g.phase === 'idle') acct.wtab = acct.wtab === 'gacha' ? 'ach' : 'gacha';
+      if (acct.wtab === 'gacha' && acct.g.phase === 'idle' && anyHit(...K_U, ...K_D)) { const i = PULLS.indexOf(acct.g.n), j = clamp(i + (anyHit(...K_D) ? 1 : -1), 0, 2); if (acct.prof && acct.prof.tickets >= PULLS[j]) acct.g.n = PULLS[j]; }
       if (acct.wtab === 'gacha' && anyHit(...K_OK)) { if (acct.g.phase === 'reveal') acct.g.phase = 'idle'; else pull(); }
     },
     draw() {
@@ -2931,7 +3028,7 @@ const scenes = {
       else drawAchTab(y0, end);
       if (acct.msg && acct.msgT < 2.6) { ctx.font = `24px ${F_B}`; const w = ctx.measureText(acct.msg).width + 60; rr(W / 2 - w / 2, LY.bot - 62, w, 46, 23, 'rgba(59,51,64,0.9)', null); text(acct.msg, W / 2, LY.bot - 38, 21, CREAM, 'center', null, F_B); }
       sideBtn('뒤로', () => { acct.g.phase = 'idle'; scene = 'title'; });
-      if (acct.prof && acct.wtab === 'gacha') mainBtn(acct.g.phase === 'reveal' ? '확인' : acct.g.phase === 'idle' ? '뽑기 (뽑기권 1장)' : '뽑는 중…', () => { if (acct.g.phase === 'reveal') acct.g.phase = 'idle'; else pull(); });
+      if (acct.prof && acct.wtab === 'gacha') mainBtn(acct.g.phase === 'reveal' ? '확인' : acct.g.phase === 'idle' ? `뽑기 (뽑기권 ${PULLS.includes(acct.g.n) ? acct.g.n : 1}장)` : '뽑는 중…', () => { if (acct.g.phase === 'reveal') acct.g.phase = 'idle'; else pull(); });
       menuEnd(acct.wtab === 'gacha' ? `확률  일반 ${ODDS[0]}% · 희귀 ${ODDS[1]}% · 영웅 ${ODDS[2]}% · 전설 ${ODDS[3]}%` : '아이템 장착은 선수 선택 화면에서 해요 · 모든 경기(랭킹 포함)에 적용돼요');
     },
   },
@@ -3441,6 +3538,7 @@ window.game = {
 
 reset();
 initAuth();
+setTimeout(loadNotices, 800); // for the red dot on 공지사항
 scene = params.get('scene') || 'title';
 last = clock.now();
 if (params.get('manual') === '1') drawFrame();
