@@ -2560,7 +2560,7 @@ function drawClosetList(gear, eh, chh, coll) { // the closet's whole list, from 
 }
 function openCloset(back, a = null) { if (!acct.user) { toast('로그인하면 옷장을 쓸 수 있어요'); return; } closetBack = back; closet.animal = a; closet.sel = null; SCR.closet.scroll = 0; SCR.closet.vel = 0; scene = 'closet'; tone(660, 0.06, 'sine', 0.15); }
 function drawGachaTab(y0, end) {
-  const G = acct.g, cx = W / 2, h = end - y0, base = y0 + h - 12, k = Math.min(1, (h - 96) / 545);
+  const G = acct.g, cx = W / 2, h = end - y0, base = y0 + h - 12 - 68, k = Math.min(1, (h - 68 - 96) / 545); // the bottom 68 holds how many at once, right over the 뽑기 button
   ctx.save(); ctx.translate(cx, base); ctx.scale(k, k); ctx.lineWidth = 3.4; ctx.strokeStyle = OUT; ctx.lineJoin = 'round';
   const lin = (x0, y0, x1, y1, stops) => { const g = ctx.createLinearGradient(x0, y0, x1, y1); stops.forEach(([o, c]) => g.addColorStop(o, c)); return g; };
   const chrome = (x0, x1) => lin(x0, 0, x1, 0, [[0, '#8f99a3'], [0.3, '#f4f7fa'], [0.55, '#c3ccd5'], [1, '#7d8792']]);
@@ -2603,11 +2603,13 @@ function drawGachaTab(y0, end) {
   ctx.restore();
   if (G.phase === 'idle') iconButton('hanger', '내 아이템', LY.m + LY.w - 110, y0, 110, 92, () => openCloset('wardrobe', null));
   if (acct.prof.tickets < 1) text('업적을 달성하면 뽑기권을 받아요', LY.m + LY.pad, y0 + 40, 20, '#7a6872', 'left', null, F_B);
-  else if (G.phase === 'idle') { // how many at once: the other top corner, opposite 내 아이템
-    PULLS.forEach((k, i) => { const y = y0 + i * 62, can = acct.prof.tickets >= k, on = G.n === k, over = can && btn(LY.m, y, 110, 52, () => { G.n = k; tone(760, 0.06, 'sine', 0.18); });
-      if (on) rr(LY.m, y + 4, 110, 52, 26, OUT, null);
-      rr(LY.m, y, 110, 52, 26, !can ? '#ebe2d8' : on ? '#ffd36b' : over ? '#fffdf3' : 'rgba(255,248,231,0.96)', !can ? '#cdbfb3' : OUT, on ? 3 : 2.4);
-      text(`${k}회`, LY.m + 55, y + 27, 23, can ? INK : '#b3a4ac', 'center', null, F_T); });
+  { // how many at once: a row right over the 뽑기 button, so the thumb only moves up and down
+    const bx = LY.m + LY.side + LY.gap, bw = LY.w - LY.side - LY.gap, g = 12, w = (bw - g * 2) / 3, y = end - 56, idle = G.phase === 'idle';
+    text('한 번에', LY.m + LY.side / 2, y + 28, 22, '#5d4f58', 'center', null, F_T);
+    PULLS.forEach((k, i) => { const x = bx + i * (w + g), can = acct.prof.tickets >= k, on = G.n === k, over = idle && can && btn(x, y, w, 56, () => { G.n = k; tone(760, 0.06, 'sine', 0.18); });
+      if (on) rr(x, y + 4, w, 56, 28, OUT, null);
+      rr(x, y, w, 56, 28, !can ? '#ebe2d8' : on ? '#ffd36b' : over ? '#fffdf3' : 'rgba(255,248,231,0.96)', !can ? '#cdbfb3' : OUT, on ? 3 : 2.4);
+      text(`${k}회`, x + w / 2, y + 29, 24, can ? INK : '#b3a4ac', 'center', null, F_T); });
   }
   if (G.phase === 'reveal' && G.list && G.list.length > 1) { drawManyPrizes(G, y0, h); return; }
   if (G.phase === 'reveal') { // the prize, opened
