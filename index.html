@@ -2330,10 +2330,12 @@ async function loadRanking(mode, period) {
 }
 async function sendRecord(nickname) {
   const rec = matchRecord(nickname);
-  let r = await fetch(RANK.url, { method: 'POST', headers: rankHeaders({ Prefer: 'return=minimal' }), body: JSON.stringify(rec) });
-  if (r.status === 400) { delete rec.gear; r = await fetch(RANK.url, { method: 'POST', headers: rankHeaders({ Prefer: 'return=minimal' }), body: JSON.stringify(rec) }); } // before the gear column exists
+  let tok = null; if (signedIn()) { try { const { data } = await acct.sb.auth.getSession(); tok = data && data.session && data.session.access_token; } catch (e) { /* sent as a guest */ } } // a member says who they are, so their own nickname is theirs
+  const H = rankHeaders(Object.assign({ Prefer: 'return=minimal' }, tok ? { Authorization: 'Bearer ' + tok } : {}));
+  let r = await fetch(RANK.url, { method: 'POST', headers: H, body: JSON.stringify(rec) });
+  if (r.status === 400) { const t0 = await r.clone().text(); if (/gear/.test(t0)) { delete rec.gear; r = await fetch(RANK.url, { method: 'POST', headers: H, body: JSON.stringify(rec) }); } } // before the gear column exists
   if (r.status === 409) throw new Error('이미 등록된 기록이에요');
-  if (!r.ok) { const t = await r.text(); throw new Error(/slow down/.test(t) ? '잠시 후 다시 등록해 주세요' : /not a finished|too fast|too many/.test(t) ? '등록할 수 없는 기록이에요' : '등록하지 못했어요 · 인터넷 연결을 확인해 주세요'); }
+  if (!r.ok) { const t = await r.text(); throw new Error(/nickname taken/.test(t) ? '회원이 쓰는 닉네임이에요 · 다른 이름을 써 주세요' : /bad nickname/.test(t) ? '닉네임은 1~8자로 정해 주세요' : /slow down/.test(t) ? '잠시 후 다시 등록해 주세요' : /not a finished|too fast|too many/.test(t) ? '등록할 수 없는 기록이에요' : '등록하지 못했어요 · 인터넷 연결을 확인해 주세요'); }
   const score = scoreOf(rec);
   const placeOf = async since => { // the place on a board: records that scored more, plus one
     try { const c = await fetch(RANK.url + `?select=id&mode=eq.${rec.mode}&score=gt.${score}${since}`, { method: 'HEAD', headers: rankHeaders({ Prefer: 'count=exact' }) });
@@ -2813,9 +2815,20 @@ function drawHat(id, front = true) { // over the head, in the animal's own coord
     star(16, -124, 3.4, '#ffffff'); star(-17, -106, 2.6, '#ffffff'); ctx.lineWidth = 2.4; ctx.strokeStyle = OUT; }
 
 }
-function itemIcon(id, x, y, s) { // a little picture of an item, centred on x, y, about s across
-  const it = item(id); if (!it) return; const L = it.look, k = s / 60;
-  ctx.save(); ctx.translate(x, y); ctx.scale(k, k); ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; ctx.lineJoin = 'round';
+const ICONFIT = new Map();
+function iconFit(id) { // how far an icon must shrink, and shift, to sit inside its card: measured once from its pixels
+  let F = ICONFIT.get(id); if (F) return F; F = { k: 1, dx: 0, dy: 0 }; ICONFIT.set(id, F);
+  const n = 240, A = document.createElement('canvas'); A.width = A.height = n; const keep = ctx; ctx = A.getContext('2d');
+  try { itemIcon(id, n / 2, n / 2, 60, true); } finally { ctx = keep; }
+  const px = A.getContext('2d').getImageData(0, 0, n, n).data; let x0 = n, y0 = n, x1 = -1, y1 = -1;
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (px[(y * n + x) * 4 + 3] > 16) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  if (x1 < 0) return F;
+  const w = x1 - x0 + 1, h = y1 - y0 + 1; F.k = Math.min(1, 92 / w, 70 / h); F.dx = -((x0 + x1) / 2 - n / 2) * F.k; F.dy = -((y0 + y1) / 2 - n / 2) * F.k; // at most 92 wide and 70 tall at size 60, centred
+  return F;
+}
+function itemIcon(id, x, y, s, raw) { // a little picture of an item, centred on x, y, about s across (raw: as drawn, before fitting)
+  const it = item(id); if (!it) return; const L = it.look, F = raw ? { k: 1, dx: 0, dy: 0 } : iconFit(id), k = s / 60 * F.k;
+  ctx.save(); ctx.translate(x + F.dx * s / 60, y + F.dy * s / 60); ctx.scale(k, k); ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; ctx.lineJoin = 'round';
   if (it.slot === 'hat') { if (L.k === 'goggle') { ctx.scale(1.8, 1.8); ctx.translate(0, 74); } else ctx.translate(0, 96); drawHat(id); }
   else if (it.slot === 'uniform') { // the same cloth as on an animal, laid flat
     ctx.scale(1.28, 1.28); ctx.translate(0, 32); const hm = shirtHem(L) + (L.k === 'hanbok' ? 2 : 3);

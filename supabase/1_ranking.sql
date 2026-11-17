@@ -29,6 +29,18 @@ declare min_pts int;
 begin
   new.nickname   := btrim(new.nickname);
   new.created_at := now();
+  -- a member's nickname belongs to that member: anyone else (signed in or not) must pick another.
+  -- New names are 1 to 8 letters; a member may still use an older, longer name of their own.
+  if to_regclass('public.profiles') is not null then
+    if exists (select 1 from public.profiles p where p.nickname = new.nickname and p.id is distinct from auth.uid()) then
+      raise exception 'nickname taken';
+    end if;
+    if char_length(new.nickname) > 8 and not exists (select 1 from public.profiles p where p.nickname = new.nickname and p.id = auth.uid()) then
+      raise exception 'bad nickname';
+    end if;
+  elsif char_length(new.nickname) > 8 then
+    raise exception 'bad nickname';
+  end if;
   min_pts := case new.mode when 'flash' then 10 when 'short' then 16 else 72 end; -- the fewest points a win can take
   if new.pts_for < min_pts then raise exception 'not a finished win'; end if;
   if new.duration_s < (new.pts_for + new.pts_against) * 3 then raise exception 'too fast'; end if;
