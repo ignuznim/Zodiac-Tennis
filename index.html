@@ -842,7 +842,7 @@ function drawNet() {
 
 // ---- The match: plain data, so the online host can send it whole ------------------------------
 let scene, state, m;          // m is state.m, the match
-const setup = { animal: clamp(parseInt(store('zt_animal')) || 0, 0, 11), level: 2, mode: 'cpu', guestAnimal: 3, court: 'hard', pending: 1, format: 'short', doubles: false };
+const setup = { animal: clamp(parseInt(store('zt_animal')) || 0, 0, 11), doubles: store('zt_dbl') === '1', level: 2, mode: 'cpu', guestAnimal: 3, court: 'hard', pending: 1, format: 'short' };
 let matchCount = 0;
 function newPlayer(i, a, ctrl, gearIds) {
   const gear = gearBonus(gearIds), max = tune.stam_base + Math.min(7.5, stat(a, 'stamina', setup.court) + (gear.stamina || 0)) * tune.stam_per;
@@ -2671,6 +2671,19 @@ function computeLayout() { // where the garden ends, the title row, the content 
 // fixed sizes: a card is as tall as what it holds, never stretched to fill
 const SZ = () => ({ format: 150, format4: 132, mode: 116, court: 184, cell: LY.tall ? 120 : 96, info: 262, row: LY.tall ? 46 : 38, result: 448, lobby: 600 });
 
+function setDoubles(d) { if (setup.doubles === d) return; setup.doubles = d; store('zt_dbl', d ? '1' : '0'); tone(760, 0.06, 'sine', 0.18); }
+function drawDoublesSwitch(y, SH) { // 단식 or 복식, a big switch on top of the ways to play; the choice is remembered
+  const x = LY.m, w = LY.w, hw = w / 2;
+  rr(x, y + 5, w, SH, SH / 2, OUT, null); rr(x, y, w, SH, SH / 2, '#fff8e7', OUT, 3);
+  [['단식', '1 : 1 · 혼자서', false, CORAL, '#6b2a22'], ['복식', '2 : 2 · 파트너와 함께', true, SKY, '#1d4a73']].forEach(([t, sub, d, col, dark], k) => { const on = !!setup.doubles === d, kx = x + k * hw;
+    btn(kx, y, hw, SH, () => setDoubles(d));
+    if (on) rr(kx + 7, y + 7, hw - 14, SH - 14, (SH - 14) / 2, col, OUT, 3);
+    const fx = kx + 60, fy = y + SH / 2; ctx.save(); ctx.translate(fx, fy); ctx.scale(1.4, 1.4); ctx.translate(-fx, -fy);
+    if (d) { miniFace(3, fx - 9, fy); miniFace(setup.animal, fx + 9, fy); } else miniFace(setup.animal, fx, fy); ctx.restore();
+    const tx = kx + 100, room = hw - 100 - 22; ctx.font = `20px ${F_T}`; const sw = ctx.measureText(sub).width;
+    text(t, tx, fy - 8, 32, on ? '#ffffff' : '#6f6068', 'left', on ? OUT : null, F_T);
+    text(sub, tx, fy + 25, Math.max(MIN_TEXT, sw > room ? 20 * room / sw : 20), on ? dark : '#6f6068', 'left', null, F_T); });
+}
 function menuBegin(title, home) {
   OY = 0; computeLayout();
   drawBackdrop('#8fd3b8', LY.sb, LY.tall);
@@ -2988,7 +3001,6 @@ const scenes = {
       state.t += dt;
       state.cur = Math.min(state.cur, 2); if (anyHit(...K_D)) state.cur = (state.cur + 1) % 3; if (anyHit(...K_U)) state.cur = (state.cur + 2) % 3;
       if (anyHit(...K_D, ...K_U)) tone(660, 0.05, 'sine', 0.15);
-      if (!net && anyHit(...K_L, ...K_R)) { setup.doubles = !setup.doubles; tone(760, 0.06, 'sine', 0.18); }
       if (pressed('Escape')) { scene = 'format'; return; }
       if (anyHit(...K_OK)) pickMode(state.cur);
     },
@@ -2997,19 +3009,14 @@ const scenes = {
       const rows = [['쉬움', '받기 쉬운 공을 보내고 실수도 자주 해요'], ['보통', '빈 곳을 노리고 가끔 변칙을 섞어요'], ['어려움', '코너를 찌르고 드롭샷, 로브, 파워샷까지']];
       const ch = SZ().format4; // the same cards as the four ways to play
       const tags = [['쉬움', '#4fa86a'], ['보통', '#3d8be0'], ['어려움', '#e2574c'], ['온라인', '#9b5de5']];
-      const tw = (LY.w - LY.gap) / 2; // singles or doubles: two tabs above the levels
-      if (!net) [['단식', '1 : 1', false], ['복식', '2 : 2 · 랜덤 파트너', true]].forEach(([t, sub, d], k) => { const x = LY.m + k * (tw + LY.gap), on = setup.doubles === d;
-        btn(x, LY.top, tw, 64, () => { setup.doubles = d; tone(760, 0.06, 'sine', 0.18); });
-        rr(x, LY.top + 4, tw, 64, 18, OUT, null); rr(x, LY.top, tw, 64, 18, on ? '#fff3c4' : 'rgba(255,248,231,0.7)', on ? CORAL : OUT, on ? 3.6 : 2.4);
-        text(t, x + 26, LY.top + 33, 28, on ? INK : '#9a8b93', 'left', null, F_T); text(sub, x + tw - 22, LY.top + 34, 18, on ? '#c0605a' : '#9a8b93', 'right', null, F_B); });
-      const top = net ? LY.top : LY.top + 64 + LY.gap + 8;
+      const top = LY.top;
       rows.forEach((r, i) => { const y = top + i * (ch + LY.gap), [tg, c] = tags[i], x = LY.m + LY.pad;
         card(LY.m, y, LY.w, ch, () => pickMode(i), i === state.cur);
         rr(x, y + ch / 2 - 30, 132, 60, 18, c, OUT, 2.6); text(tg, x + 66, y + ch / 2 + 1, 30, '#ffffff', 'center', null, F_T); // the level, big and coloured
         text(net ? (net.kind === 'coop' ? '친구와 함께 컴퓨터 2명과' : '빈 자리를 채울 컴퓨터') : setup.doubles ? '파트너와 함께 컴퓨터 2명과' : '컴퓨터와 대결', x + 152, y + ch / 2 - 16, 26, INK, 'left', null, F_T);
         text(r[1], x + 152, y + ch / 2 + 20, 19, '#7a6872', 'left', null, F_B); });
       sideBtn('뒤로', () => { scene = 'format'; });
-      menuEnd(net ? `${KINDS[net.kind].ko} · ${FORMATS[setup.format].ko}` : `${setup.doubles ? '복식 · ' : ''}${FORMATS[setup.format].ko} · ${{ flash: '10점 매치 타이브레이크', short: '4게임 짧은 세트', regular: '5세트 3선승' }[setup.format]} · ← → 단식/복식`);
+      menuEnd(net ? `${KINDS[net.kind].ko} · ${FORMATS[setup.format].ko}` : `${setup.doubles ? '복식 · ' : ''}${FORMATS[setup.format].ko} · ${{ flash: '10점 매치 타이브레이크', short: '4게임 짧은 세트', regular: '5세트 3선승' }[setup.format]} `);
     },
   },
   court: {
@@ -3052,22 +3059,24 @@ const scenes = {
       const nf = net ? 3 : 4; if (anyHit(...K_D)) state.fm = (state.fm + 1) % nf; if (anyHit(...K_U)) state.fm = (state.fm + nf - 1) % nf;
       if (anyHit(...K_D, ...K_U)) tone(660, 0.05, 'sine', 0.15);
       if (pressed('Escape')) { formatBack(); return; }
+      if (!net && anyHit(...K_L, ...K_R)) setDoubles(!setup.doubles);
       if (anyHit(...K_OK)) pickFormat(state.fm);
     },
     draw() {
       if (state.fm == null) state.fm = FORMAT_IDS.indexOf(setup.format);
       menuBegin('경기 방식을 골라 주세요', true);
+      const SH = net ? 0 : 92; if (!net) drawDoublesSwitch(LY.top, SH);
       const how = { flash: '10점을 먼저 따면 승리 (2점 차)', short: '4게임 먼저 · 40-40이면 한 포인트로 결정', regular: '세트 3개를 먼저 따면 승리', practice: '샷마다 타이밍 · 속도 · 떨어진 곳을 알려 줘요' };
-      const ch = SZ().format4, ids = net ? [...FORMAT_IDS] : [...FORMAT_IDS, 'practice'];
+      const ids = net ? [...FORMAT_IDS] : [...FORMAT_IDS, 'practice'], top = net ? LY.top : LY.top + SH + LY.gap + 10, ch = Math.min(SZ().format4, (contentEnd() - top - LY.gap * (ids.length - 1)) / ids.length), full = ch >= 128;
       ids.forEach((id, i) => {
-        const y = LY.top + i * (ch + LY.gap), x = LY.m + LY.pad, by = y + LY.pad - 8; // three lines from the card's padding
+        const y = top + i * (ch + LY.gap), x = LY.m + LY.pad, by = full ? y + LY.pad - 8 : y + ch / 2 - 37; // three lines from the card's padding, or two centred when the cards are short
         const name = id === 'practice' ? '볼머신장 가기' : FORMATS[id].ko, sub = id === 'practice' ? '볼머신과 레슨 9개 · 공 치는 법 익히기' : rules(id).sub;
         card(LY.m, y, LY.w, ch, () => pickFormat(i), i === state.fm, id === 'practice' ? '#eef7ff' : null);
         text(name, x, by + 20, 36, INK, 'left', null, F_T);
         ctx.font = `36px ${F_T}`; const nw = ctx.measureText(name).width, tag = id === 'short' ? '추천' : id === 'practice' ? '연습모드' : '';
         if (tag) { const tw = tag.length * 21 + 26; rr(x + nw + 14, by + 3, tw, 34, 17, id === 'short' ? CORAL : SKY, OUT, 2.2); text(tag, x + nw + 14 + tw / 2, by + 20, 20, CREAM, 'center', null, F_T); }
         text(sub, x, by + 60, 22, id === 'practice' ? '#3d7fc0' : '#c0605a', 'left', null, F_H);
-        text(how[id], x, by + 92, 20, '#7a6872', 'left', null, F_B);
+        if (full) text(how[id], x, by + 92, 20, '#7a6872', 'left', null, F_B);
       });
       sideBtn('뒤로', formatBack);
       menuEnd('↑ ↓ 로 고르고 Enter · 랭킹은 경기 방식마다 따로 집계돼요');
