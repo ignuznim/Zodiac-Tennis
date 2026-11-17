@@ -93,32 +93,32 @@ window.CONFIG = {
   tired_run: { value: 0.3, min: 0, max: 0.6, step: 0.02 },   // run speed lost at zero stamina
 
   // ---- The computer, three levels: 1 easy, 2 normal, 3 hard ----
-  ai1_react: { value: 0.4, min: 0, max: 0.8, step: 0.02 },  // s before it starts to move
-  ai2_react: { value: 0.22, min: 0, max: 0.8, step: 0.02 },
+  ai1_react: { value: 0.46, min: 0, max: 0.8, step: 0.02 },  // s before it starts to move
+  ai2_react: { value: 0.3, min: 0, max: 0.8, step: 0.02 },
   ai3_react: { value: 0.085, min: 0, max: 0.8, step: 0.02 },
   ai1_timing: { value: 0.7, min: 0, max: 1, step: 0.02 },   // its average timing, 1 is sweet
   ai2_timing: { value: 0.72, min: 0, max: 1, step: 0.02 },
   ai3_timing: { value: 0.91, min: 0, max: 1, step: 0.02 },
   ai1_smart: { value: 0.1, min: 0, max: 1, step: 0.05 },    // how often it aims away from you
-  ai2_smart: { value: 0.55, min: 0, max: 1, step: 0.05 },
+  ai2_smart: { value: 0.4, min: 0, max: 1, step: 0.05 },
   ai3_smart: { value: 0.8, min: 0, max: 1, step: 0.05 },
   ai1_variety: { value: 0.04, min: 0, max: 1, step: 0.02 },  // how often it drops, lobs or powers up
-  ai2_variety: { value: 0.2, min: 0, max: 1, step: 0.02 },
+  ai2_variety: { value: 0.14, min: 0, max: 1, step: 0.02 },
   ai3_variety: { value: 0.38, min: 0, max: 1, step: 0.02 },
-  ai1_run: { value: 0.84, min: 0.5, max: 1, step: 0.02 },    // share of its run speed it uses
+  ai1_run: { value: 0.8, min: 0.5, max: 1, step: 0.02 },    // share of its run speed it uses
   ai2_run: { value: 0.94, min: 0.5, max: 1, step: 0.02 },
   ai3_run: { value: 1, min: 0.5, max: 1, step: 0.02 },
-  ai1_pace: { value: 0.68, min: 0.5, max: 1.1, step: 0.02 },  // its stroke speed, as a share of a player's
-  ai2_pace: { value: 0.92, min: 0.5, max: 1.1, step: 0.02 },
+  ai1_pace: { value: 0.62, min: 0.5, max: 1.1, step: 0.02 },  // its stroke speed, as a share of a player's
+  ai2_pace: { value: 0.8, min: 0.5, max: 1.1, step: 0.02 },
   ai3_pace: { value: 0.975, min: 0.5, max: 1.1, step: 0.02 },
-  ai1_serve: { value: 0.66, min: 0.5, max: 1.1, step: 0.02 }, // its serve speed, as a share of a player's
-  ai2_serve: { value: 0.9, min: 0.5, max: 1.1, step: 0.02 },
+  ai1_serve: { value: 0.62, min: 0.5, max: 1.1, step: 0.02 }, // its serve speed, as a share of a player's
+  ai2_serve: { value: 0.82, min: 0.5, max: 1.1, step: 0.02 },
   ai3_serve: { value: 1, min: 0.5, max: 1.1, step: 0.02 },
   ai1_gentle: { value: 0.85, min: 0, max: 1, step: 0.05 },    // how often it plays the ball back to where you stand
-  ai2_gentle: { value: 0.4, min: 0, max: 1, step: 0.05 },
+  ai2_gentle: { value: 0.55, min: 0, max: 1, step: 0.05 },
   ai3_gentle: { value: 0, min: 0, max: 1, step: 0.05 },
-  ai1_miss: { value: 0.16, min: 0, max: 0.4, step: 0.01 },    // chance a shot is its own error: long, wide or in the net
-  ai2_miss: { value: 0.065, min: 0, max: 0.4, step: 0.01 },
+  ai1_miss: { value: 0.2, min: 0, max: 0.4, step: 0.01 },    // chance a shot is its own error: long, wide or in the net
+  ai2_miss: { value: 0.1, min: 0, max: 0.4, step: 0.01 },
   ai3_miss: { value: 0.012, min: 0, max: 0.4, step: 0.01 },
   ai1_catchup: { value: 0, min: 0, max: 0.3, step: 0.005 },  // extra error chance per game it leads by, so a match stays within reach
   ai2_catchup: { value: 0.22, min: 0, max: 0.3, step: 0.005 },
@@ -133,7 +133,7 @@ window.CONFIG = {
   ai2_flash: { value: 1, min: 1, max: 6, step: 0.5 },
   ai3_flash: { value: 2.5, min: 1, max: 6, step: 0.5 },
   ai1_dbl: { value: 0, min: 0, max: 1, step: 0.05 },   // how much of the catch-up the computer keeps in doubles, where your partner already helps
-  ai2_dbl: { value: 0.5, min: 0, max: 1, step: 0.05 },
+  ai2_dbl: { value: 0.8, min: 0, max: 1, step: 0.05 },
   ai3_dbl: { value: 0.35, min: 0, max: 1, step: 0.05 },
   dbl_yield: { value: 0.1, min: 0, max: 1, step: 0.05 },   // doubles: how much nearer you must be before your computer partner leaves a ball to you (m)
   dbl_volley: { value: 1.25, min: 1, max: 1.6, step: 0.05 }, // doubles: a volley at the net is struck this much harder
@@ -142,8 +142,8 @@ window.CONFIG = {
   ace_q: { value: 0.95, min: 0.9, max: 1, step: 0.01 },      // a first serve timed at least this well is a cannonball
   ace_v: { value: 1.25, min: 1, max: 1.5, step: 0.02 },      // how much faster a cannonball flies
   ace_react: { value: 0.7, min: 0, max: 1, step: 0.02 },  // how much later the computer starts after one (s)
-  ai1_window: { value: 0.42, min: 0.12, max: 0.5, step: 0.01 }, // your swing buffer against this level (online: tap_window)
-  ai2_window: { value: 0.3, min: 0.12, max: 0.5, step: 0.01 },
+  ai1_window: { value: 0.46, min: 0.12, max: 0.5, step: 0.01 }, // your swing buffer against this level (online: tap_window)
+  ai2_window: { value: 0.36, min: 0.12, max: 0.5, step: 0.01 },
   ai3_window: { value: 0.26, min: 0.12, max: 0.5, step: 0.01 },
 
   // ---- Courts and animals: each animal's signature stat rises on its favourite court and falls on its worst ----
