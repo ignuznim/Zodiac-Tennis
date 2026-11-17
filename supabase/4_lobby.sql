@@ -70,3 +70,11 @@ begin
 end $$;
 revoke all on function public.hello() from public, anon;
 grant execute on function public.hello() to authenticated;
+
+-- Only counts, marks nobody: for the home screen of someone not signed in
+create or replace function public.online_now() returns integer
+language sql stable security definer set search_path = public as $$
+  select count(*)::integer from public.presence where seen_at > now() - interval '60 seconds';
+$$;
+revoke all on function public.online_now() from public;
+grant execute on function public.online_now() to anon, authenticated;

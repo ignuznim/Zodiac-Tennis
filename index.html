@@ -67,7 +67,7 @@
 'use strict';
 // ---- Built to be checked ----------------------------------------------------------------
 const params = new URLSearchParams(location.search);
-const APP_VERSION = '1.9.3'; // shown on the home screen: a new feature raises the middle number; the small fixes after it are bundled into one last-number step
+const APP_VERSION = '1.9.4'; // shown on the home screen: a new feature raises the middle number; the small fixes after it are bundled into one last-number step
 const tune = new Proxy({}, { get: (_, k) => CONFIG[k].value }); // live: tune.speed is CONFIG.speed.value
 const STEP = 1 / 60;            // simulation step in seconds; motion is per second, never per frame
 const W = 720; let H = 1280;    // logical size: a portrait page 720 wide, as tall as the window's shape asks (900 to 1580)
@@ -137,6 +137,9 @@ function text(s, x, y, size, c, align = 'center', edge, font = F_T) {
   if (edge) { ctx.lineWidth = Math.max(3, size / 6); ctx.strokeStyle = edge; ctx.lineJoin = 'round'; ctx.strokeText(s, x, y); }
   ctx.fillStyle = c; ctx.fillText(s, x, y);
 }
+function textW(s, size, font = F_T) { const k = font === F_H ? 1.15 : font === F_B ? 1.1 : 1, px = Math.round(size * k); ctx.font = font.startsWith('700') ? font.replace('1em', px + 'px') : `${px}px ${font}`; return ctx.measureText(s).width; } // as text() will draw it
+function cutToFit(s, size, font, maxW) { if (textW(s, size, font) <= maxW) return s; let t = [...s]; while (t.length > 1 && textW(t.join('') + '…', size, font) > maxW) t.pop(); return t.join('') + '…'; } // the last resort for a long nickname
+function fitText(s, x, y, size, c, align, font, maxW, edge) { const w = textW(s, size, font), sz = Math.max(MIN_TEXT, w > maxW ? Math.floor(size * maxW / w) : size); text(cutToFit(s, sz, font, maxW), x, y, sz, c, align, edge, font); return sz; } // shrinks to maxW, never under MIN_TEXT
 function rr(x, y, w, h, r, fill, stroke, lw = 3) {
   ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
   ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
@@ -844,14 +847,14 @@ function drawNet() {
 let scene, state, m;          // m is state.m, the match
 const setup = { animal: clamp(parseInt(store('zt_animal')) || 0, 0, 11), doubles: store('zt_dbl') === '1', level: 2, mode: 'cpu', guestAnimal: 3, court: 'hard', pending: 1, format: 'short' };
 let matchCount = 0;
-function newPlayer(i, a, ctrl, gearIds) {
+function newPlayer(i, a, ctrl, gearIds, nick) {
   const gear = gearBonus(gearIds), max = tune.stam_base + Math.min(7.5, stat(a, 'stamina', setup.court) + (gear.stamina || 0)) * tune.stam_per;
-  return { i, team: i % 2, side: i % 2 === 0 ? 1 : -1, a, ctrl, gearIds: gearIds || {}, gear, x: 0, y: 0, vx: 0, vy: 0, stam: max, max, sw: null, cool: 0, anim: 'idle', at: 0, hand: 1,
+  return { i, team: i % 2, side: i % 2 === 0 ? 1 : -1, a, ctrl, nick: nick || null, gearIds: gearIds || {}, gear, x: 0, y: 0, vx: 0, vy: 0, stam: max, max, sw: null, cool: 0, anim: 'idle', at: 0, hand: 1,
     pa: false, pk: false, pl: false, ps: false, streak: 0, ai: { for: -1, wait: 0, tgt: null, set: 0, st: 0, q: 1 } };
 }
 function seatPlayers(S) { // online: each seat a friend's choice, or a computer on a random animal, wearing nothing
   const free = [...Array(12).keys()].filter(a => !S.some(q => q && q.a === a));
-  return S.map((q, i) => q ? newPlayer(i, q.a, q.ctrl, q.gear) : newPlayer(i, free.splice(Math.floor(rng() * free.length), 1)[0], 'ai', {}));
+  return S.map((q, i) => q ? newPlayer(i, q.a, q.ctrl, q.gear, q.nick) : newPlayer(i, free.splice(Math.floor(rng() * free.length), 1)[0], 'ai', {}));
 }
 function newMatch() {
   let opp = setup.guestAnimal;
@@ -861,7 +864,7 @@ function newMatch() {
   m = {
     t: 0, phase: 'serve', pt: 0, pause: 1.7, doubles: dbl, coop: !!seats && setup.kind === 'coop', recv: 1, level: setup.level, format: setup.format || 'regular', online: setup.mode !== 'cpu', court: setup.court, land: null,
     ball: { x: 0, y: 0, z: 1, vx: 0, vy: 0, vz: 0, last: -1, bounces: 0, live: false, fly: false, kind: '', power: 0 },
-    P: seats ? seatPlayers(seats) : [newPlayer(0, setup.animal, 'human', myGear()), newPlayer(1, opp, setup.practice ? 'machine' : setup.mode === 'cpu' ? 'ai' : 'remote', setup.mode === 'cpu' ? {} : setup.guestGear)],
+    P: seats ? seatPlayers(seats) : [newPlayer(0, setup.animal, 'human', myGear(), realNick()), newPlayer(1, opp, setup.practice ? 'machine' : setup.mode === 'cpu' ? 'ai' : 'remote', setup.mode === 'cpu' ? {} : setup.guestGear)],
     practice: !!setup.practice, prac: setup.practice ? { li: 0, done: 0, wait: 0, shot: null, res: null, resT: 9, next: false } : null,
     sc: { pts: [0, 0], games: [0, 0], sets: [], won: [0, 0], server: 0, turn: [0, 0], tb: false, tbFirst: 0, done: false, winner: -1 }, // server: the team; turn: which of its players
     fault: 0, refault: false, boxX: 1, rally: 0, hitId: 0, banner: null, pops: [], fx: [], fxId: 0, mark: null, emotes: [],
@@ -872,14 +875,15 @@ function newMatch() {
   if (m.practice) { m.level = 2; m.online = false; practiceNext(); m.banner = { text: '볼머신장', sub: '레슨을 따라 공 치는 법을 익혀요', t: 0, big: 0 }; return m; }
   const R = rules();
   if (R.matchTb) { m.sc.tb = true; m.sc.tbFirst = m.sc.server; }
-  m.banner = { text: R.matchTb ? '매치 타이브레이크' : R.ko + ' · 1세트', sub: `${dbl ? `파트너 ${ANIMALS[m.P[2].a].ko} · ` : ''}${ANIMALS[m.P[0].a].ko} 서브 · ${R.matchTb ? '10점 먼저' : R.sets > 1 ? R.sets + '세트 먼저' : R.games + '게임 먼저'}`, t: 0, big: 0 };
+  m.banner = { text: R.matchTb ? '매치 타이브레이크' : R.ko + ' · 1세트', sub: `${dbl ? `파트너 ${pName(m.P[2])} · ` : ''}${pName(m.P[0])} 서브 · ${R.matchTb ? '10점 먼저' : R.sets > 1 ? R.sets + '세트 먼저' : R.games + '게임 먼저'}`, t: 0, big: 0 };
   return m;
 }
 function fx(k, a, b) { m.fx.push({ id: ++m.fxId, k, a, b }); if (m.fx.length > 14) m.fx.shift(); }
 function pop(s, x, y, z, c) { m.pops.push({ s, x, y, z, t: 0, c: c || CREAM }); if (m.pops.length > 6) m.pops.shift(); }
 function setAnim(p, a) { p.anim = a; p.at = 0; }
 const reach = p => tune.reach + pstat(p, 'reflex') * tune.reach_reflex;
-const NAME = t => m.P.filter(p => p.team === t).map(p => ANIMALS[p.a].ko).join('·'); // a team: one animal, or two in doubles
+const pName = p => p.nick || ANIMALS[p.a].ko; // a person by their nickname, a computer (or someone not signed in) by its animal
+const NAME = t => m.P.filter(p => p.team === t).map(pName).join('·'); // a team: one name, or two in doubles
 const mates = t => m.P.filter(p => p.team === t);
 const courtW = () => m.doubles ? DW : CW; // doubles plays the alleys
 function serverIdx() { const tp = mates(m.sc.server); return tp.length ? tp[((m.sc.turn || [0, 0])[m.sc.server] || 0) % tp.length].i : m.sc.server; } // in doubles the partners take turns, game by game
@@ -1304,8 +1308,12 @@ function drawBall() {
   ctx.lineWidth = 2.2; ctx.strokeStyle = OUT; E(s.x, s.y, 10 * s.s, 10 * s.s, BALL);
   ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(s.x - 11 * s.s, s.y, 11 * s.s, -0.7, 0.7); ctx.stroke();
 }
+function scoreRoom() { // extra width for the names, as far as the corner buttons allow (12 px clear of them)
+  const R = rules(), n = R.matchTb ? 0 : 2 * R.sets - 1, base = 44 + (m.doubles ? 196 : 150) + (R.matchTb ? 10 : 44 + n * 30 + 6) + 60 + (R.matchTb ? 6 : 0), slack = Math.max(0, W - 128 - 12 - 12 - base);
+  const need = Math.max(...[0, 1].map(t => textW(NAME(t), 20, F_T) + 50)) - (m.doubles ? 196 : 150) + 22; return clamp(need, 0, slack);
+}
 function drawScoreboard() { // one row a side: sets won, a cell for each of the five sets, then the point
-  const R = rules(), sc = m.sc, tbOnly = R.matchTb, n = tbOnly ? 0 : 2 * R.sets - 1, x0 = 12, y0 = 10, nx = x0 + 44, nameW = m.doubles ? 196 : 150, wx = nx + nameW, sx = wx + (tbOnly ? 0 : 44), px = tbOnly ? wx + 10 : sx + n * 30 + 6, w = px + 60 - x0 + (tbOnly ? 6 : 0);
+  const R = rules(), sc = m.sc, tbOnly = R.matchTb, n = tbOnly ? 0 : 2 * R.sets - 1, x0 = 12, y0 = 10, nx = x0 + 44, nameW = (m.doubles ? 196 : 150) + scoreRoom(), wx = nx + nameW, sx = wx + (tbOnly ? 0 : 44), px = tbOnly ? wx + 10 : sx + n * 30 + 6, w = px + 60 - x0 + (tbOnly ? 6 : 0);
   rr(x0, y0, w, 112, 16, '#4a3d47', OUT);
   if (!tbOnly) text('세트', wx + 17, y0 + 14, MIN_TEXT, '#cbbcc4', 'center', null, F_B);
   for (let k = 0; k < n; k++) text('' + (k + 1), sx + k * 30 + 13, y0 + 14, MIN_TEXT, k === sc.sets.length && !sc.done ? BALL : '#cbbcc4', 'center', null, F_N);
@@ -1317,11 +1325,10 @@ function drawScoreboard() { // one row a side: sets won, a cell for each of the 
     ctx.lineWidth = 2.6; ctx.strokeStyle = OUT;
     if (Q) drawAnimal(Q.a, x0 + 30, y + 13, 0.24, { front: true, accent: col });
     drawAnimal(P.a, x0 + (Q ? 16 : 22), y + 15, Q ? 0.27 : 0.3, { front: true, accent: col });
-    const nm = NAME(i), lab = P.ctrl === 'ai' ? '컴퓨터' : r === 0 ? (Q ? '우리' : '나') : '상대';
-    ctx.font = `${Math.round(MIN_TEXT * 1.1)}px ${F_B}`; const lw = ctx.measureText(lab).width; ctx.font = `20px ${F_T}`; const nw0 = ctx.measureText(nm).width, room = nameW - 22 - lw - 6;
-    const nsz = Math.max(MIN_TEXT, nw0 > room ? 20 * room / nw0 : 20), nw = Math.min(nw0 * nsz / 20, room); // the name shrinks to fit beside its label, never into the score
-    text(nm, nx, y - 5, nsz, CREAM, 'left', null, F_T);
-    text(lab, nx + nw + 6, y - 4, MIN_TEXT, '#b9a8b1', 'left', null, F_B);
+    const lab0 = P.ctrl === 'ai' ? '컴퓨터' : r === 0 ? (Q ? '우리' : '나') : '상대', all = nameW - 22, roomFor = l => l ? all - textW(l, MIN_TEXT, F_B) - 6 : all;
+    const tries = [[NAME(i), lab0], [NAME(i), '']].concat(Q ? [[pName(P), lab0], [pName(P), '']] : []), pick = tries.find(c => textW(c[0], MIN_TEXT, F_T) <= roomFor(c[1])) || tries[tries.length - 1]; // the label goes first, then the partner's name, before a word is cut
+    const [nm, lab] = pick, room = roomFor(lab), nsz = fitText(nm, nx, y - 5, 20, CREAM, 'left', F_T, room), nw = Math.min(textW(nm, nsz, F_T), room); // the name shrinks to fit beside its label, never into the score
+    if (lab) text(lab, nx + nw + 6, y - 4, MIN_TEXT, '#b9a8b1', 'left', null, F_B);
     const bw = nameW - 34; rr(nx, y + 9, bw, 6, 3, '#2f262d', null); if (f > 0.03) rr(nx, y + 9, bw * f, 6, 3, f < 0.25 ? '#f25f5c' : col, null);
     if (sc.server === i && !sc.done) { ctx.lineWidth = 1.6; ctx.strokeStyle = OUT; E(tbOnly ? px - 12 : wx - 12, y - 4, 6, 6, BALL); }
     if (!tbOnly) { rr(wx, y - 16, 34, 32, 8, col, OUT, 2.2); text('' + sc.won[i], wx + 17, y + 1, 24, '#3b2f38', 'center', null, F_N); }
@@ -1626,7 +1633,7 @@ const netCpu = () => net && (net.kind === 'coop' || (net.kind === 'versus' && hu
 function onHostData(d, g) {
   if (!net) return;
   if (d.t === 'join') { g.nick = String(d.nick || '손님').slice(0, 10); g.a = clamp(d.a | 0, 0, 11); sayRoom(); tone(880, 0.12, 'triangle', 0.25); if (net.quick && !net.quick.fillAt) net.quick.fillAt = clock.now() + 20; }
-  else if (d.t === 'pick' && g.seat != null) { net.picks[g.seat] = { a: clamp(d.animal | 0, 0, 11), gear: d.gear && typeof d.gear === 'object' ? d.gear : {}, ctrl: 'remote' }; sendReady(); onlineStart(); }
+  else if (d.t === 'pick' && g.seat != null) { net.picks[g.seat] = { a: clamp(d.animal | 0, 0, 11), gear: d.gear && typeof d.gear === 'object' ? d.gear : {}, ctrl: 'remote', nick: g.nick && g.nick !== '손님' ? g.nick : null }; sendReady(); onlineStart(); }
   else if (d.t === 'i' && g.seat != null) net.rin[g.seat] = d;
   else if (d.t === 'stay') { g.stay = true; sayRoom(); }
   else if (d.t === 'emo' && g.seat != null && m && m.online) pushEmote(g.seat, d.e);
@@ -1662,7 +1669,7 @@ function sendReady() { const n = Object.keys(net.picks).length, need = humans();
 function onlinePick() { // this side has chosen its animal: tell the host, and start when everyone has
   net.myPick = { animal: setup.animal, gear: myGear(setup.animal) };
   if (net.role === 'guest') netSendMsg(Object.assign({ t: 'pick' }, net.myPick));
-  else { net.picks[0] = { a: setup.animal, gear: net.myPick.gear, ctrl: 'human' }; sendReady(); onlineStart(); }
+  else { net.picks[0] = { a: setup.animal, gear: net.myPick.gear, ctrl: 'human', nick: realNick() }; sendReady(); onlineStart(); }
 }
 function onlineStart() {
   if (!net || net.role !== 'host' || Object.keys(net.picks).length < humans()) return;
@@ -1785,8 +1792,9 @@ let quick = null;  // { kind, format, phase: 'pick' | 'search' | 'join' | 'host'
 const lobbyNet = { rooms: [], online: 0, loading: false, at: 0 };
 const signedIn = () => !!(acct.sb && acct.user);
 function needSignIn() { notify('로그인하면 빠른 대전과 방 목록을 쓸 수 있어요'); scene = 'account'; }
-async function hello() { if (!signedIn()) return; try { const { data } = await acct.sb.rpc('hello'); if (typeof data === 'number') lobbyNet.online = data; } catch (e) { /* offline */ } }
-setInterval(() => { if (['online', 'quick', 'rooms', 'lobby'].includes(scene) || (m && m.online)) hello(); }, 20000);
+async function hello() { if (!acct.sb) return; try { const { data } = await acct.sb.rpc(signedIn() ? 'hello' : 'online_now'); if (typeof data === 'number') lobbyNet.online = data; } catch (e) { /* offline */ } } // signed in: I'm here, and how many are; not: only how many
+setInterval(() => { if (!document.hidden) hello(); }, 20000); // anywhere in the game, while it is on screen
+document.addEventListener('visibilitychange', () => { if (!document.hidden) hello(); });
 async function loadRooms() {
   if (!signedIn() || lobbyNet.loading) return; lobbyNet.loading = true;
   try { const { data } = await acct.sb.from('rooms').select('*').eq('status', 'waiting').order('created_at', { ascending: true }).limit(30);
@@ -1809,6 +1817,7 @@ async function roomSync() { // the host keeps its row fresh; a closed or quiet r
 setInterval(roomSync, 4000);
 function unlist(code) { if (signedIn() && code) acct.sb.from('rooms').delete().eq('code', code).then(() => {}, () => {}); }
 const myNick = () => (acct.prof && acct.prof.nickname) || '손님';
+const realNick = () => (acct.prof && acct.prof.nickname) || null; // for the scoreboard: no nickname, the animal's name instead
 function ensureSlots() { // every friend has a place: the first free of B, A, B (as they came in)
   const used = new Set(); for (const g of net.guests) { if (g.slot == null || used.has(g.slot)) g.slot = null; else used.add(g.slot); }
   for (const g of net.guests) if (g.slot == null) { g.slot = [1, 2, 3].find(k => !used.has(k)); used.add(g.slot); }
@@ -2308,7 +2317,7 @@ function initAuth() {
     const u = session ? session.user : null, changed = (u && u.id) !== (acct.user && acct.user.id);
     acct.user = u;
     if (!u) { acct.prof = null; acct.inv = {}; return; }
-    if (changed) { loadAccount(); if (/[?&]code=/.test(location.search)) history.replaceState(null, '', location.pathname + (room ? '?room=' + room : '')); }
+    if (changed) { loadAccount(); setTimeout(hello, 0); if (/[?&]code=/.test(location.search)) history.replaceState(null, '', location.pathname + (room ? '?room=' + room : '')); }
   });
 }
 function signIn(provider) {
@@ -2888,7 +2897,9 @@ const scenes = {
         iconButton('capsule', '뽑기', LY.m + sq + 12, y, sq, sh, () => { acct.wtab = 'gacha'; scene = 'wardrobe'; }, !!(acct.prof && acct.prof.tickets > 0)); // a red dot while a ticket waits
         iconButton('medal', '업적', LY.m + (sq + 12) * 2, y, sq, sh, () => { acct.wtab = 'ach'; scene = 'wardrobe'; }, anyClaimable());
         button('개인전', sx, y, bw2, sh, () => { scene = 'format'; }, { size: 33, fill: '#fff3c4' });
-        button('온라인', sx + bw2 + 12, y, rest - bw2 - 12, sh, () => { scene = 'online'; }, { size: 26, fill: '#efe6ff' });
+        { const ox = sx + bw2 + 12, ow = rest - bw2 - 12, n = lobbyNet.online; button(n ? '' : '온라인', ox, y, ow, sh, () => { scene = 'online'; }, { size: 26, fill: '#efe6ff' });
+          if (n) { text('온라인', ox + ow / 2, y + sh / 2 - 13, 26, INK, 'center', null, F_T); const t = `${n}명 접속`, tw = textW(t, 18, F_T), lx = ox + ow / 2 - (tw + 16) / 2; // who is around, under the word: a reason to go in
+            ctx.lineWidth = 1.6; ctx.strokeStyle = OUT; E(lx + 5, y + sh / 2 + 21, 5, 5, '#4fc37a'); text(t, lx + 16, y + sh / 2 + 21, 18, '#3f9a5c', 'left', null, F_T); } }
       }
       { const P = acct.prof, t = acct.user ? (P && P.nickname ? P.nickname : '로그인됨') : '로그인', cw = Math.max(132, t.length * 17 + 44), cx = W - LY.m - cw, cy = 14;
         const over = btn(cx, cy, cw, 50, () => { scene = 'account'; });
@@ -3465,7 +3476,7 @@ const scenes = {
       text(me ? '승리!' : '패배', W / 2, LY.titleY + 8, 76, me ? CORAL : '#7f8fb5', 'center', OUT, F_T);
       const RR = rules(), fin = sc.sets[sc.sets.length - 1] || [0, 0];
       const reg = canRank(), py = LY.top + 36, pb = py + SZ().result;
-      text(`${RR.ko} · ${NAME(w)} 승리 · ${RR.sets > 1 && !RR.matchTb ? `세트 ${sc.won[w]} – ${sc.won[1 - w]}` : `${fin[w]} – ${fin[1 - w]}`}`, W / 2, LY.top + 8, 28, INK, 'center', CREAM, F_H);
+      fitText(`${RR.ko} · ${NAME(w)} 승리 · ${RR.sets > 1 && !RR.matchTb ? `세트 ${sc.won[w]} – ${sc.won[1 - w]}` : `${fin[w]} – ${fin[1 - w]}`}`, W / 2, LY.top + 8, 28, INK, 'center', F_H, LY.w - 16, CREAM);
       panel(LY.m, py, LY.w, pb - py);
       const bh = 400, by = py + (pb - py - bh) / 2; // the block of scores and stats, centred in the panel
       for (let r = 0; r < 2; r++) {
@@ -3473,11 +3484,14 @@ const scenes = {
         ctx.lineWidth = 2.6; ctx.strokeStyle = OUT;
         const tp = mates(i);
         tp.slice().reverse().forEach((q, k) => drawAnimal(q.a, LY.m + 52 + (tp.length > 1 ? (1 - k) * 34 - 6 : 0), y + 26, tp.length > 1 ? 0.42 : 0.5, { front: true, accent: i === vt ? CORAL : SKY, anim: i === w ? 'cheer' : 'sad', t: state.t + k }));
-        text(NAME(i), LY.m + (tp.length > 1 ? 124 : 92), y, NAME(i).length > 5 ? 24 : 28, INK, 'left', null, F_T);
+        const nx = LY.m + (tp.length > 1 ? 124 : 92), nmax = 400 - 30 - nx; // up to the first set's score
+        if (tp.length > 1 && textW(NAME(i), 24, F_T) > nmax) tp.forEach((q, k) => fitText(pName(q), nx, y + (k ? 15 : -15), 24, INK, 'left', F_T, nmax)); // two names, one a line
+        else fitText(NAME(i), nx, y, 28, INK, 'left', F_T, nmax);
         sc.sets.forEach((g, n) => text('' + g[i], 400 + n * 54, y, 33, g[i] > g[1 - i] ? INK : '#b3a4ac', 'center', null, F_N));
       }
       const S = m.stats, a = vt, b = 1 - vt, sy = by + 170;
-      text(NAME(a), 180, sy, 22, CORAL, 'center', null, F_T); text(NAME(b), 540, sy, 22, '#3d9be0', 'center', null, F_T);
+      [[a, 180, CORAL], [b, 540, '#3d9be0']].forEach(([t, x, c]) => { const tp = mates(t), mw = 300; // each side's name over its column, two lines in doubles if one is too long
+        if (tp.length > 1 && textW(NAME(t), 22, F_T) > mw) tp.forEach((q, k) => fitText(pName(q), x, sy + (k ? 11 : -13), 20, c, 'center', F_T, mw)); else fitText(NAME(t), x, sy, 22, c, 'center', F_T, mw); });
       [['딴 포인트', S.pts], ['스위트 스폿', [teamStat(S.sweet, 0), teamStat(S.sweet, 1)]], ['파워샷', [teamStat(S.power, 0), teamStat(S.power, 1)]], ['에이스', [teamStat(S.aces, 0), teamStat(S.aces, 1)]]].forEach((row, i) => { const y = sy + 44 + i * 40; text(row[0], W / 2, y, 21, '#7a6872', 'center', null, F_B); text('' + row[1][a], 180, y, 30, INK, 'center', null, F_N); text('' + row[1][b], 540, y, 30, INK, 'center', null, F_N); });
       text(`가장 긴 랠리  ${S.longest}번`, W / 2, sy + 44 + 4 * 40 + 6, 25, '#c0605a', 'center', null, F_H);
       if (reg) {
@@ -3548,6 +3562,7 @@ window.game = {
 reset();
 initAuth();
 setTimeout(loadNotices, 800); // for the red dot on 공지사항
+setTimeout(hello, 1500); // the home screen shows who is around from the start
 scene = params.get('scene') || 'title';
 last = clock.now();
 if (params.get('manual') === '1') drawFrame();
