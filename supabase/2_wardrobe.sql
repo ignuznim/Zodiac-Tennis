@@ -47,7 +47,7 @@ insert into public.items (id, slot, grade, stat, amount, name) values
   ('u14', 'uniform', 0, 'spin', 0.1, '회색 티셔츠'),
   ('u15', 'uniform', 0, 'stamina', 0.1, '검정 티셔츠'),
   ('u3', 'uniform', 1, 'stamina', 0.2, '줄무늬 셔츠'),
-  ('u4', 'uniform', 1, 'power', 0.2, '국가대표 저지'),
+  ('u4', 'uniform', 1, 'power', 0.2, '국가대표 축구 저지'),
   ('u9', 'uniform', 1, 'spin', 0.2, '체크 셔츠'),
   ('u10', 'uniform', 1, 'reflex', 0.2, '해군 셔츠'),
   ('u16', 'uniform', 1, 'speed', 0.2, '초록 폴로 셔츠'),
