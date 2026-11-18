@@ -89,7 +89,7 @@ insert into public.items (id, slot, grade, stat, amount, name) values
   ('s23', 'shoes', 3, 'stamina', 0.5, '구름 신발'),
   ('s24', 'shoes', 3, 'spin', 0.5, '무지개 운동화'),
   ('r1', 'racket', 0, 'power', 0.1, '나무 라켓'),
-  ('r2', 'racket', 0, 'spin', 0.1, '연습 라켓'),
+  ('r2', 'racket', 0, 'spin', 0.1, '종이 라켓'),
   ('r7', 'racket', 0, 'reflex', 0.1, '하늘 라켓'),
   ('r8', 'racket', 0, 'speed', 0.1, '분홍 라켓'),
   ('r13', 'racket', 0, 'power', 0.1, '노란 라켓'),
@@ -345,6 +345,30 @@ begin
 end $$;
 -- gear saved the old way (one set for everyone) moves to the rat (0); it can be moved from there
 update public.profiles set equip = jsonb_build_object('0', equip) where equip ?| array['hat', 'uniform', 'shoes', 'racket'];
+
+-- ---- One-time moves, each run once only (a row in migrations marks it done) ----
+create table if not exists public.migrations (id text primary key, done_at timestamptz not null default now());
+alter table public.migrations enable row level security;
+revoke all on public.migrations from anon, authenticated;
+-- 2026-11-18: 연습 라켓 (r2) became 종이 라켓. Whoever had 연습 라켓 gets 회색 라켓 (r29) instead, worn ones and ranking records too.
+do $$
+begin
+  if not exists (select 1 from public.migrations where id = 'r2_to_r29') then
+    insert into public.inventory (user_id, item_id, count, first_at)
+      select user_id, 'r29', count, first_at from public.inventory where item_id = 'r2'
+      on conflict (user_id, item_id) do update set count = public.inventory.count + excluded.count;
+    delete from public.inventory where item_id = 'r2';
+    update public.profiles p set equip = (
+        select jsonb_object_agg(e.key, case when jsonb_typeof(e.value) = 'object' and e.value ->> 'racket' = 'r2'
+          then jsonb_set(e.value, '{racket}', '"r29"') else e.value end)
+        from jsonb_each(p.equip) e)
+      where p.equip::text like '%"r2"%';
+    if exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'scores' and column_name = 'gear') then
+      update public.scores set gear = regexp_replace(gear, ',r2$', ',r29') where gear ~ ',r2$';
+    end if;
+    insert into public.migrations (id) values ('r2_to_r29');
+  end if;
+end $$;
 
 -- Progress kept with the account: each number only ever grows
 create or replace function public.save_progress(pr jsonb) returns public.profiles

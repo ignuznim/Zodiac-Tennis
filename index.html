@@ -679,6 +679,12 @@ function racket2(L, col) { // things swung like a racket; true when drawn
     for (const sd of [-1, 1]) rr(sd > 0 ? 15 : -21, -10.5, 6, 21, 3, '#ffd34d', OUT, 2.2); ctx.restore(); return true; }
   if (k === 'swatter') { rod(0, 2, 0, -24, 2.6, '#3b3340'); rr(-13, -54, 26, 30, 4, c, OUT, 2.4); ctx.save(); ctx.beginPath(); ctx.rect(-12, -53, 24, 28); ctx.clip(); ctx.fillStyle = 'rgba(255,255,255,0.55)'; for (let y = -50; y < -26; y += 4.5) for (let x = -10; x < 12; x += 4.5) ctx.fillRect(x, y, 2.2, 2.2); ctx.restore(); return true; }
   if (k === 'ladle') { rod(0, 2, 0, -22, 3.4, c); E(0, -33, 12, 12, c); E(0, -33, 9, 8, tint(c, '#3b3340', 0.3), 0, true); ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.beginPath(); ctx.ellipse(-4, -37, 3, 2, -0.6, 0, 7); ctx.fill(); return true; }
+  if (k === 'paperr') { // a racket cut out of cardboard: strings drawn on in pencil, a crease across it, the handle wrapped in tape
+    const head = () => { ctx.beginPath(); ctx.moveTo(0, -18); ctx.lineTo(-10, -24); ctx.lineTo(-13, -36); ctx.lineTo(-8, -46); ctx.lineTo(1, -48); ctx.lineTo(10, -44); ctx.lineTo(13, -33); ctx.lineTo(9, -23); ctx.closePath(); };
+    rr(-3.2, -20, 6.4, 22, 1.5, c, OUT, 2); ctx.fillStyle = '#9ad0ff'; ctx.globalAlpha = 0.8; for (const y of [-2, -8, -14]) ctx.fillRect(-3.2, y, 6.4, 3); ctx.globalAlpha = 1;
+    head(); ctx.fillStyle = c; ctx.fill(); ctx.save(); head(); ctx.clip(); ctx.fillStyle = 'rgba(160,140,110,0.18)'; ctx.beginPath(); ctx.moveTo(-14, -30); ctx.lineTo(14, -40); ctx.lineTo(14, -50); ctx.lineTo(-14, -50); ctx.closePath(); ctx.fill();
+    ctx.lineWidth = 0.9; ctx.strokeStyle = 'rgba(90,85,95,0.6)'; ctx.beginPath(); for (let i = -2; i <= 2; i++) { ctx.moveTo(i * 4 + 0.5, -45); ctx.lineTo(i * 4 - 0.5, -22); ctx.moveTo(-11, -33 + i * 5); ctx.lineTo(11, -34 + i * 5.2); } ctx.stroke(); ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(160,140,110,0.6)'; ctx.beginPath(); ctx.moveTo(-14, -30); ctx.lineTo(14, -40); ctx.stroke(); ctx.restore();
+    ctx.lineWidth = 2.2; ctx.strokeStyle = OUT; head(); ctx.stroke(); ctx.lineWidth = 1.4; ctx.beginPath(); ctx.ellipse(0, -34, 8, 10, 0.05, 0, 7); ctx.strokeStyle = '#3d8be0'; ctx.stroke(); ctx.strokeStyle = OUT; ctx.lineWidth = 2.4; return true; }
   if (k === 'bolt') { // a racket that is a real bolt of lightning, crackling
     ctx.save(); ctx.translate(-3, 30); const P = [[7, -86], [-12, -42], [0, -42], [-4, 6], [15, -54], [3, -54], [18, -86]], bolt = () => { ctx.beginPath(); P.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.closePath(); };
     const g0 = ctx.createRadialGradient(2, -40, 2, 2, -40, 44); g0.addColorStop(0, 'rgba(255,240,140,0.55)'); g0.addColorStop(1, 'rgba(255,240,140,0)'); ctx.fillStyle = g0; ctx.fillRect(-42, -90, 88, 100);
@@ -2602,7 +2608,7 @@ const ITEMS = { // the same catalogue as the server's items table; look is how i
   s9: ['shoes', 1, 'stamina', 0.2, '하드코트화', { k: 'high', c: '#3471c4' }], s10: ['shoes', 1, 'reflex', 0.2, '고무신', { k: 'gomu', c: '#3b3340' }],
   s5: ['shoes', 2, 'speed', 0.3, '번개 신발', { k: 'high', c: '#ffe45c', bolt: true }], s11: ['shoes', 2, 'stamina', 0.3, '꽃신', { k: 'gomu', c: '#f9b7c4', flower: true }],
   s6: ['shoes', 3, 'speed', 0.5, '날개 신발', { k: 'hermes', c: '#b8763a', wing: true }], s12: ['shoes', 3, 'power', 0.5, '로켓 신발', { k: 'boot', c: '#b8c2cc', flame: true }],
-  r1: ['racket', 0, 'power', 0.1, '나무 라켓', { k: 'wood', c: '#b98562' }], r2: ['racket', 0, 'spin', 0.1, '연습 라켓', { c: '#9aa3ad' }],
+  r1: ['racket', 0, 'power', 0.1, '나무 라켓', { k: 'wood', c: '#b98562' }], r2: ['racket', 0, 'spin', 0.1, '종이 라켓', { k: 'paperr', c: '#f4ecd8' }],
   r7: ['racket', 0, 'reflex', 0.1, '하늘 라켓', { c: '#9ad0ff' }], r8: ['racket', 0, 'speed', 0.1, '분홍 라켓', { c: '#f9b7c4' }],
   r3: ['racket', 1, 'power', 0.2, '묵직한 라켓', { k: 'heavy', c: '#4a3d47' }], r4: ['racket', 1, 'spin', 0.2, '가벼운 라켓', { k: 'light', c: '#6ec1ff' }],
   r9: ['racket', 1, 'stamina', 0.2, '대나무 라켓', { k: 'bamboo', c: '#9fcf6e' }], r10: ['racket', 1, 'reflex', 0.2, '얼음 라켓', { k: 'ice', c: '#bfe6ff' }],
