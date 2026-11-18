@@ -495,6 +495,8 @@ function cloth2(L, front, hm, c, S, skin) { // patterns, painted inside the body
   if (k === 'pajama') { ctx.fillStyle = 'rgba(61,111,176,0.55)'; for (let x = -26; x < 28; x += 5) ctx.fillRect(x, -80, 1.4, 80); S(-30, -24, 60, 1.6, '#ffffff'); }
   if (k === 'school') { S(-30, -80, 60, 80, '#2f3d6b'); ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 1; ctx.beginPath(); for (let x = -26; x < 28; x += 4) { ctx.moveTo(x, -80); ctx.lineTo(x, 0); } ctx.stroke(); }
   if (k === 'dragonrobe') { ctx.strokeStyle = 'rgba(200,140,20,0.35)'; ctx.lineWidth = 1; for (const [x, y] of [[-14, -20], [12, -16], [-4, -12]]) { ctx.beginPath(); ctx.arc(x, y, 3, Math.PI, 0); ctx.arc(x + 4, y, 2, Math.PI, 0); ctx.stroke(); } S(-30, -24, 60, 4.4, '#c0392b'); for (const x of [-14, -5, 5, 14]) { ctx.fillStyle = '#bfe6c9'; ctx.fillRect(x - 2, -23.4, 4, 3.2); } }
+  if (k === 'kfoot') { ctx.fillStyle = '#a8132c'; for (const [x, y, w, a] of [[-26, -50, 22, 0.25], [4, -46, 24, -0.2], [-22, -38, 18, -0.15], [6, -34, 20, 0.2], [-24, -26, 26, 0.1], [2, -20, 22, -0.25], [-14, -12, 20, 0.15]]) { ctx.save(); ctx.translate(x + w / 2, y); ctx.rotate(a); ctx.beginPath(); ctx.moveTo(-w / 2, 0); ctx.quadraticCurveTo(0, -3, w / 2, 0.5); ctx.quadraticCurveTo(0, 1.6, -w / 2, 0); ctx.fill(); ctx.restore(); }
+    for (let i = 0; i < 14; i++) E(-12 + (i * 7.3) % 24, -44 + (i * 5.9) % 14, 0.7, 0.7, '#a8132c', 0, true); S(-30, -38, 13.5, 60, '#2a2228'); S(16.5, -38, 13.5, 60, '#2a2228'); S(-17, -38, 1.2, 60, '#ffffff'); S(15.8, -38, 1.2, 60, '#ffffff'); }
   if (k === 'kbase') { for (const sd of [-1, 1]) { ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.moveTo(sd * 5, -54); ctx.lineTo(sd * 30, -54); ctx.lineTo(sd * 30, -28); ctx.quadraticCurveTo(sd * 10, -36, sd * 5, -54); ctx.closePath(); ctx.fill(); ctx.strokeStyle = '#d0263a'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(sd * 5, -54); ctx.quadraticCurveTo(sd * 10, -36, sd * 30, -28); ctx.stroke(); } ctx.strokeStyle = OUT; }
   if (k === 'champ') { const g = ctx.createLinearGradient(-20, -50, 20, -16); g.addColorStop(0, 'rgba(255,255,255,0.6)'); g.addColorStop(0.45, 'rgba(255,255,255,0)'); g.addColorStop(0.55, 'rgba(255,255,255,0.35)'); g.addColorStop(0.65, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(150,90,0,0.25)'); S(-30, -80, 60, 80, g); S(-30, hm - 4, 60, 4, '#3b3340'); }
 }
@@ -515,6 +517,8 @@ function shirt2(L, front, hm, c, dk) { // collars and the rest; true when drawn
       if (k === 'dopo') { ctx.lineWidth = 2.2; ctx.strokeStyle = '#d0565a'; ctx.beginPath(); ctx.moveTo(-20, -27); ctx.quadraticCurveTo(0, -24, 20, -27); ctx.stroke(); ctx.strokeStyle = '#3d6fb0'; ctx.beginPath(); ctx.moveTo(6, -25); ctx.lineTo(8, -12); ctx.moveTo(9, -25); ctx.lineTo(12, -13); ctx.stroke(); ctx.strokeStyle = OUT; ctx.lineWidth = 1.2; E(8, -11, 2, 2.6, '#d0565a'); E(12, -12, 2, 2.6, '#3d6fb0'); }
       if (k === 'yusaeng') { ctx.lineWidth = 1.6; ctx.strokeStyle = '#6b2338'; ctx.beginPath(); ctx.moveTo(-3, -23); ctx.lineTo(-4, -8); ctx.moveTo(1, -23); ctx.lineTo(1.5, -8); ctx.moveTo(-1, -23); ctx.quadraticCurveTo(-8, -18, -6, -12); ctx.stroke(); ctx.strokeStyle = OUT; ctx.lineWidth = 1.1; E(-4, -8, 1.4, 2.4, '#6b2338'); E(1.5, -8, 1.4, 2.4, '#6b2338'); }
       if (k === 'hwarang') { E(6, -26, 4.5, 4.5, '#f6c445'); E(6, -26, 2, 2, '#e2574c', 0, true); } return true; }
+    if (k === 'kfoot') { ctx.fillStyle = '#c41a35'; ctx.beginPath(); ctx.arc(0, -50, 7.5, 0, Math.PI); ctx.fill(); ctx.lineWidth = 1.4; ctx.stroke();
+      rr(7, -44, 6, 7.6, 1, '#ffffff', OUT, 1); rr(8, -43, 4, 5.6, 0.6, '#2a2228', null); E(10, -40.6, 1.4, 1.5, '#ffffff', 0, true); ctx.font = `bold 3.6px ${F_T}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#f6c445'; ctx.fillText('KOREA', 10, -34.4); ctx.lineWidth = 1.8; return true; }
     if (k === 'kbase') { ctx.lineWidth = 2.4; ctx.strokeStyle = '#ffffff'; ctx.beginPath(); ctx.arc(0, -50, 7.5, 0.15, Math.PI - 0.15); ctx.stroke(); ctx.lineWidth = 1.1; ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.beginPath(); ctx.moveTo(0, -43); ctx.lineTo(0, hm); ctx.stroke(); ctx.strokeStyle = OUT; for (const y of [-38, -22, -14]) E(1.8, y, 1, 1, '#c9ccd6', 0, true);
       { const W5 = ['K', 'o', 'r', 'e', 'a'], sz = [11, 9, 9, 9, 9]; ctx.font = `bold 10px ${F_T}`; let x = -13; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.lineJoin = 'round'; // the letters climb one step each, left to right
         W5.forEach((ch, i) => { ctx.save(); ctx.translate(x, -24 - i * 1.9); ctx.rotate(-0.16); ctx.transform(1, 0, -0.25, 1, 0, 0); ctx.font = `bold ${sz[i]}px ${F_T}`; ctx.lineWidth = 2; ctx.strokeStyle = '#1f2a52'; ctx.strokeText(ch, 0, 0); ctx.fillStyle = '#ffffff'; ctx.fillText(ch, 0, 0); x += ctx.measureText(ch).width * 0.92; ctx.restore(); }); }
@@ -533,6 +537,7 @@ function shirt2(L, front, hm, c, dk) { // collars and the rest; true when drawn
   if (k === 'hwarang') { ctx.lineWidth = 1.2; ctx.strokeStyle = '#f6c445'; ctx.beginPath(); ctx.moveTo(-18, -40); ctx.quadraticCurveTo(0, -36, 18, -40); ctx.stroke(); ctx.strokeStyle = OUT; return true; }
   if (k === 'champ') { star(0, -34, 8, '#fff8e7'); return true; }
   if (k === 'dragonrobe') { dragonBadge(0, -34, 8); return true; }
+  if (k === 'kfoot') { ctx.font = `bold 15px ${F_T}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#ffffff'; ctx.fillText('7', 0, -30); ctx.lineWidth = 1.8; ctx.strokeStyle = OUT; return true; }
   if (k === 'kbase') { ctx.font = `bold 16px ${F_T}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round'; ctx.lineWidth = 3; ctx.strokeStyle = '#d0263a'; ctx.strokeText('10', 0, -28); ctx.fillStyle = '#ffffff'; ctx.fillText('10', 0, -28); ctx.strokeStyle = OUT; ctx.lineWidth = 1.8; return true; }
   if (k === 'school' || k === 'yusaeng' || k === 'pajama') { ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(-18, -40); ctx.quadraticCurveTo(0, -37, 18, -40); ctx.stroke(); return true; }
   if (k === 'catsuit') { rr(-8, -53, 16, 4, 2, tint(c, '#ffffff', 0.15), OUT, 1.4); return true; }
@@ -549,6 +554,7 @@ function sleeve2(L, len, w0) { // cuffs and the like, inside a sleeve laid along
   if (k === 'icedress') for (const [x, y] of [[len * 0.3, -1.5], [len * 0.65, 1.5]]) star(x, y, 1.6, '#ffffff');
   if (k === 'catsuit') S(-2, -w0 / 2 + 1, len + 6, 1.6, 'rgba(255,255,255,0.25)');
   if (k === 'momppe') S(-2, -20, len + 8, 40, '#fff3e0');
+  if (k === 'kfoot') { S(len - 4, -20, 4, 40, '#2a2228'); S(len - 5, -20, 1, 40, '#ffffff'); }
   if (k === 'kbase') { S(-2, -20, len * 0.45, 40, '#ffffff'); S(len - 5.5, -20, 2, 40, '#d0263a'); S(len - 3.5, -20, 1.6, 40, '#ffffff'); S(len - 1.9, -20, 2, 40, '#d0263a'); }
   if (k === 'pajama') { ctx.fillStyle = 'rgba(61,111,176,0.55)'; for (let y = -10; y < 10; y += 5) ctx.fillRect(-2, y, len + 6, 1.3); S(len - 3, -20, 2, 40, '#ffffff'); }
   if (k === 'dragonrobe') { S(len - 3, -20, 10, 40, '#d9a520'); dragonBadge(len * 0.4, 0, 3.6); }
@@ -2600,7 +2606,7 @@ const ITEMS = { // the same catalogue as the server's items table; look is how i
   h6: ['hat', 3, 'reflex', 0.5, '황금 왕관', { k: 'crown', c: '#f6c445' }], h12: ['hat', 3, 'power', 0.5, '은하수 왕관', { k: 'crown', c: '#b9d4ff' }],
   u1: ['uniform', 0, 'stamina', 0.1, '흰 티셔츠', { c: ['#ffffff'] }], u2: ['uniform', 0, 'stamina', 0.1, '하늘 티셔츠', { c: ['#9ad0ff'] }],
   u7: ['uniform', 0, 'reflex', 0.1, '분홍 티셔츠', { c: ['#f9b7c4'] }], u8: ['uniform', 0, 'speed', 0.1, '민트 티셔츠', { c: ['#9fe0c8'] }],
-  u3: ['uniform', 1, 'stamina', 0.2, '줄무늬 셔츠', { k: 'shirt', c: ['#ffffff'], stripe: '#3d8be0' }], u4: ['uniform', 1, 'power', 0.2, '국가대표 축구 저지', { k: 'jersey', c: ['#e2574c'], sl: '#3d6fb0', num: '10' }],
+  u3: ['uniform', 1, 'stamina', 0.2, '줄무늬 셔츠', { k: 'shirt', c: ['#ffffff'], stripe: '#3d8be0' }], u4: ['uniform', 1, 'power', 0.2, '국가대표 축구 저지', { k: 'kfoot', c: ['#e0213f'] }],
   u9: ['uniform', 1, 'spin', 0.2, '체크 셔츠', { k: 'shirt', c: ['#ffffff'], check: '#e2574c' }], u10: ['uniform', 1, 'reflex', 0.2, '해군 셔츠', { k: 'sailor', c: ['#ffffff'], trim: '#3d6fb0' }],
   u5: ['uniform', 2, 'stamina', 0.3, '색동 한복', { k: 'hanbok', c: ['#ffe08a'], rb: ['#e2574c', '#f6c445', '#4fc37a', '#3d8be0', '#b48be8'] }], u11: ['uniform', 2, 'power', 0.3, '태권도 도복', { k: 'dobok', c: ['#ffffff'] }],
   u6: ['uniform', 3, 'stamina', 0.5, '황금 유니폼', { k: 'pro', c: ['#f6c445'] }], u12: ['uniform', 3, 'power', 0.5, '불꽃 유니폼', { k: 'flame', c: ['#f25f5c'] }],
@@ -2696,6 +2702,11 @@ const ITEMS = { // the same catalogue as the server's items table; look is how i
   r48: ['racket', 3, 'speed', 0.5, '광선검', { k: 'saber', c: '#6ec1ff' }], r49: ['racket', 3, 'reflex', 0.5, '여의봉', { k: 'staff', c: '#d8443c' }],
 };
 const item = id => { const q = ITEMS[id]; return q && { id, slot: q[0], grade: q[1], stat: q[2], amt: q[3], name: q[4], look: q[5] }; };
+const ITEM_KEYS = Object.keys(ITEMS), kindOf = id => { const L = ITEMS[id][5] || {}; return L.k || L.st || 'plain'; };
+const KIND_AT = {}; ITEM_KEYS.forEach((id, i) => { const k = ITEMS[id][0] + ':' + kindOf(id); if (!(k in KIND_AT)) KIND_AT[k] = i; });
+function itemOrder(p, q) { // by grade, then items of a kind together (all the headbands in a row), then in catalogue order
+  return ITEMS[p][1] - ITEMS[q][1] || KIND_AT[ITEMS[p][0] + ':' + kindOf(p)] - KIND_AT[ITEMS[q][0] + ':' + kindOf(q)] || ITEM_KEYS.indexOf(p) - ITEM_KEYS.indexOf(q);
+}
 const STAT_NAME = { power: '파워', stamina: '체력', spin: '스핀', reflex: '순발력', speed: '스피드' };
 function gearBonus(ids) { const b = {}; for (const id of Object.values(ids || {})) { const it = item(id); if (it) b[it.stat] = (b[it.stat] || 0) + it.amt; } return b; }
 const ACH = [ // the achievements: what counts, the goal; the server holds the reward
@@ -3071,7 +3082,7 @@ function drawClosetList(gear, eh, chh, coll) { // the closet's whole list, from 
   }
   const cw = (LY.w - 12 * 3) / 4;
   SLOTS.forEach(([sid, ko]) => {
-    const ids = Object.keys(ITEMS).filter(k => ITEMS[k][0] === sid).sort((p, q) => ITEMS[p][1] - ITEMS[q][1]), got = ids.filter(id => acct.inv[id]).length;
+    const ids = Object.keys(ITEMS).filter(k => ITEMS[k][0] === sid).sort(itemOrder), got = ids.filter(id => acct.inv[id]).length;
     text(ko, LY.m, y + 18, 24, INK, 'left', null, F_T); text(`${got} / ${ids.length}`, LY.m + LY.w, y + 18, 19, '#7a6872', 'right', null, F_N); y += 40;
     ids.forEach((id, n) => { const it = item(id), have = acct.inv[id] || 0, on = gear[sid] === id, x = LY.m + (n % 4) * (cw + 12), yy = y + Math.floor(n / 4) * (chh + 12);
       const others = wearers(id).filter(k => k !== closet.animal), free = have - others.length - (on ? 1 : 0);
