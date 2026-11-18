@@ -369,6 +369,25 @@ begin
     insert into public.migrations (id) values ('r2_to_r29');
   end if;
 end $$;
+-- 2026-11-18: 보라 머리띠 (h4) went from 희귀 to 일반 and 이태리타월 머리띠 (h32) the other way. Whoever had 보라 머리띠 then gets 이태리타월 머리띠 in its place, worn ones and ranking records too.
+do $$
+begin
+  if not exists (select 1 from public.migrations where id = 'h4_to_h32') then
+    insert into public.inventory (user_id, item_id, count, first_at)
+      select user_id, 'h32', count, first_at from public.inventory where item_id = 'h4'
+      on conflict (user_id, item_id) do update set count = public.inventory.count + excluded.count;
+    delete from public.inventory where item_id = 'h4';
+    update public.profiles p set equip = (
+        select jsonb_object_agg(e.key, case when jsonb_typeof(e.value) = 'object' and e.value ->> 'hat' = 'h4'
+          then jsonb_set(e.value, '{hat}', '"h32"') else e.value end)
+        from jsonb_each(p.equip) e)
+      where p.equip::text like '%"h4"%';
+    if exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'scores' and column_name = 'gear') then
+      update public.scores set gear = regexp_replace(gear, '^h4,', 'h32,') where gear ~ '^h4,';
+    end if;
+    insert into public.migrations (id) values ('h4_to_h32');
+  end if;
+end $$;
 
 -- Progress kept with the account: each number only ever grows
 create or replace function public.save_progress(pr jsonb) returns public.profiles
