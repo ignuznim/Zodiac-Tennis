@@ -1370,6 +1370,7 @@ function ptCell(i) {
   return PT[Math.min(a, 3)];
 }
 function setupPoint() {
+  m.wait = null;
   const sc = m.sc, S = m.P[serverIdx()], rt = mates(1 - sc.server), b = m.ball;
   const right = (sc.pts[0] + sc.pts[1]) % 2 === 0, sg = (right ? 1 : -1) * S.side, R = rt[right || rt.length < 2 ? 0 : 1]; // each receiver keeps one court
   m.recv = R.i;
@@ -1554,7 +1555,7 @@ function doServe(p, q, aimX) {
 const serveQ = () => 1 - Math.abs(m.ball.vz) / 3.4; // 1 at the top of the toss, falling off either side
 function serveKey(p, aimX) {
   if (m.phase === 'serve' && m.pt > 0.45) toss(p);
-  else if (m.phase === 'toss' && m.pt > 0.12) doServe(p, serveQ(), aimX);
+  else if (m.phase === 'toss' && m.pt > 0.12) { let q = serveQ(); if (p.ctrl === 'remote') { const r = net && net.rin[p.i], h = pastAt(r && typeof r.rt === 'number' && m.t - r.rt < LAG_MAX ? r.rt : m.t - seen(p.i)); if (h && h.phase === 'toss') q = 1 - Math.abs(h.ball.vz) / 3.4; } doServe(p, q, aimX); } // a friend serves by the toss they saw
 }
 function ballStep(dt) {
   const b = m.ball, g = tune.gravity;
@@ -1579,14 +1580,14 @@ function ballStep(dt) {
         if (b.kind === 'serve') ok = ok && Math.abs(b.y) <= SVC + 0.05 && b.x * m.boxX >= -0.05;
         m.mark = { x: b.x, y: b.y, ok };
         if (!ok) { if (b.kind === 'serve') fault('폴트'); else endPoint(1 - b.last, '아웃'); }
-      } else endPoint(b.last, b.kind === 'serve' ? '에이스' : '위너');
+      } else settle(b.last, b.kind === 'serve' ? '에이스' : '위너');
     }
     const B = bounceOf(b); m.land = null;
     b.vz = -b.vz * B.rest; b.vx *= B.pace; b.vy *= B.pace;
     if (b.vz < 0.7) { b.vz = 0; if (b.bounces > 4) b.fly = false; }
     fx('bounce');
   }
-  if (b.live && (Math.abs(b.y) > 21 || Math.abs(b.x) > 12)) endPoint(b.bounces ? b.last : 1 - b.last, b.bounces ? (b.kind === 'serve' ? '에이스' : '위너') : '아웃');
+  if (b.live && (Math.abs(b.y) > 21 || Math.abs(b.x) > 12)) { if (b.bounces) settle(b.last, b.kind === 'serve' ? '에이스' : '위너'); else endPoint(1 - b.last, '아웃'); }
   if (Math.abs(b.y) > 26 || Math.abs(b.x) > 16) b.fly = false;
 }
 function predict(p) { // where the computer should stand to meet the ball
@@ -1677,7 +1678,7 @@ function updatePlayer(p, inp, dt) {
       if (sw) {
         sw.t += dt;
         if (sw.mode === 'tap') {
-          if (!tryHit(p, sw.kind, null, 0, inp.dx, inp.dy) && sw.t > (m.online ? tune.tap_window : tune['ai' + m.level + '_window'])) {
+          if (!tryHit(p, sw.kind, null, 0, inp.dx, inp.dy) && !hitAsSeen(p, sw.kind, 0, inp.dx, inp.dy) && sw.t > (m.online ? tune.tap_window : tune['ai' + m.level + '_window'])) {
             if (sw.kind === 'stroke' && inp.a) { sw.mode = 'charge'; setAnim(p, 'charge'); }
             else { p.sw = null; p.cool = 0.2; setAnim(p, 'hit'); fx('whiff'); }
           }
@@ -1686,7 +1687,7 @@ function updatePlayer(p, inp, dt) {
           sw.tick += dt; if (sw.tick > 0.12) { sw.tick = 0; fx('charge', sw.charge); }
           p.hand = m.ball.x >= p.x ? 1 : -1;
           if (!inp.a) { sw.mode = 'release'; sw.t = 0; setAnim(p, 'swing'); }
-        } else if (!tryHit(p, 'stroke', null, sw.charge, inp.dx, inp.dy) && sw.t > tune.release_window) { p.sw = null; p.cool = 0.25; setAnim(p, 'hit'); fx('whiff'); }
+        } else if (!tryHit(p, 'stroke', null, sw.charge, inp.dx, inp.dy) && !hitAsSeen(p, 'stroke', sw.charge, inp.dx, inp.dy) && sw.t > tune.release_window) { p.sw = null; p.cool = 0.25; setAnim(p, 'hit'); fx('whiff'); }
       }
     } else p.sw = null;
   }
@@ -1697,8 +1698,31 @@ function localInput(v) { // screen directions turned into court directions for t
   if (Math.abs(stick.x) > 0.3) sx += stick.x; if (Math.abs(stick.y) > 0.3) sy += stick.y; // the joystick, past its dead zone
   return { dx: v ? -sx : sx, dy: v ? -sy : sy, a: anyDown(...K_A), k: anyDown(...K_K), l: anyDown(...K_LOB), s: anyDown(...K_S) };
 }
+const LAG_MAX = 0.45; // how far back the host will look for a friend's hit, in seconds
+function remember() { // online, the host keeps the last moments: where the ball and everyone stood, to judge a friend's swing by what that friend saw
+  if (!net || net.role !== 'host' || !m || !m.online) return; const H = net.hist || (net.hist = []);
+  H.push({ t: m.t, phase: m.phase, pt: m.pt, recv: m.recv, ball: Object.assign({}, m.ball), P: m.P.map(p => [p.x, p.y]) }); while (H.length && H[0].t < m.t - LAG_MAX - 0.05) H.shift();
+}
+function seen(i) { const g = net && net.guests && net.guests.find(g => g.seat === i); return g && g.lag != null ? clamp(g.lag, 0, LAG_MAX) : 0; } // how far behind this friend's screen is
+function pastAt(t) { const H = net && net.hist; if (!H || !H.length) return null; let best = H[0]; for (const h of H) if (Math.abs(h.t - t) < Math.abs(best.t - t)) best = h; return best; }
+function settle(w, call) { // a ball that got past: online, a friend on the losing side may already have swung at it on their screen, so wait as long as their screen runs behind
+  const lag = m.online && net && net.role === 'host' ? Math.max(0, ...mates(1 - w).filter(p => p.ctrl === 'remote').map(p => seen(p.i))) : 0;
+  if (lag < 0.02) { endPoint(w, call); return; }
+  if (!m.wait) m.wait = { w, call, at: m.t + lag + 0.03 };
+}
+function hitAsSeen(p, kind, charge, aimX, aimDy) { // a friend's swing that missed the ball here: was the ball in reach on their screen? then they hit it there, and the ball moves on from that moment
+  if (p.ctrl !== 'remote' || m.phase !== 'rally') return false; const lag = seen(p.i); if (lag < 0.02) return false;
+  const h = pastAt(m.t - lag); if (!h || h.phase !== 'rally') return false;
+  const keepB = Object.assign({}, m.ball), keepP = [p.x, p.y], keepRecv = m.recv; Object.assign(m.ball, h.ball); m.recv = h.recv; [p.x, p.y] = h.P[p.i];
+  if (!canHit(p)) { Object.assign(m.ball, keepB); m.recv = keepRecv; [p.x, p.y] = keepP; return false; }
+  const ok = tryHit(p, kind, null, charge, aimX, aimDy); [p.x, p.y] = keepP; if (ok) m.wait = null; // returned after all
+  if (!ok) { Object.assign(m.ball, keepB); m.recv = keepRecv; return false; }
+  for (let t = 0; t < m.t - h.t && m.phase === 'rally'; t += STEP) ballStep(STEP); // the ball has been flying since then
+  return true;
+}
 function simulate(dt) {
-  m.t += dt; m.pt += dt;
+  m.t += dt; m.pt += dt; remember();
+  if (m.wait && m.t >= m.wait.at && m.phase === 'rally') { const W = m.wait; m.wait = null; endPoint(W.w, W.call); }
   for (const p of m.P) {
     const inp = p.ctrl === 'ai' ? aiThink(p, dt) : p.ctrl === 'remote' ? (net && net.rin[p.i]) || NOINPUT : p.ctrl === 'machine' ? NOINPUT : localInput(0);
     updatePlayer(p, inp, dt);
@@ -2125,7 +2149,7 @@ function onHostData(d, g) {
   if (!net) return;
   if (d.t === 'join') { g.nick = String(d.nick || '손님').slice(0, 10); g.a = clamp(d.a | 0, 0, 11); sayRoom(); tone(880, 0.12, 'triangle', 0.25); if (net.quick && !net.quick.fillAt) net.quick.fillAt = clock.now() + 20; }
   else if (d.t === 'pick' && g.seat != null) { net.picks[g.seat] = { a: clamp(d.animal | 0, 0, 11), gear: d.gear && typeof d.gear === 'object' ? d.gear : {}, ctrl: 'remote', nick: g.nick && g.nick !== '손님' ? g.nick : null }; sendReady(); onlineStart(); }
-  else if (d.t === 'i' && g.seat != null) net.rin[g.seat] = d;
+  else if (d.t === 'i' && g.seat != null) { net.rin[g.seat] = d; if (typeof d.rt === 'number' && m) { const l = m.t - d.rt; if (l > -0.05 && l < 1) g.lag = g.lag == null ? l : g.lag + (l - g.lag) * 0.2; } } // how far behind their screen runs
   else if (d.t === 'stay') { g.stay = true; sayRoom(); }
   else if (d.t === 'emo' && g.seat != null && m && m.online) pushEmote(g.seat, d.e);
 }
@@ -2150,7 +2174,8 @@ function onGuestData(d) {
   else if (d.t === 's') { // every picture is kept a moment, with where things stood in it, so the screen can play them back evenly
     const M = d.m, B = net.buf || (net.buf = []); if (!M || !M.P || !M.P[view]) return; // a late picture of the last match, with fewer players than this one
     if (B.length && M.t < B[B.length - 1].t - 1) B.length = 0; // time went back a long way: a new match started
-    const e = { t: M.t, m: M, b: [M.ball.x, M.ball.y, M.ball.z], P: M.P.map(p => [p.x, p.y]) };
+    const e = { t: M.t, m: M, b: [M.ball.x, M.ball.y, M.ball.z], P: M.P.map(p => [p.x, p.y]) }, now = clock.now(), off = now - M.t; // how late this one came, against the earliest lately
+    net.off = net.off == null || off < net.off ? off : net.off + 0.002; net.jit = Math.max((net.jit || 0) * 0.98, off - net.off); NET_DELAY = clamp(net.jit + 0.02, 0.03, 0.1);
     let k = B.length; while (k > 0 && B[k - 1].t > e.t) k--; // a picture that came a little late goes in its place
     if (!(k > 0 && B[k - 1].t === e.t)) B.splice(k, 0, e); if (B.length > 30) B.shift();
     net.snap = B[B.length - 1].m; if (net.starting) { net.starting = false; scene = 'play'; } }
@@ -2172,8 +2197,8 @@ function onlineStart() {
 }
 function onlineAgain() { if (!net) return; net.picks = {}; net.ready = null; net.myPick = null; net.locked = false; net.kind = null; for (const g of net.guests) { g.seat = null; g.stay = false; } sendAll({ t: 'again' }); scene = 'lobby'; } // a rematch: the host goes back to the room and each friend decides
 function netLost() { if (!net || net.status === 'error') return; net.status = 'lost'; net.msg = '방장과의 연결이 끊겼어요 · Esc : 처음으로'; } // a full room has already said why: keep its message
-function netSend() { if (net && net.role === 'host' && m) sendAll({ t: 's', m }); }
-const NET_DELAY = 0.1; // the guest plays the host's pictures a tenth of a second behind, so an uneven arrival never shows
+function netSend() { if (net && net.role === 'host' && m && (net.sent = (net.sent || 0) + 1) % 2 === 0) sendAll({ t: 's', m }); } // 30 pictures a second: half the data, the guest fills between them
+let NET_DELAY = 0.1; // the guest plays the host's pictures a little behind, so an uneven arrival never shows: 0.03 to 0.1 s, as steady as the line is
 function netPlayback() {
   const B = net.buf; if (!B || !B.length) return null;
   const last = B[B.length - 1], now = clock.now();
@@ -2191,7 +2216,7 @@ function netPlayback() {
 function guestStep() { // the guest draws what the host sends and sends its own keys back
   if (net.snap) { m = state.m = netPlayback() || net.snap; for (const p of m.P) if (p.team == null) p.team = p.i; }
   const i = localInput(view % 2), s = JSON.stringify(i); net.tick++;
-  if (net.conn && net.conn.open && (s !== net.lastSent || net.tick % 6 === 0)) { net.lastSent = s; net.conn.send(Object.assign({ t: 'i' }, i)); }
+  if (net.conn && net.conn.open && (s !== net.lastSent || net.tick % 6 === 0)) { net.lastSent = s; net.conn.send(Object.assign({ t: 'i', rt: net.rt }, i)); }
 }
 
 // ---- Scenes: the menus are laid out in a 720 x 900 box, centred in whatever height the window gives ----
