@@ -1824,6 +1824,9 @@ function topIcon(kind, x, y) { // the little pictures on the round buttons at th
   ctx.save(); ctx.translate(x, y); ctx.lineWidth = 2.2; ctx.strokeStyle = OUT; ctx.lineJoin = 'round';
   if (kind === 'megaphone') { ctx.rotate(-0.25); poly([-9, -5, 4, -12, 4, 12, -9, 5], '#ff8a7a'); rr(-13, -5, 5, 10, 1.5, '#ffd34d', OUT, 2); E(4, 0, 3, 12, '#ff6f61'); rr(-8, 5, 4, 8, 1.5, '#ffd34d', OUT, 1.8); ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(10, -7); ctx.lineTo(14, -10); ctx.moveTo(11, 0); ctx.lineTo(16, 0); ctx.moveTo(10, 7); ctx.lineTo(14, 10); ctx.stroke(); }
   else if (kind === 'letter') { rr(-13, -9, 26, 18, 3, '#ffffff', OUT, 2.2); ctx.beginPath(); ctx.moveTo(-12, -8); ctx.lineTo(0, 2); ctx.lineTo(12, -8); ctx.stroke(); ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(-12, 8); ctx.lineTo(-4, -1); ctx.moveTo(12, 8); ctx.lineTo(4, -1); ctx.stroke(); E(0, 2, 3, 3, '#e2574c'); }
+  else if (kind === 'pencil') { rr(-14, -12, 24, 18, 6, '#ffffff', OUT, 2.2); poly([-8, 5.5, -10, 12, -3, 5.5], '#ffffff'); ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(-9, -5); ctx.lineTo(4, -5); ctx.moveTo(-9, 0); ctx.lineTo(0, 0); ctx.stroke(); ctx.save(); ctx.translate(9, 4); ctx.rotate(0.75); ctx.lineWidth = 1.8; rr(-2.6, -12, 5.2, 16, 1, '#ffd34d', OUT, 1.8); poly([-2.6, 4, 0, 9, 2.6, 4], '#f2c9a4'); rr(-2.6, -14, 5.2, 3, 1, '#f48aa4', OUT, 1.4); ctx.restore(); }
+  else if (kind === 'postbox') { rr(-8, -12, 16, 18, 8, '#e2574c', OUT, 2.2); rr(-5, -6, 10, 2.6, 1, '#3b3340', null); rr(-1.6, 6, 3.2, 8, 1, '#8a5a3a', OUT, 1.6); rr(-10, 12, 20, 3, 1.5, '#9aa3ad', OUT, 1.4); E(0, -2, 1, 1, '#fff3c4', 0, true); }
+  else if (kind === 'bulb') { E(0, -3, 9, 9, '#ffe45c'); rr(-4.5, 5, 9, 6, 2, '#c9ccd6', OUT, 1.8); ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(-2.5, 3); ctx.lineTo(-1, -3); ctx.lineTo(1, -3); ctx.lineTo(2.5, 3); ctx.stroke(); ctx.lineWidth = 1.8; ctx.lineCap = 'round'; ctx.beginPath(); for (const [a, b] of [[-15, -8], [15, -8], [-13, -16], [13, -16], [0, -18]]) { ctx.moveTo(a * 0.8, b * 0.8 - 1); ctx.lineTo(a, b - 1); } ctx.stroke(); }
   else if (kind === 'talk') { E(-5, 2, 9, 9, '#f6c445'); E(-8, 0, 1.4, 1.6, OUT, 0, true); E(-2.5, 0, 1.4, 1.6, OUT, 0, true); ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(-5, 3, 3.6, 0.2, Math.PI - 0.2); ctx.stroke(); ctx.lineWidth = 2; rr(2, -14, 14, 10, 4, '#ffffff', OUT, 2); poly([5, -4.5, 4, 0, 9, -4.5], '#ffffff'); ctx.fillStyle = OUT; for (const dx of [5.5, 9, 12.5]) { ctx.beginPath(); ctx.arc(dx, -9, 1, 0, 7); ctx.fill(); } }
   ctx.restore();
 }
@@ -3464,14 +3467,14 @@ const scenes = {
     draw() {
       menuBegin();
       const rows = [['이동', '방향키 ← → ↑ ↓'], ['스트로크', 'Q  (꾹 눌렀다 놓으면 파워샷)'], ['슬라이스 · 로브 · 스매시', 'W  ·  E  ·  R'], ['일시정지 · 소리 · 낙하지점', 'P  ·  M  ·  G']];
-      const keys = !touchUI, P = LY.tall ? 30 : 22, step = LY.tall ? 44 : 38, ph = keys ? P * 2 + step * 6 : 0, pt = contentEnd() - ph - (room ? 0 : 8); // the keys only on a computer: a phone has its stick and buttons
+      const keys = true, P = LY.tall ? 30 : 22, step = LY.tall ? 44 : 38, ph = keys ? P * 2 + step * 6 : 0, pt = contentEnd() - ph - (room ? 0 : 8); // the keys only on a computer: a phone has its stick and buttons
       if (LY.tall) { const r0 = LY.sb + 20, free = Math.max(0, pt - 16 - r0 - 330); drawTitleShow(state.t, r0 + 70 + free * 0.3, pt - 22 - free * 0.25); }
       else drawTitleShow(state.t, 136, Math.min(412, pt - 30));
       if (keys) { panel(LY.m, pt, LY.w, ph);
       const ly = k => pt + P + step * (k + 0.5);
       text('조작 방법', W / 2, ly(0), 26, INK, 'center', null, F_T);
       rows.forEach((c, i) => { text(c[0], 334, ly(i + 1), 21, '#7a6872', 'right', null, F_B); text(c[1], 352, ly(i + 1), 22, INK, 'left', null, F_B); });
-      text('버튼은 마우스로 눌러도 돼요', W / 2, ly(5), 23, '#3d9be0', 'center', null, F_H); }
+      text(touchUI ? '모바일에서는 조이스틱과 버튼으로 해요' : '버튼은 마우스로 눌러도 돼요', W / 2, ly(5), 23, '#3d9be0', 'center', null, F_H); }
       if (room) wideBtn('초대받은 방에 들어가기', () => joinRoom(room));
       else { // one row: three small picture buttons, then the two ways to start, solo the biggest
         const sq = 84, sh = 84, y = LY.bot - 8, sx = LY.m + (sq + 12) * 3, rest = LY.m + LY.w - sx, bw2 = Math.round((rest - 12) * 0.62);
@@ -3484,13 +3487,13 @@ const scenes = {
       { const P = acct.prof, t = acct.user ? (P && P.nickname ? P.nickname : '로그인됨') : '로그인', cw = Math.max(132, t.length * 17 + 44), cx = W - LY.m - cw, cy = 14;
         const over = btn(cx, cy, cw, 50, () => { scene = 'account'; });
         rr(cx, cy, cw, 50, 25, over ? '#fff3c4' : 'rgba(255,248,231,0.95)', OUT, 2.6); text(t, cx + cw / 2, cy + 26, 21, acct.user ? INK : '#3d8be0', 'center', null, F_T);
-        const round = (x, kind, fn, dot) => { const o = btn(x, cy, 50, 50, fn); E(x + 25, cy + 25, 25, 25, o ? '#fff3c4' : 'rgba(255,248,231,0.95)'); ctx.save(); ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; ctx.beginPath(); ctx.arc(x + 25, cy + 25, 24, 0, 7); ctx.stroke(); ctx.restore(); topIcon(kind, x + 25, cy + 25); if (dot) E(x + 43, cy + 6, 7, 7, '#e2574c'); }; // a round picture button
-        round(cx - 12 - 50, FB_ICON, openFeedback); round(cx - 24 - 100, 'megaphone', openNotices, noticeUnread());
+        const ry = cy + 50 + 10, round = (x, kind, fn, dot) => { const o = btn(x, ry, 50, 50, fn); rr(x, ry, 50, 50, 25, o ? '#fff3c4' : 'rgba(255,248,231,0.95)', OUT, 2.6); topIcon(kind, x + 25, ry + 25); if (dot) { ctx.lineWidth = 2; E(x + 43, ry + 6, 7, 7, '#e2574c'); } }; // round picture buttons under my name, edged like it
+        round(W - LY.m - 50, FB_ICON, openFeedback); round(W - LY.m - 50 - 12 - 50, 'megaphone', openNotices, noticeUnread());
         if (lobbyNet.online) { const s = `${lobbyNet.online}명 접속`, ow = Math.ceil(textW(s, 20, F_T)) + 46, ox = LY.m, o2 = btn(ox, cy, ow, 50, () => { scene = 'online'; }); // who is around, top left: a tap goes online
           rr(ox, cy, ow, 50, 25, o2 ? '#e6f7ea' : 'rgba(236,250,240,0.95)', '#3f9a5c', 2.6); ctx.lineWidth = 1.6; ctx.strokeStyle = OUT; E(ox + 19, cy + 25, 6, 6, '#4fc37a'); text(s, ox + 32, cy + 26, 20, '#2f7a48', 'left', null, F_T); } }
       if (acct.msg && acct.msgT < 2.6) { notify(acct.msg); acct.msg = ''; } // a message from the account (signing in, out) shows at the top too
       text(`v${APP_VERSION} · © 2026 IGNUZNIM. All rights reserved.`, W / 2, LY.copy, 16, 'rgba(59,51,64,0.6)', 'center', null, F_B);
-      menuEnd(touchUI ? '' : 'Enter 를 눌러도 시작해요');
+      menuEnd('Enter 를 눌러도 시작해요');
     },
   },
   ranking: {
