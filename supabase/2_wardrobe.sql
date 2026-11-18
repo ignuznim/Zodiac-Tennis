@@ -165,7 +165,7 @@ insert into public.items (id, slot, grade, stat, amount, name) values
   ('s25', 'shoes', 0, 'speed', 0.1, '주황 캔버스화'),
   ('s26', 'shoes', 0, 'stamina', 0.1, '남색 테니스화'),
   ('s27', 'shoes', 0, 'reflex', 0.1, '연두 찍찍이 운동화'),
-  ('s28', 'shoes', 0, 'spin', 0.1, '보라 어글리 슈즈'),
+  ('s28', 'shoes', 0, 'spin', 0.1, '보라 캔버스화'),
   ('s29', 'shoes', 0, 'power', 0.1, '회색 슬립온'),
   ('s30', 'shoes', 0, 'speed', 0.1, '민트 하이탑'),
   ('s31', 'shoes', 0, 'reflex', 0.1, '흙 묻은 운동화'),
