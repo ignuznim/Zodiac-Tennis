@@ -1819,7 +1819,7 @@ function drawScoreboard() { // one row a side: sets won, a cell for each of the 
     rr(px, y - 16, 54, 32, 8, BALL, OUT, 2.2); text(ptCell(i), px + 27, y + 1, 23, '#3b2f38', 'center', null, F_N);
   }
 }
-let FB_ICON = 'letter'; // what the feedback button shows: a letter, or a face that speaks
+let FB_ICON = 'pencil'; // what the feedback button shows: a letter, or a face that speaks
 function topIcon(kind, x, y) { // the little pictures on the round buttons at the top of home
   ctx.save(); ctx.translate(x, y); ctx.lineWidth = 2.2; ctx.strokeStyle = OUT; ctx.lineJoin = 'round';
   if (kind === 'megaphone') { ctx.rotate(-0.25); poly([-9, -5, 4, -12, 4, 12, -9, 5], '#ff8a7a'); rr(-13, -5, 5, 10, 1.5, '#ffd34d', OUT, 2); E(4, 0, 3, 12, '#ff6f61'); rr(-8, 5, 4, 8, 1.5, '#ffd34d', OUT, 1.8); ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(10, -7); ctx.lineTo(14, -10); ctx.moveTo(11, 0); ctx.lineTo(16, 0); ctx.moveTo(10, 7); ctx.lineTo(14, 10); ctx.stroke(); }
