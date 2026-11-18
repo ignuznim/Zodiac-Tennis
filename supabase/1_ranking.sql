@@ -53,10 +53,9 @@ begin
   if exists (select 1 from public.scores s where s.client_id = new.client_id and s.created_at > now() - interval '20 seconds') then
     raise exception 'slow down';
   end if;
-  new.score := (case new.level when 1 then 100 when 2 then 250 else 500 end)
-             + greatest(0, new.pts_for - new.pts_against) * 10
-             + new.sweet * 2
-             + new.combo * 2;
+  -- what the match held (a win, the margin, the perfect hits and the chains), times the level: easy x1, normal x1.35, hard x1.8
+  new.score := round((300 + greatest(0, new.pts_for - new.pts_against) * 30 + new.sweet * 6 + new.combo * 6)
+             * (case new.level when 1 then 100 when 2 then 135 else 180 end) / 100.0);
   return new;
 end $$;
 drop trigger if exists scores_check on public.scores;
@@ -82,9 +81,9 @@ delete from public.scores a using public.scores b
    and a.duration_s = b.duration_s and a.pts_for = b.pts_for and a.pts_against = b.pts_against;
 create unique index if not exists scores_one_per_match on public.scores (client_id, mode, score, duration_s, pts_for, pts_against);
 
--- The score for every record, worked out again by today's sum (easy 100, normal 250, hard 500 since 2026-11-18).
+-- The score for every record, worked out again by today's sum (since 2026-11-18: (300 + margin x30 + perfect hits x6 + chain x6) x level).
 -- Running this again changes nothing: a record already on today's sum keeps its score.
-update public.scores set score = (case level when 1 then 100 when 2 then 250 else 500 end)
-    + greatest(0, pts_for - pts_against) * 10 + sweet * 2 + combo * 2
-  where score is distinct from (case level when 1 then 100 when 2 then 250 else 500 end)
-    + greatest(0, pts_for - pts_against) * 10 + sweet * 2 + combo * 2;
+update public.scores set score = round((300 + greatest(0, pts_for - pts_against) * 30 + sweet * 6 + combo * 6)
+    * (case level when 1 then 100 when 2 then 135 else 180 end) / 100.0)
+  where score is distinct from round((300 + greatest(0, pts_for - pts_against) * 30 + sweet * 6 + combo * 6)
+    * (case level when 1 then 100 when 2 then 135 else 180 end) / 100.0);
