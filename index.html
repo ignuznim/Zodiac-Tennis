@@ -392,8 +392,8 @@ function hat2(L, front) {
       ctx.lineWidth = 2.4; roll(); ctx.fillStyle = c; ctx.fill(); ctx.save(); roll(); ctx.clip(); ctx.strokeStyle = 'rgba(150,155,170,0.55)'; ctx.lineWidth = 1.3; for (const y of [-7, -2.5, 2, 6.5]) { ctx.beginPath(); ctx.moveTo(-12, y); ctx.quadraticCurveTo(0, y + 2.5, 12, y); ctx.stroke(); } shade(0, 0, 11, 12.5); ctx.restore(); roll(); ctx.stroke(); ctx.restore(); }
     ctx.lineWidth = 2.4; ctx.strokeStyle = OUT; return true; }
   if (k === 'diver' || k === 'goggle' || k === 'aviator') { // goggles: the diver's round glass, white-rimmed glasses on the eyes, a pilot's helmet
-    if (k === 'aviator') { ctx.beginPath(); ctx.arc(0, -82, 28, Math.PI, 0); ctx.closePath(); ctx.fillStyle = c; ctx.fill(); ctx.save(); ctx.clip(); glossBox(-28, -110, 56, 28, 0.35); ctx.restore(); ctx.stroke();
-      for (const sd of [-1, 1]) E(sd * 25, -72, 7, 12, tint(c, '#3b3340', 0.12)); ctx.lineWidth = 1.3; ctx.strokeStyle = 'rgba(74,61,71,0.45)'; ctx.beginPath(); ctx.moveTo(0, -109); ctx.lineTo(0, -84); ctx.stroke(); ctx.lineWidth = 2.4; ctx.strokeStyle = OUT; }
+    if (k === 'aviator') { const hood = () => { ctx.beginPath(); ctx.moveTo(-31, -66); ctx.bezierCurveTo(-34, -96, -18, -111, 0, -111); ctx.bezierCurveTo(18, -111, 34, -96, 31, -66); ctx.quadraticCurveTo(31, -60, 26, -60); ctx.quadraticCurveTo(20, -60, 20, -67); if (front) { ctx.quadraticCurveTo(21, -78, 18, -84); ctx.quadraticCurveTo(0, -90, -18, -84); ctx.quadraticCurveTo(-21, -78, -20, -67); } else ctx.quadraticCurveTo(0, -56, -20, -67); ctx.quadraticCurveTo(-20, -60, -26, -60); ctx.quadraticCurveTo(-31, -60, -31, -66); ctx.closePath(); };
+      hood(); ctx.fillStyle = c; ctx.fill(); ctx.save(); hood(); ctx.clip(); glossBox(-32, -111, 64, 52, 0.35); ctx.restore(); hood(); ctx.stroke(); ctx.lineWidth = 1.3; ctx.strokeStyle = 'rgba(74,61,71,0.45)'; ctx.beginPath(); ctx.moveTo(0, -109); ctx.lineTo(0, -84); ctx.stroke(); ctx.lineWidth = 2.4; ctx.strokeStyle = OUT; }
     if (k === 'goggle') { if (front) { for (const sd of [-1, 1]) { rr(sd * 11 - 8.5, -80.5, 17, 13, 5, 'rgba(200,232,255,0.35)', OUT, 2.2); rr(sd * 11 - 7.2, -79.2, 14.4, 10.4, 4, null, c, 2.6); ctx.lineWidth = 2.2; ctx.strokeStyle = OUT; ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.fillRect(sd * 11 - 4, -77, 2, 5); }
         ctx.lineWidth = 2.6; ctx.beginPath(); ctx.moveTo(-3, -75); ctx.quadraticCurveTo(0, -78, 3, -75); ctx.stroke(); ctx.lineWidth = 1.8; ctx.strokeStyle = c; ctx.stroke(); }
       else { ctx.lineWidth = 3.6; ctx.beginPath(); ctx.moveTo(-25, -76); ctx.quadraticCurveTo(0, -72, 25, -76); ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = c; ctx.stroke(); } ctx.lineWidth = 2.4; ctx.strokeStyle = OUT; return true; }
@@ -601,7 +601,7 @@ function foot2(L, fx, ff, skin) { // the new kinds drawn whole; false for the sn
     p(); ctx.fillStyle = L.c; ctx.fill(); ctx.save(); p(); ctx.clip(); ctx.strokeStyle = '#bfe6ff'; ctx.lineWidth = 1.1; ctx.beginPath(); for (const d of [-5, -2.5, 2.5, 5]) { ctx.moveTo(fx + d, ff - 2); ctx.lineTo(fx + d * 1.3, ff + 8); } ctx.stroke(); ctx.restore(); ctx.lineWidth = 2.4; ctx.strokeStyle = OUT; p(); ctx.stroke(); rr(fx - 9.5, ff + 5.5, 19, 2.5, 1.2, '#ffffff', OUT, 1.4); ctx.lineWidth = 2.6; return true; }
   if (k === 'ruby' || k === 'glass') { // a pump: the foot shows through glass, the red one glitters, a bow on top
     if (k === 'glass') { E(fx, ff - 1, 8, 6, skin); shade(fx, ff - 1, 8, 6); }
-    const p = () => { ctx.beginPath(); ctx.moveTo(fx - 9.5, ff); ctx.quadraticCurveTo(fx - 9.5, ff + 7.5, fx, ff + 7.5); ctx.quadraticCurveTo(fx + 9.5, ff + 7.5, fx + 9.5, ff); ctx.quadraticCurveTo(fx, ff - 3, fx - 9.5, ff); ctx.closePath(); };
+    const p = () => { ctx.beginPath(); ctx.moveTo(fx - 8.5, ff); ctx.quadraticCurveTo(fx - 7, ff + 8.5, fx, ff + 9); ctx.quadraticCurveTo(fx + 7, ff + 8.5, fx + 8.5, ff); ctx.quadraticCurveTo(fx, ff - 3, fx - 8.5, ff); ctx.closePath(); };
     p(); ctx.fillStyle = k === 'glass' ? 'rgba(200,236,255,0.55)' : L.c; ctx.fill(); ctx.save(); p(); ctx.clip(); if (k === 'ruby') for (let i = 0; i < 9; i++) E(fx - 7 + (i * 5.3) % 14, ff + 1 + (i * 3.7) % 5.5, 0.9, 0.9, '#ffb3bd', 0, true); ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.fillRect(fx - 6, ff + 1, 2, 4); ctx.restore(); p(); ctx.stroke();
     if (k === 'ruby') { ctx.lineWidth = 1.4; E(fx - 2.6, ff, 2.6, 1.8, '#b81d33', -0.4); E(fx + 2.6, ff, 2.6, 1.8, '#b81d33', 0.4); E(fx, ff, 1.4, 1.4, '#b81d33'); } else { star(fx + 5, ff - 4, 2.6, '#ffffff'); star(fx - 7, ff + 2, 1.8, '#ffffff'); }
     ctx.lineWidth = 2.6; return true; }
@@ -653,11 +653,11 @@ function shoeIcon2(L) { // the new kinds from the side; false for the sneakers
   if (k === 'ruby' || k === 'glass') { // a round-toed pump: the heel lifted on a slim tapered heel, the sole sloping down to the toe, a strap over the instep
     const glass = k === 'glass', body = glass ? 'rgba(200,236,255,0.6)' : L.c, dk = glass ? '#e6f6ff' : '#5d1020';
     poly([-25, 2, -16, 4, -18, 17, -21.5, 17], glass ? 'rgba(200,236,255,0.8)' : '#8a1a2a'); rr(-23, 15.5, 6.5, 3, 1.2, dk, OUT, 1.4);
-    const p = () => { ctx.beginPath(); ctx.moveTo(-26, -9); ctx.quadraticCurveTo(-22, -4, -16, -3); ctx.quadraticCurveTo(-2, -1, 10, -3); ctx.bezierCurveTo(20, -7, 30, -2, 29, 8); ctx.quadraticCurveTo(28, 15, 20, 15); ctx.quadraticCurveTo(0, 14, -14, 6); ctx.quadraticCurveTo(-22, 3, -26, 3); ctx.closePath(); };
+    const p = () => { ctx.beginPath(); ctx.moveTo(-26, -9); ctx.quadraticCurveTo(-22, -4, -16, -3); ctx.quadraticCurveTo(-2, -1, 10, -1); ctx.bezierCurveTo(22, 0, 31, 7, 32, 12); ctx.quadraticCurveTo(31, 15.5, 22, 15.5); ctx.quadraticCurveTo(0, 14, -14, 6); ctx.quadraticCurveTo(-22, 3, -26, 3); ctx.closePath(); };
     fillPath(p, body, -10, 16, glass ? null : () => { for (let i = 0; i < 9; i++) E(-18 + (i * 9.3) % 44, 0 + (i * 4.3) % 10, 1, 1, '#ffc2ca', 0, true); });
-    ctx.lineWidth = 3.2; ctx.strokeStyle = OUT; ctx.beginPath(); ctx.moveTo(-26, 4.5); ctx.quadraticCurveTo(-22, 4.5, -14, 7.5); ctx.quadraticCurveTo(0, 15.5, 20, 16.5); ctx.stroke(); ctx.lineWidth = 1.6; ctx.strokeStyle = dk; ctx.stroke(); ctx.strokeStyle = OUT;
+    ctx.lineWidth = 3.2; ctx.strokeStyle = OUT; ctx.beginPath(); ctx.moveTo(-26, 4.5); ctx.quadraticCurveTo(-22, 4.5, -14, 7.5); ctx.quadraticCurveTo(0, 15.5, 24, 16.5); ctx.stroke(); ctx.lineWidth = 1.6; ctx.strokeStyle = dk; ctx.stroke(); ctx.strokeStyle = OUT;
     ctx.lineWidth = 5.4; ctx.beginPath(); ctx.moveTo(-10, -1); ctx.quadraticCurveTo(-4, -7, 2, -2); ctx.stroke(); ctx.lineWidth = 3; ctx.strokeStyle = glass ? '#e6f6ff' : '#b81d33'; ctx.stroke(); ctx.strokeStyle = OUT; E(-4, -4.5, 1.8, 1.8, glass ? '#ffffff' : '#f6c445');
-    if (!glass) { ctx.lineWidth = 1.6; E(15, -3, 3.4, 2.2, '#b81d33', -0.5); E(20, -2, 3.4, 2.2, '#b81d33', 0.5); E(17.5, -2.5, 1.6, 1.6, '#b81d33'); } else { star(14, 2, 5, '#ffffff'); star(-14, -10, 3, '#ffffff'); star(25, 9, 2.4, '#ffffff'); }
+    if (!glass) { ctx.lineWidth = 1.6; E(15, 0, 3.2, 2, '#b81d33', -0.4); E(20, 1.5, 3.2, 2, '#b81d33', 0.6); E(17.5, 0.8, 1.5, 1.5, '#b81d33'); } else { star(14, 4, 5, '#ffffff'); star(-14, -10, 3, '#ffffff'); star(26, 11, 2.2, '#ffffff'); }
     return true; }
   if (k === 'frog' || k === 'fur') { const p = () => { ctx.beginPath(); ctx.moveTo(-23, 12); ctx.lineTo(-22, -26); ctx.lineTo(-3, -26); ctx.lineTo(-2, -8); ctx.quadraticCurveTo(4, -1, 20, 1); ctx.quadraticCurveTo(28, 3, 27, 12); ctx.closePath(); };
     fillPath(p, L.c, -28, 14, () => { ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.fillRect(-18, -20, 3.5, 28); }); rr(-25, 10, 54, 6, 3, k === 'fur' ? '#8a5a3a' : '#3f8a3a', OUT, 2.2);
@@ -736,6 +736,11 @@ function racket2(L, col) { // things swung like a racket; true when drawn
     band(); ctx.fillStyle = c; ctx.fill(); ctx.save(); band(); ctx.clip(); ctx.lineWidth = 0.8; ctx.strokeStyle = 'rgba(120,90,60,0.4)'; ctx.beginPath(); for (let i = 1; i < 14; i++) { const a = a0 + (a1 - a0) * i / 14, [x0, y0] = P(a, r0), [x1, y1] = P(a, R); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); } ctx.stroke();
     ctx.lineWidth = 1.6; ctx.strokeStyle = '#5d4037'; ctx.beginPath(); ctx.moveTo(-22, -22); ctx.quadraticCurveTo(-10, -30, 2, -30); ctx.quadraticCurveTo(10, -32, 16, -30); ctx.stroke(); for (const [x, y] of [[-14, -27], [-2, -31], [9, -32], [16, -30], [-7, -30]]) flower5(x, y, 1.5, '#f48aa4'); ctx.restore();
     ctx.lineWidth = 2.2; band(); ctx.stroke(); for (const a of [a0, a1]) { const [x, y] = P(a, R + 1); rod(0, cy, x, y, 2.6, '#6b4a3a'); } ctx.lineWidth = 1.4; E(0, cy, 3, 3, '#c9ccd6'); E(0, cy, 1, 1, '#6b6070', 0, true); ctx.lineWidth = 2.4; return true; }
+  if (k === 'umbrella') { // an open umbrella swung like a racket: a scalloped canopy with ribs, a tip on top, a hooked handle
+    rod(0, -2, 0, -52, 2.4, '#5d5560'); ctx.lineWidth = 3.6; ctx.strokeStyle = OUT; ctx.beginPath(); ctx.moveTo(0, -2); ctx.lineTo(0, 4); ctx.arc(-4, 4, 4, 0, Math.PI); ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = '#8a5a3a'; ctx.stroke(); ctx.strokeStyle = OUT;
+    const can = () => { ctx.beginPath(); ctx.moveTo(-24, -30); ctx.bezierCurveTo(-24, -50, -10, -60, 0, -60); ctx.bezierCurveTo(10, -60, 24, -50, 24, -30); for (let i = 3; i >= 0; i--) { const x0 = -24 + (i + 1) * 12, x1 = x0 - 12; ctx.quadraticCurveTo((x0 + x1) / 2, -35, x1, -30); } ctx.closePath(); };
+    ctx.lineWidth = 2.4; can(); ctx.fillStyle = c; ctx.fill(); ctx.save(); can(); ctx.clip(); ctx.fillStyle = '#ffffff'; for (const [a, b] of [[-12, 0], [12, 24]]) { ctx.beginPath(); ctx.moveTo(0, -60); ctx.lineTo(a, -30); ctx.lineTo(b, -30); ctx.closePath(); ctx.fill(); } glossBox(-25, -61, 50, 32, 0.3); ctx.restore(); can(); ctx.stroke();
+    ctx.lineWidth = 1.2; ctx.beginPath(); for (const x of [-12, 0, 12]) { ctx.moveTo(0, -60); ctx.quadraticCurveTo(x * 0.9, -48, x, -31); } ctx.stroke(); rod(0, -60, 0, -66, 2, '#5d5560'); ctx.lineWidth = 2.4; return true; }
   if (k === 'odeng2') { // street-stall fish cake: one long flat sheet threaded back and forth up a long skewer in an S-wave, glistening with broth
     rod(0, 6, 0, -76, 2.2, '#e4cf9a'); const N = 4, top = -70, bot = -20, A = 15, P = [];
     for (let i = 0; i <= 64; i++) { const u = i / 64; P.push([Math.sin(u * N * Math.PI) * A, bot + (top - bot) * u]); }
@@ -2671,7 +2676,7 @@ const ITEMS = { // the same catalogue as the server's items table; look is how i
   h40: ['hat', 1, 'power', 0.2, '유건', { k: 'yugeon', c: '#2e2830' }], h41: ['hat', 1, 'speed', 0.2, '70년대 굵은 머리띠', { k: 'band70', c: '#ffffff' }],
   h42: ['hat', 1, 'power', 0.2, '황제 헤어밴드', { k: 'tieband', c: '#ffffff' }], h43: ['hat', 2, 'spin', 0.3, '상모', { k: 'sangmo', c: '#3b3340' }],
   h44: ['hat', 2, 'reflex', 0.3, '하회탈', { k: 'hahoe', c: '#d9822b' }], h45: ['hat', 2, 'speed', 0.3, '대나무 프로펠러', { k: 'copter', c: '#ffd34d' }],
-  h46: ['hat', 2, 'stamina', 0.3, '비행 고글 모자', { k: 'aviator', c: '#f6a23c' }], h47: ['hat', 2, 'spin', 0.3, '커다란 빨간 리본', { k: 'bow', c: '#e2574c' }],
+  h46: ['hat', 2, 'stamina', 0.3, '비행 고글 모자', { k: 'aviator', c: '#f5c96a' }], h47: ['hat', 2, 'spin', 0.3, '커다란 빨간 리본', { k: 'bow', c: '#e2574c' }],
   h48: ['hat', 2, 'power', 0.3, '국가대표 야구모자', { k: 'kcap', c: '#1f2a52' }], h49: ['hat', 3, 'stamina', 0.5, '신라 금관', { k: 'silla', c: '#f6c445' }],
   h50: ['hat', 3, 'power', 0.5, '우승 트로피 모자', { k: 'trophy', c: '#f6c445' }], h51: ['hat', 3, 'reflex', 0.5, '긴고아', { k: 'geumgo', c: '#f6c445' }],
   h52: ['hat', 3, 'speed', 0.5, '나뭇잎 우산', { k: 'leaf', c: '#4fae5a' }], u26: ['uniform', 0, 'power', 0.1, '빨간 티셔츠', { c: ['#f25f5c'] }],
@@ -2696,7 +2701,7 @@ const ITEMS = { // the same catalogue as the server's items table; look is how i
   s37: ['shoes', 1, 'spin', 0.2, '테니스공 신발', { k: 'ballshoe', c: '#d8ec4a' }], s38: ['shoes', 1, 'power', 0.2, '빨간 하이탑', { k: 'high', c: '#e2574c' }],
   s39: ['shoes', 1, 'stamina', 0.2, '털부츠', { k: 'fur', c: '#c9a27a' }], s40: ['shoes', 2, 'reflex', 0.3, '태사혜', { k: 'taesa', c: '#3b3340' }],
   s41: ['shoes', 2, 'spin', 0.3, '버선', { k: 'beoseon', c: '#ffffff' }], s42: ['shoes', 2, 'speed', 0.3, '빨간 반짝 구두', { k: 'ruby', c: '#d8243c' }],
-  s43: ['shoes', 2, 'power', 0.3, '스프링 신발', { k: 'spring', c: '#4fc37a' }], s44: ['shoes', 2, 'reflex', 0.3, '잔디 운동화', { k: 'turf', c: '#ffffff' }],
+  s43: ['shoes', 2, 'power', 0.3, '하얀 고무신', { k: 'gomu', c: '#ffffff' }], s44: ['shoes', 2, 'reflex', 0.3, '잔디 운동화', { k: 'turf', c: '#ffffff' }],
   s45: ['shoes', 2, 'stamina', 0.3, '개구리 장화', { k: 'frog', c: '#7cc85a' }], s46: ['shoes', 3, 'speed', 0.5, '유리구두', { k: 'glass', c: '#d8f1ff' }],
   s47: ['shoes', 3, 'stamina', 0.5, '황금 고무신', { k: 'gomu', c: '#f6c445', gold: true }], s48: ['shoes', 3, 'spin', 0.5, '은하수 운동화', { k: 'galaxy', c: '#2b2d5c' }],
   s49: ['shoes', 3, 'power', 0.5, '불꽃 운동화', { k: 'fire', c: '#f25f5c' }], r25: ['racket', 0, 'speed', 0.1, '주황 라켓', { c: '#f6a23c' }],
@@ -2708,7 +2713,7 @@ const ITEMS = { // the same catalogue as the server's items table; look is how i
   r36: ['racket', 1, 'spin', 0.2, '국자', { k: 'ladle', c: '#c9ccd6' }], r37: ['racket', 1, 'spin', 0.2, '바나나', { k: 'banana', c: '#ffd34d' }],
   r38: ['racket', 1, 'speed', 0.2, '마법사 빗자루', { k: 'broom', c: '#c9a25e' }], r39: ['racket', 1, 'stamina', 0.2, '떡꼬치', { k: 'tteok', c: '#e0482e' }],
   r40: ['racket', 2, 'power', 0.3, '소고', { k: 'sogo', c: '#e2574c' }], r41: ['racket', 2, 'reflex', 0.3, '합죽선', { k: 'folding', c: '#f2e6c8' }],
-  r42: ['racket', 2, 'stamina', 0.3, '오뎅꼬치', { k: 'odeng2', c: '#f0d29a' }], r43: ['racket', 2, 'reflex', 0.3, '우승 은쟁반', { k: 'plate', c: '#d8dde3' }],
+  r42: ['racket', 2, 'stamina', 0.3, '우산', { k: 'umbrella', c: '#e2574c' }], r43: ['racket', 2, 'reflex', 0.3, '우승 은쟁반', { k: 'plate', c: '#d8dde3' }],
   r44: ['racket', 2, 'spin', 0.3, '요술봉', { k: 'wand', c: '#f48aa4' }], r45: ['racket', 2, 'speed', 0.3, '파초선', { k: 'pacho', c: '#5fae4e' }],
   r46: ['racket', 3, 'spin', 0.5, '야구 방망이', { k: 'bat', c: '#d9a066' }], r47: ['racket', 3, 'power', 0.5, '황금 대파', { k: 'leek', c: '#f6c445', gold: true }],
   r48: ['racket', 3, 'speed', 0.5, '광선검', { k: 'saber', c: '#6ec1ff' }], r49: ['racket', 3, 'reflex', 0.5, '여의봉', { k: 'staff', c: '#d8443c' }],
