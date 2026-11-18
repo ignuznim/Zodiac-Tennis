@@ -235,7 +235,9 @@ insert into public.achievements (code, reward, daily) values
   ('d_play', 1, true), ('d_win', 1, true), ('d_sweet', 1, true),
   ('play_1', 1, false), ('pulls_1', 1, false), ('equip_1', 1, false), ('sweet_10', 1, false), ('power_10', 1, false),
   ('rally_10', 1, false), ('aces_1', 1, false), ('win_doubles', 1, false), ('own_5', 1, false),
-  ('d_play3', 3, true), ('d_win2', 2, true), ('d_power', 1, true), ('d_night', 2, true)
+  ('d_play3', 3, true), ('d_win2', 2, true), ('d_power', 1, true), ('d_night', 2, true),
+  ('combo_10', 3, false), ('h_monkey', 5, false), ('h_shutout', 3, false), ('h_deuce', 3, false), ('h_zodiac', 5, false),
+  ('h_midnight', 2, false), ('h_rain', 3, false), ('h_king', 3, false), ('h_comeback', 3, false)
 on conflict (code) do update set reward = excluded.reward, daily = excluded.daily;
 -- this week's: twenty tickets a week on top of the daily ten
 insert into public.achievements (code, reward, daily, weekly) values
