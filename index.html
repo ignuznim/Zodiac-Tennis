@@ -619,7 +619,6 @@ function shoeIcon2(L) { // the new kinds from the side; false for the sneakers
     const dk = tint(L.c, '#3b2418', 0.45);
     const boot = () => { ctx.beginPath(); ctx.moveTo(-22, 10); ctx.lineTo(-21, -26); ctx.quadraticCurveTo(-12, -29, -4, -26); ctx.lineTo(-3, -9); ctx.quadraticCurveTo(8, -6, 18, -2); ctx.lineTo(18, 10); ctx.closePath(); };
     fillPath(boot, L.c, -29, 12, () => { ctx.fillStyle = dk; for (const y of [-22, -15, -8]) ctx.fillRect(-24, y, 30, 2.6); for (const x of [2, 9]) { ctx.save(); ctx.translate(x, 2); ctx.rotate(0.35); ctx.fillRect(-1.4, -12, 2.8, 16); ctx.restore(); } });
-    E(25, 6, 6, 4.6, '#f2c9a4'); for (const x of [22, 26, 29]) E(x, 3.4, 1.6, 1.4, '#f6d7bb', 0, true);
     rr(-24, 9, 56, 7, 3.5, '#5a3520', OUT, 2.2); ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.fillRect(-20, 10.6, 46, 1.4);
     ctx.lineWidth = 1.4; for (const [x, y] of [[-3, -20], [-3, -6], [12, -1]]) { E(x, y, 2.6, 2.6, '#6ec1ff'); E(x - 0.8, y - 0.8, 0.8, 0.8, '#ffffff', 0, true); }
     for (const [x, y, r] of [[-30, -34, 3], [-12, -38, 2.4], [4, -32, 2], [-40, -20, 2.2]]) star(x, y, r, '#bfe6ff');
