@@ -433,6 +433,12 @@ function hat2(L, front) {
   if (k === 'bow') { // a big red bow, as a young witch wears
     for (const sd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(0, -103); ctx.bezierCurveTo(sd * 10, -122, sd * 32, -118, sd * 28, -103); ctx.bezierCurveTo(sd * 30, -92, sd * 12, -96, 0, -103); ctx.closePath(); ctx.fillStyle = c; ctx.fill(); ctx.save(); ctx.clip(); glossBox(sd > 0 ? 0 : -32, -122, 32, 30, 0.3); ctx.restore(); ctx.stroke(); ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(sd * 6, -104); ctx.quadraticCurveTo(sd * 16, -110, sd * 22, -106); ctx.stroke(); ctx.lineWidth = 2.4; }
     rr(-6, -109, 12, 12, 4, tint(c, '#3b3340', 0.12), OUT, 2.2); return true; }
+  if (k === 'kcap') { // the national baseball team's cap: navy, a red K edged in white and blue on the front
+    ctx.beginPath(); ctx.arc(0, -86, 25, Math.PI, 0); ctx.closePath(); ctx.fillStyle = c; ctx.fill(); ctx.save(); ctx.clip(); glossBox(-26, -112, 52, 28, 0.3); ctx.restore(); ctx.lineWidth = 2.4; ctx.strokeStyle = OUT; ctx.stroke();
+    ctx.lineWidth = 1.2; ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.beginPath(); ctx.moveTo(0, -111); ctx.lineTo(0, -86); ctx.moveTo(0, -111); ctx.quadraticCurveTo(-13, -104, -15, -86); ctx.moveTo(0, -111); ctx.quadraticCurveTo(13, -104, 15, -86); ctx.stroke(); ctx.strokeStyle = OUT;
+    if (front) { ctx.font = `bold 20px ${F_T}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round'; ctx.lineWidth = 4; ctx.strokeStyle = '#ffffff'; ctx.strokeText('K', 0, -97); ctx.fillStyle = '#d0263a'; ctx.fillText('K', 0, -97); ctx.lineWidth = 1.2; ctx.strokeStyle = '#2b5cb8'; ctx.strokeText('K', 0, -97); }
+    else rr(-9, -93, 18, 5, 2.5, '#ffffff', OUT, 1.4);
+    ctx.lineWidth = 2.4; ctx.strokeStyle = OUT; E(0, -86, 33, 6.5, c); ctx.fillStyle = 'rgba(0,0,0,0.15)'; ctx.fillRect(-30, -86, 60, 3); E(0, -111, 4, 4, '#d0263a'); return true; }
   if (k === 'honey') { // a honey pot stuck on the head, honey running down
     ctx.beginPath(); ctx.moveTo(-16, -92); ctx.bezierCurveTo(-32, -100, -26, -128, 0, -128); ctx.bezierCurveTo(26, -128, 32, -100, 16, -92); ctx.closePath(); ctx.fillStyle = c; ctx.fill(); ctx.save(); ctx.clip(); glossBox(-28, -128, 56, 36, 0.3); ctx.restore(); ctx.stroke();
     rr(-19, -96, 38, 7, 3, tint(c, '#3b3340', 0.2), OUT, 2.2);
@@ -486,6 +492,7 @@ function cloth2(L, front, hm, c, S, skin) { // patterns, painted inside the body
   if (k === 'pajama') { ctx.fillStyle = 'rgba(61,111,176,0.55)'; for (let x = -26; x < 28; x += 5) ctx.fillRect(x, -80, 1.4, 80); S(-30, -24, 60, 1.6, '#ffffff'); }
   if (k === 'school') { S(-30, -80, 60, 80, '#2f3d6b'); ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 1; ctx.beginPath(); for (let x = -26; x < 28; x += 4) { ctx.moveTo(x, -80); ctx.lineTo(x, 0); } ctx.stroke(); }
   if (k === 'dragonrobe') { ctx.strokeStyle = 'rgba(200,140,20,0.35)'; ctx.lineWidth = 1; for (const [x, y] of [[-14, -20], [12, -16], [-4, -12]]) { ctx.beginPath(); ctx.arc(x, y, 3, Math.PI, 0); ctx.arc(x + 4, y, 2, Math.PI, 0); ctx.stroke(); } S(-30, -24, 60, 4.4, '#c0392b'); for (const x of [-14, -5, 5, 14]) { ctx.fillStyle = '#bfe6c9'; ctx.fillRect(x - 2, -23.4, 4, 3.2); } }
+  if (k === 'kbase') { ctx.fillStyle = 'rgba(31,47,99,0.14)'; for (let x = -26; x < 28; x += 4) ctx.fillRect(x, -80, 0.8, 80); }
   if (k === 'champ') { const g = ctx.createLinearGradient(-20, -50, 20, -16); g.addColorStop(0, 'rgba(255,255,255,0.6)'); g.addColorStop(0.45, 'rgba(255,255,255,0)'); g.addColorStop(0.55, 'rgba(255,255,255,0.35)'); g.addColorStop(0.65, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(150,90,0,0.25)'); S(-30, -80, 60, 80, g); S(-30, hm - 4, 60, 4, '#3b3340'); }
 }
 function shirt2(L, front, hm, c, dk) { // collars and the rest; true when drawn
@@ -505,6 +512,8 @@ function shirt2(L, front, hm, c, dk) { // collars and the rest; true when drawn
       if (k === 'dopo') { ctx.lineWidth = 2.2; ctx.strokeStyle = '#d0565a'; ctx.beginPath(); ctx.moveTo(-20, -27); ctx.quadraticCurveTo(0, -24, 20, -27); ctx.stroke(); ctx.strokeStyle = '#3d6fb0'; ctx.beginPath(); ctx.moveTo(6, -25); ctx.lineTo(8, -12); ctx.moveTo(9, -25); ctx.lineTo(12, -13); ctx.stroke(); ctx.strokeStyle = OUT; ctx.lineWidth = 1.2; E(8, -11, 2, 2.6, '#d0565a'); E(12, -12, 2, 2.6, '#3d6fb0'); }
       if (k === 'yusaeng') { ctx.lineWidth = 1.6; ctx.strokeStyle = '#6b2338'; ctx.beginPath(); ctx.moveTo(-3, -23); ctx.lineTo(-4, -8); ctx.moveTo(1, -23); ctx.lineTo(1.5, -8); ctx.moveTo(-1, -23); ctx.quadraticCurveTo(-8, -18, -6, -12); ctx.stroke(); ctx.strokeStyle = OUT; ctx.lineWidth = 1.1; E(-4, -8, 1.4, 2.4, '#6b2338'); E(1.5, -8, 1.4, 2.4, '#6b2338'); }
       if (k === 'hwarang') { E(6, -26, 4.5, 4.5, '#f6c445'); E(6, -26, 2, 2, '#e2574c', 0, true); } return true; }
+    if (k === 'kbase') { ctx.lineWidth = 3; ctx.strokeStyle = '#1f2f63'; ctx.beginPath(); ctx.moveTo(-8, -52); ctx.lineTo(0, -42); ctx.lineTo(8, -52); ctx.stroke(); ctx.lineWidth = 1.6; ctx.strokeStyle = '#d0263a'; ctx.beginPath(); ctx.moveTo(0, -42); ctx.lineTo(0, hm); ctx.stroke(); ctx.strokeStyle = OUT; for (const y of [-36, -26, -18]) E(1.8, y, 1.1, 1.1, '#1f2f63', 0, true);
+      ctx.font = `bold 9px ${F_T}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round'; ctx.lineWidth = 2.4; ctx.strokeStyle = '#d0263a'; ctx.strokeText('KOREA', 0, -31); ctx.fillStyle = '#1f2f63'; ctx.fillText('KOREA', 0, -31); ctx.strokeStyle = OUT; ctx.lineWidth = 1.8; return true; }
     if (k === 'pajama') { for (const sd of [-1, 1]) poly([sd * 1, -40, sd * 10, -50, sd * 12, -42, sd * 6, -38], '#ffffff'); ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(0, -40); ctx.lineTo(0, hm); ctx.stroke(); for (const y of [-34, -27, -20]) E(1.8, y, 1.5, 1.5, '#ffffff'); rr(8, -34, 8, 7, 2, null, '#ffffff', 1.2); E(-11, -31, 2.4, 2.4, '#ffe45c', 0, true); E(-11.6, -31.8, 0.8, 0.8, '#ffffff', 0, true); return true; }
     if (k === 'school') { poly([-9, -52, 0, -30, 9, -52], '#ffffff'); ctx.lineWidth = 1.4; for (const sd of [-1, 1]) poly([sd * 1, -45, sd * 9, -51, sd * 8, -44], '#ffffff'); poly([-2, -44, 2, -44, 2.8, -34, 0, -31, -2.8, -34], '#d0565a'); rr(-1.8, -46.5, 3.6, 3, 1, '#d0565a', OUT, 1.2);
       rr(-17, -40, 10, 4.5, 1, '#ffffff', OUT, 1.2); ctx.fillStyle = '#4a3d47'; ctx.fillRect(-15.5, -38.6, 7, 1.2); for (const y of [-26, -19]) E(-4, y, 1.3, 1.3, '#e8d9a0', 0, true); return true; }
@@ -518,6 +527,7 @@ function shirt2(L, front, hm, c, dk) { // collars and the rest; true when drawn
   if (k === 'hwarang') { ctx.lineWidth = 1.2; ctx.strokeStyle = '#f6c445'; ctx.beginPath(); ctx.moveTo(-18, -40); ctx.quadraticCurveTo(0, -36, 18, -40); ctx.stroke(); ctx.strokeStyle = OUT; return true; }
   if (k === 'champ') { star(0, -34, 8, '#fff8e7'); return true; }
   if (k === 'dragonrobe') { dragonBadge(0, -34, 8); return true; }
+  if (k === 'kbase') { ctx.font = `bold 16px ${F_T}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round'; ctx.lineWidth = 3; ctx.strokeStyle = '#d0263a'; ctx.strokeText('10', 0, -28); ctx.fillStyle = '#1f2f63'; ctx.fillText('10', 0, -28); ctx.strokeStyle = OUT; ctx.lineWidth = 1.8; return true; }
   if (k === 'school' || k === 'yusaeng' || k === 'pajama') { ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(-18, -40); ctx.quadraticCurveTo(0, -37, 18, -40); ctx.stroke(); return true; }
   if (k === 'catsuit') { rr(-8, -53, 16, 4, 2, tint(c, '#ffffff', 0.15), OUT, 1.4); return true; }
   return false;
@@ -533,6 +543,7 @@ function sleeve2(L, len, w0) { // cuffs and the like, inside a sleeve laid along
   if (k === 'icedress') for (const [x, y] of [[len * 0.3, -1.5], [len * 0.65, 1.5]]) star(x, y, 1.6, '#ffffff');
   if (k === 'catsuit') S(-2, -w0 / 2 + 1, len + 6, 1.6, 'rgba(255,255,255,0.25)');
   if (k === 'momppe') S(-2, -20, len + 8, 40, '#fff3e0');
+  if (k === 'kbase') { S(len - 4, -20, 2.2, 40, '#1f2f63'); S(len - 1.4, -20, 2.2, 40, '#d0263a'); }
   if (k === 'pajama') { ctx.fillStyle = 'rgba(61,111,176,0.55)'; for (let y = -10; y < 10; y += 5) ctx.fillRect(-2, y, len + 6, 1.3); S(len - 3, -20, 2, 40, '#ffffff'); }
   if (k === 'dragonrobe') { S(len - 3, -20, 10, 40, '#d9a520'); dragonBadge(len * 0.4, 0, 3.6); }
 }
@@ -2615,7 +2626,7 @@ const ITEMS = { // the same catalogue as the server's items table; look is how i
   h42: ['hat', 1, 'power', 0.2, '황제 헤어밴드', { k: 'tieband', c: '#ffffff' }], h43: ['hat', 2, 'spin', 0.3, '상모', { k: 'sangmo', c: '#3b3340' }],
   h44: ['hat', 2, 'reflex', 0.3, '하회탈', { k: 'hahoe', c: '#d9822b' }], h45: ['hat', 2, 'speed', 0.3, '대나무 프로펠러', { k: 'copter', c: '#ffd34d' }],
   h46: ['hat', 2, 'stamina', 0.3, '비행 고글 모자', { k: 'aviator', c: '#f6a23c' }], h47: ['hat', 2, 'spin', 0.3, '커다란 빨간 리본', { k: 'bow', c: '#e2574c' }],
-  h48: ['hat', 2, 'power', 0.3, '꿀단지 모자', { k: 'honey', c: '#d98a3a' }], h49: ['hat', 3, 'stamina', 0.5, '신라 금관', { k: 'silla', c: '#f6c445' }],
+  h48: ['hat', 2, 'power', 0.3, '국가대표 야구모자', { k: 'kcap', c: '#1f2f63' }], h49: ['hat', 3, 'stamina', 0.5, '신라 금관', { k: 'silla', c: '#f6c445' }],
   h50: ['hat', 3, 'power', 0.5, '우승 트로피 모자', { k: 'trophy', c: '#f6c445' }], h51: ['hat', 3, 'reflex', 0.5, '긴고아', { k: 'geumgo', c: '#f6c445' }],
   h52: ['hat', 3, 'speed', 0.5, '나뭇잎 우산', { k: 'leaf', c: '#4fae5a' }], u26: ['uniform', 0, 'power', 0.1, '빨간 티셔츠', { c: ['#f25f5c'] }],
   u27: ['uniform', 0, 'stamina', 0.1, '남색 티셔츠', { c: ['#3d4f9a'] }], u28: ['uniform', 0, 'speed', 0.1, '연두 티셔츠', { c: ['#b5e07a'] }],
@@ -2629,7 +2640,7 @@ const ITEMS = { // the same catalogue as the server's items table; look is how i
   u43: ['uniform', 2, 'power', 0.3, '농악복', { k: 'nongak', c: ['#ffffff'] }], u44: ['uniform', 2, 'reflex', 0.3, '선비 도포', { k: 'dopo', c: ['#eef2f6'] }],
   u45: ['uniform', 2, 'speed', 0.3, '얼음 드레스', { k: 'icedress', c: ['#9fd8f5'] }], u46: ['uniform', 2, 'stamina', 0.3, '교복', { k: 'school', c: ['#ffffff'] }],
   u47: ['uniform', 3, 'power', 0.5, '화랑 무복', { k: 'hwarang', c: ['#3d6fb0'] }], u48: ['uniform', 3, 'reflex', 0.5, '윔블던 올화이트', { k: 'allwhite', c: ['#ffffff'] }],
-  u49: ['uniform', 3, 'speed', 0.5, '검은 캣슈트', { k: 'catsuit', c: ['#2e2830'] }], u50: ['uniform', 3, 'stamina', 0.5, '챔피언 황금 재킷', { k: 'champ', c: ['#f6c445'] }],
+  u49: ['uniform', 3, 'speed', 0.5, '검은 캣슈트', { k: 'catsuit', c: ['#2e2830'] }], u50: ['uniform', 3, 'stamina', 0.5, '국가대표 야구 유니폼', { k: 'kbase', c: ['#ffffff'] }],
   s25: ['shoes', 0, 'speed', 0.1, '주황 캔버스화', { st: 'canvas', c: '#f6a23c' }], s26: ['shoes', 0, 'stamina', 0.1, '남색 테니스화', { st: 'court', c: '#3d4f9a' }],
   s27: ['shoes', 0, 'reflex', 0.1, '연두 찍찍이 운동화', { st: 'velcro', c: '#b5e07a' }], s28: ['shoes', 0, 'spin', 0.1, '보라 어글리 슈즈', { st: 'chunky', c: '#b48be8' }],
   s29: ['shoes', 0, 'power', 0.1, '회색 슬립온', { st: 'slipon', c: '#a9adb8' }], s30: ['shoes', 0, 'speed', 0.1, '민트 하이탑', { k: 'high', c: '#9fe0c8' }],
