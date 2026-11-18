@@ -566,6 +566,12 @@ function tutuSkirt(hm) { // a ballet skirt of tulle at the hem, in layers
 function coil(x, y0, y1, w, n = 4) { ctx.lineWidth = 3.4; ctx.strokeStyle = OUT; const zz = () => { ctx.beginPath(); ctx.moveTo(x - w, y0); for (let i = 0; i < n; i++) { const t = (i + 0.5) / n, t2 = (i + 1) / n; ctx.lineTo(x + w, y0 + (y1 - y0) * t); ctx.lineTo(x - w, y0 + (y1 - y0) * t2); } }; zz(); ctx.stroke(); ctx.lineWidth = 1.8; ctx.strokeStyle = '#c9ccd6'; zz(); ctx.stroke(); ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; }
 function foot2(L, fx, ff, skin) { // the new kinds drawn whole; false for the sneakers, which get footOver
   const k = L.k || ''; ctx.lineWidth = 2.4; ctx.strokeStyle = OUT;
+  if (k === 'hermes') { // winged sandal-boots of bronze leather: straps round the ankle and over the foot, a blue gem, the toes peeping out
+    const sd = fx < 0 ? -1 : 1; featherWing(fx + sd * 9, ff - 6, sd, 1.35); star(fx + sd * 16, ff - 18, 1.8, '#bfe6ff'); ctx.lineWidth = 2.4; ctx.strokeStyle = OUT; const top = ff - 13; rr(fx - 7, top, 14, ff - top + 2, 4, L.c, OUT, 2.2); ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.fillRect(fx - 5, top + 2, 2, ff - top - 2);
+    ctx.lineWidth = 1.2; for (const y of [top + 3, top + 7.5]) rr(fx - 7.5, y, 15, 2.4, 1.2, tint(L.c, '#3b2418', 0.4), OUT, 1);
+    rr(fx - 9.5, ff + 2, 19, 5, 2.5, '#5a3520', OUT, 2); E(fx, ff - 0.5, 8.5, 6, skin); shade(fx, ff - 0.5, 8.5, 6);
+    ctx.lineWidth = 1.6; for (const y of [ff - 3.5, ff + 0.5]) rr(fx - 8.5, y, 17, 3, 1.5, L.c, OUT, 1.4);
+    ctx.lineWidth = 1.2; E(fx, ff - 2, 1.8, 1.8, '#6ec1ff'); E(fx - 0.5, ff - 2.5, 0.6, 0.6, '#ffffff', 0, true); ctx.lineWidth = 2.6; return true; }
   if (k === 'slipper' || k === 'socks') { // the foot (or a sock) on a flat sole, a band or straps over it
     rr(fx - 10, ff + 2, 20, 5, 2.5, k === 'socks' ? '#5d5560' : c2(L.c, 0.1), OUT, 2);
     E(fx, ff - 1, 8, 6, k === 'socks' ? '#ffffff' : skin); shade(fx, ff - 1, 8, 6);
@@ -609,6 +615,15 @@ function footOver(L, fx, ff) { // over a sneaker from the front: mud, felt, gras
 function shoeIcon2(L) { // the new kinds from the side; false for the sneakers
   const k = L.k || ''; ctx.lineWidth = 2.6; ctx.strokeStyle = OUT;
   const fillPath = (p, col, y0, y1, extra) => { p(); ctx.fillStyle = col; ctx.fill(); ctx.save(); p(); ctx.clip(); glossBox(-34, y0, 68, y1 - y0, 0.45); if (extra) extra(); ctx.restore(); ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; p(); ctx.stroke(); };
+  if (k === 'hermes') { // an open-toed sandal-boot of bronze leather, strap over strap, blue gems on the studs, a feathered wing at the heel, sparkling
+    const dk = tint(L.c, '#3b2418', 0.45);
+    const boot = () => { ctx.beginPath(); ctx.moveTo(-22, 10); ctx.lineTo(-21, -26); ctx.quadraticCurveTo(-12, -29, -4, -26); ctx.lineTo(-3, -9); ctx.quadraticCurveTo(8, -6, 18, -2); ctx.lineTo(18, 10); ctx.closePath(); };
+    fillPath(boot, L.c, -29, 12, () => { ctx.fillStyle = dk; for (const y of [-22, -15, -8]) ctx.fillRect(-24, y, 30, 2.6); for (const x of [2, 9]) { ctx.save(); ctx.translate(x, 2); ctx.rotate(0.35); ctx.fillRect(-1.4, -12, 2.8, 16); ctx.restore(); } });
+    E(25, 6, 6, 4.6, '#f2c9a4'); for (const x of [22, 26, 29]) E(x, 3.4, 1.6, 1.4, '#f6d7bb', 0, true);
+    rr(-24, 9, 56, 7, 3.5, '#5a3520', OUT, 2.2); ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.fillRect(-20, 10.6, 46, 1.4);
+    ctx.lineWidth = 1.4; for (const [x, y] of [[-3, -20], [-3, -6], [12, -1]]) { E(x, y, 2.6, 2.6, '#6ec1ff'); E(x - 0.8, y - 0.8, 0.8, 0.8, '#ffffff', 0, true); }
+    for (const [x, y, r] of [[-30, -34, 3], [-12, -38, 2.4], [4, -32, 2], [-40, -20, 2.2]]) star(x, y, r, '#bfe6ff');
+    ctx.lineWidth = 2.6; return true; }
   if (k === 'slipper') { // a slide: a long contoured footbed, one wide band over the instep with three stripes, the toes left open
     rr(-30, 9, 60, 7, 3.5, '#5d5560', OUT, 2.2); rr(-30, 4, 60, 7, 3.5, '#3b3340', OUT, 2.2); ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.fillRect(-26, 6, 50, 1.6);
     const p = () => { ctx.beginPath(); ctx.moveTo(-16, 5); ctx.quadraticCurveTo(-14, -8, 2, -8); ctx.quadraticCurveTo(18, -8, 20, 5); ctx.closePath(); }; fillPath(p, L.c, -9, 6, () => { ctx.fillStyle = '#ffffff'; for (const x of [-8, 0, 8]) { ctx.beginPath(); ctx.moveTo(x - 1.4, -10); ctx.lineTo(x + 1.6, -10); ctx.lineTo(x + 3.4, 6); ctx.lineTo(x + 0.4, 6); ctx.closePath(); ctx.fill(); } }); return true; }
@@ -972,7 +987,7 @@ function shoeIcon(L) { // a shoe from the side, its toe to the right; about 56 a
   const gloss = (y0, y1) => { const g = ctx.createLinearGradient(0, y0, 0, y1); g.addColorStop(0, 'rgba(255,255,255,0.45)'); g.addColorStop(1, 'rgba(0,0,0,0.14)'); ctx.fillStyle = g; ctx.fillRect(-34, y0, 68, y1 - y0); };
   const fillPath = (p, col, y0, y1, extra) => { p(); ctx.fillStyle = col; ctx.fill(); ctx.save(); p(); ctx.clip(); gloss(y0, y1); if (extra) extra(); ctx.restore(); ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; p(); ctx.stroke(); };
   if (L.flame) poly([-24, 2, -40, -4, -34, 7, -43, 14, -24, 14], '#ff8a3d');
-  if (L.wing) featherWing(-21, -8, -1, 1.55);
+  if (L.wing) { if (L.k === 'hermes') { featherWing(-20, -20, -1, 1.7); featherWing(-16, -12, -1, 1.3); } else featherWing(-21, -8, -1, 1.55); }
   if (shoeIcon2(L)) { ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; return; }
   if (k === 'gomu' || k === 'clog') {
     if (k === 'clog') { rr(-19, 11, 9, 9, 2, '#8f5f3a', OUT, 2.2); rr(8, 11, 9, 9, 2, '#8f5f3a', OUT, 2.2); }
@@ -2587,7 +2602,7 @@ const ITEMS = { // the same catalogue as the server's items table; look is how i
   s3: ['shoes', 1, 'speed', 0.2, '클레이화', { k: 'clay', c: '#d36a3a' }], s4: ['shoes', 1, 'speed', 0.2, '잔디화', { k: 'grass', c: '#4a9d5c' }],
   s9: ['shoes', 1, 'stamina', 0.2, '하드코트화', { k: 'high', c: '#3471c4' }], s10: ['shoes', 1, 'reflex', 0.2, '고무신', { k: 'gomu', c: '#3b3340' }],
   s5: ['shoes', 2, 'speed', 0.3, '번개 신발', { k: 'high', c: '#ffe45c', bolt: true }], s11: ['shoes', 2, 'stamina', 0.3, '꽃신', { k: 'gomu', c: '#f9b7c4', flower: true }],
-  s6: ['shoes', 3, 'speed', 0.5, '날개 신발', { c: '#fff8e7', wing: true }], s12: ['shoes', 3, 'power', 0.5, '로켓 신발', { k: 'boot', c: '#b8c2cc', flame: true }],
+  s6: ['shoes', 3, 'speed', 0.5, '날개 신발', { k: 'hermes', c: '#b8763a', wing: true }], s12: ['shoes', 3, 'power', 0.5, '로켓 신발', { k: 'boot', c: '#b8c2cc', flame: true }],
   r1: ['racket', 0, 'power', 0.1, '나무 라켓', { k: 'wood', c: '#b98562' }], r2: ['racket', 0, 'spin', 0.1, '연습 라켓', { c: '#9aa3ad' }],
   r7: ['racket', 0, 'reflex', 0.1, '하늘 라켓', { c: '#9ad0ff' }], r8: ['racket', 0, 'speed', 0.1, '분홍 라켓', { c: '#f9b7c4' }],
   r3: ['racket', 1, 'power', 0.2, '묵직한 라켓', { k: 'heavy', c: '#4a3d47' }], r4: ['racket', 1, 'spin', 0.2, '가벼운 라켓', { k: 'light', c: '#6ec1ff' }],
