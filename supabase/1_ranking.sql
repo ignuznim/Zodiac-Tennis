@@ -20,6 +20,8 @@ create table if not exists public.scores (
   score       integer  not null default 0
 );
 create index if not exists scores_mode_score on public.scores (mode, score desc);
+-- perfect hits in a chain: each one after the first adds up to 9 to this count, and 2 points a count to the score
+alter table public.scores add column if not exists combo integer not null default 0 check (combo between 0 and 300000);
 
 -- The score is worked out here, never taken from the browser, and a record that could not
 -- come from a real match is refused.
@@ -45,12 +47,14 @@ begin
   if new.pts_for < min_pts then raise exception 'not a finished win'; end if;
   if new.duration_s < (new.pts_for + new.pts_against) * 3 then raise exception 'too fast'; end if;
   if new.sweet > (new.pts_for + new.pts_against) * 25 then raise exception 'too many sweet hits'; end if;
+  if new.combo > new.sweet * 9 then raise exception 'too many sweet hits'; end if;
   if exists (select 1 from public.scores s where s.client_id = new.client_id and s.created_at > now() - interval '20 seconds') then
     raise exception 'slow down';
   end if;
   new.score := (case new.level when 1 then 100 when 2 then 300 else 1000 end)
              + greatest(0, new.pts_for - new.pts_against) * 10
-             + new.sweet * 2;
+             + new.sweet * 2
+             + new.combo * 2;
   return new;
 end $$;
 drop trigger if exists scores_check on public.scores;
@@ -64,9 +68,9 @@ drop policy if exists "add scores" on public.scores;
 create policy "add scores" on public.scores for insert to anon, authenticated with check (true);
 
 revoke all on public.scores from anon, authenticated;
-grant select (id, created_at, nickname, mode, level, animal, opponent, court, sets, pts_for, pts_against, sweet, duration_s, score)
+grant select (id, created_at, nickname, mode, level, animal, opponent, court, sets, pts_for, pts_against, sweet, combo, duration_s, score)
   on public.scores to anon, authenticated;
-grant insert (nickname, mode, level, animal, opponent, court, sets, pts_for, pts_against, sweet, duration_s, client_id)
+grant insert (nickname, mode, level, animal, opponent, court, sets, pts_for, pts_against, sweet, combo, duration_s, client_id)
   on public.scores to anon, authenticated;
 
 -- One record per match: a double tap once sent the same win twice. Drop the repeats, keep the first,
