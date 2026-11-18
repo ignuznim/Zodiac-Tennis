@@ -433,13 +433,15 @@ function hat2(L, front) {
   if (k === 'bow') { // a big red bow, as a young witch wears
     for (const sd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(0, -103); ctx.bezierCurveTo(sd * 10, -122, sd * 32, -118, sd * 28, -103); ctx.bezierCurveTo(sd * 30, -92, sd * 12, -96, 0, -103); ctx.closePath(); ctx.fillStyle = c; ctx.fill(); ctx.save(); ctx.clip(); glossBox(sd > 0 ? 0 : -32, -122, 32, 30, 0.3); ctx.restore(); ctx.stroke(); ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(sd * 6, -104); ctx.quadraticCurveTo(sd * 16, -110, sd * 22, -106); ctx.stroke(); ctx.lineWidth = 2.4; }
     rr(-6, -109, 12, 12, 4, tint(c, '#3b3340', 0.12), OUT, 2.2); return true; }
-  if (k === 'kcap') { // the national baseball team's cap: navy all over, a big white brush-stroke K on the front
-    ctx.beginPath(); ctx.arc(0, -86, 25, Math.PI, 0); ctx.closePath(); ctx.fillStyle = c; ctx.fill(); ctx.save(); ctx.clip(); glossBox(-26, -112, 52, 28, 0.22); ctx.restore(); ctx.lineWidth = 2.4; ctx.strokeStyle = OUT; ctx.stroke();
-    ctx.lineWidth = 1.2; ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.beginPath(); ctx.moveTo(0, -111); ctx.lineTo(0, -86); ctx.moveTo(0, -111); ctx.quadraticCurveTo(-13, -104, -15, -86); ctx.moveTo(0, -111); ctx.quadraticCurveTo(13, -104, 15, -86); ctx.stroke(); ctx.strokeStyle = OUT;
-    if (front) { ctx.save(); ctx.translate(0, -101); ctx.scale(1.05, 1.05); ctx.translate(0, 97); ctx.lineWidth = 0.6; ctx.strokeStyle = 'rgba(59,51,64,0.6)'; ctx.fillStyle = '#ffffff';
-      poly([-9, -101, -5, -105, -2, -103, -7, -89, -10, -88, -6, -99], '#ffffff'); poly([-4, -96, 8, -103, 10, -105.5, 9, -101.5, -2, -94], '#ffffff'); poly([-3, -95, 1, -96, 9, -90, 6, -89], '#ffffff'); ctx.restore(); ctx.strokeStyle = OUT; }
-    else rr(-9, -93, 18, 5, 2.5, '#2b376a', OUT, 1.4);
-    ctx.lineWidth = 2.4; ctx.strokeStyle = OUT; E(0, -86, 33, 6.5, c); ctx.fillStyle = 'rgba(0,0,0,0.15)'; ctx.fillRect(-30, -86, 60, 3); E(0, -111, 4, 4, c); return true; }
+  if (k === 'kcap') { // the national baseball team's cap: navy all over, a white brush-stroke K on the front; from behind, the strap opening and no peak
+    const crown = () => { ctx.beginPath(); ctx.moveTo(-25, -86); ctx.bezierCurveTo(-25, -104, -14, -112, 0, -112); ctx.bezierCurveTo(14, -112, 25, -104, 25, -86); ctx.quadraticCurveTo(0, -90, -25, -86); ctx.closePath(); };
+    crown(); ctx.fillStyle = c; ctx.fill(); ctx.save(); crown(); ctx.clip(); glossBox(-26, -113, 52, 28, 0.22);
+    ctx.lineWidth = 1.2; ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.beginPath(); ctx.moveTo(0, -112); ctx.lineTo(0, -88); ctx.moveTo(0, -112); ctx.quadraticCurveTo(-13, -105, -15, -87); ctx.moveTo(0, -112); ctx.quadraticCurveTo(13, -105, 15, -87); ctx.stroke();
+    if (front) { ctx.translate(0, -100); ctx.scale(1.05, 1.05); ctx.translate(0, 97); ctx.lineWidth = 0.6; ctx.strokeStyle = 'rgba(59,51,64,0.6)'; poly([-9, -101, -5, -105, -2, -103, -7, -89, -10, -88, -6, -99], '#ffffff'); poly([-4, -96, 8, -103, 10, -105.5, 9, -101.5, -2, -94], '#ffffff'); poly([-3, -95, 1, -96, 9, -90, 6, -89], '#ffffff'); }
+    else { ctx.fillStyle = tint(c, '#000000', 0.35); ctx.beginPath(); ctx.moveTo(-8, -86); ctx.quadraticCurveTo(0, -100, 8, -86); ctx.closePath(); ctx.fill(); rr(-9, -91, 18, 4, 2, tint(c, '#ffffff', 0.15), null); }
+    ctx.restore(); ctx.lineWidth = 2.4; ctx.strokeStyle = OUT; crown(); ctx.stroke(); E(0, -111.5, 3.4, 2.6, c);
+    if (front) { const bill = () => { ctx.beginPath(); ctx.moveTo(-26, -87); ctx.bezierCurveTo(-18, -77, 18, -77, 26, -87); ctx.quadraticCurveTo(0, -84, -26, -87); ctx.closePath(); }; bill(); ctx.fillStyle = tint(c, '#000000', 0.12); ctx.fill(); ctx.save(); bill(); ctx.clip(); ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fillRect(-26, -86, 52, 2); ctx.restore(); bill(); ctx.stroke(); }
+    return true; }
   if (k === 'honey') { // a honey pot stuck on the head, honey running down
     ctx.beginPath(); ctx.moveTo(-16, -92); ctx.bezierCurveTo(-32, -100, -26, -128, 0, -128); ctx.bezierCurveTo(26, -128, 32, -100, 16, -92); ctx.closePath(); ctx.fillStyle = c; ctx.fill(); ctx.save(); ctx.clip(); glossBox(-28, -128, 56, 36, 0.3); ctx.restore(); ctx.stroke();
     rr(-19, -96, 38, 7, 3, tint(c, '#3b3340', 0.2), OUT, 2.2);
