@@ -2475,7 +2475,7 @@ async function loadRanking(mode, period) {
     const since = rank.period === 'month' ? `&created_at=gte.${encodeURIComponent(monthStart())}` : '';
     const q = `?select=nickname,level,animal,court,sets,score,created_at,gear&mode=eq.${rank.mode}${since}&order=score.desc,created_at.asc&limit=10`;
     let r = await fetch(RANK.url + q, { headers: rankHeaders() });
-    if (r.status === 400) r = await fetch(RANK.url + q.replace(',gear', ''), { headers: rankHeaders() }); // before the gear column exists
+    if (!r.ok && r.status !== 429) r = await fetch(RANK.url + q.replace(',gear', ''), { headers: rankHeaders() }); // the gear column missing or not readable: the board without it
     if (!r.ok) throw new Error(r.status);
     rank.list = await r.json();
   } catch (e) { rank.err = '랭킹을 불러오지 못했어요 · 인터넷 연결을 확인해 주세요'; rank.list = rank.list || []; }

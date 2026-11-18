@@ -22,6 +22,8 @@ create table if not exists public.scores (
 create index if not exists scores_mode_score on public.scores (mode, score desc);
 -- perfect hits in a chain: each one after the first adds up to 9 to this count, and 2 points a count to the score
 alter table public.scores add column if not exists combo integer not null default 0 check (combo between 0 and 300000);
+-- what the player wore, hat,uniform,shoes,racket (2_wardrobe.sql adds it too; here so the grants below can name it)
+alter table public.scores add column if not exists gear text check (gear is null or char_length(gear) <= 40);
 
 -- The score is worked out here, never taken from the browser, and a record that could not
 -- come from a real match is refused.
@@ -68,9 +70,9 @@ drop policy if exists "add scores" on public.scores;
 create policy "add scores" on public.scores for insert to anon, authenticated with check (true);
 
 revoke all on public.scores from anon, authenticated;
-grant select (id, created_at, nickname, mode, level, animal, opponent, court, sets, pts_for, pts_against, sweet, combo, duration_s, score)
+grant select (id, created_at, nickname, mode, level, animal, opponent, court, sets, pts_for, pts_against, sweet, combo, duration_s, score, gear)
   on public.scores to anon, authenticated;
-grant insert (nickname, mode, level, animal, opponent, court, sets, pts_for, pts_against, sweet, combo, duration_s, client_id)
+grant insert (nickname, mode, level, animal, opponent, court, sets, pts_for, pts_against, sweet, combo, duration_s, client_id, gear)
   on public.scores to anon, authenticated;
 
 -- One record per match: a double tap once sent the same win twice. Drop the repeats, keep the first,
