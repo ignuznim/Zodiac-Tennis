@@ -67,7 +67,7 @@
 'use strict';
 // ---- Built to be checked ----------------------------------------------------------------
 const params = new URLSearchParams(location.search);
-const APP_VERSION = '1.9.7'; // shown on the home screen: a new feature raises the middle number; the small fixes after it are bundled into one last-number step
+const APP_VERSION = '1.9.6'; // shown on the home screen: a new feature raises the middle number; the small fixes after it are bundled into one last-number step
 const tune = new Proxy({}, { get: (_, k) => CONFIG[k].value }); // live: tune.speed is CONFIG.speed.value
 const STEP = 1 / 60;            // simulation step in seconds; motion is per second, never per frame
 const W = 720; let H = 1280;    // logical size: a portrait page 720 wide, as tall as the window's shape asks (900 to 1580)
@@ -3394,7 +3394,7 @@ function matchProgress() { // what this match adds to the account's counts (onli
   addProgress(d);
 }
 // ---- 공지사항: notes from the owner (updates, events), kept in Supabase (supabase/5_notice.sql) and written in its Table Editor ----
-const news = { list: null, loading: false, err: '', at: 0 };
+const news = { list: null, loading: false, err: '', at: 0, open: {} }; // open: the notes tapped open
 const NOTICE_KIND = { update: ['업데이트', '#3d8be0'], patch: ['패치', '#9b5de5'], event: ['이벤트', CORAL], info: ['안내', '#3f9a5c'] };
 async function loadNotices() { // two sources: the owner's notes in Supabase, and the update and patch notes that ship with the game (notices.json)
   if (news.loading || location.protocol === 'file:') return; news.loading = true; news.err = '';
@@ -3419,8 +3419,8 @@ function wrapLines(str, size, font, maxW) { // words to lines that fit maxW; a w
   while (out.length && out[out.length - 1] === '') out.pop(); return out;
 }
 const kDate = t => { const d = new Date(new Date(t).getTime() + 9 * 3600e3); return `${d.getUTCMonth() + 1}월 ${d.getUTCDate()}일`; };
-function noticeCards(inner) { // each note as a card: kind and date, the title, the body; returns the cards and the whole height
-  let y = 0; const cards = (news.list || []).map(n => { const title = wrapLines(n.title, 27, F_T, inner), body = wrapLines(n.body, 21, F_B, inner), h = 24 + 32 + 14 + title.length * 36 + (body.length ? 10 + body.length * 32 : 0) + 22;
+function noticeCards(inner) { // each note as a card: kind and date, the title, and the body only when tapped open; returns the cards and the whole height
+  let y = 0; const cards = (news.list || []).map(n => { const open = !!news.open[n.id], title = wrapLines(n.title, 27, F_T, inner - 40), body = open ? wrapLines(n.body || '', 21, F_B, inner) : [], h = 24 + 32 + 14 + title.length * 36 + (body.length ? 10 + body.length * 32 : 0) + 22;
     const c = { n, title, body, y, h }; y += h + 16; return c; });
   return { cards, height: Math.max(0, y - 16) + 8 };
 }
@@ -3549,14 +3549,16 @@ const scenes = {
       if (!L) { panel(LY.m, v0, LY.w, 240); text(news.loading ? '불러오는 중…' : news.err || '불러오는 중…', W / 2, v0 + 120, 26, news.err && !news.loading ? '#e2574c' : INK, 'center', null, F_T); }
       else if (!L.length) { panel(LY.m, v0, LY.w, 240); text('아직 공지가 없어요', W / 2, v0 + 120, 26, '#7a6872', 'center', null, F_T); }
       else { const pad = 28, inner = LY.w - pad * 2, { cards, height } = noticeCards(inner);
-        scrollView(SCR.notice, v0, v1, 'n' + news.at + ':' + L.length, height, () => {
+        scrollView(SCR.notice, v0, v1, 'n' + news.at + ':' + L.length + ':' + Object.keys(news.open).filter(k => news.open[k]).join(','), height, () => {
           for (const c of cards) { const x = LY.m, n = c.n, [kname, kc] = NOTICE_KIND[n.kind] || NOTICE_KIND.info; let y = c.y + 24;
+            btn(x, c.y, LY.w, c.h, () => { news.open[n.id] = !news.open[n.id]; tone(660, 0.05, 'sine', 0.15); }); // a tap opens the note, another closes it
             rr(x, c.y, LY.w, c.h, 20, n.pinned ? '#fff8dc' : '#fffaf0', n.pinned ? '#f0a020' : '#d9cbbd', n.pinned ? 3 : 2.4);
             ctx.font = `19px ${F_T}`; const kw = ctx.measureText(kname).width + 28; rr(x + pad, y, kw, 32, 16, kc, null); text(kname, x + pad + kw / 2, y + 17, 19, '#fff', 'center', null, F_T);
             let tx = x + pad + kw + 10; if (n.pinned) { rr(tx, y, 64, 32, 16, '#fff3c4', '#f0a020', 2); text('고정', tx + 32, y + 17, 18, '#b07a10', 'center', null, F_T); tx += 74; }
             text(n.ends_at ? `${kDate(n.ends_at)}까지` : '', tx, y + 17, 19, '#c0605a', 'left', null, F_T);
             text(kDate(n.created_at), x + LY.w - pad, y + 17, 19, '#9a8b93', 'right', null, F_B);
             y += 32 + 14;
+            { const cx = x + LY.w - pad - 10, cy = y + 18, up = !!news.open[n.id]; ctx.lineWidth = 3; ctx.strokeStyle = '#9a8b93'; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(cx - 8, cy + (up ? 4 : -4)); ctx.lineTo(cx, cy + (up ? -4 : 4)); ctx.lineTo(cx + 8, cy + (up ? 4 : -4)); ctx.stroke(); ctx.strokeStyle = OUT; } // a chevron: down to open, up to close
             c.title.forEach(t => { text(t, x + pad, y + 18, 27, INK, 'left', null, F_T); y += 36; });
             if (c.body.length) { y += 10; c.body.forEach(t => { text(t, x + pad, y + 16, 21, '#5d4f58', 'left', null, F_B); y += 32; }); } }
           return height; }); }

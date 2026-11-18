@@ -18,6 +18,7 @@ The owner reviews every change on a phone. These rules come from their repeated 
 ## Versions (APP_VERSION in index.html)
 - Keep the numbers small: players should never see something like 1.10.0. The owner set it back to 1.8.6 on 2026-11-16.
 - Most updates, new content included (achievements, items, tuning), raise only the last number, one step per batch of work (1.8.6 -> 1.8.7). Do not raise it for every small request.
+- At most one step a day (Korean time): everything shipped the same day goes into that day's version and its single note. If the number already moved today, do not move it again.
 - Raise the middle number only for a big new way to play (doubles, online for four, the hall of fame were that size), and ask the owner first.
 - Renaming things (items, labels) does not change the version at all.
 - Item names live in two places, index.html (ITEMS) and supabase/2_wardrobe.sql: change both, and give the owner the SQL to run.
@@ -36,5 +37,6 @@ The owner reviews every change on a phone. These rules come from their repeated 
 - APP_VERSION raised: kind "update", title "1.9.4 업데이트". Not raised: kind "patch", title "1.9.3 패치"; patches on the same day go into one note (add lines, move created_at to now).
 - A patch made after an update, before the version moves again, goes into that update's note instead of a separate patch note. A line the patch makes untrue is replaced, not kept beside the new one (the count moved from the 온라인 button to beside 로그인: only the new place is written).
 - Short Korean lines starting with "· ", in players' words (what they will see or feel), no code or file names. Fixes for testing tools or invisible changes get no note.
+- Lines are as short as a headline ("· 업적 80개, 히든 업적 추가"), no explanations.
 - Keep notes short so players can take them in at a glance: only big changes (new content, new features, rule changes, bugs players actually hit). Small touch-ups get no line at all: redrawn or renamed items, colours, layout nudges, wording. A push with nothing big gets no note, not even a patch note. Three or four lines per note at most; merge related lines.
 - created_at is UTC ISO (date -u); id is unique text such as "patch-2026-11-17" or "update-1.9.4". Newest first is not needed; the game sorts.
