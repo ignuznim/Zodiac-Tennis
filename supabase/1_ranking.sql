@@ -51,7 +51,7 @@ begin
   if exists (select 1 from public.scores s where s.client_id = new.client_id and s.created_at > now() - interval '20 seconds') then
     raise exception 'slow down';
   end if;
-  new.score := (case new.level when 1 then 100 when 2 then 300 else 1000 end)
+  new.score := (case new.level when 1 then 100 when 2 then 250 else 500 end)
              + greatest(0, new.pts_for - new.pts_against) * 10
              + new.sweet * 2
              + new.combo * 2;
@@ -79,3 +79,10 @@ delete from public.scores a using public.scores b
  where a.id > b.id and a.client_id = b.client_id and a.mode = b.mode and a.score = b.score
    and a.duration_s = b.duration_s and a.pts_for = b.pts_for and a.pts_against = b.pts_against;
 create unique index if not exists scores_one_per_match on public.scores (client_id, mode, score, duration_s, pts_for, pts_against);
+
+-- The score for every record, worked out again by today's sum (easy 100, normal 250, hard 500 since 2026-11-18).
+-- Running this again changes nothing: a record already on today's sum keeps its score.
+update public.scores set score = (case level when 1 then 100 when 2 then 250 else 500 end)
+    + greatest(0, pts_for - pts_against) * 10 + sweet * 2 + combo * 2
+  where score is distinct from (case level when 1 then 100 when 2 then 250 else 500 end)
+    + greatest(0, pts_for - pts_against) * 10 + sweet * 2 + combo * 2;

@@ -2461,7 +2461,7 @@ function clientId() {
 }
 function rankHeaders(extra) { return Object.assign({ apikey: RANK.key, 'Content-Type': 'application/json' }, extra); }
 const COMBO_MAX = 9; // a perfect hit in a chain is worth this many extra points ×2 at most (the 10th in a row and on)
-const scoreOf = r => [0, 100, 300, 1000][r.level] + Math.max(0, r.pts_for - r.pts_against) * 10 + r.sweet * 2 + (r.combo || 0) * 2; // the same sum the database does
+const scoreOf = r => [0, 100, 250, 500][r.level] + Math.max(0, r.pts_for - r.pts_against) * 10 + r.sweet * 2 + (r.combo || 0) * 2; // the same sum the database does
 function canRank() { return m && m.sc.done && m.sc.winner === 0 && !m.online && !m.doubles && setup.mode === 'cpu' && m.P[1].ctrl === 'ai'; }
 function matchRecord(nickname) {
   return { nickname, mode: m.format || 'regular', level: m.level, animal: m.P[0].a, opponent: m.P[1].a, court: m.court,
