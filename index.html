@@ -2946,7 +2946,7 @@ function toast(s) { acct.msg = s; acct.msgT = 0; }
 async function rpc(fn, args) {
   if (!acct.sb || !acct.user) return null;
   const { data, error } = await acct.sb.rpc(fn, args || {});
-  if (error) { const m = error.message || ''; throw new Error(/no tickets/.test(m) ? '뽑기권이 없어요' : /nickname taken/.test(m) ? '이미 쓰는 닉네임이에요' : /bad nickname/.test(m) ? '닉네임은 1~8자로 정해 주세요' : /already claimed/.test(m) ? '이미 받았어요' : /not owned/.test(m) ? '갖고 있지 않은 아이템이에요' : /no such achievement/.test(m) ? '서버에 아직 없는 업적이에요 (서버 업데이트 필요)' : '서버와 연결하지 못했어요'); }
+  if (error) { const m = error.message || ''; throw new Error(/no tickets/.test(m) ? '뽑기권이 없어요' : /nickname taken/.test(m) ? '이미 쓰는 닉네임이에요' : /bad nickname/.test(m) ? '닉네임은 1~8자로 정해 주세요' : /already claimed/.test(m) ? '이미 받았어요' : /not owned/.test(m) ? '갖고 있지 않은 아이템이에요' : /all collected/.test(m) ? '모든 아이템을 12개씩 모았어요' : /no such achievement/.test(m) ? '서버에 아직 없는 업적이에요 (서버 업데이트 필요)' : '서버와 연결하지 못했어요'); }
   return data;
 }
 async function loadAccount() {

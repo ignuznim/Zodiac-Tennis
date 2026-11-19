@@ -303,17 +303,25 @@ begin
   return p;
 end $$;
 
--- The machine: one ticket, a grade by its odds (56 / 28 / 12 / 4), then one item of that grade at random
+-- The machine: one ticket, a grade by its odds (56 / 28 / 12 / 4), then one item of that grade at random.
+-- Twelve of an item is enough (one for each animal), so an item already owned 12 times is never drawn again:
+-- the draw is among the rest of that grade, and if the whole grade is done, among all the items still short of 12.
 create or replace function public.gacha_pull() returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare r double precision; g smallint; it public.items; was integer;
 begin
   perform public.me();
+  if not exists (select 1 from public.items i where coalesce((select v.count from public.inventory v where v.user_id = auth.uid() and v.item_id = i.id), 0) < 12) then raise exception 'all collected'; end if;
   update public.profiles set tickets = tickets - 1 where id = auth.uid() and tickets > 0;
   if not found then raise exception 'no tickets'; end if;
   r := random();
   g := case when r < 0.56 then 0 when r < 0.84 then 1 when r < 0.96 then 2 else 3 end;
-  select * into it from public.items where grade = g order by random() limit 1; -- every item of the grade equally likely, owned or not
+  select i.* into it from public.items i left join public.inventory v on v.item_id = i.id and v.user_id = auth.uid()
+    where i.grade = g and coalesce(v.count, 0) < 12 order by random() limit 1; -- every item of the grade still short of 12 equally likely
+  if it.id is null then
+    select i.* into it from public.items i left join public.inventory v on v.item_id = i.id and v.user_id = auth.uid()
+      where coalesce(v.count, 0) < 12 order by random() limit 1;
+  end if;
   select count into was from public.inventory where user_id = auth.uid() and item_id = it.id;
   insert into public.inventory (user_id, item_id) values (auth.uid(), it.id)
     on conflict (user_id, item_id) do update set count = public.inventory.count + 1;
