@@ -2484,7 +2484,7 @@ fbBox.querySelector('form').onsubmit = async e => {
 };
 const fbSeen = new Set(); // each error once a session, at most five
 function reportError(msg, stack) {
-  const key = String(msg).slice(0, 120); if (fbSeen.has(key) || fbSeen.size >= 5 || location.protocol === 'file:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname)) return; // only errors from the real site fbSeen.add(key);
+  const key = String(msg).slice(0, 120); if (fbSeen.has(key) || fbSeen.size >= 5 || location.protocol === 'file:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname)) return; fbSeen.add(key); // only errors from the real site, each once
   fbPost('error', `${msg}\n${String(stack || '').slice(0, 700)}`).catch(() => {});
 }
 addEventListener('error', e => reportError(e.message, e.error && e.error.stack));
