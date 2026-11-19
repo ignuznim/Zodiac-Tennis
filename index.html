@@ -465,17 +465,17 @@ function hat2(L, front) {
     rr(-27, -93, 54, 7, 3.5, c, OUT, 2.2); ctx.save(); ctx.beginPath(); ctx.rect(-26, -92, 52, 5); ctx.clip(); glossBox(-27, -93, 54, 7, 0.7); ctx.restore();
     if (front) { ctx.lineWidth = 2.2; for (const sd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(0, -93); ctx.bezierCurveTo(sd * 3, -101, sd * 11, -101, sd * 10, -95); ctx.bezierCurveTo(sd * 9, -92, sd * 5, -93, sd * 6, -96); ctx.lineWidth = 5; ctx.strokeStyle = OUT; ctx.stroke(); ctx.lineWidth = 2.6; ctx.strokeStyle = c; ctx.stroke(); } poly([0, -104, -3, -96, 0, -92, 3, -96], c); E(0, -97, 1.6, 1.6, '#e2574c', 0, true); }
     ctx.strokeStyle = OUT; ctx.lineWidth = 2.4; star(-18, -100, 3, '#ffffff'); star(22, -97, 2.4, '#fff1b0'); return true; }
-  if (k === 'leaf') { // a big leaf held over the head against the rain
-    for (const [x, y] of [[-30, -150], [-8, -160], [24, -152], [36, -138]]) { const yy = y + (NOW() * 40 + x * 3) % 22; ctx.globalAlpha = 0.8; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(x, yy - 4); ctx.quadraticCurveTo(x + 3, yy + 2, x, yy + 3); ctx.quadraticCurveTo(x - 3, yy + 2, x, yy - 4); ctx.fillStyle = '#9ad0ff'; ctx.fill(); ctx.stroke(); ctx.globalAlpha = 1; }
-    ctx.lineWidth = 4.6; ctx.beginPath(); ctx.moveTo(22, -86); ctx.quadraticCurveTo(26, -108, 6, -122); ctx.stroke(); ctx.lineWidth = 2.6; ctx.strokeStyle = '#6b8f3a'; ctx.stroke(); ctx.strokeStyle = OUT; ctx.lineWidth = 2.4;
-    const leaf = () => { ctx.beginPath(); ctx.moveTo(-44, -112); ctx.bezierCurveTo(-34, -146, 30, -150, 46, -118); ctx.quadraticCurveTo(28, -122, 18, -114); ctx.quadraticCurveTo(0, -120, -18, -112); ctx.quadraticCurveTo(-30, -118, -44, -112); ctx.closePath(); };
-    leaf(); ctx.fillStyle = c; ctx.fill(); ctx.save(); leaf(); ctx.clip(); glossBox(-46, -150, 92, 40, 0.35); ctx.strokeStyle = 'rgba(30,90,40,0.5)'; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(-40, -114); ctx.quadraticCurveTo(0, -140, 44, -120); for (let i = -3; i <= 3; i++) { const x = i * 11; ctx.moveTo(x, -128 + Math.abs(i) * 2); ctx.lineTo(x + 6, -142 + Math.abs(i) * 3); ctx.moveTo(x, -128 + Math.abs(i) * 2); ctx.lineTo(x + 3, -116); } ctx.stroke(); ctx.restore(); leaf(); ctx.stroke(); return true; }
+  if (k === 'sangtu') { // a topknot: the hair twisted up into a bun on the crown, a pin through it, the horsehair band (망건) round the brow with a jade button at each temple
+    ctx.lineWidth = 2.4; E(0, -103, 8, 9.5, c); ctx.save(); ctx.beginPath(); ctx.ellipse(0, -103, 7.1, 8.6, 0, 0, 7); ctx.clip(); ctx.strokeStyle = 'rgba(255,255,255,0.28)'; ctx.lineWidth = 1.2; ctx.beginPath(); for (const d of [-3, 1, 5]) { ctx.moveTo(d - 4, -95); ctx.quadraticCurveTo(d - 1, -104, d + 2, -111); } ctx.stroke(); ctx.restore();
+    rod(-13, -103, 13, -106, 2, '#f6c445'); E(13.5, -106, 2.2, 2.2, '#f6c445');
+    rr(-27, -93, 54, 8, 4, '#3b3340', OUT, 2.2); ctx.save(); ctx.beginPath(); ctx.rect(-26, -92, 52, 6); ctx.clip(); ctx.strokeStyle = 'rgba(255,255,255,0.22)'; ctx.lineWidth = 0.9; ctx.beginPath(); for (let x = -30; x < 30; x += 3.5) { ctx.moveTo(x, -92); ctx.lineTo(x + 6, -86); ctx.moveTo(x + 6, -92); ctx.lineTo(x, -86); } ctx.stroke(); ctx.restore();
+    ctx.lineWidth = 1.4; for (const sd of [-1, 1]) { E(sd * 24, -89, 2.6, 2.6, '#9fe0c8'); E(sd * 24 - 0.8, -89.8, 0.8, 0.8, '#ffffff', 0, true); } ctx.lineWidth = 2.4; return true; }
   return false;
 }
 // ---- 1.9.5 clothes: the neck at 0, -49, the body an ellipse round 0, -30 (21 by 24) ----
-const WIDE = L => L.k === 'hanbok' || L.k === 'dopo' || L.k === 'nongak' || L.k === 'yusaeng' || L.k === 'dragonrobe'; // robes with wide sleeves
+const WIDE = L => L.k === 'hanbok' || L.k === 'dopo' || L.k === 'nongak' || L.k === 'yusaeng' || L.k === 'dragonrobe' || L.k === 'reaper'; // robes with wide sleeves
 const NOSLEEVE = L => L.k === 'tank' || L.k === 'singlet' || L.k === 'tutu';
-const HEM2 = { singlet: -7, dopo: -8, icedress: -8, catsuit: -7, momppe: -7, hwarang: -11, champ: -13, yusaeng: -8, dragonrobe: -8, pajama: -12 };
+const HEM2 = { singlet: -7, dopo: -8, icedress: -8, reaper: -8, momppe: -7, hwarang: -11, champ: -13, yusaeng: -8, dragonrobe: -8, pajama: -12 };
 function flower5(x, y, r, c) { for (let i = 0; i < 5; i++) { const a = i / 5 * 6.283; E(x + Math.cos(a) * r, y + Math.sin(a) * r, r * 0.85, r * 0.85, c, 0, true); } E(x, y, r * 0.6, r * 0.6, '#ffd34d', 0, true); }
 function sash(x0, y0, x1, y1, cols, w = 2.6) { cols.forEach((c, i) => { const o = (i - (cols.length - 1) / 2) * w; ctx.lineWidth = w + 0.2; ctx.strokeStyle = c; ctx.beginPath(); ctx.moveTo(x0 + o, y0 + o * 0.6); ctx.lineTo(x1 + o, y1 + o * 0.6); ctx.stroke(); }); }
 function cloth2(L, front, hm, c, S, skin) { // patterns, painted inside the body
@@ -491,7 +491,7 @@ function cloth2(L, front, hm, c, S, skin) { // patterns, painted inside the body
   if (k === 'icedress') { const g = ctx.createLinearGradient(0, -56, 0, hm); g.addColorStop(0, '#d8f1ff'); g.addColorStop(1, c); S(-30, -80, 60, 80, g); for (const [x, y, r] of [[-12, -36, 2.6], [9, -42, 2], [13, -24, 2.8], [-6, -18, 2], [2, -30, 1.6], [-16, -24, 1.6]]) star(x, y, r, '#ffffff'); }
   if (k === 'hwarang') { ctx.strokeStyle = '#e8c35a'; ctx.lineWidth = 1.1; for (let row = 0; row < 6; row++) { const y = -46 + row * 4.6; ctx.beginPath(); for (let x = -22 + (row % 2) * 3; x < 24; x += 6) { ctx.moveTo(x - 3, y); ctx.arc(x, y, 3, Math.PI, 0, true); } ctx.stroke(); } S(-30, -20, 60, 4, '#7a4a2a'); E(0, -18, 3, 3, '#f6c445', 0, true); }
   if (k === 'allwhite') { S(-21, -80, 1.6, 80, '#5b3e8a'); S(-18.6, -80, 1.6, 80, '#4fae5a'); S(19.4, -80, 1.6, 80, '#5b3e8a'); S(17, -80, 1.6, 80, '#4fae5a'); const g = ctx.createLinearGradient(-20, -50, 20, -16); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, 'rgba(200,220,255,0.35)'); g.addColorStop(1, 'rgba(255,255,255,0)'); S(-30, -80, 60, 80, g); }
-  if (k === 'catsuit') { const g = ctx.createLinearGradient(-20, -54, 14, -8); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.35, 'rgba(255,255,255,0.28)'); g.addColorStop(0.45, 'rgba(255,255,255,0)'); S(-30, -80, 60, 80, g); S(-30, -23, 60, 3.4, '#e2574c'); }
+  if (k === 'reaper') { const g = ctx.createLinearGradient(-20, -54, 14, -8); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.4, 'rgba(255,255,255,0.14)'); g.addColorStop(0.55, 'rgba(255,255,255,0)'); S(-30, -80, 60, 80, g); }
   if (k === 'yusaeng') { S(-30, -80, 60, 80, '#3a4f9a'); ctx.fillStyle = 'rgba(255,255,255,0.08)'; for (let x = -26; x < 28; x += 5) ctx.fillRect(x, -80, 1, 80); S(-30, -26, 60, 4, '#6b2338'); }
   if (k === 'pajama') { ctx.fillStyle = 'rgba(61,111,176,0.55)'; for (let x = -26; x < 28; x += 5) ctx.fillRect(x, -80, 1.4, 80); S(-30, -24, 60, 1.6, '#ffffff'); }
   if (k === 'school') { S(-30, -80, 60, 80, '#2f3d6b'); ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 1; ctx.beginPath(); for (let x = -26; x < 28; x += 4) { ctx.moveTo(x, -80); ctx.lineTo(x, 0); } ctx.stroke(); }
@@ -514,9 +514,10 @@ function shirt2(L, front, hm, c, dk) { // collars and the rest; true when drawn
     if (k === 'blazer') { vneck('#ffffff', 8, -30); ctx.lineWidth = 1.2; poly([-1.6, -48, 1.6, -48, 2.4, -36, 0, -32, -2.4, -36], '#d0565a'); ctx.lineWidth = 1.6; for (const sd of [-1, 1]) poly([sd * 8, -52, sd * 13, -44, sd * 1, -26, 0, -30], tint(c, '#3b3340', 0.25)); for (const y of [-24, -18]) E(-2, y, 1.4, 1.4, '#f6c445', 0, true); poly([10, -36, 15, -36, 14, -33, 11, -33], '#ffffff'); return true; }
     if (k === 'cardigan') { vneck('#ffffff', 7, -30); ctx.lineWidth = 2.4; for (const [col, o] of [['#5b3e8a', 0], ['#4fae5a', 2.4]]) { ctx.strokeStyle = col; ctx.beginPath(); ctx.moveTo(-8 - o, -52); ctx.lineTo(0, -30 + o); ctx.lineTo(8 + o, -52); ctx.stroke(); } ctx.strokeStyle = OUT; ctx.lineWidth = 1.2; for (const y of [-26, -21, -16]) E(0, y, 1.5, 1.5, '#c9b08a'); ctx.beginPath(); ctx.moveTo(0, -30); ctx.lineTo(0, hm); ctx.stroke(); return true; }
     if (k === 'yusaeng') { poly([-6, -52, 0, -45, 6, -52], '#ffffff'); ctx.lineWidth = 1.6; ctx.strokeStyle = '#6b2338'; ctx.beginPath(); ctx.moveTo(-3, -23); ctx.lineTo(-4, -8); ctx.moveTo(1, -23); ctx.lineTo(1.5, -8); ctx.moveTo(-1, -23); ctx.quadraticCurveTo(-8, -18, -6, -12); ctx.stroke(); ctx.strokeStyle = OUT; ctx.lineWidth = 1.1; E(-4, -8, 1.4, 2.4, '#6b2338'); E(1.5, -8, 1.4, 2.4, '#6b2338'); return true; }
-    if (k === 'nongak' || k === 'dopo' || k === 'hwarang') { const col = k === 'dopo' ? '#2e2830' : k === 'yusaeng' ? '#ffffff' : k === 'hwarang' ? '#f6c445' : '#ffffff'; ctx.lineWidth = 6; ctx.strokeStyle = OUT; ctx.beginPath(); ctx.moveTo(-9, -48); ctx.quadraticCurveTo(-4, -36, 8, -30); ctx.stroke(); ctx.lineWidth = 3.6; ctx.strokeStyle = col; ctx.stroke(); ctx.strokeStyle = OUT; ctx.lineWidth = 1.6;
+    if (k === 'nongak' || k === 'dopo' || k === 'hwarang' || k === 'reaper') { const col = k === 'dopo' ? '#2e2830' : k === 'reaper' ? '#ffffff' : k === 'yusaeng' ? '#ffffff' : k === 'hwarang' ? '#f6c445' : '#ffffff'; ctx.lineWidth = 6; ctx.strokeStyle = OUT; ctx.beginPath(); ctx.moveTo(-9, -48); ctx.quadraticCurveTo(-4, -36, 8, -30); ctx.stroke(); ctx.lineWidth = 3.6; ctx.strokeStyle = col; ctx.stroke(); ctx.strokeStyle = OUT; ctx.lineWidth = 1.6;
       if (k === 'dopo') { ctx.lineWidth = 2.2; ctx.strokeStyle = '#d0565a'; ctx.beginPath(); ctx.moveTo(-20, -27); ctx.quadraticCurveTo(0, -24, 20, -27); ctx.stroke(); ctx.strokeStyle = '#3d6fb0'; ctx.beginPath(); ctx.moveTo(6, -25); ctx.lineTo(8, -12); ctx.moveTo(9, -25); ctx.lineTo(12, -13); ctx.stroke(); ctx.strokeStyle = OUT; ctx.lineWidth = 1.2; E(8, -11, 2, 2.6, '#d0565a'); E(12, -12, 2, 2.6, '#3d6fb0'); }
       if (k === 'yusaeng') { ctx.lineWidth = 1.6; ctx.strokeStyle = '#6b2338'; ctx.beginPath(); ctx.moveTo(-3, -23); ctx.lineTo(-4, -8); ctx.moveTo(1, -23); ctx.lineTo(1.5, -8); ctx.moveTo(-1, -23); ctx.quadraticCurveTo(-8, -18, -6, -12); ctx.stroke(); ctx.strokeStyle = OUT; ctx.lineWidth = 1.1; E(-4, -8, 1.4, 2.4, '#6b2338'); E(1.5, -8, 1.4, 2.4, '#6b2338'); }
+      if (k === 'reaper') { ctx.lineWidth = 2.4; ctx.strokeStyle = '#6b6470'; ctx.beginPath(); ctx.moveTo(6, -27); ctx.lineTo(7, -10); ctx.moveTo(9, -27); ctx.lineTo(13, -11); ctx.stroke(); ctx.strokeStyle = OUT; ctx.lineWidth = 1.2; E(8, -27, 2.4, 2, '#6b6470'); }
       if (k === 'hwarang') { E(6, -26, 4.5, 4.5, '#f6c445'); E(6, -26, 2, 2, '#e2574c', 0, true); } return true; }
     if (k === 'kfoot') { ctx.fillStyle = '#c41a35'; ctx.beginPath(); ctx.arc(0, -50, 7.5, 0, Math.PI); ctx.fill(); ctx.lineWidth = 1.4; ctx.stroke();
       rr(7, -44, 6, 7.6, 1, '#ffffff', OUT, 1); rr(8, -43, 4, 5.6, 0.6, '#2a2228', null); E(10, -40.6, 1.4, 1.5, '#ffffff', 0, true); ctx.font = `bold 3.6px ${F_T}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#f6c445'; ctx.fillText('KOREA', 10, -34.4); ctx.lineWidth = 1.8; return true; }
@@ -530,18 +531,16 @@ function shirt2(L, front, hm, c, dk) { // collars and the rest; true when drawn
       rr(-17, -40, 10, 4.5, 1, '#ffffff', OUT, 1.2); ctx.fillStyle = '#4a3d47'; ctx.fillRect(-15.5, -38.6, 7, 1.2); for (const y of [-26, -19]) E(-4, y, 1.3, 1.3, '#e8d9a0', 0, true); return true; }
     if (k === 'dragonrobe') { ctx.lineWidth = 3.4; ctx.strokeStyle = OUT; ctx.beginPath(); ctx.arc(0, -50, 8.5, 0.1, Math.PI - 0.1); ctx.stroke(); ctx.lineWidth = 2; ctx.strokeStyle = '#d9a520'; ctx.stroke(); ctx.strokeStyle = OUT; ctx.lineWidth = 1.6; dragonBadge(0, -35, 7.5); return true; }
     if (k === 'icedress') { ctx.fillStyle = 'rgba(255,255,255,0.75)'; ctx.beginPath(); ctx.moveTo(-12, -48); ctx.quadraticCurveTo(-6, -40, 0, -44); ctx.quadraticCurveTo(6, -40, 12, -48); ctx.lineTo(12, -52); ctx.lineTo(-12, -52); ctx.closePath(); ctx.fill(); ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(-12, -48); ctx.quadraticCurveTo(-6, -40, 0, -44); ctx.quadraticCurveTo(6, -40, 12, -48); ctx.stroke(); star(0, -46, 3, '#ffffff'); return true; }
-    if (k === 'catsuit') { rr(-8, -53, 16, 5, 2.5, tint(c, '#ffffff', 0.15), OUT, 1.4); return true; }
     if (k === 'champ') { rr(-9, -54, 18, 6, 2, tint(c, '#fff8e7', 0.4), OUT, 1.6); ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(0, -48); ctx.lineTo(0, hm); ctx.stroke(); ctx.lineWidth = 2.4; ctx.strokeStyle = '#e2574c'; ctx.beginPath(); ctx.moveTo(-6, -48); ctx.lineTo(-2, -34); ctx.moveTo(6, -48); ctx.lineTo(2, -34); ctx.stroke(); ctx.strokeStyle = OUT; ctx.lineWidth = 1.4; E(0, -30, 5, 5, '#f6c445'); star5(0, -30, 3, '#fff8e7', 0.8); return true; }
     return false;
   }
-  if (k === 'nongak' || k === 'blazer' || k === 'dopo') { ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(0, -48); ctx.lineTo(0, hm); ctx.stroke(); return true; }
+  if (k === 'nongak' || k === 'blazer' || k === 'dopo' || k === 'reaper') { ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(0, -48); ctx.lineTo(0, hm); ctx.stroke(); return true; }
   if (k === 'hwarang') { ctx.lineWidth = 1.2; ctx.strokeStyle = '#f6c445'; ctx.beginPath(); ctx.moveTo(-18, -40); ctx.quadraticCurveTo(0, -36, 18, -40); ctx.stroke(); ctx.strokeStyle = OUT; return true; }
   if (k === 'champ') { star(0, -34, 8, '#fff8e7'); return true; }
   if (k === 'dragonrobe') { dragonBadge(0, -34, 8); return true; }
   if (k === 'kfoot') { ctx.font = `bold 15px ${F_T}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#ffffff'; ctx.fillText('7', 0, -30); ctx.lineWidth = 1.8; ctx.strokeStyle = OUT; return true; }
   if (k === 'kbase') { ctx.font = `bold 16px ${F_T}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round'; ctx.lineWidth = 3; ctx.strokeStyle = '#d0263a'; ctx.strokeText('10', 0, -28); ctx.fillStyle = '#ffffff'; ctx.fillText('10', 0, -28); ctx.strokeStyle = OUT; ctx.lineWidth = 1.8; return true; }
   if (k === 'school' || k === 'yusaeng' || k === 'pajama') { ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(-18, -40); ctx.quadraticCurveTo(0, -37, 18, -40); ctx.stroke(); return true; }
-  if (k === 'catsuit') { rr(-8, -53, 16, 4, 2, tint(c, '#ffffff', 0.15), OUT, 1.4); return true; }
   return false;
 }
 function sleeve2(L, len, w0) { // cuffs and the like, inside a sleeve laid along x
@@ -553,7 +552,6 @@ function sleeve2(L, len, w0) { // cuffs and the like, inside a sleeve laid along
   if (k === 'hwarang' || k === 'nongak') S(len - 3, -20, 10, 40, k === 'hwarang' ? '#f6c445' : '#3d6fb0');
   if (k === 'champ') S(-2, -1, len + 6, 2.4, '#ffffff');
   if (k === 'icedress') for (const [x, y] of [[len * 0.3, -1.5], [len * 0.65, 1.5]]) star(x, y, 1.6, '#ffffff');
-  if (k === 'catsuit') S(-2, -w0 / 2 + 1, len + 6, 1.6, 'rgba(255,255,255,0.25)');
   if (k === 'momppe') S(-2, -20, len + 8, 40, '#fff3e0');
   if (k === 'kfoot') { S(len - 4, -20, 4, 40, '#2a2228'); S(len - 5, -20, 1, 40, '#ffffff'); }
   if (k === 'kbase') { S(-2, -20, len * 0.45, 40, '#ffffff'); S(len - 5.5, -20, 2, 40, '#d0263a'); S(len - 3.5, -20, 1.6, 40, '#ffffff'); S(len - 1.9, -20, 2, 40, '#d0263a'); }
@@ -606,6 +604,9 @@ function foot2(L, fx, ff, skin) { // the new kinds drawn whole; false for the sn
     p(); ctx.fillStyle = k === 'glass' ? 'rgba(200,236,255,0.55)' : L.c; ctx.fill(); ctx.save(); p(); ctx.clip(); if (k === 'ruby') for (let i = 0; i < 9; i++) E(fx - 7 + (i * 5.3) % 14, ff + 1 + (i * 3.7) % 5.5, 0.9, 0.9, '#ffb3bd', 0, true); ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.fillRect(fx - 6, ff + 1, 2, 4); ctx.restore(); p(); ctx.stroke();
     if (k === 'ruby') { ctx.lineWidth = 1.4; E(fx - 2.6, ff, 2.6, 1.8, '#b81d33', -0.4); E(fx + 2.6, ff, 2.6, 1.8, '#b81d33', 0.4); E(fx, ff, 1.4, 1.4, '#b81d33'); } else { star(fx + 5, ff - 4, 2.6, '#ffffff'); star(fx - 7, ff + 2, 1.8, '#ffffff'); }
     ctx.lineWidth = 2.6; return true; }
+  if (k === 'mokhwa') { // a mokhwa: a tall boot of black felt, a magenta band round the top, cream piping down the front, a thick white sole
+    const top = ff - 15; rr(fx - 7, top, 14, ff - top + 2, 4, L.c, OUT, 2.4); rr(fx - 9.5, ff + 1.5, 19, 6, 3, '#f3ead6', OUT, 2.2); E(fx, ff - 0.5, 8.5, 6.3, L.c); ctx.save(); ctx.beginPath(); ctx.ellipse(fx, ff - 0.5, 7.2, 5.1, 0, 0, 7); ctx.clip(); glossBox(fx - 9, ff - 7, 18, 13, 0.3); ctx.restore();
+    rr(fx - 7.5, top - 1, 15, 4, 2, '#b8327a', OUT, 1.6); ctx.strokeStyle = '#f3ead6'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(fx, top + 4); ctx.lineTo(fx, ff - 6); ctx.quadraticCurveTo(fx, ff + 2, fx + 1, ff + 4); ctx.stroke(); ctx.strokeStyle = OUT; ctx.lineWidth = 2.6; return true; }
   if (k === 'frog' || k === 'fur') { // a tall boot: a green one with a frog's eyes on the toe, a brown one with a fluffy cuff
     const top = ff - 14; rr(fx - 7, top, 14, ff - top + 2, 4, L.c, OUT, 2.4); rr(fx - 9.5, ff + 1.5, 19, 5.5, 2.75, k === 'fur' ? '#8a5a3a' : '#3f8a3a', OUT, 2.2); E(fx, ff - 0.5, 8.5, 6.3, L.c); ctx.save(); ctx.beginPath(); ctx.ellipse(fx, ff - 0.5, 7.2, 5.1, 0, 0, 7); ctx.clip(); glossBox(fx - 9, ff - 7, 18, 13, 0.45); ctx.restore();
     if (k === 'fur') for (const d of [-6, -2, 2, 6]) E(fx + d, top, 3.2, 3, '#fff8e7'); else { for (const d of [-3.5, 3.5]) { E(fx + d, ff - 4, 2.8, 2.8, L.c); E(fx + d, ff - 4, 1.3, 1.5, INK, 0, true); } ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(fx, ff + 1, 3, 0.3, Math.PI - 0.3); ctx.stroke(); }
@@ -660,6 +661,9 @@ function shoeIcon2(L) { // the new kinds from the side; false for the sneakers
     ctx.lineWidth = 5.4; ctx.beginPath(); ctx.moveTo(-10, -1); ctx.quadraticCurveTo(-4, -7, 2, -2); ctx.stroke(); ctx.lineWidth = 3; ctx.strokeStyle = glass ? '#e6f6ff' : '#b81d33'; ctx.stroke(); ctx.strokeStyle = OUT; E(-4, -4.5, 1.8, 1.8, glass ? '#ffffff' : '#f6c445');
     if (!glass) { ctx.lineWidth = 1.6; E(15, 0, 3.2, 2, '#b81d33', -0.4); E(20, 1.5, 3.2, 2, '#b81d33', 0.6); E(17.5, 0.8, 1.5, 1.5, '#b81d33'); } else { star(14, 4, 5, '#ffffff'); star(-14, -10, 3, '#ffffff'); star(26, 11, 2.2, '#ffffff'); }
     return true; }
+  if (k === 'mokhwa') { const p = () => { ctx.beginPath(); ctx.moveTo(-23, 11); ctx.lineTo(-22, -28); ctx.lineTo(-2, -28); ctx.lineTo(-1, -9); ctx.quadraticCurveTo(6, -2, 20, 0); ctx.quadraticCurveTo(30, 2, 28, 11); ctx.closePath(); };
+    fillPath(p, L.c, -30, 13, () => { ctx.strokeStyle = '#f3ead6'; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(-11, -25); ctx.lineTo(-11, 2); ctx.quadraticCurveTo(4, 2, 12, 9); ctx.moveTo(-18, -24); ctx.lineTo(-19, 9); ctx.stroke(); rr(-15, -22, 6, 2.2, 1, '#f3ead6', null); });
+    rr(-24, -31, 24, 5.5, 2.75, '#b8327a', OUT, 1.8); rr(-26, 9, 57, 7.5, 3.75, '#f3ead6', OUT, 2.2); ctx.strokeStyle = 'rgba(160,140,110,0.6)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-22, 12.6); ctx.lineTo(27, 12.6); ctx.stroke(); ctx.strokeStyle = OUT; ctx.lineWidth = 2.6; return true; }
   if (k === 'frog' || k === 'fur') { const p = () => { ctx.beginPath(); ctx.moveTo(-23, 12); ctx.lineTo(-22, -26); ctx.lineTo(-3, -26); ctx.lineTo(-2, -8); ctx.quadraticCurveTo(4, -1, 20, 1); ctx.quadraticCurveTo(28, 3, 27, 12); ctx.closePath(); };
     fillPath(p, L.c, -28, 14, () => { ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.fillRect(-18, -20, 3.5, 28); }); rr(-25, 10, 54, 6, 3, k === 'fur' ? '#8a5a3a' : '#3f8a3a', OUT, 2.2);
     if (k === 'fur') for (const x of [-22, -16, -10, -4]) E(x, -27, 4.4, 4, '#fff8e7'); else { E(18, -3, 4.6, 4.6, L.c); E(19, -3.4, 2.2, 2.6, INK, 0, true); ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(22, 4, 4, 0.2, 1.6); ctx.stroke(); }
@@ -755,9 +759,15 @@ function racket2(L, col) { // things swung like a racket; true when drawn
   if (k === 'bungeo') { // a fish-shaped bun on a stick
     rod(0, 4, 0, -18, 3.4, '#c9a25e'); ctx.save(); ctx.translate(0, -38); poly([-2, 14, -11, 24, 11, 24, 2, 14], c); E(0, -2, 12, 18, c); ctx.save(); ctx.beginPath(); ctx.ellipse(0, -2, 11, 17, 0, 0, 7); ctx.clip(); glossBox(-12, -20, 24, 36, 0.35); ctx.strokeStyle = 'rgba(140,80,20,0.5)'; ctx.lineWidth = 1; ctx.beginPath(); for (let y = -4; y < 14; y += 4) for (let x = -8; x < 9; x += 4) { ctx.moveTo(x - 2, y); ctx.arc(x, y, 2, Math.PI, 0); } ctx.stroke(); ctx.restore();
     E(-4, -12, 2.2, 2.2, '#3b3340', 0, true); ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(2, -15, 3, 0.4, 1.6); ctx.stroke(); ctx.restore(); return true; }
-  if (k === 'plate') { // the silver dish for a champion
-    rod(0, 4, 0, -16, 4, '#b8c2cc'); E(0, -33, 18, 18, c); ctx.save(); ctx.beginPath(); ctx.arc(0, -33, 17, 0, 7); ctx.clip(); const g = ctx.createLinearGradient(-16, -50, 16, -16); g.addColorStop(0, 'rgba(255,255,255,0.8)'); g.addColorStop(0.4, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(60,70,90,0.25)'); ctx.fillStyle = g; ctx.fillRect(-18, -52, 36, 38); ctx.restore();
-    ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(0, -33, 13, 0, 7); ctx.stroke(); ctx.beginPath(); ctx.arc(0, -33, 6, 0, 7); ctx.stroke(); for (let i = 0; i < 16; i++) { const a = i / 16 * 6.283; E(Math.cos(a) * 15.5, -33 + Math.sin(a) * 15.5, 0.9, 0.9, '#8d96a3', 0, true); } star(8, -42, 3, '#ffffff'); return true; }
+  if (k === 'news') { // a newspaper rolled up tight: printed lines spiralling round it, a rubber band, the rolled end showing its coil
+    const body = () => { ctx.beginPath(); ctx.roundRect(-5.5, -56, 11, 60, 4); }; body(); ctx.fillStyle = c; ctx.fill(); ctx.save(); body(); ctx.clip();
+    ctx.fillStyle = 'rgba(90,85,95,0.45)'; for (let y = -50; y < 2; y += 3.4) for (let x = -5; x < 6; x += 4.2) ctx.fillRect(x + ((y / 3.4) % 2) * 1.4, y, 2.8, 1.1); ctx.fillStyle = 'rgba(59,51,64,0.75)'; ctx.fillRect(-5.5, -44, 11, 5);
+    ctx.strokeStyle = 'rgba(160,150,130,0.9)'; ctx.lineWidth = 1.1; ctx.beginPath(); for (let y = -60; y < 10; y += 16) { ctx.moveTo(-6, y + 8); ctx.lineTo(6, y); } ctx.stroke(); ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.fillRect(-3.6, -54, 1.6, 56); ctx.restore(); body(); ctx.lineWidth = 2.4; ctx.stroke();
+    rr(-6.6, -20, 13.2, 3.4, 1.7, '#e2574c', OUT, 1.4); ctx.lineWidth = 1.8; E(0, -56, 5.5, 2.4, tint(c, '#ffffff', 0.4)); ctx.lineWidth = 0.9; ctx.beginPath(); ctx.ellipse(0, -56, 3, 1.3, 0, 0, 7); ctx.stroke(); ctx.lineWidth = 2.4; return true; }
+  if (k === 'scroll') { // a memorial to the king: a long sheet of paper between two wooden rollers, written in columns, a red seal
+    rod(0, 4, 0, -12, 3.6, '#8a5a3a'); rr(-12, -55, 24, 42, 1.5, c, OUT, 2.2); ctx.save(); ctx.beginPath(); ctx.rect(-11, -54, 22, 40); ctx.clip(); ctx.fillStyle = 'rgba(160,140,110,0.18)'; ctx.fillRect(-11, -54, 22, 40);
+    ctx.fillStyle = '#3b3340'; for (const x of [7, 3, -1, -5]) for (let y = -50 + (x % 3); y < -20; y += 4.2) ctx.fillRect(x - 1, y, 2, 2.6 + ((x * 7 + y) % 3 === 0 ? 1 : 0)); E(-7.5, -19, 2.6, 2.6, '#d8443c', 0, true); ctx.restore();
+    for (const y of [-58, -15]) { rr(-15, y, 30, 5, 2.5, '#8a5a3a', OUT, 1.8); for (const sd of [-1, 1]) E(sd * 15.5, y + 2.5, 2, 3, '#c98f5f'); } ctx.lineWidth = 2.4; return true; }
   if (k === 'wand') { // a magic wand: a pink stick, a star with a heart, a ribbon
     rod(0, 4, 0, -36, 3.6, c); ctx.lineWidth = 3; ctx.strokeStyle = '#9ad0ff'; ctx.beginPath(); ctx.moveTo(0, -24); ctx.quadraticCurveTo(10, -18, 8, -8); ctx.moveTo(0, -24); ctx.quadraticCurveTo(-10, -16, -6, -6); ctx.stroke(); ctx.strokeStyle = OUT;
     featherWing(-11, -41, -1, 0.85); featherWing(11, -41, 1, 0.85); rr(-3.6, -30, 7.2, 5, 2, '#f6c445', OUT, 1.6); star5(0, -40, 15, '#ffe45c', 2.4); ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(0, -35); ctx.bezierCurveTo(-7, -40, -4, -47, 0, -43); ctx.bezierCurveTo(4, -47, 7, -40, 0, -35); ctx.fillStyle = c; ctx.fill(); ctx.stroke(); star(12, -54, 3, '#ffffff'); star(-13, -50, 2.4, '#ffffff'); return true; }
@@ -2695,7 +2705,7 @@ const GRADE = [{ ko: '일반', c: '#8f99a3' }, { ko: '희귀', c: '#3d8be0' }, {
 const ODDS = [56, 28, 12, 4]; // the machine's odds by grade, in per cent (worked out on the server, shown here)
 const SLOTS = [['hat', '모자', 'reflex'], ['uniform', '유니폼', 'stamina'], ['shoes', '신발', 'speed'], ['racket', '라켓', 'power']];
 const ITEMS = { // the same catalogue as the server's items table; look is how it is drawn
-  h1: ['hat', 0, 'reflex', 0.1, '흰 머리띠', { k: 'band', c: '#ffffff' }], h2: ['hat', 0, 'reflex', 0.1, '빨간 머리띠', { k: 'band', c: '#f25f5c' }],
+  h1: ['hat', 0, 'reflex', 0.1, '흰 머리띠', { k: 'band', c: '#ffffff' }], h2: ['hat', 0, 'reflex', 0.1, '빨간 머리띠', { k: 'band', c: '#e2574c' }],
   h7: ['hat', 0, 'speed', 0.1, '노란 머리띠', { k: 'band', c: '#ffe45c' }], h8: ['hat', 0, 'stamina', 0.1, '초록 머리띠', { k: 'band', c: '#4fc37a' }],
   h3: ['hat', 1, 'reflex', 0.2, '파란 썬캡', { k: 'cap', c: '#3d8be0' }], h4: ['hat', 0, 'spin', 0.1, '보라 머리띠', { k: 'band', c: '#b48be8' }],
   h9: ['hat', 1, 'power', 0.2, '빨간 야구모자', { k: 'cap', c: '#e2574c' }], h10: ['hat', 1, 'speed', 0.2, '하얀 테니스캡', { k: 'cap', c: '#ffffff' }],
@@ -2706,103 +2716,105 @@ const ITEMS = { // the same catalogue as the server's items table; look is how i
   u3: ['uniform', 1, 'stamina', 0.2, '줄무늬 셔츠', { k: 'shirt', c: ['#ffffff'], stripe: '#3d8be0' }], u4: ['uniform', 1, 'power', 0.2, '국가대표 축구 저지', { k: 'kfoot', c: ['#e0213f'] }],
   u9: ['uniform', 1, 'spin', 0.2, '체크 셔츠', { k: 'shirt', c: ['#ffffff'], check: '#e2574c' }], u10: ['uniform', 1, 'reflex', 0.2, '해군 셔츠', { k: 'sailor', c: ['#ffffff'], trim: '#3d6fb0' }],
   u5: ['uniform', 2, 'stamina', 0.3, '색동 한복', { k: 'hanbok', c: ['#ffe08a'], rb: ['#e2574c', '#f6c445', '#4fc37a', '#3d8be0', '#b48be8'] }], u11: ['uniform', 2, 'power', 0.3, '태권도 도복', { k: 'dobok', c: ['#ffffff'] }],
-  u6: ['uniform', 3, 'stamina', 0.5, '황금 유니폼', { k: 'pro', c: ['#f6c445'] }], u12: ['uniform', 3, 'power', 0.5, '불꽃 유니폼', { k: 'flame', c: ['#f25f5c'] }],
-  s1: ['shoes', 0, 'speed', 0.1, '흰 테니스화', { st: 'court', c: '#ffffff' }], s2: ['shoes', 0, 'speed', 0.1, '빨간 러닝화', { st: 'runner', c: '#f25f5c' }],
-  s7: ['shoes', 0, 'stamina', 0.1, '검정 슬립온', { st: 'slipon', c: '#4a3d47' }], s8: ['shoes', 0, 'reflex', 0.1, '노란 찍찍이 운동화', { st: 'velcro', c: '#ffe45c' }],
+  u6: ['uniform', 3, 'stamina', 0.5, '황금 유니폼', { k: 'pro', c: ['#f6c445'] }], u12: ['uniform', 3, 'power', 0.5, '불꽃 유니폼', { k: 'flame', c: ['#e2574c'] }],
+  s1: ['shoes', 0, 'speed', 0.1, '흰 테니스화', { st: 'court', c: '#ffffff' }], s2: ['shoes', 0, 'speed', 0.1, '빨간 러닝화', { st: 'runner', c: '#e2574c' }],
+  s7: ['shoes', 0, 'stamina', 0.1, '검정 슬립온', { st: 'slipon', c: '#3b3340' }], s8: ['shoes', 0, 'reflex', 0.1, '노란 찍찍이 운동화', { st: 'velcro', c: '#ffe45c' }],
   s3: ['shoes', 1, 'speed', 0.2, '클레이화', { k: 'clay', c: '#d36a3a' }], s4: ['shoes', 1, 'speed', 0.2, '잔디화', { k: 'grass', c: '#4a9d5c' }],
   s9: ['shoes', 1, 'stamina', 0.2, '하드코트화', { k: 'high', c: '#3471c4' }], s10: ['shoes', 1, 'reflex', 0.2, '고무신', { k: 'gomu', c: '#3b3340' }],
   s5: ['shoes', 2, 'speed', 0.3, '번개 신발', { k: 'high', c: '#ffe45c', bolt: true }], s11: ['shoes', 2, 'stamina', 0.3, '꽃신', { k: 'gomu', c: '#f9b7c4', flower: true }],
-  s6: ['shoes', 3, 'speed', 0.5, '날개 신발', { k: 'hermes', c: '#b8763a', wing: true }], s12: ['shoes', 3, 'power', 0.5, '로켓 신발', { k: 'boot', c: '#b8c2cc', flame: true }],
-  r1: ['racket', 0, 'power', 0.1, '나무 라켓', { k: 'wood', c: '#b98562' }], r2: ['racket', 0, 'spin', 0.1, '종이 라켓', { k: 'paperr', c: '#f4ecd8' }],
+  s6: ['shoes', 3, 'speed', 0.5, '날개 신발', { k: 'hermes', c: '#b07a52', wing: true }], s12: ['shoes', 3, 'power', 0.5, '로켓 신발', { k: 'boot', c: '#b8c2cc', flame: true }],
+  r1: ['racket', 0, 'power', 0.1, '나무 라켓', { k: 'wood', c: '#b07a52' }], r2: ['racket', 0, 'spin', 0.1, '종이 라켓', { k: 'paperr', c: '#f3ead6' }],
   r7: ['racket', 0, 'reflex', 0.1, '하늘 라켓', { c: '#9ad0ff' }], r8: ['racket', 0, 'speed', 0.1, '분홍 라켓', { c: '#f9b7c4' }],
-  r3: ['racket', 1, 'power', 0.2, '묵직한 라켓', { k: 'heavy', c: '#4a3d47' }], r4: ['racket', 1, 'spin', 0.2, '가벼운 라켓', { k: 'light', c: '#6ec1ff' }],
-  r9: ['racket', 1, 'stamina', 0.2, '대나무 라켓', { k: 'bamboo', c: '#9fcf6e' }], r10: ['racket', 1, 'reflex', 0.2, '얼음 라켓', { k: 'ice', c: '#bfe6ff' }],
+  r3: ['racket', 1, 'power', 0.2, '묵직한 라켓', { k: 'heavy', c: '#3b3340' }], r4: ['racket', 1, 'spin', 0.2, '가벼운 라켓', { k: 'light', c: '#6ec1ff' }],
+  r9: ['racket', 1, 'stamina', 0.2, '대나무 라켓', { k: 'bamboo', c: '#9fcf6e' }], r10: ['racket', 1, 'reflex', 0.2, '얼음 라켓', { k: 'ice', c: '#bfe3ff' }],
   r5: ['racket', 2, 'spin', 0.3, '용비늘 라켓', { k: 'dragon', c: '#4fc37a' }], r11: ['racket', 2, 'power', 0.3, '태극 라켓', { k: 'taeguk', c: '#e2574c' }],
   r6: ['racket', 3, 'power', 0.5, '황금 라켓', { k: 'gold', c: '#f6c445' }], r12: ['racket', 3, 'spin', 0.5, '무지개 라켓', { k: 'rainbow', c: '#b48be8' }],
   h13: ['hat', 0, 'speed', 0.1, '하늘 머리띠', { k: 'band', c: '#9ad0ff' }], h14: ['hat', 0, 'stamina', 0.1, '분홍 머리띠', { k: 'band', c: '#f9b7c4' }],
-  h15: ['hat', 0, 'power', 0.1, '검정 머리띠', { k: 'band', c: '#4a3d47' }], h16: ['hat', 1, 'stamina', 0.2, '초록 야구모자', { k: 'cap', c: '#4fc37a' }],
+  h15: ['hat', 0, 'power', 0.1, '검정 머리띠', { k: 'band', c: '#3b3340' }], h16: ['hat', 1, 'stamina', 0.2, '초록 야구모자', { k: 'cap', c: '#4fc37a' }],
   h17: ['hat', 1, 'reflex', 0.2, '노란 썬바이저', { k: 'visor', c: '#ffe45c' }], h18: ['hat', 1, 'speed', 0.2, '하늘 썬바이저', { k: 'visor', c: '#9ad0ff' }],
   h19: ['hat', 1, 'stamina', 0.2, '베이지 벙거지', { k: 'bucket', c: '#e8d3a8' }], h20: ['hat', 1, 'spin', 0.2, '줄무늬 비니', { k: 'beanie', c: '#e2574c', s: '#ffffff' }],
-  h21: ['hat', 2, 'spin', 0.3, '사모', { k: 'samo', c: '#3b3340' }], h22: ['hat', 2, 'reflex', 0.3, '꽃 화관', { k: 'wreath', c: '#6fbf5a' }],
+  h21: ['hat', 2, 'spin', 0.3, '사모', { k: 'samo', c: '#3b3340' }], h22: ['hat', 2, 'reflex', 0.3, '꽃 화관', { k: 'wreath', c: '#56b05a' }],
   h23: ['hat', 2, 'spin', 0.3, '마법사 모자', { k: 'wizard', c: '#6b4bb3' }], h24: ['hat', 2, 'power', 0.3, '해적 모자', { k: 'pirate', c: '#3b3340' }],
   h25: ['hat', 3, 'speed', 0.5, '황금 캡', { k: 'cap', c: '#f6c445', gold: true }], h26: ['hat', 3, 'reflex', 0.5, '천사 고리', { k: 'halo', c: '#ffe45c' }],
   h27: ['hat', 3, 'stamina', 0.5, '불꽃 왕관', { k: 'crown', c: '#ff8a3d' }],
-  u13: ['uniform', 0, 'power', 0.1, '노란 티셔츠', { c: ['#ffe45c'] }], u14: ['uniform', 0, 'spin', 0.1, '회색 티셔츠', { c: ['#c9ccd6'] }],
-  u15: ['uniform', 0, 'stamina', 0.1, '검정 티셔츠', { c: ['#4a3d47'] }], u16: ['uniform', 1, 'speed', 0.2, '초록 폴로 셔츠', { k: 'polo', c: ['#4fc37a'] }],
+  u13: ['uniform', 0, 'power', 0.1, '노란 티셔츠', { c: ['#ffe45c'] }], u14: ['uniform', 0, 'spin', 0.1, '회색 티셔츠', { c: ['#b3b7c2'] }],
+  u15: ['uniform', 0, 'stamina', 0.1, '검정 티셔츠', { c: ['#3b3340'] }], u16: ['uniform', 1, 'speed', 0.2, '초록 폴로 셔츠', { k: 'polo', c: ['#4fc37a'] }],
   u17: ['uniform', 1, 'power', 0.2, '농구 민소매', { k: 'tank', c: ['#f6a23c'], sl: '#3d6fb0', num: '23' }], u18: ['uniform', 1, 'stamina', 0.2, '보라 후드티', { k: 'hoodie', c: ['#b48be8'] }],
   u19: ['uniform', 1, 'spin', 0.2, '노랑 저지', { k: 'jersey', c: ['#ffe45c'], sl: '#4fc37a', num: '7' }], u20: ['uniform', 1, 'reflex', 0.2, '하늘 줄무늬 셔츠', { k: 'shirt', c: ['#ffffff'], stripe: '#9ad0ff' }],
   u21: ['uniform', 2, 'reflex', 0.3, '하늘 한복', { k: 'hanbok', c: ['#bfe3ff'], collar: '#3d6fb0', ribbon: '#f48aa4', rb: ['#ffffff', '#f9b7c4', '#ffe08a', '#9fe0c8', '#b48be8'] }],
-  u22: ['uniform', 2, 'power', 0.3, '곤룡포', { k: 'royal', c: ['#d8443c'] }], u23: ['uniform', 2, 'speed', 0.3, '턱시도', { k: 'tux', c: ['#2e2830'] }],
+  u22: ['uniform', 3, 'power', 0.5, '곤룡포', { k: 'royal', c: ['#d8443c'] }], u23: ['uniform', 2, 'speed', 0.3, '턱시도', { k: 'tux', c: ['#3b3340'] }],
   u24: ['uniform', 3, 'spin', 0.5, '무지개 유니폼', { k: 'rainbow', c: ['#ffffff'], rb: ['#e2574c', '#f6a23c', '#f6d445', '#4fc37a', '#3d8be0', '#9b5de5'] }], u25: ['uniform', 3, 'reflex', 0.5, '은하수 유니폼', { k: 'galaxy', c: ['#2b2d5c'] }],
   s13: ['shoes', 0, 'speed', 0.1, '하늘 캔버스화', { st: 'canvas', c: '#9ad0ff' }], s14: ['shoes', 0, 'reflex', 0.1, '분홍 캔버스화', { st: 'canvas', c: '#f9b7c4' }],
   s15: ['shoes', 0, 'stamina', 0.1, '초록 러닝화', { st: 'runner', c: '#4fc37a' }], s16: ['shoes', 1, 'speed', 0.2, '샌들', { k: 'sandal', c: '#3d8be0' }],
-  s17: ['shoes', 1, 'stamina', 0.2, '노란 장화', { k: 'rainboot', c: '#ffd34d' }], s18: ['shoes', 1, 'reflex', 0.2, '짚신', { k: 'straw', c: '#c9a25e' }],
-  s19: ['shoes', 2, 'power', 0.3, '나막신', { k: 'clog', c: '#c48a5a' }], s20: ['shoes', 2, 'speed', 0.3, '롤러스케이트', { k: 'roller', c: '#ff8a7a' }],
+  s17: ['shoes', 1, 'stamina', 0.2, '노란 장화', { k: 'rainboot', c: '#ffe45c' }], s18: ['shoes', 1, 'reflex', 0.2, '짚신', { k: 'straw', c: '#c9a25e' }],
+  s19: ['shoes', 2, 'power', 0.3, '나막신', { k: 'clog', c: '#b07a52' }], s20: ['shoes', 2, 'speed', 0.3, '롤러스케이트', { k: 'roller', c: '#ff8a7a' }],
   s21: ['shoes', 2, 'spin', 0.3, '스케이트화', { k: 'skate', c: '#ffffff' }], s22: ['shoes', 3, 'speed', 0.5, '황금 운동화', { k: 'gold', c: '#f6c445' }],
   s23: ['shoes', 3, 'stamina', 0.5, '근두운', { k: 'cloud', c: '#ffffff' }], s24: ['shoes', 3, 'spin', 0.5, '무지개 운동화', { k: 'rainbow', c: '#ffffff' }],
   r13: ['racket', 0, 'power', 0.1, '노란 라켓', { c: '#ffe45c' }], r14: ['racket', 0, 'stamina', 0.1, '초록 라켓', { c: '#4fc37a' }],
   r15: ['racket', 0, 'spin', 0.1, '보라 라켓', { c: '#b48be8' }], r16: ['racket', 1, 'power', 0.2, '카본 라켓', { k: 'carbon', c: '#3b3340' }],
-  r17: ['racket', 1, 'stamina', 0.2, '프라이팬', { k: 'pan', c: '#4a3d47' }], r18: ['racket', 1, 'reflex', 0.2, '하트 라켓', { k: 'heart', c: '#f48aa4' }],
-  r19: ['racket', 2, 'spin', 0.3, '태극 부채', { k: 'fan', c: '#e2574c' }], r20: ['racket', 2, 'reflex', 0.3, '별 라켓', { k: 'star', c: '#ffd34d' }],
+  r17: ['racket', 1, 'stamina', 0.2, '프라이팬', { k: 'pan', c: '#3b3340' }], r18: ['racket', 1, 'reflex', 0.2, '하트 라켓', { k: 'heart', c: '#f48aa4' }],
+  r19: ['racket', 2, 'spin', 0.3, '태극 부채', { k: 'fan', c: '#e2574c' }], r20: ['racket', 2, 'reflex', 0.3, '별 라켓', { k: 'star', c: '#ffe45c' }],
   r21: ['racket', 2, 'speed', 0.3, '번개 라켓', { k: 'bolt', c: '#ffe45c' }], r22: ['racket', 2, 'stamina', 0.3, '꽃 라켓', { k: 'flower', c: '#f9b7c4' }],
-  r23: ['racket', 3, 'spin', 0.5, '은하수 라켓', { k: 'galaxy', c: '#2b2d5c' }], r24: ['racket', 3, 'power', 0.5, '불꽃 라켓', { k: 'fire', c: '#f25f5c' }],
+  r23: ['racket', 3, 'spin', 0.5, '은하수 라켓', { k: 'galaxy', c: '#2b2d5c' }], r24: ['racket', 3, 'power', 0.5, '불꽃 라켓', { k: 'fire', c: '#e2574c' }],
   // 1.9.5: a hundred more, Korean, cartoon, silly and tennis
   h28: ['hat', 0, 'power', 0.1, '주황 머리띠', { k: 'band', c: '#f6a23c' }], h29: ['hat', 0, 'spin', 0.1, '민트 머리띠', { k: 'band', c: '#9fe0c8' }],
   h30: ['hat', 0, 'stamina', 0.1, '남색 머리띠', { k: 'band', c: '#3d4f9a' }], h31: ['hat', 0, 'reflex', 0.1, '땡땡이 두건', { k: 'bandana', c: '#3d8be0' }],
-  h32: ['hat', 1, 'stamina', 0.2, '이태리타월 머리띠', { k: 'towel', c: '#4fae5a' }], h33: ['hat', 0, 'speed', 0.1, '볼보이 캡', { k: 'cap', c: '#3d4f9a' }],
-  h34: ['hat', 0, 'spin', 0.1, '신문지 고깔', { k: 'paper', c: '#f2efe6' }], h35: ['hat', 1, 'reflex', 0.2, '고무장갑 모자', { k: 'glove', c: '#e2574c' }],
+  h32: ['hat', 1, 'stamina', 0.2, '이태리타월 머리띠', { k: 'towel', c: '#56b05a' }], h33: ['hat', 0, 'speed', 0.1, '볼보이 캡', { k: 'cap', c: '#3d4f9a' }],
+  h34: ['hat', 0, 'spin', 0.1, '신문지 고깔', { k: 'paper', c: '#f3ead6' }], h35: ['hat', 1, 'reflex', 0.2, '고무장갑 모자', { k: 'glove', c: '#e2574c' }],
   h36: ['hat', 1, 'stamina', 0.2, '냄비 모자', { k: 'pot', c: '#c9ccd6' }], h37: ['hat', 1, 'spin', 0.2, '양머리 수건', { k: 'sheep', c: '#f1f3f7' }],
   h38: ['hat', 1, 'speed', 0.2, '해녀 물안경', { k: 'diver', c: '#3b3340' }], h39: ['hat', 1, 'reflex', 0.2, '흰 테 고글', { k: 'goggle', c: '#ffffff' }],
-  h40: ['hat', 1, 'power', 0.2, '유건', { k: 'yugeon', c: '#2e2830' }], h41: ['hat', 1, 'speed', 0.2, '70년대 굵은 머리띠', { k: 'band70', c: '#ffffff' }],
+  h40: ['hat', 1, 'power', 0.2, '유건', { k: 'yugeon', c: '#3b3340' }], h41: ['hat', 1, 'speed', 0.2, '70년대 굵은 머리띠', { k: 'band70', c: '#ffffff' }],
   h42: ['hat', 1, 'power', 0.2, '황제 헤어밴드', { k: 'tieband', c: '#ffffff' }], h43: ['hat', 2, 'spin', 0.3, '상모', { k: 'sangmo', c: '#3b3340' }],
-  h44: ['hat', 2, 'reflex', 0.3, '하회탈', { k: 'hahoe', c: '#d9822b' }], h45: ['hat', 2, 'speed', 0.3, '대나무 프로펠러', { k: 'copter', c: '#ffd34d' }],
-  h46: ['hat', 2, 'stamina', 0.3, '비행 고글 모자', { k: 'aviator', c: '#f5c96a' }], h47: ['hat', 2, 'spin', 0.3, '커다란 빨간 리본', { k: 'bow', c: '#e2574c' }],
+  h44: ['hat', 2, 'reflex', 0.3, '하회탈', { k: 'hahoe', c: '#d9822b' }], h45: ['hat', 2, 'speed', 0.3, '대나무 프로펠러', { k: 'copter', c: '#ffe45c' }],
+  h46: ['hat', 2, 'stamina', 0.3, '비행 고글 모자', { k: 'aviator', c: '#f5c96a' }], h47: ['hat', 1, 'spin', 0.2, '커다란 빨간 리본', { k: 'bow', c: '#e2574c' }],
   h48: ['hat', 2, 'power', 0.3, '국가대표 야구모자', { k: 'kcap', c: '#1f2a52' }], h49: ['hat', 3, 'stamina', 0.5, '신라 금관', { k: 'silla', c: '#f6c445' }],
   h50: ['hat', 3, 'power', 0.5, '우승 트로피 모자', { k: 'trophy', c: '#f6c445' }], h51: ['hat', 3, 'reflex', 0.5, '긴고아', { k: 'geumgo', c: '#f6c445' }],
-  h52: ['hat', 3, 'speed', 0.5, '나뭇잎 우산', { k: 'leaf', c: '#4fae5a' }], u26: ['uniform', 0, 'power', 0.1, '빨간 티셔츠', { c: ['#f25f5c'] }],
+  h52: ['hat', 1, 'speed', 0.2, '상투', { k: 'sangtu', c: '#3b3340' }], u26: ['uniform', 0, 'power', 0.1, '빨간 티셔츠', { c: ['#e2574c'] }],
   u27: ['uniform', 0, 'stamina', 0.1, '남색 티셔츠', { c: ['#3d4f9a'] }], u28: ['uniform', 0, 'speed', 0.1, '연두 티셔츠', { c: ['#b5e07a'] }],
   u29: ['uniform', 0, 'spin', 0.1, '보라 티셔츠', { c: ['#b48be8'] }], u30: ['uniform', 0, 'reflex', 0.1, '베이지 티셔츠', { c: ['#e8d3a8'] }],
   u31: ['uniform', 0, 'spin', 0.1, '흙투성이 흰 셔츠', { k: 'muddy', c: ['#ffffff'] }], u32: ['uniform', 0, 'speed', 0.1, '난닝구', { k: 'singlet', c: ['#ffffff'] }],
   u33: ['uniform', 1, 'stamina', 0.2, '찜질방 옷', { k: 'jjim', c: ['#f6a23c'] }], u34: ['uniform', 1, 'power', 0.2, '꽃무늬 몸빼바지', { k: 'momppe', c: ['#fff3e0'] }],
-  u35: ['uniform', 1, 'reflex', 0.2, '파자마', { k: 'pajama', c: ['#bfe0ff'] }], u36: ['uniform', 1, 'speed', 0.2, '유생복', { k: 'yusaeng', c: ['#ffffff'] }],
-  u37: ['uniform', 2, 'power', 0.3, '황룡포', { k: 'dragonrobe', c: ['#f6c445'] }], u38: ['uniform', 1, 'spin', 0.2, '70년대 줄무늬 폴로', { k: 'polo', c: ['#ffffff'], stripe: '#d0565a', thin: true }],
+  u35: ['uniform', 1, 'reflex', 0.2, '파자마', { k: 'pajama', c: ['#bfe3ff'] }], u36: ['uniform', 1, 'speed', 0.2, '유생복', { k: 'yusaeng', c: ['#ffffff'] }],
+  u37: ['uniform', 3, 'power', 0.5, '황룡포', { k: 'dragonrobe', c: ['#f6c445'] }], u38: ['uniform', 1, 'spin', 0.2, '70년대 줄무늬 폴로', { k: 'polo', c: ['#ffffff'], stripe: '#d0565a', thin: true }],
   u39: ['uniform', 1, 'spin', 0.2, '볼보이 유니폼', { k: 'ballboy', c: ['#5b3e8a'] }], u40: ['uniform', 1, 'reflex', 0.2, '심판 블레이저', { k: 'blazer', c: ['#3d4f9a'] }],
-  u41: ['uniform', 2, 'stamina', 0.3, '황제 카디건', { k: 'cardigan', c: ['#f2ead6'] }], u42: ['uniform', 2, 'spin', 0.3, '발레복', { k: 'tutu', c: ['#f9b7c4'] }],
+  u41: ['uniform', 2, 'stamina', 0.3, '황제 카디건', { k: 'cardigan', c: ['#f3ead6'] }], u42: ['uniform', 1, 'spin', 0.2, '발레복', { k: 'tutu', c: ['#f9b7c4'] }],
   u43: ['uniform', 2, 'power', 0.3, '농악복', { k: 'nongak', c: ['#ffffff'] }], u44: ['uniform', 2, 'reflex', 0.3, '선비 도포', { k: 'dopo', c: ['#eef2f6'] }],
-  u45: ['uniform', 2, 'speed', 0.3, '얼음 드레스', { k: 'icedress', c: ['#9fd8f5'] }], u46: ['uniform', 2, 'stamina', 0.3, '교복', { k: 'school', c: ['#ffffff'] }],
-  u47: ['uniform', 3, 'power', 0.5, '화랑 무복', { k: 'hwarang', c: ['#3d6fb0'] }], u48: ['uniform', 3, 'reflex', 0.5, '윔블던 올화이트', { k: 'allwhite', c: ['#ffffff'] }],
-  u49: ['uniform', 3, 'speed', 0.5, '검은 캣슈트', { k: 'catsuit', c: ['#2e2830'] }], u50: ['uniform', 3, 'stamina', 0.5, '국가대표 야구 유니폼', { k: 'kbase', c: ['#1f2a52'] }],
+  u45: ['uniform', 2, 'speed', 0.3, '얼음 드레스', { k: 'icedress', c: ['#9ad0ff'] }], u46: ['uniform', 1, 'stamina', 0.2, '교복', { k: 'school', c: ['#ffffff'] }],
+  u47: ['uniform', 2, 'power', 0.3, '화랑 무복', { k: 'hwarang', c: ['#3d6fb0'] }], u48: ['uniform', 2, 'reflex', 0.3, '윔블던 올화이트', { k: 'allwhite', c: ['#ffffff'] }],
+  u49: ['uniform', 3, 'speed', 0.5, '검은 두루마기', { k: 'reaper', c: ['#3b3340'] }], u50: ['uniform', 2, 'stamina', 0.3, '국가대표 야구 유니폼', { k: 'kbase', c: ['#1f2a52'] }],
   s25: ['shoes', 0, 'speed', 0.1, '주황 캔버스화', { st: 'canvas', c: '#f6a23c' }], s26: ['shoes', 0, 'stamina', 0.1, '남색 테니스화', { st: 'court', c: '#3d4f9a' }],
   s27: ['shoes', 0, 'reflex', 0.1, '연두 찍찍이 운동화', { st: 'velcro', c: '#b5e07a' }], s28: ['shoes', 0, 'spin', 0.1, '보라 캔버스화', { st: 'canvas', c: '#b48be8' }],
-  s29: ['shoes', 0, 'power', 0.1, '회색 슬립온', { st: 'slipon', c: '#a9adb8' }], s30: ['shoes', 0, 'speed', 0.1, '민트 하이탑', { k: 'high', c: '#9fe0c8' }],
+  s29: ['shoes', 0, 'power', 0.1, '회색 슬립온', { st: 'slipon', c: '#b3b7c2' }], s30: ['shoes', 0, 'speed', 0.1, '민트 하이탑', { k: 'high', c: '#9fe0c8' }],
   s31: ['shoes', 0, 'reflex', 0.1, '흙 묻은 운동화', { k: 'muddy', c: '#ffffff' }], s32: ['shoes', 1, 'speed', 0.2, '삼선 슬리퍼', { k: 'slipper', c: '#3b3340' }],
-  s33: ['shoes', 1, 'stamina', 0.2, '곰발바닥 슬리퍼', { k: 'paw', c: '#a8764a' }], s34: ['shoes', 1, 'power', 0.2, '오리발', { k: 'flipper', c: '#ffd34d' }],
+  s33: ['shoes', 1, 'stamina', 0.2, '곰발바닥 슬리퍼', { k: 'paw', c: '#b07a52' }], s34: ['shoes', 1, 'power', 0.2, '오리발', { k: 'flipper', c: '#ffe45c' }],
   s35: ['shoes', 1, 'reflex', 0.2, '양말에 샌들', { k: 'socks', c: '#3d8be0' }], s36: ['shoes', 1, 'spin', 0.2, '실내화', { k: 'indoor', c: '#ffffff' }],
   s37: ['shoes', 1, 'spin', 0.2, '테니스공 신발', { k: 'ballshoe', c: '#d8ec4a' }], s38: ['shoes', 1, 'power', 0.2, '빨간 하이탑', { k: 'high', c: '#e2574c' }],
-  s39: ['shoes', 1, 'stamina', 0.2, '털부츠', { k: 'fur', c: '#c9a27a' }], s40: ['shoes', 2, 'reflex', 0.3, '태사혜', { k: 'taesa', c: '#3b3340' }],
-  s41: ['shoes', 2, 'spin', 0.3, '버선', { k: 'beoseon', c: '#ffffff' }], s42: ['shoes', 2, 'speed', 0.3, '빨간 반짝 구두', { k: 'ruby', c: '#d8243c' }],
-  s43: ['shoes', 2, 'power', 0.3, '하얀 고무신', { k: 'gomu', c: '#ffffff' }], s44: ['shoes', 2, 'reflex', 0.3, '잔디 운동화', { k: 'turf', c: '#ffffff' }],
-  s45: ['shoes', 2, 'stamina', 0.3, '개구리 장화', { k: 'frog', c: '#7cc85a' }], s46: ['shoes', 3, 'speed', 0.5, '유리구두', { k: 'glass', c: '#d8f1ff' }],
+  s39: ['shoes', 1, 'stamina', 0.2, '털부츠', { k: 'fur', c: '#c9a25e' }], s40: ['shoes', 2, 'reflex', 0.3, '태사혜', { k: 'taesa', c: '#3b3340' }],
+  s41: ['shoes', 1, 'spin', 0.2, '버선', { k: 'beoseon', c: '#ffffff' }], s42: ['shoes', 2, 'speed', 0.3, '빨간 반짝 구두', { k: 'ruby', c: '#d8243c' }],
+  s43: ['shoes', 1, 'power', 0.2, '하얀 고무신', { k: 'gomu', c: '#ffffff' }], s44: ['shoes', 1, 'reflex', 0.2, '잔디 운동화', { k: 'turf', c: '#ffffff' }],
+  s45: ['shoes', 2, 'stamina', 0.3, '개구리 장화', { k: 'frog', c: '#7cc85a' }], s46: ['shoes', 2, 'speed', 0.3, '목화', { k: 'mokhwa', c: '#3b3340' }],
   s47: ['shoes', 3, 'stamina', 0.5, '황금 고무신', { k: 'gomu', c: '#f6c445', gold: true }], s48: ['shoes', 3, 'spin', 0.5, '은하수 운동화', { k: 'galaxy', c: '#2b2d5c' }],
-  s49: ['shoes', 3, 'power', 0.5, '불꽃 운동화', { k: 'fire', c: '#f25f5c' }], r25: ['racket', 0, 'speed', 0.1, '주황 라켓', { c: '#f6a23c' }],
-  r26: ['racket', 0, 'stamina', 0.1, '남색 라켓', { c: '#3d4f9a' }], r27: ['racket', 0, 'power', 0.1, '빨간 라켓', { c: '#f25f5c' }],
-  r28: ['racket', 0, 'reflex', 0.1, '민트 라켓', { c: '#9fe0c8' }], r29: ['racket', 0, 'spin', 0.1, '회색 라켓', { c: '#a9adb8' }],
-  r30: ['racket', 0, 'power', 0.1, '부러진 라켓', { k: 'broken', c: '#3d8be0' }], r31: ['racket', 0, 'stamina', 0.1, '테이프 감은 라켓', { k: 'taped', c: '#b98562' }],
-  r32: ['racket', 1, 'power', 0.2, '대파', { k: 'leek', c: '#4fae5a' }], r33: ['racket', 1, 'reflex', 0.2, '효자손', { k: 'scratcher', c: '#c9a25e' }],
+  s49: ['shoes', 3, 'power', 0.5, '불꽃 운동화', { k: 'fire', c: '#e2574c' }], r25: ['racket', 0, 'speed', 0.1, '주황 라켓', { c: '#f6a23c' }],
+  r26: ['racket', 0, 'stamina', 0.1, '남색 라켓', { c: '#3d4f9a' }], r27: ['racket', 0, 'power', 0.1, '빨간 라켓', { c: '#e2574c' }],
+  r28: ['racket', 0, 'reflex', 0.1, '민트 라켓', { c: '#9fe0c8' }], r29: ['racket', 0, 'spin', 0.1, '회색 라켓', { c: '#b3b7c2' }],
+  r30: ['racket', 0, 'power', 0.1, '부러진 라켓', { k: 'broken', c: '#3d8be0' }], r31: ['racket', 0, 'stamina', 0.1, '테이프 감은 라켓', { k: 'taped', c: '#b07a52' }],
+  r32: ['racket', 1, 'power', 0.2, '대파', { k: 'leek', c: '#56b05a' }], r33: ['racket', 1, 'reflex', 0.2, '효자손', { k: 'scratcher', c: '#c9a25e' }],
   r34: ['racket', 1, 'stamina', 0.2, '뿅망치', { k: 'squeaky', c: '#e2574c' }], r35: ['racket', 1, 'speed', 0.2, '파리채', { k: 'swatter', c: '#4fc37a' }],
-  r36: ['racket', 1, 'spin', 0.2, '국자', { k: 'ladle', c: '#c9ccd6' }], r37: ['racket', 1, 'spin', 0.2, '바나나', { k: 'banana', c: '#ffd34d' }],
+  r36: ['racket', 1, 'spin', 0.2, '국자', { k: 'ladle', c: '#c9ccd6' }], r37: ['racket', 1, 'spin', 0.2, '바나나', { k: 'banana', c: '#ffe45c' }],
   r38: ['racket', 1, 'speed', 0.2, '마법사 빗자루', { k: 'broom', c: '#c9a25e' }], r39: ['racket', 1, 'stamina', 0.2, '떡꼬치', { k: 'tteok', c: '#e0482e' }],
-  r40: ['racket', 2, 'power', 0.3, '소고', { k: 'sogo', c: '#e2574c' }], r41: ['racket', 2, 'reflex', 0.3, '합죽선', { k: 'folding', c: '#f2e6c8' }],
-  r42: ['racket', 2, 'stamina', 0.3, '우산', { k: 'umbrella', c: '#e2574c' }], r43: ['racket', 2, 'reflex', 0.3, '우승 은쟁반', { k: 'plate', c: '#d8dde3' }],
-  r44: ['racket', 2, 'spin', 0.3, '요술봉', { k: 'wand', c: '#f48aa4' }], r45: ['racket', 2, 'speed', 0.3, '파초선', { k: 'pacho', c: '#5fae4e' }],
-  r46: ['racket', 3, 'spin', 0.5, '야구 방망이', { k: 'bat', c: '#d9a066' }], r47: ['racket', 3, 'power', 0.5, '황금 대파', { k: 'leek', c: '#f6c445', gold: true }],
+  r40: ['racket', 2, 'power', 0.3, '소고', { k: 'sogo', c: '#e2574c' }], r41: ['racket', 2, 'reflex', 0.3, '합죽선', { k: 'folding', c: '#f3ead6' }],
+  r42: ['racket', 1, 'stamina', 0.2, '우산', { k: 'umbrella', c: '#e2574c' }], r43: ['racket', 2, 'reflex', 0.3, '상소문', { k: 'scroll', c: '#f3ead6' }],
+  r44: ['racket', 2, 'spin', 0.3, '요술봉', { k: 'wand', c: '#f48aa4' }], r45: ['racket', 3, 'speed', 0.5, '파초선', { k: 'pacho', c: '#56b05a' }],
+  r46: ['racket', 2, 'spin', 0.3, '야구 방망이', { k: 'bat', c: '#c9a25e' }], r47: ['racket', 1, 'power', 0.2, '신문지', { k: 'news', c: '#f3ead6' }],
   r48: ['racket', 3, 'speed', 0.5, '광선검', { k: 'saber', c: '#6ec1ff' }], r49: ['racket', 3, 'reflex', 0.5, '여의봉', { k: 'staff', c: '#d8443c' }],
 };
 const item = id => { const q = ITEMS[id]; return q && { id, slot: q[0], grade: q[1], stat: q[2], amt: q[3], name: q[4], look: q[5] }; };
 const ITEM_KEYS = Object.keys(ITEMS), kindOf = id => { const L = ITEMS[id][5] || {}; return L.k || L.st || 'plain'; };
 const KIND_AT = {}; ITEM_KEYS.forEach((id, i) => { const k = ITEMS[id][0] + ':' + kindOf(id); if (!(k in KIND_AT)) KIND_AT[k] = i; });
-function itemOrder(p, q) { // by grade, then items of a kind together (all the headbands in a row), then in catalogue order
-  return ITEMS[p][1] - ITEMS[q][1] || KIND_AT[ITEMS[p][0] + ':' + kindOf(p)] - KIND_AT[ITEMS[q][0] + ':' + kindOf(q)] || ITEM_KEYS.indexOf(p) - ITEM_KEYS.indexOf(q);
+const HUES = ['#ffffff', '#b3b7c2', '#3b3340', '#e2574c', '#f6a23c', '#ffe45c', '#b5e07a', '#4fc37a', '#9fe0c8', '#9ad0ff', '#3d8be0', '#3d4f9a', '#b48be8', '#f9b7c4', '#e8d3a8', '#b07a52']; // one palette shared by every slot, in rainbow order, so a colour matches across hat, shirt, shoes and racket
+const hueAt = id => { const c = ITEMS[id][5].c, i = HUES.indexOf(Array.isArray(c) ? c[0] : c); return i < 0 ? HUES.length : i; };
+function itemOrder(p, q) { // by grade, then items of a kind together (all the headbands in a row), in the palette's colour order, then in catalogue order
+  return ITEMS[p][1] - ITEMS[q][1] || KIND_AT[ITEMS[p][0] + ':' + kindOf(p)] - KIND_AT[ITEMS[q][0] + ':' + kindOf(q)] || hueAt(p) - hueAt(q) || ITEM_KEYS.indexOf(p) - ITEM_KEYS.indexOf(q);
 }
 const STAT_NAME = { power: '파워', stamina: '체력', spin: '스핀', reflex: '순발력', speed: '스피드' };
 function gearBonus(ids) { const b = {}; for (const id of Object.values(ids || {})) { const it = item(id); if (it) b[it.stat] = (b[it.stat] || 0) + it.amt; } return b; }
