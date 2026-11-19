@@ -2234,12 +2234,16 @@ function drawScoreCard(r, i) { // how a record's score was made, in full: the su
   ctx.fillStyle = 'rgba(59,51,64,0.55)'; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, () => { rank.sel = -1; }); // a tap anywhere closes it
   const mul = [0, 1, 1.35, 1.8][r.level] || 1, margin = Math.max(0, r.pts_for - r.pts_against), base = 300 + margin * 30 + r.sweet * 6 + (r.combo || 0) * 6;
   const rows = [['승리', '', 300], ['점수 차', `${r.pts_for} : ${r.pts_against} → ${margin} × 30`, margin * 30], ["'딱!'", `${r.sweet} × 6`, r.sweet * 6], ['콤보', `${r.combo || 0} × 6`, (r.combo || 0) * 6]];
-  const x = LY.m + 10, w = LY.w - 20, rh = 50, h = 26 + 40 + 34 + 22 + rows.length * rh + 14 + 54 + 14 + 54 + 24 + (r.hits != null ? 52 : 0), y = Math.max(LY.top - 40, (H - h) / 2);
+  const x = LY.m + 10, w = LY.w - 20, rh = 50, h = 26 + 40 + 34 + 22 + rows.length * rh + 14 + 54 + 14 + 54 + 24 + (r.hits != null ? 52 : 0) + 156, y = Math.max(LY.top - 60, (H - h) / 2);
   rr(x, y + 6, w, h, 24, 'rgba(59,51,64,0.35)', null); rr(x, y, w, h, 24, '#fffaf0', OUT, 3);
   const L0 = x + 30, R0 = x + w - 30; let yy = y + 26 + 20;
   fitText(`${i + 1}위 · ${r.nickname}`, W / 2, yy, 30, INK, 'center', F_T, w - 60); yy += 40;
   const mins = Math.floor((r.duration_s || 0) / 60), secs = (r.duration_s || 0) % 60;
-  fitText(`${MODE_KO[rank.mode] || ''} · ${LEVEL_KO[r.level] || ''} · ${r.sets} · ${mins}분 ${secs}초`, W / 2, yy, 20, '#7a6872', 'center', F_B, w - 60); yy += 34;
+  fitText(`${MODE_KO[rank.mode] || ''} · ${LEVEL_KO[r.level] || ''} · ${r.sets} · ${mins}분 ${secs}초`, W / 2, yy, 20, '#7a6872', 'center', F_B, w - 60); yy += 22;
+  { const bh = 144, half = (R0 - L0 - 16) / 2, worn = {}; for (const id of (r.gear || '').split(',')) { const it = item(id); if (it) worn[it.slot] = id; } // who played, dressed as they were, and on which court
+    rr(L0, yy, half, bh, 16, '#eef7f1', '#d9cbbd', 2); ctx.save(); ctx.beginPath(); ctx.rect(L0 + 2, yy + 2, half - 4, bh - 4); ctx.clip(); ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(r.animal, L0 + half / 2, yy + bh - 8, 0.98, { front: true, t: 0.4, accent: CORAL, gear: worn }); ctx.restore();
+    const cx = L0 + half + 16, C = COURTS[r.court]; if (C) { courtPic(cx + 10, yy + 12, half - 20, bh - 58, r.court); text(C.ko, cx + half / 2, yy + bh - 22, 20, INK, 'center', null, F_T); }
+    yy += bh + 12; }
   ctx.fillStyle = '#e6dccd'; ctx.fillRect(L0, yy, R0 - L0, 2); yy += 22;
   rows.forEach(([a, b, v]) => { const cy = yy + rh / 2 - 4; text(a, L0, cy, 23, INK, 'left', null, F_T); if (b) text(b, L0 + 120, cy, 19, '#7a6872', 'left', null, F_B); text(v.toLocaleString(), R0, cy, 25, INK, 'right', null, F_N); yy += rh; });
   ctx.fillStyle = '#e6dccd'; ctx.fillRect(L0, yy, R0 - L0, 2); yy += 14;
