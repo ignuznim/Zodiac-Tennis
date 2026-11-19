@@ -2149,7 +2149,7 @@ function hostKind(k) { // the host chooses how to play: everyone gets a seat, th
 const netCpu = () => net && (net.kind === 'coop' || (net.kind === 'versus' && humans() < 4)); // a computer will play: its level is asked
 function onHostData(d, g) {
   if (!net) return;
-  if (d.t === 'join') { g.nick = String(d.nick || '손님').slice(0, 10); g.a = clamp(d.a | 0, 0, 11); sayRoom(); tone(880, 0.12, 'triangle', 0.25); if (net.quick && !net.quick.fillAt) net.quick.fillAt = clock.now() + 20; }
+  if (d.t === 'join') { g.nick = String(d.nick || '손님').slice(0, 8); g.a = clamp(d.a | 0, 0, 11); sayRoom(); tone(880, 0.12, 'triangle', 0.25); if (net.quick && !net.quick.fillAt) net.quick.fillAt = clock.now() + 20; }
   else if (d.t === 'pick' && g.seat != null) { net.picks[g.seat] = { a: clamp(d.animal | 0, 0, 11), gear: d.gear && typeof d.gear === 'object' ? d.gear : {}, ctrl: 'remote', nick: g.nick && g.nick !== '손님' ? g.nick : null }; sendReady(); onlineStart(); }
   else if (d.t === 'i' && g.seat != null) { net.rin[g.seat] = d; if (typeof d.rt === 'number' && m) { const l = m.t - d.rt; if (l > -0.05 && l < 1) g.lag = g.lag == null ? l : g.lag + (l - g.lag) * 0.2; } } // how far behind their screen runs
   else if (d.t === 'stay') { g.stay = true; sayRoom(); }

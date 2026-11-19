@@ -30,6 +30,7 @@ The owner reviews every change on a phone. These rules come from their repeated 
 
 ## Other standing choices
 - Computers (partners and opponents) never wear items; items apply only to the player.
+- Nicknames are 1 to 8 letters everywhere (game and database, since 2026-11-19; no longer names exist). Check layouts with an 8-letter name, never 10.
 - 명예의 전당 stays at night.
 
 ## 공지사항 (notices.json)

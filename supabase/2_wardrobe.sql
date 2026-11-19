@@ -247,13 +247,16 @@ on conflict (code) do update set reward = excluded.reward, daily = excluded.dail
 -- ---- One profile per account ----
 create table if not exists public.profiles (
   id         uuid primary key references auth.users (id) on delete cascade,
-  nickname   text unique check (nickname is null or char_length(btrim(nickname)) between 1 and 10),
+  nickname   text unique check (nickname is null or char_length(btrim(nickname)) between 1 and 8),
   tickets    integer not null default 3 check (tickets >= 0),
   equip      jsonb not null default '{}'::jsonb,
   progress   jsonb not null default '{}'::jsonb,
   claimed    jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
 );
+-- nicknames are 1 to 8 letters (no account has a longer one since 2026-11-19)
+alter table public.profiles drop constraint if exists profiles_nickname_check;
+alter table public.profiles add constraint profiles_nickname_check check (nickname is null or char_length(btrim(nickname)) between 1 and 8);
 create table if not exists public.inventory (
   user_id  uuid not null references auth.users (id) on delete cascade,
   item_id  text not null references public.items (id),
@@ -294,7 +297,7 @@ language plpgsql security definer set search_path = public as $$
 declare p public.profiles;
 begin
   perform public.me();
-  if char_length(btrim(n)) not between 1 and 8 then raise exception 'bad nickname'; end if; -- new names up to 8; older ones up to 10 stay
+  if char_length(btrim(n)) not between 1 and 8 then raise exception 'bad nickname'; end if;
   if exists (select 1 from public.profiles where nickname = btrim(n) and id <> auth.uid()) then raise exception 'nickname taken'; end if;
   update public.profiles set nickname = btrim(n) where id = auth.uid() returning * into p;
   return p;

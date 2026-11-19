@@ -5,7 +5,7 @@
 create table if not exists public.scores (
   id          bigint generated always as identity primary key,
   created_at  timestamptz not null default now(),
-  nickname    text     not null check (char_length(btrim(nickname)) between 1 and 10),
+  nickname    text     not null check (char_length(btrim(nickname)) between 1 and 8),
   mode        text     not null default 'regular' check (mode in ('flash', 'short', 'regular')),
   level       smallint not null check (level between 1 and 3),
   animal      smallint not null check (animal between 0 and 11),
@@ -20,6 +20,9 @@ create table if not exists public.scores (
   score       integer  not null default 0
 );
 create index if not exists scores_mode_score on public.scores (mode, score desc);
+-- nicknames are 1 to 8 letters (no record has a longer one since 2026-11-19)
+alter table public.scores drop constraint if exists scores_nickname_check;
+alter table public.scores add constraint scores_nickname_check check (char_length(btrim(nickname)) between 1 and 8);
 -- perfect hits in a chain: each one after the first adds up to 9 to this count, and 2 points a count to the score
 alter table public.scores add column if not exists combo integer not null default 0 check (combo between 0 and 300000);
 -- every ball the player struck, and the longest run of perfect hits: a person misses now and then
@@ -37,17 +40,13 @@ begin
   new.nickname   := btrim(new.nickname);
   new.created_at := now();
   -- a member's nickname belongs to that member: anyone else (signed in or not) must pick another.
-  -- New names are 1 to 8 letters; a member may still use an older, longer name of their own.
+  -- Names are 1 to 8 letters.
   if to_regclass('public.profiles') is not null then
     if exists (select 1 from public.profiles p where p.nickname = new.nickname and p.id is distinct from auth.uid()) then
       raise exception 'nickname taken';
     end if;
-    if char_length(new.nickname) > 8 and not exists (select 1 from public.profiles p where p.nickname = new.nickname and p.id = auth.uid()) then
-      raise exception 'bad nickname';
-    end if;
-  elsif char_length(new.nickname) > 8 then
-    raise exception 'bad nickname';
   end if;
+  if char_length(new.nickname) > 8 then raise exception 'bad nickname'; end if;
   min_pts := case new.mode when 'flash' then 10 when 'short' then 16 else 72 end; -- the fewest points a win can take
   if new.pts_for < min_pts then raise exception 'not a finished win'; end if;
   if new.duration_s < (new.pts_for + new.pts_against) * 3 then raise exception 'too fast'; end if;
