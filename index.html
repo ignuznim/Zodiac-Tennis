@@ -2230,6 +2230,24 @@ function guestStep() { // the guest draws what the host sends and sends its own 
 const HALL_TIME = 'night'; // 'night': a full moon; 'dusk': the sun going down
 const HALL_SKY = { night: ['#1d1b3a', '#3b2f5c', '#6a4a6e'], dusk: ['#3b2c58', '#b05a6a', '#f2a46a'] };
 function openHall() { scene = 'hall'; state.hallT = 0; rank.list = null; loadRanking(null, 'all'); tone(392, 0.4, 'sine', 0.18); tone(587, 0.6, 'sine', 0.14, 0.25); }
+function drawScoreCard(r, i) { // how a record's score was made, in full: the sum is the same one the server works out
+  ctx.fillStyle = 'rgba(59,51,64,0.55)'; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, () => { rank.sel = -1; }); // a tap anywhere closes it
+  const mul = [0, 1, 1.35, 1.8][r.level] || 1, margin = Math.max(0, r.pts_for - r.pts_against), base = 300 + margin * 30 + r.sweet * 6 + (r.combo || 0) * 6;
+  const rows = [['승리', '', 300], ['점수 차', `${r.pts_for} : ${r.pts_against} → ${margin} × 30`, margin * 30], ["'딱!'", `${r.sweet} × 6`, r.sweet * 6], ['콤보', `${r.combo || 0} × 6`, (r.combo || 0) * 6]];
+  const x = LY.m + 10, w = LY.w - 20, rh = 50, h = 26 + 40 + 34 + 22 + rows.length * rh + 14 + 54 + 14 + 54 + 24 + (r.hits != null ? 52 : 0), y = Math.max(LY.top - 40, (H - h) / 2);
+  rr(x, y + 6, w, h, 24, 'rgba(59,51,64,0.35)', null); rr(x, y, w, h, 24, '#fffaf0', OUT, 3);
+  const L0 = x + 30, R0 = x + w - 30; let yy = y + 26 + 20;
+  fitText(`${i + 1}위 · ${r.nickname}`, W / 2, yy, 30, INK, 'center', F_T, w - 60); yy += 40;
+  const mins = Math.floor((r.duration_s || 0) / 60), secs = (r.duration_s || 0) % 60;
+  fitText(`${MODE_KO[rank.mode] || ''} · ${LEVEL_KO[r.level] || ''} · ${r.sets} · ${mins}분 ${secs}초`, W / 2, yy, 20, '#7a6872', 'center', F_B, w - 60); yy += 34;
+  ctx.fillStyle = '#e6dccd'; ctx.fillRect(L0, yy, R0 - L0, 2); yy += 22;
+  rows.forEach(([a, b, v]) => { const cy = yy + rh / 2 - 4; text(a, L0, cy, 23, INK, 'left', null, F_T); if (b) text(b, L0 + 120, cy, 19, '#7a6872', 'left', null, F_B); text(v.toLocaleString(), R0, cy, 25, INK, 'right', null, F_N); yy += rh; });
+  ctx.fillStyle = '#e6dccd'; ctx.fillRect(L0, yy, R0 - L0, 2); yy += 14;
+  let cy = yy + 27; text('합계', L0, cy, 23, INK, 'left', null, F_T); text(base.toLocaleString(), R0, cy, 25, INK, 'right', null, F_N); yy += 54 + 14;
+  cy = yy + 27; rr(L0 - 12, yy, R0 - L0 + 24, 54, 16, '#fdf0d0', '#e3a46a', 2.4);
+  text(`× ${LEVEL_KO[r.level] || ''} ${mul}`, L0, cy, 23, ['', '#3d9be0', '#4f9a6a', '#e2574c'][r.level] || INK, 'left', null, F_T); text(`= ${r.score.toLocaleString()}점`, R0, cy, 27, INK, 'right', null, F_N); yy += 54 + 24;
+  if (r.hits != null) text(`친 공 ${r.hits}번 · 최대 연속 '딱!' ${r.streak}번`, W / 2, yy + 10, 20, '#7a6872', 'center', null, F_B);
+}
 function drawHall() {
   OY = 0; computeLayout();
   const t = state.hallT || 0, sky = HALL_SKY[HALL_TIME], dusk = HALL_TIME === 'dusk';
@@ -2517,9 +2535,9 @@ async function loadRanking(mode, period) {
   rank.mode = mode || rank.mode; rank.period = period || rank.period; rank.loading = true; rank.err = '';
   try { // the top ten records, the same name as often as it earned a place
     const since = rank.period === 'month' ? `&created_at=gte.${encodeURIComponent(monthStart())}` : '';
-    const q = `?select=nickname,level,animal,court,sets,score,created_at,gear&mode=eq.${rank.mode}${since}&order=score.desc,created_at.asc&limit=10`;
-    let r = await fetch(RANK.url + q, { headers: rankHeaders() });
-    if (!r.ok && r.status !== 429) r = await fetch(RANK.url + q.replace(',gear', ''), { headers: rankHeaders() }); // the gear column missing or not readable: the board without it
+    const q = `?select=nickname,level,animal,court,sets,score,created_at,gear,pts_for,pts_against,sweet,combo,hits,streak,duration_s&mode=eq.${rank.mode}${since}&order=score.desc,created_at.asc&limit=10`;
+    let r = await fetch(RANK.url + q, { headers: rankHeaders() }); rank.sel = -1;
+    if (!r.ok && r.status !== 429) r = await fetch(RANK.url + q.replace(',gear,pts_for,pts_against,sweet,combo,hits,streak,duration_s', ''), { headers: rankHeaders() }); // a column missing or not readable: the board without the extras
     if (!r.ok) throw new Error(r.status);
     rank.list = await r.json();
   } catch (e) { rank.err = '랭킹을 불러오지 못했어요 · 인터넷 연결을 확인해 주세요'; rank.list = rank.list || []; }
@@ -3559,7 +3577,7 @@ const scenes = {
         text('난이도', 470, hy, 19, '#7a6872', 'center', null, F_B); text('점수', LY.m + LY.w - LY.pad, hy, 19, '#7a6872', 'right', null, F_B);
         const rh = (ph - 64 - LY.pad) / 10;
         L.forEach((r, i) => {
-          const y = py + 64 + rh * i + rh / 2;
+          const y = py + 64 + rh * i + rh / 2; if (r.sweet != null) btn(LY.m + 12, y - rh / 2 + 2, LY.w - 24, rh - 4, () => { rank.sel = i; tone(660, 0.05, 'sine', 0.15); }); // a tap shows how the score was made
           if (i % 2 === 0) rr(LY.m + 12, y - rh / 2 + 2, LY.w - 24, rh - 4, 12, 'rgba(234,223,210,0.45)', null);
           const medal = ['#ffd34d', '#cfd8e3', '#e6a46a'][i];
           if (medal) { ctx.lineWidth = 2.4; ctx.strokeStyle = OUT; E(x0 + 28, y, 18, 18, medal); }
@@ -3574,6 +3592,7 @@ const scenes = {
       }
       sideBtn('뒤로', () => { scene = 'title'; });
       mainBtn(rank.loading ? '불러오는 중…' : '새로고침', () => { if (!rank.loading) loadRanking(); });
+      if (L && L[rank.sel] && L[rank.sel].sweet != null) drawScoreCard(L[rank.sel], rank.sel);
       const now = new Date();
       menuEnd(`${now.getFullYear()}년 ${now.getMonth() + 1}월 기록 · 매달 1일에 새로 시작해요 · ↑ 명예의 전당`);
     },
