@@ -64,6 +64,7 @@
 <script src="vendor/supabase.js"></script>
 <script src="config.js"></script>
 <script>
+(() => { /*SEALED*/ // the game lives inside this function: nothing in it can be reached or replaced from the browser's console
 'use strict';
 // ---- Built to be checked ----------------------------------------------------------------
 const params = new URLSearchParams(location.search);
@@ -1335,7 +1336,7 @@ function newMatch() {
     practice: !!setup.practice, prac: setup.practice ? { li: 0, done: 0, wait: 0, shot: null, res: null, resT: 9, next: false } : null,
     sc: { pts: [0, 0], games: [0, 0], sets: [], won: [0, 0], server: 0, turn: [0, 0], tb: false, tbFirst: 0, done: false, winner: -1 }, // server: the team; turn: which of its players
     fault: 0, refault: false, boxX: 1, rally: 0, hitId: 0, banner: null, pops: [], fx: [], fxId: 0, mark: null, emotes: [],
-    stats: { pts: [0, 0], sweet: [0, 0, 0, 0], combo: [0, 0, 0, 0], best: [0, 0, 0, 0], rain: [0, 0, 0, 0], deuce: [0, 0], comeback: [0, 0], down: [0, 0], power: [0, 0, 0, 0], longest: 0, aces: [0, 0, 0, 0], setPts: [0, 0] }, // pts, setPts: by team; the rest by player
+    stats: { pts: [0, 0], sweet: [0, 0, 0, 0], hits: [0, 0, 0, 0], combo: [0, 0, 0, 0], best: [0, 0, 0, 0], rain: [0, 0, 0, 0], deuce: [0, 0], comeback: [0, 0], down: [0, 0], power: [0, 0, 0, 0], longest: 0, aces: [0, 0, 0, 0], setPts: [0, 0] }, // pts, setPts: by team; the rest by player
   };
   if (dbl && !seats) m.P.push(newPlayer(2, draw(), 'ai', {}), newPlayer(3, draw(), 'ai', {})); // a random partner and a second opponent: computers wear nothing
   setupPoint();
@@ -1433,6 +1434,7 @@ function bounceOf(b) { // what a bounce keeps: the shot's spin, then the court's
 }
 function launch(p, kind, q, charge, aimX, aimD, late = 0) {
   const b = m.ball, opp = -p.side, spin = pstat(p, 'spin'), pow = pstat(p, 'power'), fat = 1 - p.stam / p.max, g = tune.gravity;
+  if (m.stats.hits) m.stats.hits[p.i]++; // every ball this player struck: the ranking checks the perfect ones against it
   const fh = (b.x - p.x) * p.side >= 0; // right-handed: the ball on the racket side is a forehand
   let v = tune.stroke_v + pow * tune.stroke_v_pow, depth = [7.4, 9.3, 10.7][aimD + 1], err = tune.err_stroke, T = 0;
   if (!fh && (kind === 'stroke' || kind === 'power' || kind === 'slice')) v *= tune.backhand_pace;
@@ -1546,6 +1548,7 @@ function doServe(p, q, aimX) {
   b.last = p.team; b.by = p.i; b.bounces = 0; b.kind = 'serve'; b.live = true; b.fly = true; b.power = ace ? 1 : q >= 0.95 && !second ? 0.7 : 0; b.ace = ace;
   m.phase = 'rally'; m.rally = 0; m.hitId++; m.land = bad && !early ? null : { x: tx, y: ty };
   p.stam = Math.max(0, p.stam - tune.stam_shot); p.hand = 1; setAnim(p, 'smash');
+  if (m.stats.hits) m.stats.hits[p.i]++; // a serve is a struck ball too
   if (ace) { m.stats.sweet[p.i]++; pop('강서브!', b.x, b.y, b.z + 0.8, BALL); shake = 0.18; }
   else if (q >= 0.95) { m.stats.sweet[p.i]++; pop('딱!', b.x, b.y, b.z + 0.8, BALL); }
   else if (bad) pop(early ? '너무 빨랐어!' : '너무 늦었어!', p.x, p.y, 3.4, '#f25f5c');
@@ -2507,7 +2510,7 @@ function canRank() { return m && m.sc.done && m.sc.winner === 0 && !m.online && 
 function matchRecord(nickname) {
   return { nickname, mode: m.format || 'regular', level: m.level, animal: m.P[0].a, opponent: m.P[1].a, court: m.court,
     sets: m.sc.sets.map(g => g[0] + '-' + g[1]).join(' '), pts_for: m.stats.pts[0], pts_against: m.stats.pts[1],
-    sweet: m.stats.sweet[0], combo: (m.stats.combo || [0])[0], duration_s: Math.round(m.t), client_id: clientId(), gear: SLOTS.map(q => (m.P[0].gearIds || {})[q[0]] || '-').join(',') };
+    sweet: m.stats.sweet[0], combo: (m.stats.combo || [0])[0], hits: (m.stats.hits || [0])[0], streak: (m.stats.best || [0])[0], duration_s: Math.round(m.t), client_id: clientId(), gear: SLOTS.map(q => (m.P[0].gearIds || {})[q[0]] || '-').join(',') };
 }
 const monthStart = () => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1).toISOString(); }; // this month, by the player's clock
 async function loadRanking(mode, period) {
@@ -2527,9 +2530,9 @@ async function sendRecord(nickname) {
   let tok = null; if (signedIn()) { try { const { data } = await acct.sb.auth.getSession(); tok = data && data.session && data.session.access_token; } catch (e) { /* sent as a guest */ } } // a member says who they are, so their own nickname is theirs
   const H = rankHeaders(Object.assign({ Prefer: 'return=minimal' }, tok ? { Authorization: 'Bearer ' + tok } : {}));
   let r = await fetch(RANK.url, { method: 'POST', headers: H, body: JSON.stringify(rec) });
-  for (const col of ['combo', 'gear']) if (r.status === 400) { const t0 = await r.clone().text(); if (new RegExp(col).test(t0)) { delete rec[col]; r = await fetch(RANK.url, { method: 'POST', headers: H, body: JSON.stringify(rec) }); } } // before those columns exist
+  for (const col of ['streak', 'hits', 'combo', 'gear']) if (r.status === 400) { const t0 = await r.clone().text(); if (new RegExp(col).test(t0)) { delete rec[col]; r = await fetch(RANK.url, { method: 'POST', headers: H, body: JSON.stringify(rec) }); } } // before those columns exist
   if (r.status === 409) throw new Error('이미 등록된 기록이에요');
-  if (!r.ok) { const t = await r.text(); throw new Error(/nickname taken/.test(t) ? '회원이 쓰는 닉네임이에요 · 다른 이름을 써 주세요' : /bad nickname/.test(t) ? '닉네임은 1~8자로 정해 주세요' : /slow down/.test(t) ? '잠시 후 다시 등록해 주세요' : /not a finished|too fast|too many/.test(t) ? '등록할 수 없는 기록이에요' : '등록하지 못했어요 · 인터넷 연결을 확인해 주세요'); }
+  if (!r.ok) { const t = await r.text(); throw new Error(/old client/.test(t) ? '게임을 새로고침한 뒤 다시 등록해 주세요' : /not human/.test(t) ? '정상적인 경기 기록이 아니에요' : /nickname taken/.test(t) ? '회원이 쓰는 닉네임이에요 · 다른 이름을 써 주세요' : /bad nickname/.test(t) ? '닉네임은 1~8자로 정해 주세요' : /slow down/.test(t) ? '잠시 후 다시 등록해 주세요' : /not a finished|too fast|too many/.test(t) ? '등록할 수 없는 기록이에요' : '등록하지 못했어요 · 인터넷 연결을 확인해 주세요'); }
   const score = scoreOf(rec);
   const placeOf = async since => { // the place on a board: records that scored more, plus one
     try { const c = await fetch(RANK.url + `?select=id&mode=eq.${rec.mode}&score=gt.${score}${since}`, { method: 'HEAD', headers: rankHeaders({ Prefer: 'count=exact' }) });
@@ -4161,7 +4164,7 @@ function frame() { tick(); requestAnimationFrame(frame); }
 function timer() { if (document.visibilityState === 'visible' && clock.now() - last > 0.1) tick(); }
 
 // ---- What a check can read and drive (?manual=1 stops the loop; players never see it) ----
-window.game = {
+if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || location.protocol === 'file:') window.game = { // only for checks run on this computer
   get scene() { return scene; },
   get state() { return state; },
   press(code) { hit.add(code); },
@@ -4185,6 +4188,7 @@ if (document.fonts) { // the fonts are files in assets/: ask for them, and draw 
   ['Jua', 'Do Hyeon', 'Gowun Dodum', 'Gaegu'].forEach(f => document.fonts.load(`20px "${f}"`, '가0').catch(() => {}));
   document.fonts.ready.then(() => { if (params.get('manual') === '1') drawFrame(); });
 }
+})(); /*SEALED*/
 </script>
 </body>
 </html>

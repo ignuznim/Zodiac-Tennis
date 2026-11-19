@@ -22,6 +22,9 @@ create table if not exists public.scores (
 create index if not exists scores_mode_score on public.scores (mode, score desc);
 -- perfect hits in a chain: each one after the first adds up to 9 to this count, and 2 points a count to the score
 alter table public.scores add column if not exists combo integer not null default 0 check (combo between 0 and 300000);
+-- every ball the player struck, and the longest run of perfect hits: a person misses now and then
+alter table public.scores add column if not exists hits integer check (hits between 0 and 100000);
+alter table public.scores add column if not exists streak integer check (streak between 0 and 100000);
 -- what the player wore, hat,uniform,shoes,racket (2_wardrobe.sql adds it too; here so the grants below can name it)
 alter table public.scores add column if not exists gear text check (gear is null or char_length(gear) <= 40);
 
@@ -50,6 +53,12 @@ begin
   if new.duration_s < (new.pts_for + new.pts_against) * 3 then raise exception 'too fast'; end if;
   if new.sweet > (new.pts_for + new.pts_against) * 25 then raise exception 'too many sweet hits'; end if;
   if new.combo > new.sweet * 9 then raise exception 'too many sweet hits'; end if;
+  -- play no person could: perfect on almost every ball, a run of perfect hits too long, or the hard computer beaten without a single point in a longer match
+  if new.hits is null or new.streak is null then raise exception 'old client'; end if;
+  if new.sweet > new.hits or new.streak > new.sweet then raise exception 'not human'; end if;
+  if new.hits >= 20 and new.sweet > new.hits * 0.85 then raise exception 'not human'; end if;
+  if new.streak > 30 then raise exception 'not human'; end if;
+  if new.level = 3 and new.pts_against = 0 and new.pts_for >= 16 then raise exception 'not human'; end if;
   if exists (select 1 from public.scores s where s.client_id = new.client_id and s.created_at > now() - interval '20 seconds') then
     raise exception 'slow down';
   end if;
@@ -69,9 +78,9 @@ drop policy if exists "add scores" on public.scores;
 create policy "add scores" on public.scores for insert to anon, authenticated with check (true);
 
 revoke all on public.scores from anon, authenticated;
-grant select (id, created_at, nickname, mode, level, animal, opponent, court, sets, pts_for, pts_against, sweet, combo, duration_s, score, gear)
+grant select (id, created_at, nickname, mode, level, animal, opponent, court, sets, pts_for, pts_against, sweet, combo, hits, streak, duration_s, score, gear)
   on public.scores to anon, authenticated;
-grant insert (nickname, mode, level, animal, opponent, court, sets, pts_for, pts_against, sweet, combo, duration_s, client_id, gear)
+grant insert (nickname, mode, level, animal, opponent, court, sets, pts_for, pts_against, sweet, combo, hits, streak, duration_s, client_id, gear)
   on public.scores to anon, authenticated;
 
 -- One record per match: a double tap once sent the same win twice. Drop the repeats, keep the first,
