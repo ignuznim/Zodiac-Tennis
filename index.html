@@ -2230,27 +2230,25 @@ function guestStep() { // the guest draws what the host sends and sends its own 
 const HALL_TIME = 'night'; // 'night': a full moon; 'dusk': the sun going down
 const HALL_SKY = { night: ['#1d1b3a', '#3b2f5c', '#6a4a6e'], dusk: ['#3b2c58', '#b05a6a', '#f2a46a'] };
 function openHall() { scene = 'hall'; state.hallT = 0; rank.list = null; loadRanking(null, 'all'); tone(392, 0.4, 'sine', 0.18); tone(587, 0.6, 'sine', 0.14, 0.25); }
-function drawScoreCard(r, i) { // how a record's score was made, in full: the sum is the same one the server works out
+function drawScoreCard(r, i) { // how a record's score was made: who played, dressed as they were, on which court, then the sum the server works out
   ctx.fillStyle = 'rgba(59,51,64,0.55)'; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, () => { rank.sel = -1; }); // a tap anywhere closes it
-  const mul = [0, 1, 1.35, 1.8][r.level] || 1, margin = Math.max(0, r.pts_for - r.pts_against), base = 300 + margin * 30 + r.sweet * 6 + (r.combo || 0) * 6;
-  const rows = [['승리', '', 300], ['점수 차', `${r.pts_for} : ${r.pts_against} → ${margin} × 30`, margin * 30], ["'딱!'", `${r.sweet} × 6`, r.sweet * 6], ['콤보', `${r.combo || 0} × 6`, (r.combo || 0) * 6]];
-  const x = LY.m + 10, w = LY.w - 20, rh = 50, h = 26 + 40 + 34 + 22 + rows.length * rh + 14 + 54 + 14 + 54 + 24 + (r.hits != null ? 52 : 0) + 156, y = Math.max(LY.top - 60, (H - h) / 2);
+  const mul = [0, 1, 1.35, 1.8][r.level] || 1, margin = Math.max(0, r.pts_for - r.pts_against), base = 300 + margin * 30 + r.sweet * 6 + (r.combo || 0) * 6, lc = ['', '#3d9be0', '#4f9a6a', '#e2574c'][r.level] || INK;
+  const rows = [['승리', '', 300], ['점수 차', `${margin} × 30`, margin * 30], ["'딱!'", `${r.sweet} × 6`, r.sweet * 6], ['콤보', `${r.combo || 0} × 6`, (r.combo || 0) * 6]];
+  const x = LY.m + 10, w = LY.w - 20, top = 160, rh = 44, h = 28 + top + 26 + rows.length * rh + 12 + 52 + 12 + 62 + 28, y = Math.max(LY.top - 60, (H - h) / 2), L0 = x + 28, R0 = x + w - 28;
   rr(x, y + 6, w, h, 24, 'rgba(59,51,64,0.35)', null); rr(x, y, w, h, 24, '#fffaf0', OUT, 3);
-  const L0 = x + 30, R0 = x + w - 30; let yy = y + 26 + 20;
-  fitText(`${i + 1}위 · ${r.nickname}`, W / 2, yy, 30, INK, 'center', F_T, w - 60); yy += 40;
-  const mins = Math.floor((r.duration_s || 0) / 60), secs = (r.duration_s || 0) % 60;
-  fitText(`${MODE_KO[rank.mode] || ''} · ${LEVEL_KO[r.level] || ''} · ${r.sets} · ${mins}분 ${secs}초`, W / 2, yy, 20, '#7a6872', 'center', F_B, w - 60); yy += 22;
-  { const bh = 144, half = (R0 - L0 - 16) / 2, worn = {}; for (const id of (r.gear || '').split(',')) { const it = item(id); if (it) worn[it.slot] = id; } // who played, dressed as they were, and on which court
-    rr(L0, yy, half, bh, 16, '#eef7f1', '#d9cbbd', 2); ctx.save(); ctx.beginPath(); ctx.rect(L0 + 2, yy + 2, half - 4, bh - 4); ctx.clip(); ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(r.animal, L0 + half / 2, yy + bh - 8, 0.98, { front: true, t: 0.4, accent: CORAL, gear: worn }); ctx.restore();
-    const cx = L0 + half + 16, C = COURTS[r.court]; if (C) { courtPic(cx + 10, yy + 12, half - 20, bh - 58, r.court); text(C.ko, cx + half / 2, yy + bh - 22, 20, INK, 'center', null, F_T); }
-    yy += bh + 12; }
-  ctx.fillStyle = '#e6dccd'; ctx.fillRect(L0, yy, R0 - L0, 2); yy += 22;
-  rows.forEach(([a, b, v]) => { const cy = yy + rh / 2 - 4; text(a, L0, cy, 23, INK, 'left', null, F_T); if (b) text(b, L0 + 120, cy, 19, '#7a6872', 'left', null, F_B); text(v.toLocaleString(), R0, cy, 25, INK, 'right', null, F_N); yy += rh; });
-  ctx.fillStyle = '#e6dccd'; ctx.fillRect(L0, yy, R0 - L0, 2); yy += 14;
-  let cy = yy + 27; text('합계', L0, cy, 23, INK, 'left', null, F_T); text(base.toLocaleString(), R0, cy, 25, INK, 'right', null, F_N); yy += 54 + 14;
-  cy = yy + 27; rr(L0 - 12, yy, R0 - L0 + 24, 54, 16, '#fdf0d0', '#e3a46a', 2.4);
-  text(`× ${LEVEL_KO[r.level] || ''} ${mul}`, L0, cy, 23, ['', '#3d9be0', '#4f9a6a', '#e2574c'][r.level] || INK, 'left', null, F_T); text(`= ${r.score.toLocaleString()}점`, R0, cy, 27, INK, 'right', null, F_N); yy += 54 + 24;
-  if (r.hits != null) text(`친 공 ${r.hits}번 · 최대 연속 '딱!' ${r.streak}번`, W / 2, yy + 10, 20, '#7a6872', 'center', null, F_B);
+  { const worn = {}; for (const id of (r.gear || '').split(',')) { const it = item(id); if (it) worn[it.slot] = id; } // the player, as dressed for this record
+    const bx = L0, by = y + 28, bs = top; rr(bx, by, bs, bs, 18, '#eef7f1', '#d9cbbd', 2); ctx.save(); ctx.beginPath(); ctx.rect(bx + 2, by + 2, bs - 4, bs - 4); ctx.clip(); ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(r.animal, bx + bs / 2, by + bs - 10, 1.0, { front: true, t: 0.4, accent: CORAL, gear: worn }); ctx.restore();
+    const tx = bx + bs + 22, tw = R0 - tx, mins = Math.floor((r.duration_s || 0) / 60), secs = (r.duration_s || 0) % 60; // beside it: who, the match, the court
+    fitText(`${i + 1}위 · ${r.nickname}`, tx, by + 20, 28, INK, 'left', F_T, tw);
+    fitText(`${MODE_KO[rank.mode] || ''} · ${LEVEL_KO[r.level] || ''} · ${r.sets}`, tx, by + 54, 20, '#7a6872', 'left', F_B, tw);
+    const C = COURTS[r.court], ch = 66, cw = Math.round(ch * 1.3); if (C) { courtPic(tx, by + bs - ch, cw, ch, r.court); text(C.ko, tx + cw + 14, by + bs - ch / 2 - 12, 20, INK, 'left', null, F_T); text(`${mins}분 ${secs}초`, tx + cw + 14, by + bs - ch / 2 + 14, 18, '#7a6872', 'left', null, F_B); } }
+  let yy = y + 28 + top + 18; ctx.fillStyle = '#e6dccd'; ctx.fillRect(L0, yy, R0 - L0, 2); yy += 8;
+  rows.forEach(([a, b, v]) => { const cy = yy + rh / 2; text(a, L0, cy, 22, INK, 'left', null, F_T); if (b) text(b, R0 - 110, cy, 19, '#9a8b93', 'right', null, F_B); text(v.toLocaleString(), R0, cy, 24, INK, 'right', null, F_N); yy += rh; });
+  yy += 4; ctx.fillStyle = '#e6dccd'; ctx.fillRect(L0, yy, R0 - L0, 2); yy += 8;
+  let cy = yy + 26; text('합계', L0, cy, 22, INK, 'left', null, F_T); text(base.toLocaleString(), R0, cy, 24, INK, 'right', null, F_N); yy += 52 + 12;
+  cy = yy + 31; rr(L0 - 12, yy, R0 - L0 + 24, 62, 18, '#fdf0d0', '#e3a46a', 2.4);
+  text(`× ${mul}`, L0 + 4, cy, 24, lc, 'left', null, F_N); text(`(${LEVEL_KO[r.level] || ''})`, L0 + 4 + textW(`× ${mul}`, 24, F_N) + 10, cy, 20, lc, 'left', null, F_T);
+  text(`= ${r.score.toLocaleString()}점`, R0, cy, 30, INK, 'right', null, F_N);
 }
 function drawHall() {
   OY = 0; computeLayout();
