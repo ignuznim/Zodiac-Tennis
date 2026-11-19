@@ -26,7 +26,7 @@ The owner reviews every change on a phone. These rules come from their repeated 
 ## The database
 - The database is kept in numbered files, one per part, so the owner can save them apart and re-run only the part that changed: supabase/1_ranking.sql, 2_wardrobe.sql, 3_feedback.sql, 4_lobby.sql (open rooms for quick match and the room list, who is online), 5_notice.sql (공지사항, written by the owner in the Table Editor). A new part gets the next number.
 - When a part changes, give the owner that whole file again (not a fragment), and say which file it is.
-- Put that SQL in the reply itself, inside a collapsed block (<details><summary>file name</summary> then a ```sql block), so the owner can copy and paste it straight from the chat. Never send it only as an attached file.
+- Put that SQL in the reply itself as one ```sql code block on its own (no <details> tags, which the owner's app does not fold), so the owner can copy and paste it straight from the chat. Never send it only as an attached file.
 - Every file must stay safe to run again on the live database: create ... if not exists, create or replace, drop policy if exists, on conflict do update. Test it twice on an empty database and once on one that already has data.
 
 ## Other standing choices
