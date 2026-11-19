@@ -18,7 +18,7 @@ The owner reviews every change on a phone. These rules come from their repeated 
 ## Versions (APP_VERSION in index.html)
 - Keep the numbers small: players should never see something like 1.10.0. The owner set it back to 1.8.6 on 2026-11-16.
 - Most updates, new content included (achievements, items, tuning), raise only the last number, one step per batch of work (1.8.6 -> 1.8.7). Do not raise it for every small request.
-- At most one step a day (Korean time): everything shipped the same day goes into that day's version and its single note. If the number already moved today, do not move it again.
+- Not every day either: the owner finds daily versions too many for players. Keep adding to the current version and its note; move the number only when the owner asks, or for a big batch of new content, and then ask first.
 - Raise the middle number only for a big new way to play (doubles, online for four, the hall of fame were that size), and ask the owner first.
 - Renaming things (items, labels) does not change the version at all.
 - Item names live in two places, index.html (ITEMS) and supabase/2_wardrobe.sql: change both, and give the owner the SQL to run.
