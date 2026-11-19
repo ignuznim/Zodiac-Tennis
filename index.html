@@ -1710,15 +1710,14 @@ function settle(w, call) { // a ball that got past: online, a friend on the losi
   if (lag < 0.02) { endPoint(w, call); return; }
   if (!m.wait) m.wait = { w, call, at: m.t + lag + 0.03 };
 }
-function hitAsSeen(p, kind, charge, aimX, aimDy) { // a friend's swing that missed the ball here: was the ball in reach on their screen? then they hit it there, and the ball moves on from that moment
+function hitAsSeen(p, kind, charge, aimX, aimDy) { // a friend's swing that missed the ball here: was the ball in reach on their screen? then they hit it from that spot
   if (p.ctrl !== 'remote' || m.phase !== 'rally') return false; const lag = seen(p.i); if (lag < 0.02) return false;
   const h = pastAt(m.t - lag); if (!h || h.phase !== 'rally') return false;
   const keepB = Object.assign({}, m.ball), keepP = [p.x, p.y], keepRecv = m.recv; Object.assign(m.ball, h.ball); m.recv = h.recv; [p.x, p.y] = h.P[p.i];
   if (!canHit(p)) { Object.assign(m.ball, keepB); m.recv = keepRecv; [p.x, p.y] = keepP; return false; }
   const ok = tryHit(p, kind, null, charge, aimX, aimDy); [p.x, p.y] = keepP; if (ok) m.wait = null; // returned after all
   if (!ok) { Object.assign(m.ball, keepB); m.recv = keepRecv; return false; }
-  for (let t = 0; t < m.t - h.t && m.phase === 'rally'; t += STEP) ballStep(STEP); // the ball has been flying since then
-  return true;
+  return true; // the ball leaves the racket now, from where the friend met it: whoever faces it next has all their time to answer
 }
 function simulate(dt) {
   m.t += dt; m.pt += dt; remember();
@@ -2216,6 +2215,10 @@ function netPlayback() {
 function guestStep() { // the guest draws what the host sends and sends its own keys back
   if (net.snap) { m = state.m = netPlayback() || net.snap; for (const p of m.P) if (p.team == null) p.team = p.i; }
   const i = localInput(view % 2), s = JSON.stringify(i); net.tick++;
+  const pressed = (i.a && !net.pa) || (i.k && !net.pk) || (i.l && !net.pl) || (i.s && !net.ps); net.pa = i.a; net.pk = i.k; net.pl = i.l; net.ps = i.s;
+  if (pressed && m && m.phase === 'rally') { net.swingAt = clock.now(); tone(420, 0.06, 'sine', 0.12, 0, 0.6); } // my swing starts on my screen at once
+  const me = m && m.P[view], ago = clock.now() - (net.swingAt || -9);
+  if (me && ago < 0.34 && !['hit', 'volley', 'drop', 'lob', 'smash', 'charge'].includes(me.anim)) { me.anim = ago < 0.12 ? 'swing' : 'hit'; me.at = ago < 0.12 ? ago : ago - 0.12; if (me.hand == null) me.hand = m.ball.x >= me.x ? 1 : -1; }
   if (net.conn && net.conn.open && (s !== net.lastSent || net.tick % 6 === 0)) { net.lastSent = s; net.conn.send(Object.assign({ t: 'i', rt: net.rt }, i)); }
 }
 
