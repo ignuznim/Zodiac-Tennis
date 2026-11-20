@@ -3752,7 +3752,7 @@ const scenes = {
       if (anyHit(...K_OK)) pickAnimal();
     },
     draw() {
-      menuBegin('선수를 골라 주세요', true);
+      menuBegin('선수를 골라 주세요', !net);
       const cw = (LY.w - LY.gap * 5) / 6, ch = LY.tall ? 120 : 100, k = ch / 104; // twelve animals, six to a row
       ANIMALS.forEach((A, i) => {
         const x = LY.m + (i % 6) * (cw + LY.gap), y = LY.top + Math.floor(i / 6) * (ch + LY.gap), on = i === state.sel, cx = x + cw / 2;
@@ -3795,7 +3795,7 @@ const scenes = {
       if (anyHit(...K_OK)) pickMode(state.cur);
     },
     draw() {
-      menuBegin(net ? '컴퓨터 실력을 골라 주세요' : '난이도를 골라 주세요', true);
+      menuBegin(net ? '컴퓨터 실력을 골라 주세요' : '난이도를 골라 주세요', !net);
       const rows = [['쉬움', '받기 쉬운 공을 보내고 실수도 자주 해요'], ['보통', '빈 곳을 노리고 가끔 변칙을 섞어요'], ['어려움', '코너를 찌르고 드롭샷, 로브, 파워샷까지']];
       const ch = SZ().format4; // the same cards as the four ways to play
       const tags = [['쉬움', '#4fa86a'], ['보통', '#3d8be0'], ['어려움', '#e2574c'], ['온라인', '#9b5de5']];
@@ -3818,7 +3818,7 @@ const scenes = {
       if (anyHit(...K_OK)) pickCourt(state.cc);
     },
     draw() {
-      menuBegin('어느 코트에서 할까요?', true);
+      menuBegin('어느 코트에서 할까요?', !net);
       const ch = SZ().court, af = AFFINITY[ANIMALS[setup.animal].id];
       COURT_IDS.forEach((id, i) => {
         const C = COURTS[id], y = LY.top + i * (ch + LY.gap), on = i === state.cc;
@@ -3854,7 +3854,7 @@ const scenes = {
     },
     draw() {
       if (state.fm == null) state.fm = FORMAT_IDS.indexOf(setup.format);
-      menuBegin('경기 방식을 골라 주세요', true);
+      menuBegin('경기 방식을 골라 주세요', !net);
       const SH = net ? 0 : 92; if (!net) drawDoublesSwitch(LY.top, SH);
       const how = { flash: '10점을 먼저 따면 승리 (2점 차)', short: '4게임 먼저 · 40-40이면 한 포인트로 결정', regular: '세트 3개를 먼저 따면 승리', practice: '샷마다 타이밍 · 속도 · 떨어진 곳을 알려 줘요' };
       const ids = net ? [...FORMAT_IDS] : [...FORMAT_IDS, 'practice'], top = net ? LY.top : LY.top + SH + LY.gap + 10, ch = Math.min(SZ().format4, (contentEnd() - top - LY.gap * (ids.length - 1)) / ids.length), full = ch >= 128;
