@@ -498,7 +498,8 @@ function cloth2(L, front, hm, c, S, skin) { // patterns, painted inside the body
   const k = L.k;
   if (k === 'muddy') { ctx.globalAlpha = 0.85; for (const [x, y, rx, ry, r] of [[-9, -24, 6, 3.6, 0.4], [7, -36, 4.6, 3, -0.3], [12, -21, 3.4, 2.4, 0.2], [-14, -40, 3, 2, 0.6], [2, -19, 2.2, 1.6, 0]]) E(x, y, rx, ry, '#d98a5a', r, true); ctx.globalAlpha = 1; }
   if (k === 'singlet') { S(-30, -21, 60, 30, '#9ad0ff'); ctx.fillStyle = 'rgba(61,111,176,0.45)'; for (let x = -24; x < 26; x += 6) ctx.fillRect(x, -21, 2, 30); for (let y = -17; y < 0; y += 6) ctx.fillRect(-30, y, 60, 2); S(-30, -22, 60, 3.4, '#ffffff'); ctx.strokeStyle = 'rgba(61,111,176,0.8)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, -18.6); ctx.lineTo(0, -10); ctx.stroke(); }
-  if (k === 'singlet' || k === 'tutu') { ctx.strokeStyle = k === 'tutu' ? 'rgba(255,255,255,0.3)' : 'rgba(74,61,71,0.12)'; ctx.lineWidth = 1; ctx.beginPath(); for (let x = -22; x < 24; x += 3) { ctx.moveTo(x, -60); ctx.lineTo(x, k === 'singlet' ? -22 : hm); } ctx.stroke(); }
+  if (k === 'tutu') { const g = ctx.createLinearGradient(-20, -56, 16, -20); g.addColorStop(0, 'rgba(255,255,255,0.45)'); g.addColorStop(0.45, 'rgba(255,255,255,0)'); g.addColorStop(0.6, 'rgba(255,255,255,0.18)'); g.addColorStop(1, 'rgba(255,255,255,0)'); S(-30, -80, 60, 80, g); } // satin, not stripes
+  if (k === 'singlet') { ctx.strokeStyle = 'rgba(74,61,71,0.12)'; ctx.lineWidth = 1; ctx.beginPath(); for (let x = -22; x < 24; x += 3) { ctx.moveTo(x, -60); ctx.lineTo(x, k === 'singlet' ? -22 : hm); } ctx.stroke(); }
   if (k === 'momppe') { S(-30, -27, 60, 40, '#e2574c'); for (let y = -24; y < 0; y += 7) for (let x = -24 + (y % 2 ? 3 : 0); x < 26; x += 9) flower5(x + ((y / 7) % 2) * 4, y, 1.6, '#ffffff');
     ctx.strokeStyle = '#b8433b'; ctx.lineWidth = 1; ctx.beginPath(); for (let x = -22; x < 23; x += 2.5) { ctx.moveTo(x, -27); ctx.lineTo(x + 1, -24); } ctx.stroke(); }
   if (k === 'ballboy') { S(-21, -80, 3, 80, '#4fae5a'); S(18, -80, 3, 80, '#4fae5a'); }
@@ -578,10 +579,14 @@ function dragonBadge(x, y, r) { // the round dragon badge (보) of a king's or e
   ctx.lineWidth = 1.4; ctx.strokeStyle = OUT; E(x, y, r, r, '#e8b830'); ctx.lineWidth = Math.max(0.8, r * 0.18); ctx.strokeStyle = '#c0392b'; ctx.beginPath(); ctx.arc(x, y, r * 0.55, 0.3, 5.4); ctx.moveTo(x + r * 0.2, y); ctx.arc(x, y, r * 0.22, 0, 4.6); ctx.stroke();
   ctx.fillStyle = '#4fae5a'; ctx.beginPath(); ctx.arc(x + r * 0.5, y - r * 0.45, r * 0.16, 0, 7); ctx.fill(); ctx.strokeStyle = OUT; ctx.lineWidth = 1.8;
 }
-function tutuSkirt(hm) { // a ballet skirt of tulle at the hem, in layers
-  ctx.lineWidth = 1.8; ctx.strokeStyle = OUT;
-  for (const [ry, rx, col] of [[6.5, 31, '#f7b2c3'], [5.5, 27, '#fbd0db'], [4.2, 22, '#ffe4ea']]) { ctx.beginPath(); for (let i = 0; i <= 24; i++) { const a = i / 24 * 6.283, r = 1 + (i % 2) * 0.08; ctx.lineTo(Math.cos(a) * rx * r, hm + 2 + Math.sin(a) * ry * r); } ctx.closePath(); ctx.fillStyle = col; ctx.fill(); ctx.stroke(); }
-  for (const x of [-18, -6, 8, 20]) star(x, hm + 4, 1.6, '#ffffff'); ctx.lineWidth = 2.6;
+function tutuSkirt(hm) { // a ballet skirt of tulle: layers flaring out from the waist, their hems scalloped, the top one palest
+  ctx.lineWidth = 1.8; ctx.strokeStyle = OUT; ctx.lineJoin = 'round';
+  for (const [R, D, col, line] of [[33, 8, '#f4a7ba', OUT], [27, 5, '#fbc8d5', '#d98aa0'], [21, 2.5, '#ffe4ea', '#e6a3b5']]) {
+    const n = Math.round(R / 6.5), w = 2 * R / n; ctx.beginPath(); ctx.moveTo(-15, hm - 4); ctx.quadraticCurveTo(-R * 0.8, hm - 3, -R, hm + D - 2);
+    for (let i = 0; i < n; i++) { const x = -R + i * w; ctx.quadraticCurveTo(x + w / 2, hm + D + 3 - Math.abs(x + w / 2) / R * 3, x + w, hm + D - 2 + (i === n - 1 ? 0 : 0)); }
+    ctx.quadraticCurveTo(R * 0.8, hm - 3, 15, hm - 4); ctx.quadraticCurveTo(0, hm - 1, -15, hm - 4); ctx.closePath(); ctx.fillStyle = col; ctx.fill(); ctx.strokeStyle = line; ctx.lineWidth = line === OUT ? 1.8 : 1.2; ctx.stroke(); }
+  ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 1; ctx.beginPath(); for (const x of [-12, -4, 4, 12]) { ctx.moveTo(x * 0.7, hm - 2); ctx.lineTo(x, hm + 2.5); } ctx.stroke();
+  for (const x of [-20, 6, 22]) star(x, hm + 6, 1.5, '#ffffff'); ctx.strokeStyle = OUT; ctx.lineWidth = 2.6;
 }
 // ---- 1.9.5 shoes: foot2 from the front (a foot at fx, ff, about 19 by 13), shoeIcon2 from the side (about 56 across, the ground at 16) ----
 function spring(x, y0, y1, w, n) { // a coil spring seen from the side: silver rings stacked between the sole and a little plate
