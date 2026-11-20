@@ -56,3 +56,28 @@
   tool: "drawn by the game's own drawAnimal code (the tiger, bare, with the wooden racket, on a big, side-on view of part of a court) and resized for 180, 192, 512, maskable and favicon sizes"
   date: 2026-11-15
   ships: true
+- path: assets/emo1.png
+  origin: you
+  tool: "drawn by the owner, sent as a zip on 2026-11-20 (one of 24 faces)"
+  date: 2026-11-20
+  ships: true
+- path: assets/emo2.png
+  origin: you
+  tool: "drawn by the owner, sent as a zip on 2026-11-20 (one of 24 faces)"
+  date: 2026-11-20
+  ships: true
+- path: assets/emo3.png
+  origin: you
+  tool: "drawn by the owner, sent as a zip on 2026-11-20 (one of 24 faces)"
+  date: 2026-11-20
+  ships: true
+- path: assets/emo4.png
+  origin: you
+  tool: "drawn by the owner, sent as a zip on 2026-11-20 (one of 24 faces)"
+  date: 2026-11-20
+  ships: true
+- path: assets/emo5.png
+  origin: you
+  tool: "drawn by the owner, sent as a zip on 2026-11-20 (one of 24 faces)"
+  date: 2026-11-20
+  ships: true
