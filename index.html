@@ -2577,10 +2577,10 @@ const monthStart = () => { const d = new Date(); return new Date(d.getFullYear()
 async function loadRanking(mode, period) {
   rank.mode = mode || rank.mode; rank.period = period || rank.period; rank.loading = true; rank.err = '';
   try { // the top ten records, the same name as often as it earned a place
-    const since = rank.period === 'month' ? `&created_at=gte.${encodeURIComponent(monthStart())}` : '';
+    const since = rank.period === 'month' ? `&created_at=gte.${encodeURIComponent(monthStart())}` : '&no_fame=is.false'; // the hall leaves out records found to be cheats
     const q = `?select=nickname,level,animal,court,sets,score,created_at,gear,pts_for,pts_against,sweet,combo,hits,streak,duration_s&mode=eq.${rank.mode}${since}&order=score.desc,created_at.asc&limit=10`;
     let r = await fetch(RANK.url + q, { headers: rankHeaders() }); rank.sel = -1;
-    if (!r.ok && r.status !== 429) r = await fetch(RANK.url + q.replace(',gear,pts_for,pts_against,sweet,combo,hits,streak,duration_s', ''), { headers: rankHeaders() }); // a column missing or not readable: the board without the extras
+    if (!r.ok && r.status !== 429) r = await fetch(RANK.url + q.replace(',gear,pts_for,pts_against,sweet,combo,hits,streak,duration_s', '').replace('&no_fame=is.false', ''), { headers: rankHeaders() }); // a column missing or not readable: the board without the extras
     if (!r.ok) throw new Error(r.status);
     rank.list = await r.json();
   } catch (e) { rank.err = '랭킹을 불러오지 못했어요 · 인터넷 연결을 확인해 주세요'; rank.list = rank.list || []; }
@@ -2599,7 +2599,7 @@ async function sendRecord(nickname) {
     try { const c = await fetch(RANK.url + `?select=id&mode=eq.${rec.mode}&score=gt.${score}${since}`, { method: 'HEAD', headers: rankHeaders({ Prefer: 'count=exact' }) });
       return +((c.headers.get('content-range') || '').split('/')[1]) + 1 || 0; } catch (e) { return 0; }
   };
-  return { score, month: await placeOf(`&created_at=gte.${encodeURIComponent(monthStart())}`), all: await placeOf('') };
+  return { score, month: await placeOf(`&created_at=gte.${encodeURIComponent(monthStart())}`), all: await placeOf('&no_fame=is.false') };
 }
 const nickBox = document.getElementById('nick'), nickIn = document.getElementById('nickIn'), nickErr = document.getElementById('nickErr');
 let nickMode = 'rank';

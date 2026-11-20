@@ -30,6 +30,8 @@ alter table public.scores add column if not exists hits integer check (hits betw
 alter table public.scores add column if not exists streak integer check (streak between 0 and 100000);
 -- what the player wore, hat,uniform,shoes,racket (2_wardrobe.sql adds it too; here so the grants below can name it)
 alter table public.scores add column if not exists gear text check (gear is null or char_length(gear) <= 40);
+-- a record kept on the month's board but left out of 명예의 전당 (set only here, by hand, for records found to be cheats)
+alter table public.scores add column if not exists no_fame boolean not null default false;
 
 -- The score is worked out here, never taken from the browser, and a record that could not
 -- come from a real match is refused.
@@ -77,7 +79,7 @@ drop policy if exists "add scores" on public.scores;
 create policy "add scores" on public.scores for insert to anon, authenticated with check (true);
 
 revoke all on public.scores from anon, authenticated;
-grant select (id, created_at, nickname, mode, level, animal, opponent, court, sets, pts_for, pts_against, sweet, combo, hits, streak, duration_s, score, gear)
+grant select (id, created_at, nickname, mode, level, animal, opponent, court, sets, pts_for, pts_against, sweet, combo, hits, streak, duration_s, score, gear, no_fame)
   on public.scores to anon, authenticated;
 grant insert (nickname, mode, level, animal, opponent, court, sets, pts_for, pts_against, sweet, combo, hits, streak, duration_s, client_id, gear)
   on public.scores to anon, authenticated;
@@ -95,3 +97,8 @@ update public.scores set score = round((300 + greatest(0, pts_for - pts_against)
     * (case level when 1 then 100 when 2 then 135 else 180 end) / 100.0)
   where score is distinct from round((300 + greatest(0, pts_for - pts_against) * 30 + sweet * 6 + combo * 6)
     * (case level when 1 then 100 when 2 then 135 else 180 end) / 100.0);
+
+-- Records checked by hand and found to be cheats (2026-11-18 and 19: 72:0 and 16:0 wins over the hard computer, '딱!' far past what a hand can do).
+-- They stay on that month's board, but never in 명예의 전당. Running this again changes nothing.
+update public.scores set no_fame = true
+  where id in (34, 35, 36, 37, 45, 46, 48) and client_id = '4a4959ce-4ee6-4d17-8ab1-b5b1537130d6' and not no_fame;
