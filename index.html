@@ -465,8 +465,8 @@ function hat2(L, front) {
     const wire = (draw, w) => { ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath(); draw(); ctx.lineWidth = w + 2.8; ctx.strokeStyle = OUT; ctx.stroke(); ctx.lineWidth = w; ctx.strokeStyle = c; ctx.stroke(); ctx.beginPath(); draw(); ctx.lineWidth = w * 0.26; ctx.strokeStyle = 'rgba(255,248,210,0.85)'; ctx.stroke(); };
     const bandY = x => -94 + 7.5 * (1 - (x / 27) ** 2), chase = (x0, x1) => { for (let x = x0; x <= x1; x += 3.4) { E(x, bandY(x) + 0.6, 0.9, 0.9, 'rgba(160,105,15,0.8)', 0, true); } };
     if (!front) { wire(() => { ctx.moveTo(-27, -94); ctx.quadraticCurveTo(0, -86.5, 27, -94); }, 4.4); chase(-24, 24); }
-    else for (const sd of [-1, 1]) { const cx = sd * 10.2, cy = -96;
-      wire(() => { ctx.moveTo(sd * 27, -94); ctx.quadraticCurveTo(sd * 15, -87, sd * 6, -88.3); ctx.quadraticCurveTo(sd * 3.6, -90.5, sd * 3.8, -96); for (let q = 0; q <= 1.0001; q += 0.03) { const a = q * Math.PI * 2.6, r = 6.4 - q * 3.9; ctx.lineTo(cx - sd * Math.cos(a) * r, cy - Math.sin(a) * r); } }, 3);
+    else for (const sd of [-1, 1]) { const r0 = 3.6; // the band runs on along the brow and, without a corner, rolls up into a small spiral
+      wire(() => { ctx.moveTo(sd * 27, -94); ctx.quadraticCurveTo(sd * 16, -88.6, sd * 6.5, -89.2); for (let q = 0; q <= 1.0001; q += 0.025) { const a = Math.PI / 2 - q * Math.PI * 2.3, r = r0 - q * 2.3; ctx.lineTo(-sd * (-6.5 + Math.cos(a) * r), -89.2 - r0 + Math.sin(a) * r + (r0 - r) * 0); } }, 3.4);
       chase(sd > 0 ? 12 : -24, sd > 0 ? 24 : -12); }
     ctx.lineCap = 'butt'; ctx.strokeStyle = OUT; ctx.lineWidth = 2.4; star(-21, -101, 3, '#ffffff'); star(23, -99, 2.4, '#fff1b0'); return true; }
   if (k === 'ikseon') { // the ikseongwan, the king's hat of purple silk: a low round front, a taller crown behind with a braided cord down it, and from behind two upright wings (각) in a wire frame
