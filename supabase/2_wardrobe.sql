@@ -222,7 +222,7 @@ create table if not exists public.achievements (
 );
 alter table public.achievements add column if not exists weekly boolean not null default false; -- claimed once a week (Monday to Sunday, Korean time)
 insert into public.achievements (code, reward, daily) values
-  ('daily', 1, true), ('first_win', 1, false), ('win_easy', 1, false), ('win_normal', 1, false), ('win_hard', 2, false),
+  ('daily', 2, true), ('first_win', 1, false), ('win_easy', 1, false), ('win_normal', 1, false), ('win_hard', 2, false),
   ('win_flash', 1, false), ('win_short', 1, false), ('win_regular', 3, false), ('lessons_all', 2, false), ('ranked', 1, false),
   ('sweet_50', 1, false), ('aces_10', 1, false), ('wins_10', 2, false), ('sweet_300', 2, false), ('hard_5', 3, false),
   ('rally_30', 2, false), ('wins_50', 5, false), ('sweet_1000', 5, false), ('play_5', 1, false), ('play_20', 2, false),
@@ -232,16 +232,16 @@ insert into public.achievements (code, reward, daily) values
   ('rally_15', 1, false), ('rally_50', 3, false), ('online_1', 1, false), ('online_win', 2, false), ('online_10', 3, false),
   ('ranked_10', 2, false), ('pulls_10', 1, false), ('pulls_50', 3, false), ('own_10', 1, false), ('own_30', 2, false),
   ('own_60', 4, false), ('own_100', 10, false), ('own_150', 12, false), ('own_200', 20, false), ('legend_1', 2, false), ('full_set', 1, false),
-  ('d_play', 1, true), ('d_win', 1, true), ('d_sweet', 1, true),
+  ('d_play', 2, true), ('d_win', 2, true), ('d_sweet', 2, true),
   ('play_1', 1, false), ('pulls_1', 1, false), ('equip_1', 1, false), ('sweet_10', 1, false), ('power_10', 1, false),
   ('rally_10', 1, false), ('aces_1', 1, false), ('win_doubles', 1, false), ('own_5', 1, false),
-  ('d_play3', 3, true), ('d_win2', 2, true), ('d_power', 1, true), ('d_night', 2, true),
+  ('d_play3', 4, true), ('d_win2', 3, true), ('d_power', 2, true), ('d_night', 3, true),
   ('combo_10', 3, false), ('h_monkey', 5, false), ('h_shutout', 3, false), ('h_deuce', 3, false), ('h_zodiac', 5, false),
   ('h_midnight', 2, false), ('h_rain', 3, false), ('h_king', 3, false), ('h_comeback', 3, false)
 on conflict (code) do update set reward = excluded.reward, daily = excluded.daily;
--- this week's: twenty tickets a week on top of the daily ten
+-- this week's: forty tickets a week on top of the daily twenty
 insert into public.achievements (code, reward, daily, weekly) values
-  ('w_wins', 7, false, true), ('w_animals', 5, false, true), ('w_sweet', 4, false, true), ('w_days', 4, false, true)
+  ('w_wins', 14, false, true), ('w_animals', 10, false, true), ('w_sweet', 8, false, true), ('w_days', 8, false, true)
 on conflict (code) do update set reward = excluded.reward, daily = excluded.daily, weekly = excluded.weekly;
 
 -- ---- One profile per account ----
@@ -329,27 +329,21 @@ begin
     'tickets', (select tickets from public.profiles where id = auth.uid()));
 end $$;
 
--- A ticket reward for every finished match, won or lost: 번개전 2, 단판전 4, 정규전 8.
--- The server cannot watch the match, so it keeps the pace a real one takes: a reward no sooner than a match of that kind
--- could be played after the last one, and at most 40 tickets a day this way (Korean days).
+-- A ticket reward for every finished match, won or lost: 번개전 2, 단판전 4, 정규전 15 (the long one pays the most).
+-- The server cannot watch the match, so it keeps the pace a real one takes: no reward sooner after the last one
+-- than a match of that kind can be played.
 alter table public.profiles add column if not exists last_game_at timestamptz;
-alter table public.profiles add column if not exists game_day text;
-alter table public.profiles add column if not exists game_tickets integer not null default 0;
 create or replace function public.claim_match_reward(fmt text) returns public.profiles
 language plpgsql security definer set search_path = public as $$
-declare p public.profiles; n integer; gap integer; today text := to_char(now() at time zone 'Asia/Seoul', 'YYYY-MM-DD');
+declare p public.profiles; n integer; gap integer;
 begin
   perform public.me();
-  n := case fmt when 'flash' then 2 when 'short' then 4 when 'regular' then 8 end;
+  n := case fmt when 'flash' then 2 when 'short' then 4 when 'regular' then 15 end;
   gap := case fmt when 'flash' then 90 when 'short' then 150 when 'regular' then 420 end;
   if n is null then raise exception 'bad format'; end if;
   select * into p from public.profiles where id = auth.uid() for update;
   if p.last_game_at is not null and now() - p.last_game_at < make_interval(secs => gap) then raise exception 'too soon'; end if;
-  if p.game_day is distinct from today then p.game_tickets := 0; end if;
-  n := least(n, 40 - p.game_tickets);
-  if n <= 0 then raise exception 'daily limit'; end if;
-  update public.profiles set tickets = tickets + n, game_tickets = p.game_tickets + n, game_day = today, last_game_at = now()
-    where id = auth.uid() returning * into p;
+  update public.profiles set tickets = tickets + n, last_game_at = now() where id = auth.uid() returning * into p;
   return p;
 end $$;
 revoke all on function public.claim_match_reward(text) from public, anon;
