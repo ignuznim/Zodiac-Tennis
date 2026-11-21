@@ -329,6 +329,32 @@ begin
     'tickets', (select tickets from public.profiles where id = auth.uid()));
 end $$;
 
+-- A ticket reward for every finished match, won or lost: 번개전 2, 단판전 4, 정규전 8.
+-- The server cannot watch the match, so it keeps the pace a real one takes: a reward no sooner than a match of that kind
+-- could be played after the last one, and at most 40 tickets a day this way (Korean days).
+alter table public.profiles add column if not exists last_game_at timestamptz;
+alter table public.profiles add column if not exists game_day text;
+alter table public.profiles add column if not exists game_tickets integer not null default 0;
+create or replace function public.claim_match_reward(fmt text) returns public.profiles
+language plpgsql security definer set search_path = public as $$
+declare p public.profiles; n integer; gap integer; today text := to_char(now() at time zone 'Asia/Seoul', 'YYYY-MM-DD');
+begin
+  perform public.me();
+  n := case fmt when 'flash' then 2 when 'short' then 4 when 'regular' then 8 end;
+  gap := case fmt when 'flash' then 90 when 'short' then 150 when 'regular' then 420 end;
+  if n is null then raise exception 'bad format'; end if;
+  select * into p from public.profiles where id = auth.uid() for update;
+  if p.last_game_at is not null and now() - p.last_game_at < make_interval(secs => gap) then raise exception 'too soon'; end if;
+  if p.game_day is distinct from today then p.game_tickets := 0; end if;
+  n := least(n, 40 - p.game_tickets);
+  if n <= 0 then raise exception 'daily limit'; end if;
+  update public.profiles set tickets = tickets + n, game_tickets = p.game_tickets + n, game_day = today, last_game_at = now()
+    where id = auth.uid() returning * into p;
+  return p;
+end $$;
+revoke all on function public.claim_match_reward(text) from public, anon;
+grant execute on function public.claim_match_reward(text) to authenticated;
+
 -- Each animal (0-11) wears its own gear: equip is {"2": {"hat": "h5", ...}, ...}. One copy dresses one animal at a time:
 -- if every copy owned is already worn by others, it is taken from one of them. A null item takes the slot off.
 drop function if exists public.equip_item(text, text);

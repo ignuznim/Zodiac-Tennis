@@ -2966,7 +2966,7 @@ function toast(s) { acct.msg = s; acct.msgT = 0; }
 async function rpc(fn, args) {
   if (!acct.sb || !acct.user) return null;
   const { data, error } = await acct.sb.rpc(fn, args || {});
-  if (error) { const m = error.message || ''; throw new Error(/no tickets/.test(m) ? '뽑기권이 없어요' : /nickname taken/.test(m) ? '이미 쓰는 닉네임이에요' : /bad nickname/.test(m) ? '닉네임은 1~8자로 정해 주세요' : /already claimed/.test(m) ? '이미 받았어요' : /not owned/.test(m) ? '갖고 있지 않은 아이템이에요' : /all collected/.test(m) ? '모든 아이템을 12개씩 모았어요' : /no such achievement/.test(m) ? '서버에 아직 없는 업적이에요 (서버 업데이트 필요)' : '서버와 연결하지 못했어요'); }
+  if (error) { const m = error.message || ''; throw new Error(/no tickets/.test(m) ? '뽑기권이 없어요' : /nickname taken/.test(m) ? '이미 쓰는 닉네임이에요' : /bad nickname/.test(m) ? '닉네임은 1~8자로 정해 주세요' : /already claimed/.test(m) ? '이미 받았어요' : /not owned/.test(m) ? '갖고 있지 않은 아이템이에요' : /all collected/.test(m) ? '모든 아이템을 12개씩 모았어요' : /daily limit/.test(m) ? 'daily limit' : /too soon/.test(m) ? 'too soon' : /no such achievement/.test(m) ? '서버에 아직 없는 업적이에요 (서버 업데이트 필요)' : '서버와 연결하지 못했어요'); }
   return data;
 }
 async function loadAccount() {
@@ -3012,7 +3012,7 @@ async function claim(code) {
 }
 function pull() { // the machine: the crank turns while the server picks
   const G = acct.g; if (G.phase !== 'idle' || !acct.prof) return;
-  if (acct.prof.tickets < 1) { toast('뽑기권이 없어요 · 업적에서 받을 수 있어요'); return; }
+  if (acct.prof.tickets < 1) { toast('뽑기권이 없어요 · 경기를 마치거나 업적에서 받을 수 있어요'); return; }
   const n = PULLS.includes(G.n) ? G.n : 1; if (acct.prof.tickets < n) { toast(`뽑기권이 ${n}장 있어야 해요`); return; }
   G.phase = 'turn'; G.t = 0; G.res = null; G.list = null; G.sel = 0; G.err = ''; tone(300, 0.6, 'square', 0.12, 0, 1.5);
   (async () => { const out = []; let err = ''; // one ticket after another, so each draw is the same as a single one
@@ -3302,7 +3302,7 @@ function drawGachaTab(y0, end) {
   if (G.phase === 'drop' || G.phase === 'reveal') { const u = Math.min(1, G.t / 0.5), g = G.res.grade; capsule(-52, G.phase === 'drop' ? -124 + u * 42 : -84, 22, GRADE[g].c, G.t * 6); }
   ctx.restore();
   if (G.phase === 'idle') iconButton('hanger', '내 아이템', LY.m + LY.w - 110, y0, 110, 92, () => openCloset('wardrobe', null));
-  if (acct.prof.tickets < 1) text('업적을 달성하면 뽑기권을 받아요', LY.m + LY.pad, y0 + 40, 20, '#7a6872', 'left', null, F_B);
+  if (acct.prof.tickets < 1) text('경기를 마치거나 업적을 달성하면 뽑기권을 받아요', LY.m + LY.pad, y0 + 40, 20, '#7a6872', 'left', null, F_B);
   if (G.phase === 'reveal' && G.list && G.list.length > 1) { drawManyPrizes(G, y0, h); return; }
   if (G.phase === 'reveal') { // the prize, opened
     const r = G.res, it = item(r.item), c = GRADE[it.grade].c, py = y0 + 20, ph = Math.min(360, h - 110);
@@ -3491,7 +3491,15 @@ function playCore(dt) { // the match itself; the pause menu keeps it running whe
   state.t += dt; simulate(dt); localFx(dt);
   if (m.phase === 'done' && m.pt > 2.4) { state.gained = m.sc.winner === 0 ? '승리!' : '패배'; scene = 'results'; matchProgress(); }
 }
+const MATCH_TICKETS = { flash: 2, short: 4, regular: 8 }; // tickets for a finished match, won or lost (the server gives them: supabase/2_wardrobe.sql)
+async function matchReward(fmt) {
+  if (!acct.user || !acct.prof || setup.practice || !MATCH_TICKETS[fmt]) return;
+  const was = acct.prof.tickets;
+  try { const p = await rpc('claim_match_reward', { fmt }); if (p) { acct.prof = p; if (p.tickets > was) toast(`경기 보상 · 뽑기권 ${p.tickets - was}장을 받았어요`); } }
+  catch (e) { if (/daily limit/.test(e.message)) toast('오늘 받을 수 있는 경기 보상을 모두 받았어요'); }
+}
 function matchProgress() { // what this match adds to the account's counts (online, each side counts its own)
+  matchReward(m.format);
   const me = m.online ? view : 0, won = m.sc.winner === me % 2;
   const d = { sweet: m.stats.sweet[me], aces: m.stats.aces[me], power: m.stats.power[me], matches: 1 }; setProgress('rally', m.stats.longest);
   if (m.online) { d.online = 1; if (won) d.online_wins = 1; }
