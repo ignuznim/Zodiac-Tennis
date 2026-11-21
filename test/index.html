@@ -1825,9 +1825,10 @@ function localFx(dt) {
   { const s = proj(b.x, b.y, Math.max(0, b.z)); if (b.live && b.fly) { post.ghost.push({ x: s.x, y: s.y, r: 10 * s.s }); if (post.ghost.length > 9) post.ghost.shift(); } else post.ghost.length = 0; }
   for (const L of [post.bursts, post.dust, post.smears]) { for (const e of L) e.t += dt; }
   post.bursts = post.bursts.filter(e => e.t < 0.18); post.dust = post.dust.filter(e => e.t < (e.ring ? 0.4 : e.skid ? 0.45 : 0.32)); post.smears = post.smears.filter(e => e.t < 0.16);
-  m.P.forEach((p, i) => { if (p.ctrl === 'machine') return; const sp = Math.hypot(p.vx || 0, p.vy || 0), vf = tune.run_v + pstat(p, 'speed') * tune.run_v_speed; // dust only when a sprint at full speed (0.45 s or more) slows down: the feet skid
-    if (sp > vf * 0.9) { post.hold[i] += dt; post.dir[i] = Math.sign((view % 2 ? -1 : 1) * (p.vx || 0)) || post.dir[i]; }
-    else if (sp < vf * 0.55) { if (post.hold[i] >= 0.45) { const g = proj(p.x, p.y, 0); post.dust.push({ x: g.x + post.dir[i] * 8 * g.s, y: g.y, s: g.s, t: 0, skid: post.dir[i] || 1 }); } post.hold[i] = 0; } });
+  m.P.forEach((p, i) => { if (p.ctrl === 'machine') return; const sp = Math.hypot(p.vx || 0, p.vy || 0), vf = tune.run_v + pstat(p, 'speed') * tune.run_v_speed; // dust only when a sprint at full speed (0.3 s or more) slows down: the feet skid
+    const top = vf * (1 - tune.tired_run * (1 - p.stam / p.max)) * (p.ctrl === 'ai' ? tune['ai' + m.level + '_run'] : 1); // this player's top speed just now, tired or not
+    if (sp > top * 0.85) { post.hold[i] += dt; post.dir[i] = Math.sign((view % 2 ? -1 : 1) * (p.vx || 0)) || post.dir[i]; }
+    else if (sp < top * 0.6) { if (post.hold[i] >= 0.3) { const g = proj(p.x, p.y, 0); post.dust.push({ x: g.x + post.dir[i] * 8 * g.s, y: g.y, s: g.s, t: 0, skid: post.dir[i] || 1 }); } post.hold[i] = 0; } });
   for (const t of trail) t.t += dt; while (trail.length && trail[0].t > 0.45) trail.shift();
 }
 
@@ -1865,11 +1866,13 @@ function drawPostOver() { // in the air: the ball's streak, the flash where it w
     if (len > 6) { // an afterimage: fading copies of the ball along its path, joined by a soft tapering band
       ctx.lineCap = 'round'; for (let k = 0; k < n - 1; k++) { const g = G[k], nx = G[k + 1], w = (k + 1) / n; ctx.globalAlpha = 0.1 + w * 0.32; ctx.strokeStyle = pw ? '#ffe7a0' : '#ffffff'; ctx.lineWidth = Math.max(1.5, nx.r * 2 * (0.25 + w * 0.7)); ctx.beginPath(); ctx.moveTo(g.x, g.y); ctx.lineTo(nx.x, nx.y); ctx.stroke(); }
       for (let k = n - 4; k < n - 1; k += 1) { if (k < 0) continue; const g = G[k], w = (k + 1) / n; ctx.globalAlpha = 0.18 + w * 0.22; E(g.x, g.y, g.r * (0.7 + w * 0.3), g.r * (0.7 + w * 0.3), pw ? '#ffd34d' : BALL, 0, true); }
-      if (pw) { // cutting the air: thin streaks either side of the path, and a bow of wind ahead of the ball
-        const dx = (h.x - q.x) / len, dy = (h.y - q.y) / len, nxv = -dy, nyv = dx, R = h.r, fl = (Math.floor(viewT * 30) % 2) * 0.15;
-        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = Math.max(1, 1.6 * R / 10);
-        for (const [o, l, a] of [[-2.1, 1.1, 0.75], [2.1, 1.1, 0.75]]) { ctx.globalAlpha = a - fl; const ox = h.x + nxv * o * R, oy = h.y + nyv * o * R; ctx.beginPath(); ctx.moveTo(ox - dx * R * 0.6, oy - dy * R * 0.6); ctx.lineTo(ox - dx * len * l, oy - dy * len * l); ctx.stroke(); }
-        ctx.globalAlpha = 0.8; ctx.lineWidth = Math.max(1.2, 2 * R / 10); for (const sd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(h.x + dx * R * 1.5, h.y + dy * R * 1.5); ctx.quadraticCurveTo(h.x + dx * R * 0.9 + nxv * sd * R * 1.5, h.y + dy * R * 0.9 + nyv * sd * R * 1.5, h.x - dx * R * 0.3 + nxv * sd * R * 2.2, h.y - dy * R * 0.3 + nyv * sd * R * 2.2); ctx.stroke(); } } }
+      if (pw) { // cutting the air: a wake opening out behind the ball, like water parting at a bow, fading to nothing
+        const dx = (h.x - q.x) / len, dy = (h.y - q.y) / len, nx = -dy, ny = dx, R = h.r, L = Math.min(len * 1.1, R * 9), W2 = R * 2.6;
+        const tip = sd => [h.x + dx * R * 0.4 + nx * sd * R * 0.9, h.y + dy * R * 0.4 + ny * sd * R * 0.9], tail = sd => [h.x - dx * L + nx * sd * W2, h.y - dy * L + ny * sd * W2], mid = sd => [h.x - dx * L * 0.35 + nx * sd * R * 1.9, h.y - dy * L * 0.35 + ny * sd * R * 1.9];
+        const g = ctx.createLinearGradient(h.x, h.y, h.x - dx * L, h.y - dy * L); g.addColorStop(0, 'rgba(255,255,255,0.22)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.globalAlpha = 1; ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(...tip(-1)); ctx.quadraticCurveTo(...mid(-1), ...tail(-1)); ctx.lineTo(...tail(1)); ctx.quadraticCurveTo(...mid(1), ...tip(1)); ctx.closePath(); ctx.fill();
+        const gs = ctx.createLinearGradient(h.x, h.y, h.x - dx * L, h.y - dy * L); gs.addColorStop(0, 'rgba(255,255,255,0.95)'); gs.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.strokeStyle = gs; ctx.lineWidth = Math.max(1.2, 2.2 * R / 10); for (const sd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(...tip(sd)); ctx.quadraticCurveTo(...mid(sd), ...tail(sd)); ctx.stroke(); } } }
   }
   ctx.lineCap = 'butt';
   for (const e of post.bursts) { const u = Math.min(1, e.t / 0.18), a = 1 - u, col = e.hot ? '255,159,67' : e.big ? '255,228,92' : '255,255,255', R0 = (e.hot ? 20 : 16) * e.s;
