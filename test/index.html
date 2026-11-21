@@ -1793,7 +1793,7 @@ function simulate(dt) {
 let guide = true; // the landing marker; a seasoned player turns it off (G, or the target button)
 try { guide = localStorage.getItem('zt_guide') !== '0'; } catch (e) { /* no storage: it stays on */ }
 function toggleGuide() { guide = !guide; try { localStorage.setItem('zt_guide', guide ? '1' : '0'); } catch (e) { /* not kept */ } tone(guide ? 880 : 440, 0.08, 'sine', 0.15); }
-let post = { ghost: [], bursts: [], dust: [], smears: [], runT: [0, 0, 0, 0] }; // POST-PROCESSING prototype
+let post = { ghost: [], bursts: [], dust: [], smears: [], hold: [0, 0, 0, 0], dir: [0, 0, 0, 0] }; // POST-PROCESSING prototype
 let seenFx = 0, trail = [], hints = { hits: 0, power: 0, shots: 0 }, shake = 0, viewT = 0;
 function localFx(dt) {
   viewT += dt; if (shake > 0) shake -= dt;
@@ -1824,8 +1824,10 @@ function localFx(dt) {
   const b = m.ball;
   { const s = proj(b.x, b.y, Math.max(0, b.z)); if (b.live && b.fly) { post.ghost.push({ x: s.x, y: s.y, r: 10 * s.s }); if (post.ghost.length > 9) post.ghost.shift(); } else post.ghost.length = 0; }
   for (const L of [post.bursts, post.dust, post.smears]) { for (const e of L) e.t += dt; }
-  post.bursts = post.bursts.filter(e => e.t < 0.24); post.dust = post.dust.filter(e => e.t < (e.ring ? 0.4 : 0.32)); post.smears = post.smears.filter(e => e.t < 0.16);
-  m.P.forEach((p, i) => { const sp = Math.hypot(p.vx || 0, p.vy || 0); post.runT[i] -= dt; if (sp > 4.2 && post.runT[i] <= 0) { post.runT[i] = 0.11; const g = proj(p.x, p.y, 0); post.dust.push({ x: g.x - Math.sign(p.vx || 1) * 10 * g.s, y: g.y, s: g.s, t: 0 }); } });
+  post.bursts = post.bursts.filter(e => e.t < 0.18); post.dust = post.dust.filter(e => e.t < (e.ring ? 0.4 : e.skid ? 0.45 : 0.32)); post.smears = post.smears.filter(e => e.t < 0.16);
+  m.P.forEach((p, i) => { if (p.ctrl === 'machine') return; const sp = Math.hypot(p.vx || 0, p.vy || 0), vf = tune.run_v + pstat(p, 'speed') * tune.run_v_speed; // dust only when a sprint at full speed (0.45 s or more) slows down: the feet skid
+    if (sp > vf * 0.9) { post.hold[i] += dt; post.dir[i] = Math.sign((view % 2 ? -1 : 1) * (p.vx || 0)) || post.dir[i]; }
+    else if (sp < vf * 0.55) { if (post.hold[i] >= 0.45) { const g = proj(p.x, p.y, 0); post.dust.push({ x: g.x + post.dir[i] * 8 * g.s, y: g.y, s: g.s, t: 0, skid: post.dir[i] || 1 }); } post.hold[i] = 0; } });
   for (const t of trail) t.t += dt; while (trail.length && trail[0].t > 0.45) trail.shift();
 }
 
@@ -1848,10 +1850,10 @@ function drawPlayer(p) {
 const DUST = { hard: '#eef5ff', grass: '#e4f3d6', clay: '#f8dcc4' };
 function drawPostUnder() { // on the ground: bounce rings and kicked-up dust, under the players
   const dc = DUST[m.court] || '#ffffff';
-  for (const d of post.dust) { const u = d.t / (d.ring ? 0.4 : 0.32), a = 1 - u;
+  for (const d of post.dust) { const u = d.t / (d.ring ? 0.4 : d.skid ? 0.45 : 0.32), a = 1 - u;
     if (d.ring) { ctx.globalAlpha = a * 0.85; ctx.lineWidth = 3 * d.s; ctx.strokeStyle = '#ffffff'; ctx.beginPath(); ctx.ellipse(d.x, d.y, (8 + u * 26) * d.s, (3 + u * 9) * d.s, 0, 0, 7); ctx.stroke(); }
     else if (d.clay) { ctx.globalAlpha = a * 0.9; ctx.fillStyle = dc; for (let k = 0; k < 7; k++) { const ang = Math.PI * (1.05 + k / 6 * 0.9), r0 = (5 + u * 24) * d.s; ctx.beginPath(); ctx.arc(d.x + Math.cos(ang) * r0, d.y + Math.sin(ang) * r0 * 0.55 - u * 8 * d.s, (4.5 - u * 2.5 + (k % 2)) * d.s, 0, 7); ctx.fill(); } }
-    else { ctx.globalAlpha = a * 0.85; ctx.fillStyle = dc; for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.arc(d.x + (k - 1) * 8 * d.s, d.y - u * 12 * d.s - k * 2 * d.s, (5 + u * 7) * d.s * (k === 1 ? 1.25 : 0.9), 0, 7); ctx.fill(); } } }
+    else { ctx.globalAlpha = a * 0.85; ctx.fillStyle = dc; const sd = d.skid || 1; for (let k = 0; k < 4; k++) { ctx.beginPath(); ctx.arc(d.x + sd * (k * 7 + u * 10) * d.s, d.y - u * (8 + k * 3) * d.s, (4 + u * 6) * d.s * (1 - k * 0.15), 0, 7); ctx.fill(); } } }
   ctx.globalAlpha = 1;
 }
 function drawPostOver() { // in the air: the ball's streak, the flash where it was struck, the racket's arc
@@ -1866,13 +1868,14 @@ function drawPostOver() { // in the air: the ball's streak, the flash where it w
       if (pw) { // cutting the air: thin streaks either side of the path, and a bow of wind ahead of the ball
         const dx = (h.x - q.x) / len, dy = (h.y - q.y) / len, nxv = -dy, nyv = dx, R = h.r, fl = (Math.floor(viewT * 30) % 2) * 0.15;
         ctx.strokeStyle = '#ffffff'; ctx.lineWidth = Math.max(1, 1.6 * R / 10);
-        for (const [o, l, a] of [[-1.9, 1.15, 0.75], [1.9, 1, 0.7], [-3.2, 0.7, 0.45], [3.3, 0.8, 0.45]]) { ctx.globalAlpha = a - fl; const ox = h.x + nxv * o * R, oy = h.y + nyv * o * R; ctx.beginPath(); ctx.moveTo(ox - dx * R * 0.6, oy - dy * R * 0.6); ctx.lineTo(ox - dx * len * l, oy - dy * len * l); ctx.stroke(); }
+        for (const [o, l, a] of [[-2.1, 1.1, 0.75], [2.1, 1.1, 0.75]]) { ctx.globalAlpha = a - fl; const ox = h.x + nxv * o * R, oy = h.y + nyv * o * R; ctx.beginPath(); ctx.moveTo(ox - dx * R * 0.6, oy - dy * R * 0.6); ctx.lineTo(ox - dx * len * l, oy - dy * len * l); ctx.stroke(); }
         ctx.globalAlpha = 0.8; ctx.lineWidth = Math.max(1.2, 2 * R / 10); for (const sd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(h.x + dx * R * 1.5, h.y + dy * R * 1.5); ctx.quadraticCurveTo(h.x + dx * R * 0.9 + nxv * sd * R * 1.5, h.y + dy * R * 0.9 + nyv * sd * R * 1.5, h.x - dx * R * 0.3 + nxv * sd * R * 2.2, h.y - dy * R * 0.3 + nyv * sd * R * 2.2); ctx.stroke(); } } }
   }
   ctx.lineCap = 'butt';
-  for (const e of post.bursts) { const u = e.t / 0.24, a = 1 - u, R = (10 + u * (e.big || e.hot ? 40 : 26)) * e.s, col = e.hot ? '#ff9f43' : e.big ? '#ffe45c' : '#ffffff';
-    ctx.globalAlpha = a; ctx.lineWidth = (e.big || e.hot ? 4 : 3) * e.s * a + 0.5; ctx.strokeStyle = col; ctx.beginPath(); ctx.arc(e.x, e.y, R, 0, 7); ctx.stroke();
-    ctx.lineWidth = 2.6 * e.s; ctx.beginPath(); for (let k = 0; k < 8; k++) { const ang = k / 8 * 6.283 + 0.2; ctx.moveTo(e.x + Math.cos(ang) * R * 0.75, e.y + Math.sin(ang) * R * 0.75); ctx.lineTo(e.x + Math.cos(ang) * R * 1.25, e.y + Math.sin(ang) * R * 1.25); } ctx.stroke(); }
+  for (const e of post.bursts) { const u = Math.min(1, e.t / 0.18), a = 1 - u, col = e.hot ? '255,159,67' : e.big ? '255,228,92' : '255,255,255', R0 = (e.hot ? 20 : 16) * e.s;
+    const g = ctx.createRadialGradient(e.x, e.y, 0, e.x, e.y, R0); g.addColorStop(0, `rgba(${col},${0.75 * a})`); g.addColorStop(1, `rgba(${col},0)`); ctx.globalAlpha = 1; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(e.x, e.y, R0, 0, 7); ctx.fill();
+    ctx.globalAlpha = a * 0.8; ctx.lineWidth = 2 * e.s; ctx.strokeStyle = `rgb(${col})`; ctx.beginPath(); ctx.arc(e.x, e.y, R0 * (0.6 + u * 0.7), 0, 7); ctx.stroke();
+    if (e.big) { ctx.globalAlpha = a; star(e.x + 12 * e.s, e.y - 12 * e.s, 6 * e.s * (1 - u * 0.5), '#ffffff'); } }
   ctx.globalAlpha = 1; ctx.strokeStyle = OUT;
 }
 function drawBall() {
