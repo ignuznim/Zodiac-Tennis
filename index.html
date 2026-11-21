@@ -3491,15 +3491,34 @@ function playCore(dt) { // the match itself; the pause menu keeps it running whe
   state.t += dt; simulate(dt); localFx(dt);
   if (m.phase === 'done' && m.pt > 2.4) { state.gained = m.sc.winner === 0 ? '승리!' : '패배'; scene = 'results'; matchProgress(); }
 }
+let matchGift = null; // the reward for the match just finished: a card over the results until tapped away (after 2 s), then a badge by the title
 const MATCH_TICKETS = { flash: 2, short: 4, regular: 15 }; // tickets for a finished match, won or lost (the server gives them: supabase/2_wardrobe.sql)
 async function matchReward(fmt) {
   if (!acct.user || !acct.prof || setup.practice || !MATCH_TICKETS[fmt]) return;
-  const was = acct.prof.tickets;
-  try { const p = await rpc('claim_match_reward', { fmt }); if (p) { acct.prof = p; if (p.tickets > was) toast(`경기 보상 · 뽑기권 ${p.tickets - was}장을 받았어요`); } }
+  const was = acct.prof.tickets, mm = m;
+  try { const p = await rpc('claim_match_reward', { fmt }); if (p) { acct.prof = p; if (p.tickets > was && m === mm) { matchGift = { n: p.tickets - was, at: clock.now(), open: true, m: mm }; tone(880, 0.1, 'triangle', 0.25); tone(1320, 0.18, 'triangle', 0.25, 0.1); } } }
   catch (e) { /* too soon, or the server not ready: no reward this time */ }
 }
+function ticketPic(x, y, s, rot = 0) { // a gacha ticket: notched ends, a torn-off stub, a capsule printed on it
+  ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.scale(s, s); ctx.lineWidth = 2.4; ctx.strokeStyle = OUT; ctx.lineJoin = 'round';
+  ctx.beginPath(); ctx.moveTo(-26, -15); ctx.lineTo(26, -15); ctx.lineTo(26, -5); ctx.arc(26, 0, 5, -Math.PI / 2, Math.PI / 2, true); ctx.lineTo(26, 15); ctx.lineTo(-26, 15); ctx.lineTo(-26, 5); ctx.arc(-26, 0, 5, Math.PI / 2, -Math.PI / 2, true); ctx.closePath(); ctx.fillStyle = '#ffd34d'; ctx.fill(); ctx.stroke();
+  ctx.setLineDash([3, 3]); ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(10, -12); ctx.lineTo(10, 12); ctx.stroke(); ctx.setLineDash([]);
+  ctx.lineWidth = 2; E(-8, 0, 8, 8, '#e2574c'); ctx.fillStyle = '#ffffff'; ctx.fillRect(-16, -1, 16, 2); E(-10.5, -3, 2, 1.6, 'rgba(255,255,255,0.8)', 0, true); ctx.restore();
+}
+const giftHere = () => matchGift && matchGift.m === m;
+function closeGift() { if (giftHere() && matchGift.open && clock.now() - matchGift.at >= 2) { matchGift.open = false; tone(660, 0.05, 'sine', 0.15); } }
+function drawGift() { // on the results: the card first, then the badge beside 승리!/패배
+  if (!giftHere()) return; const g = matchGift;
+  if (!g.open) { const x = W / 2 + textW(m.sc.winner === view % 2 ? '승리!' : '패배', 76) / 2 + 42, y = LY.titleY + 4; ticketPic(x, y, 1.05, -0.12); rr(x + 16, y - 34, 50, 32, 16, CORAL, OUT, 2.4); text(`+${g.n}`, x + 41, y - 18, 22, '#ffffff', 'center', null, F_T); return; }
+  const age = clock.now() - g.at, k = 0.85 + 0.15 * Math.min(1, age / 0.18), w = 470, h = 160, x = (W - w) / 2, y = LY.top + 110;
+  ctx.fillStyle = 'rgba(59,51,64,0.35)'; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, closeGift); btn(x, y, w, h, () => {});
+  ctx.save(); ctx.translate(W / 2, y + h / 2); ctx.scale(k, k); ctx.translate(-W / 2, -(y + h / 2));
+  rr(x, y + 6, w, h, 26, 'rgba(59,51,64,0.35)', null); rr(x, y, w, h, 26, '#fffaf0', OUT, 3); ticketPic(x + 92, y + h / 2, 1.6, -0.15);
+  text('경기 보상!', x + 178, y + 46, 30, CORAL, 'left', null, F_T); fitText(`뽑기권 ${g.n}장을 받았어요`, x + 178, y + 86, 24, INK, 'left', F_T, w - 198);
+  text(age >= 2 ? '바깥을 누르면 닫혀요' : ' ', x + 178, y + 122, MIN_TEXT, '#9a8b93', 'left', null, F_B); ctx.restore();
+}
 function matchProgress() { // what this match adds to the account's counts (online, each side counts its own)
-  matchReward(m.format);
+  matchGift = null; matchReward(m.format);
   const me = m.online ? view : 0, won = m.sc.winner === me % 2;
   const d = { sweet: m.stats.sweet[me], aces: m.stats.aces[me], power: m.stats.power[me], matches: 1 }; setProgress('rally', m.stats.longest);
   if (m.online) { d.online = 1; if (won) d.online_wins = 1; }
@@ -4168,6 +4187,7 @@ const scenes = {
       state.t += dt;
       const guest = net && net.role === 'guest';
       if (guest) guestStep();
+      if (giftHere() && matchGift.open) { if (pressed('Escape') || pressed('Enter')) closeGift(); return; } // the reward card first
       if (pressed('Escape')) { if (net) leaveOnline(); else goHome(); return; }
       if (pressed('Enter')) { if (guest) { if (net.ask) guestStay(); } else if (net) onlineAgain(); else { reset(); scene = 'play'; } }
     },
@@ -4205,6 +4225,7 @@ const scenes = {
       else if (guest) { const gx = LY.m + LY.side + LY.gap, gw = LY.m + LY.w - gx; rr(gx, LY.bot, gw, LY.btnH, 18, 'rgba(255,248,231,0.7)', '#cdbfb3', 2.4); text('방장이 다시 하자고 하면', gx + gw / 2, LY.bot + LY.btnH / 2 - 13, 21, INK, 'center', null, F_T); text('남을지 고를 수 있어요', gx + gw / 2, LY.bot + LY.btnH / 2 + 15, 21, INK, 'center', null, F_T); }
       else mainBtn(net ? '다시 하기 (방으로)' : '다시 하기', () => { if (net) onlineAgain(); else { reset(); scene = 'play'; } });
       menuEnd(guest ? (net.ask ? '방장이 한 판 더 하자고 해요 · 남거나 방 목록으로 나가요' : '') : net ? '다시 하기를 누르면 방으로 돌아가요 · 친구들은 남을지 골라요' : 'Enter : 다시 하기 · Esc : 홈으로');
+      drawGift();
     },
   },
 };
