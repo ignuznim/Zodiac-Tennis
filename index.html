@@ -3573,10 +3573,42 @@ async function logPlay() { // a line in the owner's play log for every finished 
     await fetch(RANK.url.replace('/scores', '/plays'), { method: 'POST', headers: rankHeaders(Object.assign({ Prefer: 'return=minimal' }, tok ? { Authorization: 'Bearer ' + tok } : {})), body: JSON.stringify(row) });
   } catch (e) { /* the log is the owner's, never the player's problem */ }
 }
+const prof = { open: false, t: 0 };
+function drawProfile() { // my record at a glance, over the home screen: totals, each kind of match, the best moments; a tap outside closes it
+  const P = progOf(), A = acct.prof || {}, n = k => P[k] || 0, pct = (w, g) => g > 0 ? Math.round(100 * w / g) + '%' : '-';
+  const fav = ANIMALS.map((a, i) => [i, n('pa_' + a.id)]).sort((x, y) => y[1] - x[1])[0], favI = fav && fav[1] > 0 ? fav[0] : (setup.animal != null ? setup.animal : 0);
+  ctx.fillStyle = 'rgba(59,51,64,0.55)'; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, () => { prof.open = false; });
+  const w = 600, h = 618, x = (W - w) / 2, y = Math.max(LY.top - 60, (H - h) / 2), L0 = x + 24, R0 = x + w - 24, k = 0.9 + 0.1 * Math.min(1, prof.t / 0.15);
+  btn(x, y, w, h, () => {});
+  ctx.save(); ctx.translate(W / 2, y + h / 2); ctx.scale(k, k); ctx.translate(-W / 2, -(y + h / 2));
+  rr(x, y + 6, w, h, 26, 'rgba(59,51,64,0.35)', null); rr(x, y, w, h, 26, '#fffaf0', OUT, 3);
+  // who: the animal I play most, my name, what I have done
+  const bs = 92, by = y + 22; rr(L0, by, bs, bs, 16, '#eef7f1', '#d9cbbd', 2); ctx.save(); ctx.beginPath(); ctx.rect(L0 + 2, by + 2, bs - 4, bs - 4); ctx.clip(); ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(favI, L0 + bs / 2, by + bs - 6, 0.6, { front: true, t: prof.t, accent: CORAL }); ctx.restore();
+  const tx = L0 + bs + 16; fitText(A.nickname || '나', tx, by + 26, 30, INK, 'left', F_T, R0 - tx);
+  fitText(fav && fav[1] > 0 ? `주로 쓰는 선수 · ${ANIMALS[favI].ko}` : '경기를 하면 주로 쓰는 선수가 나와요', tx, by + 60, 18, '#7a6872', 'left', F_B, R0 - tx);
+  fitText(`랭킹 등록 ${n('ranked').toLocaleString()}번 · 뽑기 ${n('pulls').toLocaleString()}번`, tx, by + 84, MIN_TEXT, '#9a8b93', 'left', F_B, R0 - tx);
+  // three big numbers
+  let yy = by + bs + 18; const tw = (R0 - L0 - 24) / 3, games = n('matches'), wins = n('wins') + n('online_wins');
+  [['경기', games.toLocaleString()], ['승리', wins.toLocaleString()], ['승률', pct(wins, games)]].forEach(([lab, v], i) => { const tx0 = L0 + i * (tw + 12); rr(tx0, yy, tw, 78, 16, i === 2 ? '#fff3c4' : '#ffffff', '#e6dccd', 2); text(lab, tx0 + tw / 2, yy + 23, 18, '#7a6872', 'center', null, F_B); text(v, tx0 + tw / 2, yy + 54, 30, i === 2 ? CORAL : INK, 'center', null, F_N); });
+  // each kind of match
+  yy += 78 + 18; const cN = R0 - 230, cW = R0 - 130, cR = R0 - 10, rh = 34;
+  text('판', cN, yy + 12, MIN_TEXT, '#9a8b93', 'center', null, F_B); text('승', cW, yy + 12, MIN_TEXT, '#9a8b93', 'center', null, F_B); text('승률', cR - 20, yy + 12, MIN_TEXT, '#9a8b93', 'center', null, F_B);
+  yy += 24; ctx.fillStyle = '#e6dccd'; ctx.fillRect(L0, yy, R0 - L0, 2); yy += 2;
+  [['번개전', 'pf_flash', 'wf_flash'], ['단판전', 'pf_short', 'wf_short'], ['정규전', 'pf_regular', 'wf_regular'], ['컴퓨터 상대', 'cpu_m', 'cpu_w'], ['온라인', 'online', 'online_wins']].forEach(([lab, g, wk], i) => {
+    const cy = yy + rh / 2; if (i === 3) { ctx.fillStyle = '#efe7da'; ctx.fillRect(L0, yy, R0 - L0, 1); }
+    text(lab, L0 + 4, cy, 20, INK, 'left', null, F_T); text(n(g).toLocaleString(), cN, cy, 20, INK, 'center', null, F_N); text(n(wk).toLocaleString(), cW, cy, 20, INK, 'center', null, F_N); text(pct(n(wk), n(g)), cR - 20, cy, 20, n(g) ? '#4f9a6a' : '#b3a4ac', 'center', null, F_N); yy += rh; });
+  ctx.fillStyle = '#e6dccd'; ctx.fillRect(L0, yy, R0 - L0, 2); yy += 16;
+  // best moments
+  const mw = (R0 - L0 - 36) / 4; [['가장 긴 랠리', n('rally') + '번'], ["최고 연속 '딱!'", n('streak') + '번'], ["'딱!' 누적", n('sweet').toLocaleString()], ['에이스', n('aces').toLocaleString()]].forEach(([lab, v], i) => { const mx = L0 + i * (mw + 12); rr(mx, yy, mw, 66, 14, '#ffffff', '#e6dccd', 2); fitText(lab, mx + mw / 2, yy + 20, MIN_TEXT, '#7a6872', 'center', F_B, mw - 12); text(v, mx + mw / 2, yy + 46, 22, INK, 'center', null, F_N); });
+  yy += 66 + 16;
+  button('계정 설정', L0, yy, R0 - L0, 52, () => { prof.open = false; scene = 'account'; }, { size: 22 });
+  ctx.restore();
+}
 function matchProgress() { // what this match adds to the account's counts (online, each side counts its own)
   matchGift = null; matchReward(m.format); logPlay();
   const me = m.online ? view : 0, won = m.sc.winner === me % 2;
   const d = { sweet: m.stats.sweet[me], aces: m.stats.aces[me], power: m.stats.power[me], matches: 1 }; setProgress('rally', m.stats.longest);
+  { const f = m.format || 'regular'; d['pf_' + f] = 1; if (won) d['wf_' + f] = 1; if (!m.online) { d.cpu_m = 1; if (won) d.cpu_w = 1; } d['pa_' + ANIMALS[m.P[me].a].id] = 1; } // for the profile: plays and wins by match type and opponent, plays by animal
   if (m.online) { d.online = 1; if (won) d.online_wins = 1; }
   addDay({ play: 1, win: won && !m.online ? 1 : 0, sweet: m.stats.sweet[me], power: m.stats.power[me] });
   addWeek({ wins: won && !m.online ? 1 : 0, sweet: m.stats.sweet[me] }, m.P[me].a);
@@ -3654,7 +3686,7 @@ const scenes = {
     },
   },
   title: {
-    update(dt) { state.t += dt; acct.msgT += dt; if (anyHit(...K_OK)) { setup.practice = false; if (room) joinRoom(room); else scene = 'format'; } },
+    update(dt) { state.t += dt; acct.msgT += dt; if (prof.open) { prof.t += dt; if (pressed('Escape')) prof.open = false; return; } if (anyHit(...K_OK)) { setup.practice = false; if (room) joinRoom(room); else scene = 'format'; } },
     draw() {
       menuBegin();
       const rows = [['이동', '방향키 ← → ↑ ↓'], ['스트로크', 'Q  (꾹 눌렀다 놓으면 파워샷)'], ['슬라이스 · 로브 · 스매시', 'W  ·  E  ·  R'], ['일시정지 · 소리 · 낙하지점', 'P  ·  M  ·  G']];
@@ -3676,7 +3708,7 @@ const scenes = {
         button('온라인', sx + bw2 + 12, y, rest - bw2 - 12, sh, () => { scene = 'online'; }, { size: 26, fill: '#efe6ff' });
       }
       { const P = acct.prof, t = acct.user ? (P && P.nickname ? P.nickname : '로그인됨') : '로그인', cw = Math.max(132, t.length * 17 + 44), cx = W - LY.m - cw, cy = 14;
-        const over = btn(cx, cy, cw, 50, () => { scene = 'account'; });
+        const over = btn(cx, cy, cw, 50, () => { if (acct.user && P && P.nickname) { prof.open = true; prof.t = 0; tone(660, 0.06, 'sine', 0.15); } else scene = 'account'; }); // my name: my profile (no name yet: the account page)
         rr(cx, cy, cw, 50, 25, over ? '#fff3c4' : 'rgba(255,248,231,0.95)', OUT, 2.6); text(t, cx + cw / 2, cy + 26, 21, acct.user ? INK : '#3d8be0', 'center', null, F_T);
         const ry = cy, round = (x, kind, fn, dot) => { const o = btn(x, ry, 50, 50, fn); rr(x, ry, 50, 50, 25, o ? '#fff3c4' : 'rgba(255,248,231,0.95)', OUT, 2.6); topIcon(kind, x + 25, ry + 25); if (dot) { ctx.lineWidth = 2; E(x + 43, ry + 6, 7, 7, '#e2574c'); } }; // round picture buttons under my name, edged like it
         round(cx - 12 - 50, FB_ICON, openFeedback); round(cx - 24 - 100, 'megaphone', openNotices, noticeUnread()); // beside my name, on the same row
@@ -3685,6 +3717,7 @@ const scenes = {
       if (acct.msg && acct.msgT < 2.6) { notify(acct.msg); acct.msg = ''; } // a message from the account (signing in, out) shows at the top too
       text(`v${APP_VERSION} · © 2026 IGNUZNIM. All rights reserved.`, W / 2, LY.copy, 16, 'rgba(59,51,64,0.6)', 'center', null, F_B);
       menuEnd('Enter 를 눌러도 시작해요');
+      if (prof.open) drawProfile();
     },
   },
   ranking: {
