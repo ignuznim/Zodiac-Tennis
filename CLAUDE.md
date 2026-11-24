@@ -24,7 +24,7 @@ The owner reviews every change on a phone. These rules come from their repeated 
 - Item names live in two places, index.html (ITEMS) and supabase/2_wardrobe.sql: change both, and give the owner the SQL to run.
 
 ## The database
-- The database is kept in numbered files, one per part, so the owner can save them apart and re-run only the part that changed: supabase/1_ranking.sql, 2_wardrobe.sql, 3_feedback.sql, 4_lobby.sql (open rooms for quick match and the room list, who is online), 5_notice.sql (공지사항, written by the owner in the Table Editor). A new part gets the next number.
+- The database is kept in numbered files, one per part, so the owner can save them apart and re-run only the part that changed: supabase/1_ranking.sql, 2_wardrobe.sql, 3_feedback.sql, 4_lobby.sql (open rooms for quick match and the room list, who is online), 5_notice.sql (공지사항, written by the owner in the Table Editor), 6_plays.sql (every finished match, for the owner to read in the Table Editor: plays_recent, plays_daily, plays_players). A new part gets the next number.
 - When a part changes, give the owner that whole file again (not a fragment), and say which file it is.
 - Send that SQL as an attached file (the whole numbered file), and say in one line which file to run in the SQL Editor. Do not paste the SQL into the reply: long SQL fills the owner's chat.
 - Every file must stay safe to run again on the live database: create ... if not exists, create or replace, drop policy if exists, on conflict do update. Test it twice on an empty database and once on one that already has data.

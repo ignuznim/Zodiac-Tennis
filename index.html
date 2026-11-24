@@ -3564,8 +3564,17 @@ function drawGift() { // on the results: the card first, then the badge beside �
   text('경기 보상!', x + 178, y + 46, 30, CORAL, 'left', null, F_T); fitText(`뽑기권 ${g.n}장을 받았어요`, x + 178, y + 86, 24, INK, 'left', F_T, w - 198);
   text(age >= 2 ? '바깥을 누르면 닫혀요' : ' ', x + 178, y + 122, MIN_TEXT, '#9a8b93', 'left', null, F_B); ctx.restore();
 }
+async function logPlay() { // a line in the owner's play log for every finished match (supabase/6_plays.sql); players cannot read it back
+  if (setup.practice || !m || !m.sc.done) return;
+  try { const me = m.online ? view : 0, side = me % 2, st = m.stats;
+    let tok = null; if (signedIn()) { try { const { data } = await acct.sb.auth.getSession(); tok = data && data.session && data.session.access_token; } catch (e) { /* sent as a guest */ } }
+    const row = { client_id: clientId(), kind: m.online ? 'online' : 'cpu', doubles: !!m.doubles, format: m.format || 'regular', level: m.online ? null : m.level, court: m.court, animal: m.P[me].a,
+      won: m.sc.winner === side, sets: m.sc.sets.map(g => g[side] + '-' + g[1 - side]).join(' '), pts_for: st.pts[side], pts_against: st.pts[1 - side], sweet: st.sweet[me], duration_s: Math.round(m.t), version: APP_VERSION };
+    await fetch(RANK.url.replace('/scores', '/plays'), { method: 'POST', headers: rankHeaders(Object.assign({ Prefer: 'return=minimal' }, tok ? { Authorization: 'Bearer ' + tok } : {})), body: JSON.stringify(row) });
+  } catch (e) { /* the log is the owner's, never the player's problem */ }
+}
 function matchProgress() { // what this match adds to the account's counts (online, each side counts its own)
-  matchGift = null; matchReward(m.format);
+  matchGift = null; matchReward(m.format); logPlay();
   const me = m.online ? view : 0, won = m.sc.winner === me % 2;
   const d = { sweet: m.stats.sweet[me], aces: m.stats.aces[me], power: m.stats.power[me], matches: 1 }; setProgress('rally', m.stats.longest);
   if (m.online) { d.online = 1; if (won) d.online_wins = 1; }
