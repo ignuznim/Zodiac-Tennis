@@ -2,7 +2,7 @@
 -- Run in Supabase: SQL Editor -> New query -> paste all of it -> Run.
 -- Safe to run again: it only adds what is missing and replaces its own functions, views and rules; saved data stays.
 -- Players can only add a row; nobody can read the rows through the game. The owner reads them in the dashboard:
--- Table Editor -> plays_recent (the latest matches), plays_daily (each day), plays_players (each player).
+-- Table Editor -> plays_recent (the latest matches), plays_daily (each day), plays_players (each player), plays_members (each member's totals so far).
 
 create table if not exists public.plays (
   id          bigint generated always as identity primary key,
@@ -24,6 +24,9 @@ create table if not exists public.plays (
   duration_s  integer check (duration_s between 0 and 36000),
   version     text check (version is null or char_length(version) <= 16)
 );
+-- where a row came from: the game itself, or (for matches before this log began) a record registered on the ranking
+alter table public.plays add column if not exists source text not null default 'game' check (source in ('game', 'ranking'));
+alter table public.plays add column if not exists score_id bigint unique;
 create index if not exists plays_recent_idx on public.plays (created_at desc);
 create index if not exists plays_client_idx on public.plays (client_id, created_at desc);
 
@@ -49,6 +52,21 @@ revoke all on public.plays from anon, authenticated;
 grant insert (client_id, kind, doubles, format, level, court, animal, won, sets, pts_for, pts_against, sweet, duration_s, version)
   on public.plays to anon, authenticated;
 
+-- ---- The matches from before this log: the ranking holds every win that was registered, so those come in once ----
+-- (only records older than the log's first match from the game, so a match is never in twice; the times and names are the record's own)
+do $$
+begin
+  if exists (select 1 from information_schema.tables where table_schema = 'public' and table_name = 'scores') then
+    alter table public.plays disable trigger plays_stamp;
+    insert into public.plays (created_at, client_id, nickname, kind, doubles, format, level, court, animal, won, sets, pts_for, pts_against, sweet, duration_s, source, score_id)
+      select s.created_at, s.client_id::text, s.nickname, 'cpu', false, s.mode, s.level, s.court, s.animal, true, s.sets, s.pts_for, s.pts_against, s.sweet, s.duration_s, 'ranking', s.id
+        from public.scores s
+       where not exists (select 1 from public.plays p where p.score_id = s.id)
+         and s.created_at < coalesce((select min(p.created_at) from public.plays p where p.source = 'game'), now());
+    alter table public.plays enable trigger plays_stamp;
+  end if;
+end $$;
+
 -- ---- For the owner: three views, in Korean time, readable at a glance in the Table Editor ----
 -- A player is their nickname when signed in, or 손님 and the start of the device's id.
 create or replace view public.plays_recent with (security_invoker = true) as
@@ -59,7 +77,8 @@ create or replace view public.plays_recent with (security_invoker = true) as
          case p.court when 'hard' then '하드' when 'grass' then '잔디' else '클레이' end as "코트",
          case when p.won then '승' else '패' end as "결과",
          p.sets as "세트", p.pts_for || ':' || p.pts_against as "포인트", p.sweet as "딱",
-         round(p.duration_s / 60.0, 1) as "분", p.version as "버전"
+         round(p.duration_s / 60.0, 1) as "분", p.version as "버전",
+         case p.source when 'ranking' then '랭킹 등록' else '게임' end as "출처"
     from public.plays p
    order by p.created_at desc
    limit 300;
@@ -92,3 +111,28 @@ create or replace view public.plays_players with (security_invoker = true) as
    order by max(p.created_at) desc;
 
 revoke all on public.plays_recent, public.plays_daily, public.plays_players from anon, authenticated;
+
+-- ---- Each member's counts so far, kept with the account since it was made (every match, not only the registered ones) ----
+-- 경기 and 승 count every finished match; a guest's counts stay on their device, so only members are here.
+do $$
+begin
+  if exists (select 1 from information_schema.tables where table_schema = 'public' and table_name = 'profiles') then
+    execute $v$
+      create or replace view public.plays_members with (security_invoker = true) as
+        select coalesce(p.nickname, '(닉네임 없음)') as "회원",
+               coalesce((p.progress ->> 'matches')::int, 0) as "경기",
+               coalesce((p.progress ->> 'wins')::int, 0) as "컴퓨터 상대 승",
+               coalesce((p.progress ->> 'online')::int, 0) as "온라인",
+               coalesce((p.progress ->> 'online_wins')::int, 0) as "온라인 승",
+               coalesce((p.progress ->> 'sweet')::int, 0) as "딱",
+               coalesce((p.progress ->> 'ranked')::int, 0) as "랭킹 등록",
+               coalesce((p.progress ->> 'pulls')::int, 0) as "뽑기",
+               p.tickets as "뽑기권",
+               to_char(p.created_at at time zone 'Asia/Seoul', 'YY-MM-DD') as "가입",
+               to_char((to_jsonb(p) ->> 'last_game_at')::timestamptz at time zone 'Asia/Seoul', 'MM-DD HH24:MI') as "마지막 경기 보상"
+          from public.profiles p
+         order by coalesce((p.progress ->> 'matches')::int, 0) desc
+    $v$;
+    revoke all on public.plays_members from anon, authenticated;
+  end if;
+end $$;
