@@ -168,7 +168,10 @@ addEventListener('keyup', e => down.delete(e.code));
 let hot = [], clicks = [], mouse = { x: -1, y: -1 }, OY = 0;
 function toLogical(e) { const r = canvas.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * H }; }
 function hitTest(p) { for (let i = hot.length - 1; i >= 0; i--) { const h = hot[i]; if (p.x >= h.x && p.x <= h.x + h.w && p.y >= h.y && p.y <= h.y + h.h) return h; } return null; }
-function btn(x, y, w, h, fn, key) { hot.push({ x, y: y + OY, w, h, fn, key }); return mouse.x >= x && mouse.x <= x + w && mouse.y >= y + OY && mouse.y <= y + OY + h; }
+let HX = null; // a window drawn larger than it is laid out: its taps scaled the same way about its centre
+const hxMap = (x, y, w, h) => HX ? [HX.cx + (x - HX.cx) * HX.s, HX.cy + (y - HX.cy) * HX.s, w * HX.s, h * HX.s] : [x, y, w, h];
+const bigWin = (w, h) => Math.min(1.3, (H - 40) / h, (W - 48) / w); // the windows read larger on a phone: up to 130%, as the screen allows
+function btn(x, y, w, h, fn, key) { [x, y, w, h] = hxMap(x, y, w, h); hot.push({ x, y: y + OY, w, h, fn, key }); return mouse.x >= x && mouse.x <= x + w && mouse.y >= y + OY && mouse.y <= y + OY + h; }
 let touchUI = (window.matchMedia && matchMedia('(pointer: coarse)').matches) || params.get('touch') === '1'; // a phone or tablet: joystick and big buttons
 const held = new Map();                    // pointer id -> the key that finger holds
 const stick = { id: null, x: 0, y: 0 };    // the on-screen joystick, -1..1 each way
@@ -2346,8 +2349,8 @@ function drawScoreCard(r, i) { // how a record's score was made: who played, dre
   ctx.fillStyle = `rgba(59,51,64,${0.55 * PQ.a})`; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, () => { rank.sel = -1; }); // a tap anywhere closes it
   const mul = [0, 1, 1.35, 1.8][r.level] || 1, margin = Math.max(0, r.pts_for - r.pts_against), base = 300 + margin * 30 + r.sweet * 6 + (r.combo || 0) * 6, lc = ['', '#3d9be0', '#4f9a6a', '#e2574c'][r.level] || INK;
   const rows = [['승리', '', 300], ['점수 차', `${margin} × 30`, margin * 30], ["'딱!'", `${r.sweet} × 6`, r.sweet * 6], ['콤보', `${r.combo || 0} × 6`, (r.combo || 0) * 6]];
-  const w = 470, x = (W - w) / 2, top = 134, rh = 38, h = 22 + top + 18 + rows.length * rh + 10 + 44 + 8 + 54 + 22, y = Math.max(LY.top - 40, (H - h) / 2), L0 = x + 20, R0 = x + w - 20;
-  ctx.save(); ctx.translate(W / 2, y + h / 2); ctx.scale(PQ.k, PQ.k); ctx.translate(-W / 2, -(y + h / 2)); ctx.globalAlpha = PQ.a;
+  const w = 470, x = (W - w) / 2, top = 134, rh = 38, h = 22 + top + 18 + rows.length * rh + 10 + 44 + 8 + 54 + 22, S = bigWin(w, h), cy0 = H / 2, y = cy0 - h / 2, L0 = x + 20, R0 = x + w - 20;
+  ctx.save(); ctx.translate(W / 2, cy0); ctx.scale(PQ.k * S, PQ.k * S); ctx.translate(-W / 2, -cy0); ctx.globalAlpha = PQ.a; HX = { cx: W / 2, cy: cy0, s: S };
   rr(x, y + 6, w, h, 24, 'rgba(59,51,64,0.35)', null); rr(x, y, w, h, 24, '#fffaf0', OUT, 3); btn(x, y, w, h, () => {}); // a tap on the card itself keeps it open; only outside closes it
   { const worn = {}; for (const id of (r.gear || '').split(',')) { const it = item(id); if (it) worn[it.slot] = id; } // the player, as dressed for this record
     const bx = L0, by = y + 22, bs = top; rr(bx, by, bs, bs, 16, '#fbf6ea', null); ctx.save(); rr(bx, by, bs, bs, 16, null, null); ctx.clip(); irwol(bx, by, bs); ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(bx, by, bs, bs); ctx.restore(); rr(bx, by, bs, bs, 16, null, '#d9cbbd', 2); ctx.save(); ctx.beginPath(); ctx.rect(bx + 2, by + 2, bs - 4, bs - 4); ctx.clip(); ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(r.animal, bx + bs / 2, by + bs - 7, 0.7, { front: true, t: 0.4, accent: CORAL, gear: worn }); ctx.restore();
@@ -2362,7 +2365,7 @@ function drawScoreCard(r, i) { // how a record's score was made: who played, dre
   cy = yy + 27; rr(L0 - 10, yy, R0 - L0 + 20, 54, 16, '#fdf0d0', '#e3a46a', 2.4);
   text(`× ${mul}`, L0 + 4, cy, 24, lc, 'left', null, F_N); text(`(${LEVEL_KO[r.level] || ''})`, L0 + 4 + textW(`× ${mul}`, 24, F_N) + 10, cy, 20, lc, 'left', null, F_T);
   text(`= ${r.score.toLocaleString()}점`, R0, cy, 28, INK, 'right', null, F_N);
-  ctx.restore();
+  ctx.restore(); HX = null;
 }
 function drawHall() {
   OY = 0; computeLayout();
@@ -3499,7 +3502,7 @@ const cardH = n => (contentEnd() - LY.top - LY.gap * (n - 1)) / n; // n cards fi
 function panel(x, y, w, h) { rr(x, y, w, h, 24, 'rgba(255,248,231,0.96)', OUT); }
 const PRESS = new Map();
 function sink(x, y, w, h, depth = 4) { // press feedback: how far a held button has gone down into its shadow, 100 ms in and 160 ms back out, eased
-  const k = Math.round(x) + ',' + Math.round(y) + ',' + Math.round(w), now = clock.now(), P = PRESS.get(k) || { d: 0, t: now }, dt = Math.min(0.1, now - P.t);
+  [x, y, w, h] = hxMap(x, y, w, h); const k = Math.round(x) + ',' + Math.round(y) + ',' + Math.round(w), now = clock.now(), P = PRESS.get(k) || { d: 0, t: now }, dt = Math.min(0.1, now - P.t);
   const inside = ptrDown && mouse.x >= x && mouse.x <= x + w && mouse.y >= y + OY && mouse.y <= y + OY + h, tgt = inside ? depth : 0;
   P.d += (tgt - P.d) * (1 - Math.exp(-dt / ((inside ? 0.1 : 0.16) / 3))); P.t = now; PRESS.set(k, P); return P.d;
 }
@@ -3711,8 +3714,8 @@ function openProfile(nick) { // mine, or another member's (from the ranking or a
 }
 function drawSettings() { // the cog's menu, over my profile: nickname, linked sign-ins, signing out; a tap outside closes only the menu
   const U = acct.user || {}, ids = (U.identities || []).map(d => d.provider), on = acct.providers || ['google', 'kakao'], PV = [['google', 'Google'], ['kakao', '카카오'], ['apple', 'Apple']].filter(q => on.includes(q[0]));
-  const w = 400, rh = 48, h = 20 + 30 + 14 + 48 + 16 + 26 + 8 + PV.length * rh + 16 + 48 + 20, x = (W - w) / 2, y = Math.max(16, (H - h) / 2), L0 = x + 20, R0 = x + w - 20, PQ = popIn(prof.mt || 0), k = PQ.k;
-  ctx.fillStyle = `rgba(59,51,64,${0.4 * PQ.a})`; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, () => { prof.menu = false; }); btn(x, y, w, h, () => {});
+  const w = 400, rh = 48, h = 20 + 30 + 14 + 48 + 16 + 26 + 8 + PV.length * rh + 16 + 48 + 20, x = (W - w) / 2, S = bigWin(w, h), y = H / 2 - h / 2, L0 = x + 20, R0 = x + w - 20, PQ = popIn(prof.mt || 0), k = PQ.k * S;
+  ctx.fillStyle = `rgba(59,51,64,${0.4 * PQ.a})`; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, () => { prof.menu = false; }); HX = { cx: W / 2, cy: H / 2, s: S }; btn(x, y, w, h, () => {});
   ctx.save(); ctx.translate(W / 2, y + h / 2); ctx.scale(k, k); ctx.translate(-W / 2, -(y + h / 2)); ctx.globalAlpha = PQ.a;
   rr(x, y + 6, w, h, 22, 'rgba(59,51,64,0.35)', null); rr(x, y, w, h, 22, '#fffaf0', OUT, 3);
   let yy = y + 20; text('설정', W / 2, yy + 15, 24, INK, 'center', null, F_T); yy += 30 + 14;
@@ -3724,7 +3727,7 @@ function drawSettings() { // the cog's menu, over my profile: nickname, linked s
     if (linked) text('연동됨', R0 - 10, cy, MIN_TEXT, '#4f9a6a', 'right', null, F_T);
     else button('연동하기', R0 - 96, cy - 17, 96, 34, () => linkAccount(id), { size: 17, fill: '#fff3c4' }); yy += rh; });
   yy += 16; { const bw = 140; button('로그아웃', W / 2 - bw / 2, yy, bw, 44, () => { prof.menu = false; prof.open = false; signOut(); }, { size: 19 }); }
-  ctx.restore();
+  ctx.restore(); HX = null;
 }
 function linkAccount(provider) { // one more way to sign in to the same record; the server must allow manual linking (Supabase: Authentication -> Sign In / Providers)
   if (!acct.sb || !acct.sb.auth.linkIdentity) { toast('연동 기능을 불러오지 못했어요'); return; }
@@ -3736,8 +3739,8 @@ function drawProfile() { // a member's record, packed like the score card: who, 
   const h = other ? 20 + 100 + 14 + 58 + 14 + 28 + 4 * 40 + (vs ? 8 + 44 : 0) + 16
                   : 20 + 100 + 14 + 58 + 12 + 24 + 5 * 30 + 2 + 10 + 2 * 28 + 12 + 28 + (RV.length ? RV.length * 52 : 36) + 14;
   const PQ = popIn(prof.t); ctx.fillStyle = `rgba(59,51,64,${0.55 * PQ.a})`; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, () => { prof.open = false; });
-  const w = 470, x = (W - w) / 2, y = Math.max(16, (H - h) / 2), L0 = x + 20, R0 = x + w - 20, k = PQ.k;
-  btn(x, y, w, h, () => {});
+  const w = 470, x = (W - w) / 2, S = bigWin(w, h), y = H / 2 - h / 2, L0 = x + 20, R0 = x + w - 20, k = PQ.k * S;
+  HX = { cx: W / 2, cy: H / 2, s: S }; btn(x, y, w, h, () => {});
   ctx.save(); ctx.translate(W / 2, y + h / 2); ctx.scale(k, k); ctx.translate(-W / 2, -(y + h / 2)); ctx.globalAlpha = PQ.a;
   rr(x, y + 6, w, h, 24, 'rgba(59,51,64,0.35)', null); rr(x, y, w, h, 24, '#fffaf0', OUT, 3);
   // who
@@ -3779,7 +3782,7 @@ function drawProfile() { // a member's record, packed like the score card: who, 
       fitText(r.nick, L0 + 50, yy + 15, 19, INK, 'left', F_T, 150); text(`${g}경기${streakOf(r.recent) ? ' · ' + streakOf(r.recent) : ''}`, L0 + 50, yy + 34, MIN_TEXT, '#9a8b93', 'left', null, F_B);
       text(`${r.w}승 ${r.l}패`, R0 - 84, yy + 23, 19, INK, 'right', null, F_N); const f = g ? r.w / g : 0; rr(R0 - 74, yy + 18, 62, 11, 5.5, '#eadfce', null); if (f > 0.02) rr(R0 - 74, yy + 18, 62 * f, 11, 5.5, f >= 0.5 ? '#4f9a6a' : '#e2574c', null); yy += 52; });
   }
-  ctx.restore();
+  ctx.restore(); HX = null;
   if (!other && prof.menu) drawSettings();
 }
 const rival = { key: '', at: 0, vs: null, last: null }; // online singles against a member: our record shown at the start and after
@@ -4550,7 +4553,7 @@ let viewKey0 = '', viewScene0 = '', viewOv0 = 0, viewAt = 0, sceneAt = 0, trans 
 //  pop    a window opening: grows from 95% and fades in, 200 ms (popIn)
 // A button that sits at the same place with the same words before and after (뒤로, home) does not move at all.
 function viewOf() { // what counts as 'a different view', and the part of the screen that moves with it
-  if (scene === 'wardrobe') return { key: 'wardrobe:' + acct.wtab, tab: ['gacha', 'ach'].indexOf(acct.wtab), r: [0, LY.top + 70, W, H] };
+  if (scene === 'wardrobe') return { key: 'wardrobe:' + acct.wtab, tab: ['gacha', 'ach'].indexOf(acct.wtab), r: [0, LY.top + 70, W, LY.bot - 6] };
   if (scene === 'hall') return { key: 'hall:' + rank.mode, tab: FORMAT_IDS.indexOf(rank.mode), r: [0, LY.top + 60, W, LY.bot - 8] };
   if (scene === 'help') { const top = Math.round(H / 2 - 400); return { key: 'help:' + helpPage, tab: helpPage, r: [44, top + 84, W - 44, top + 796] }; }
   return { key: scene };
@@ -4562,7 +4565,7 @@ function viewWatch() { // before a frame: has the view changed since the last on
   const from = viewScene0, to = scene, fi = FLOW.indexOf(from), ti = FLOW.indexOf(to); let kind = null, dir = 1, r = [0, 0, W, H], dur = 0.2;
   let win = false; if (v.key === viewKey0) { if (ov < viewOv0) { kind = 'fade'; dur = 0.16; win = true; } } // a window opened (it pops by itself) or closed (it fades away)
   else if (from && from === to && v.tab >= 0) { kind = 'slide'; dir = v.tab > (trans && trans.tabWas != null ? trans.tabWas : -1) ? 1 : -1; r = v.r; dur = 0.22; }
-  else if (fi >= 0 && ti >= 0) { kind = 'slide'; dir = ti > fi ? 1 : -1; r = [0, LY.sb, W, H]; dur = 0.22; }
+  else if (fi >= 0 && ti >= 0) { kind = 'slide'; dir = ti > fi ? 1 : -1; r = [0, LY.top - 14, W, LY.bot - 6]; dur = 0.22; }
   else if (MODALS.includes(from) && !MODALS.includes(to)) { kind = 'fade'; dur = 0.16; win = true; }
   else if (from && !MODALS.includes(to) && to !== 'cover') kind = 'fade';
   if (from !== to) sceneAt = clock.now();
@@ -4573,10 +4576,12 @@ function viewWatch() { // before a frame: has the view changed since the last on
 }
 function viewMove() { // after the new frame: lay the old picture and the new one over each other as they move
   if (!trans) return; const u = Math.min(1, (clock.now() - trans.at) / trans.dur); if (u >= 1) { trans = null; return; }
-  newC = snap(newC); const k = canvas.width / W, [x0, y0, x1, y1] = trans.r.map(v => v * k), w = x1 - x0, e = easeOut(u);
-  ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.beginPath(); ctx.rect(x0, y0, w, y1 - y0); ctx.clip();
-  if (trans.kind === 'fade') { ctx.globalAlpha = 1 - e; ctx.drawImage(trans.old, 0, 0); }
-  else { const d = trans.dir, D = 32 * k; ctx.drawImage(trans.old, -d * e * D, 0); ctx.globalAlpha = easeOut(Math.min(1, u / 0.4)); ctx.drawImage(newC, d * (1 - e) * D, 0); }
+  newC = snap(newC); const k = canvas.width / W, [x0, y0, x1, y1] = trans.r.map(v => v * k), w = x1 - x0, e = easeOut(u), a = easeOut(Math.min(1, u / 0.4));
+  ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+  if (trans.kind === 'fade') { ctx.beginPath(); ctx.rect(x0, y0, w, y1 - y0); ctx.clip(); ctx.globalAlpha = 1 - e; ctx.drawImage(trans.old, 0, 0); }
+  else { const d = trans.dir, D = 32 * k, fy = (trans.kind === 'slide' && FLOW.includes(scene) ? LY.sb : y0 / k) * k; // around the moving part, the rest crossfades where it stands
+    ctx.save(); ctx.beginPath(); ctx.rect(0, fy, canvas.width, canvas.height - fy); ctx.rect(x0, y0, w, y1 - y0); ctx.clip('evenodd'); ctx.globalAlpha = 1 - a; ctx.drawImage(trans.old, 0, 0); ctx.restore();
+    ctx.beginPath(); ctx.rect(x0, y0, w, y1 - y0); ctx.clip(); ctx.drawImage(trans.old, -d * e * D, 0); ctx.globalAlpha = a; ctx.drawImage(newC, d * (1 - e) * D, 0); }
   ctx.globalAlpha = 1; // the buttons that stayed put: drawn as they are now, still (not when a window closes: they sit under its dim)
   if (!trans.win) for (const f of FIX) if (trans.keep.some(g => g[0] === f[0] && Math.abs(g[1] - f[1]) < 1 && Math.abs(g[2] - f[2]) < 1 && Math.abs(g[3] - f[3]) < 1)) {
     const bx = (f[1] - 4) * k, by = (f[2] - 4) * k, bw = (f[3] + 8) * k, bh = (f[4] + 14) * k; ctx.drawImage(newC, bx, by, bw, bh, bx, by, bw, bh); }
