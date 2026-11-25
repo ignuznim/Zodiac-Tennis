@@ -38,6 +38,7 @@
   #nick button.go, #fb button.go { background: #fff3c4; border-color: #ff8a7a; }
   #nick .err, #fb .err { min-height: calc(var(--u, 0.6) * 24px); margin-top: calc(var(--u, 0.6) * 10px); font: calc(var(--u, 0.6) * 20px) 'Gowun Dodum', sans-serif; color: #e2574c; }
   #nickInline { position: fixed; display: none; z-index: 4; left: 0; top: 0; width: 2px; height: 2px; margin: 0; padding: 0; border: none; outline: none; opacity: 0; font-size: 16px; -webkit-user-select: text; user-select: text; } /* the nickname's keyboard: the input sits out of sight at the very top (so the phone never scrolls to it); what is typed is drawn in the field */
+  html { transition: background-color 300ms ease-out; } body { background: transparent !important; } #edgeB { position: fixed; left: 0; right: 0; bottom: 0; height: 50%; z-index: -1; background: #5fb49a; transition: background-color 300ms ease-out; pointer-events: none; } /* above and below the game: its own top and bottom colours */
   #safe { position: fixed; visibility: hidden; pointer-events: none; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
   /* 개발자에게 한마디, drawn like the game's own windows: the same outline and drop under every key, a switch like 단식 · 복식, a cross key at the right of the title */
   #fb form, #nick form { text-align: left; padding: calc(var(--u, 0.6) * 24px) calc(var(--u, 0.6) * 26px) calc(var(--u, 0.6) * 26px); background: #fffaf0; }
@@ -58,6 +59,7 @@
   #fb .count { font: calc(var(--u, 0.6) * 18px) 'Gowun Dodum', sans-serif; color: #9a8b93; }
   #fb button.go, #nick button.go { flex: none; padding: calc(var(--u, 0.6) * 14px) calc(var(--u, 0.6) * 40px); font-size: calc(var(--u, 0.6) * 28px); background: #fff3c4; border-color: #6b5560; box-shadow: 0 max(2px, calc(var(--u, 0.6) * 5px)) 0 #6b5560; }
   #fb button.x:active, #fb button.go:active, #nick button.x:active, #nick button.go:active { transform: translateY(max(2px, calc(var(--u, 0.6) * 4px))); box-shadow: 0 0 0 #6b5560; } /* pressed: it sinks into its shadow, as every key in the game */
+  #nick button.x { display: none; } /* the code and name box closes with a tap outside it */
   #nick input { border: max(1.5px, calc(var(--u, 0.6) * 3px)) solid #ff8a7a; text-align: left; padding: calc(var(--u, 0.6) * 14px) calc(var(--u, 0.6) * 18px); } #nick .row { margin-top: calc(var(--u, 0.6) * 18px); } /* the code or name box: the coral border of 개발자에게 한마디's */
 </style>
 </head>
@@ -65,6 +67,7 @@
 <canvas id="game"></canvas>
 <div style="position:fixed;left:6px;bottom:6px;z-index:9;font:12px sans-serif;color:#fff;background:rgba(226,87,76,0.85);padding:2px 7px;border-radius:9px;pointer-events:none">테스트 버전</div>
 <div id="safe"></div>
+<div id="edgeB"></div>
 <input id="nickInline" maxlength="8" enterkeyhint="done" spellcheck="false" autocomplete="off" aria-label="닉네임">
 <div id="fb"><form autocomplete="off">
   <div class="head"><h2>개발자에게 한마디</h2><button type="button" id="fbNo" class="x" aria-label="닫기"><svg viewBox="0 0 20 20"><path d="M4 4l12 12M16 4L4 16" stroke="#6b5560" stroke-width="3" stroke-linecap="round"/></svg></button></div>
@@ -2548,31 +2551,30 @@ const sayRoom = () => sendAll({ t: 'lobby', n: net.guests.length, names: roomNam
 function swapSlots(a, b) { if (!a || !b || a === b) return; const ga = net.guests.find(g => g.slot === a), gb = net.guests.find(g => g.slot === b); if (ga) ga.slot = b; if (gb) gb.slot = a; net.pickSlot = null; tone(880, 0.08, 'triangle', 0.2); sayRoom(); }
 function shuffleTeams() { const free = [1, 2, 3].sort(() => Math.random() - 0.5); net.guests.forEach((g, i) => { g.slot = free[i]; }); net.pickSlot = null; tone(990, 0.1, 'triangle', 0.2); sayRoom(); }
 function drawTeams(x0, y, inner, L, meId, host) { // 2:2 대전: A team over B team; the host taps two places to swap them
-  const lab = 66, gap = 12, cw = (inner - lab - gap) / 2, chh = 96, at = k => L.find(p => (p.s | 0) === k && (k > 0 || p.host));
+  const lab = 66, gap = 12, cw = (inner - lab - gap) / 2, chh = SEAT_H, at = k => L.find(p => (p.s | 0) === k && (k > 0 || p.host));
   [['A팀', [0, 2], CORAL], ['B팀', [1, 3], SKY]].forEach(([t, ks, col], r) => { const yy = y + r * (chh + gap);
     rr(x0, yy, lab - 8, chh, 16, col, OUT, 2.4); text(t, x0 + (lab - 8) / 2, yy + chh / 2, 22, '#fff', 'center', null, F_T);
     ks.forEach((k, c) => { const p = at(k), x = x0 + lab + c * (cw + gap), sel = host && net.pickSlot === k;
       if (host && k > 0) btn(x, yy, cw, chh, () => { if (net.pickSlot && net.pickSlot !== k) swapSlots(net.pickSlot, k); else net.pickSlot = net.pickSlot === k ? null : k; });
       rr(x, yy, cw, chh, 18, p ? (r ? '#eef7ff' : '#fff3ec') : '#efe9e2', sel ? '#f0a020' : p ? (r ? '#9ac8ee' : '#f5b9a8') : '#d9cbbd', sel ? 4 : 2.4);
-      if (p) { ctx.save(); rr(x + 2, yy + 2, cw - 4, chh - 4, 16, null, null); ctx.clip(); ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(p.a | 0, x + 48, yy + 110, 0.62, { front: true, t: 0.4, accent: r ? SKY : CORAL }); ctx.restore();
-        ctx.font = `24px ${F_T}`; const nm = String(p.n).slice(0, 10), nw = ctx.measureText(nm).width, room = cw - 104;
-        text(nm, x + 96, yy + 34, Math.max(MIN_TEXT, nw > room ? 24 * room / nw : 24), INK, 'left', null, F_T);
+      if (p) { ctx.save(); rr(x + 2, yy + 2, cw - 4, chh - 4, 16, null, null); ctx.clip(); ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(p.a | 0, x + 52, yy + chh + 18, 0.78, { front: true, t: 0.4, accent: r ? SKY : CORAL }); ctx.restore();
+        fitText(String(p.n), x + 104, yy + chh / 2 - 15, 26, INK, 'left', F_T, cw - 114);
         const mine = p.host ? meId === 'host' : p.id && p.id === meId;
-        text(p.wait ? '고르는 중…' : (p.host ? '방장' : '참가') + (mine ? ' (나)' : ''), x + 96, yy + 66, 18, p.wait ? '#9a8b93' : p.host ? CORAL : '#3d8be0', 'left', null, F_T); }
+        text(p.wait ? '고르는 중…' : (p.host ? '방장' : '참가') + (mine ? ' (나)' : ''), x + 104, yy + chh / 2 + 20, 19, p.wait ? '#9a8b93' : p.host ? CORAL : '#3d8be0', 'left', null, F_T); }
       else { text('컴퓨터', x + cw / 2, yy + chh / 2 - 12, 22, '#7a6872', 'center', null, F_T); text('빈자리를 채워요', x + cw / 2, yy + chh / 2 + 18, 17, '#9a8b93', 'center', null, F_B); } }); });
   return 2 * chh + gap;
 }
 const allIn = () => net.guests.length && net.guests.every(g => g.stay !== false);
 function guestStay() { if (!net) return; net.ask = false; net.status = 'joined'; netSendMsg({ t: 'stay' }); scene = 'lobby'; }
 function leaveOnline() { netClose(); quick = null; scene = 'online'; lobbyNet.at = 0; } // out of a room: back to the list, not home
+const SEAT_H = 124; // a player's card in a room: two across, as tall as this
 function drawSeats(x0, y, inner, L, cap, me) { // who is in, as big cards: two in a row, four in two rows
-  const gap = 12, cw = (inner - gap) / 2, chh = 96;
+  const gap = 12, cw = (inner - gap) / 2, chh = SEAT_H;
   for (let i = 0; i < cap; i++) { const p = L[i], x = x0 + (i % 2) * (cw + gap), yy = y + Math.floor(i / 2) * (chh + gap);
     rr(x, yy, cw, chh, 18, p ? (i ? '#eef7ff' : '#fff3ec') : 'rgba(234,223,210,0.45)', p ? (i ? '#9ac8ee' : '#f5b9a8') : '#d9cbbd', 2.4);
-    if (p) { ctx.save(); rr(x + 2, yy + 2, cw - 4, chh - 4, 16, null, null); ctx.clip(); ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(p.a | 0, x + 48, yy + 110, 0.62, { front: true, t: 0.4, accent: CORAL }); ctx.restore();
-      ctx.font = `25px ${F_T}`; const nm = String(p.n).slice(0, 10), nw = ctx.measureText(nm).width, room = cw - 108;
-      text(nm, x + 96, yy + 34, Math.max(MIN_TEXT, nw > room ? 25 * room / nw : 25), INK, 'left', null, F_T);
-      text(i ? (p.wait ? '다시 할지 고르는 중…' : me === i ? '참가 (나)' : '참가') : (me === 0 ? '방장 (나)' : '방장'), x + 96, yy + 66, 18, p.wait ? '#9a8b93' : i ? '#3d8be0' : CORAL, 'left', null, F_T); }
+    if (p) { ctx.save(); rr(x + 2, yy + 2, cw - 4, chh - 4, 16, null, null); ctx.clip(); ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(p.a | 0, x + 58, yy + chh + 18, 0.8, { front: true, t: 0.4, accent: CORAL }); ctx.restore();
+      fitText(String(p.n), x + 116, yy + chh / 2 - 15, 28, INK, 'left', F_T, cw - 128); // the name and its line as one block, centred on the card's height
+      text(i ? (p.wait ? '다시 할지 고르는 중…' : me === i ? '참가 (나)' : '참가') : (me === 0 ? '방장 (나)' : '방장'), x + 116, yy + chh / 2 + 20, 20, p.wait ? '#9a8b93' : i ? '#3d8be0' : CORAL, 'left', null, F_T); }
     else text('빈자리', x + cw / 2, yy + chh / 2, 20, '#a8999f', 'center', null, F_B); }
   return Math.ceil(cap / 2) * (chh + gap) - gap;
 }
@@ -3442,7 +3444,7 @@ function drawClosetWindow() { // the closet as a window over 선수 선택: it p
 }
 function openCloset(back, a = null) { if (!acct.user) { toast('로그인하면 옷장을 쓸 수 있어요'); return; } closetBack = back; closet.animal = a; closet.sel = null; SCR.closet.scroll = 0; SCR.closet.vel = 0; scene = 'closet'; zoomFrom = { x: mouse.x, y: mouse.y, at: clock.now(), r: (hot.slice().reverse().find(h => mouse.x >= h.x && mouse.x <= h.x + h.w && mouse.y >= h.y && mouse.y <= h.y + h.h) || null) }; tone(660, 0.06, 'sine', 0.15); }
 function drawGachaTab(y0, end) { // the machine, as tall as the page allows: a lit sign, a glass globe where the capsules tumble, the body with its slot, crank and chute
-  const G = acct.g, h = end - y0, MH = 826, k = Math.min((h - 8) / MH, (LY.w - 40) / 380);
+  const G = acct.g, h = end - y0, MH = 740, k = Math.min((h - 8) / MH, (LY.w - 40) / 372);
   drawGachaMachine(G, W / 2, end - 4, k);
   if (G.phase === 'reveal' && G.list && G.list.length > 1) { drawManyPrizes(G, y0, h); return; }
   if (G.phase === 'reveal') { // the prize, opened
@@ -3459,45 +3461,37 @@ function drawGachaTab(y0, end) { // the machine, as tall as the page allows: a l
     for (let i = 0; i < 8; i++) { const a = i / 8 * 6.283 + G.t, rr2 = 150 + Math.sin(G.t * 3 + i) * 10; star(W / 2 + Math.cos(a) * rr2, py + ph * 0.42 + Math.sin(a) * rr2 * 0.7, 9, i % 2 ? '#fff' : c); }
   }
 }
-function drawGachaMachine(G, cx, base, k) { // drawn from its foot (0) up to its sign (-814), k to scale; no small words on it (scaled down they would fall under MIN_TEXT): the price is on the 뽑기 key
+function drawGachaMachine(G, cx, base, k) { // a capsule-toy machine as in a shop front: a lid, a glass case with capsules both sides of its card, the coin works and the door, a stand on wheels; drawn from the floor (0) up to the lid (-734), k to scale; only big words on it (scaled down, small ones would fall under MIN_TEXT)
   ctx.save(); ctx.translate(cx, base); ctx.scale(k, k); ctx.lineWidth = 3.4; ctx.strokeStyle = OUT; ctx.lineJoin = 'round';
   const lin = (x0, y0, x1, y1, stops) => { const g = ctx.createLinearGradient(x0, y0, x1, y1); stops.forEach(([o, c]) => g.addColorStop(o, c)); return g; };
-  const chrome = (x0, x1) => lin(x0, 0, x1, 0, [[0, '#8f99a3'], [0.3, '#f4f7fa'], [0.55, '#c3ccd5'], [1, '#7d8792']]), now = clock.now(), turn = G.phase === 'turn';
-  // the plinth on its feet
-  rr(-150, -14, 52, 14, 6, '#7a2f22', OUT, 3); rr(98, -14, 52, 14, 6, '#7a2f22', OUT, 3);
-  rr(-178, -46, 356, 36, 14, lin(0, -46, 0, -10, [[0, '#e8785a'], [1, '#b8492f']]), OUT, 3.4);
-  // the body: red, with white stripes down its sides, and a cream panel
-  rr(-158, -330, 316, 290, 28, lin(-158, 0, 158, 0, [[0, '#d9503e'], [0.45, '#ff7a68'], [1, '#c8402f']]), OUT, 3.4);
-  ctx.save(); rr(-158, -330, 316, 290, 28, null, null); ctx.clip(); ctx.fillStyle = 'rgba(255,255,255,0.85)'; for (const x of [-150, -136, 128, 142]) ctx.fillRect(x, -330, 7, 290); ctx.restore();
-  rr(-118, -312, 236, 254, 18, '#fff8e7', OUT, 3);
-  rr(-104, -298, 132, 42, 12, '#ffe7a0', OUT, 2.6); for (let q = 0; q < 3; q++) capsule(-72 + q * 34, -277, 13, GRADE[q + 1].c, 0.3 * q); // the plate: what is inside
-  rr(42, -298, 62, 42, 10, chrome(42, 104), OUT, 2.6); rr(56, -286, 34, 8, 4, '#2b2229', null); // the coin slot
-  rr(-104, -238, 104, 92, 22, lin(0, -238, 0, -146, [[0, '#2b2229'], [1, '#55474f']]), OUT, 3); // the chute's dark mouth
-  rr(-110, -156, 116, 16, 8, chrome(-110, 6), OUT, 2.6);
-  { const ox = 56, oy = -190, a = turn ? G.t * 7 : 0; // the crank: a chrome ring, a gold knob with four grips, turning while the server picks
-    E(ox, oy, 44, 44, chrome(ox - 44, ox + 44)); E(ox, oy, 34, 34, lin(0, oy - 34, 0, oy + 34, [[0, '#fff3c4'], [1, '#f6c445']]));
-    ctx.save(); ctx.translate(ox, oy); ctx.rotate(a); for (let q = 0; q < 4; q++) { ctx.save(); ctx.rotate(q * Math.PI / 2); rr(-7, -32, 14, 26, 6, '#fff8e7', OUT, 2.6); ctx.restore(); } E(0, 0, 12, 12, '#e2574c'); ctx.restore(); }
-  for (let q = 0; q < 5; q++) star(-80 + q * 40, -98, 9, q % 2 ? '#f6c445' : '#ff8a7a'); // a row of stars along the foot of the panel
-  // the collar, and the glass globe: a lotto drum, the capsules tumbling in it while it turns, settled in a heap when it rests
-  rr(-110, -362, 220, 38, 14, chrome(-110, 110), OUT, 3);
-  const GY = -540, GR = 182; E(0, GY, GR, GR, 'rgba(214,236,255,0.45)');
-  ctx.save(); ctx.beginPath(); ctx.arc(0, GY, GR - 4, 0, 7); ctx.clip();
-  const spin = turn ? Math.min(1, G.t * 4) : 0;
-  for (let i = 0; i < 40; i++) { const row = Math.floor(i / 8), col = i % 8, hx = (col - 3.5) * 40 + (row % 2) * 12, hy = GY + GR - 26 - row * 34 - Math.abs(col - 3.5) * 4; // where it lies at rest
-    const r = 36 + (i * 37) % 130, a = i * 2.4 + now * (2.4 + (i % 5) * 0.5), ox = Math.cos(a) * r, oy = GY + Math.sin(a) * r * 0.85, bob = Math.sin(now * 2 + i) * 1.5; // where the air throws it
-    const g = i % 11 === 0 ? 3 : i % 6 === 0 ? 2 : i % 3 === 0 ? 1 : 0; capsule(hx + (ox - hx) * spin, hy + bob + (oy - hy) * spin, 18, GRADE[g].c, i * 0.9 + (turn ? now * 6 : 0)); }
-  const sh = ctx.createRadialGradient(-60, GY - 70, 10, 0, GY, GR); sh.addColorStop(0, 'rgba(255,255,255,0.35)'); sh.addColorStop(0.5, 'rgba(255,255,255,0)'); sh.addColorStop(1, 'rgba(80,110,160,0.25)'); ctx.fillStyle = sh; ctx.fillRect(-GR, GY - GR, GR * 2, GR * 2);
+  const chrome = (x0, x1) => lin(x0, 0, x1, 0, [[0, '#8f99a3'], [0.3, '#f4f7fa'], [0.55, '#c3ccd5'], [1, '#7d8792']]), now = clock.now(), turn = G.phase === 'turn', shell = (x0, x1) => lin(x0, 0, x1, 0, [[0, '#e8695a'], [0.35, '#ff9585'], [1, '#d9503e']]);
+  // the stand on its wheels
+  for (const x of [-118, 118]) { E(x, -18, 17, 17, '#3b3340'); E(x, -18, 6, 6, '#9aa3ad'); }
+  rr(-150, -172, 300, 142, 18, shell(-150, 150), OUT, 3.4); rr(-128, -152, 256, 102, 12, 'rgba(255,255,255,0.22)', null); ctx.translate(0, 92); // a low stand, so the machine itself is drawn larger
+  // the lower case: the coin works at the left, the price and the door at the right
+  rr(-172, -524, 344, 270, 22, lin(-172, 0, 172, 0, [[0, '#f1e6d2'], [0.4, '#fffaf0'], [1, '#e8dcc6']]), OUT, 3.4);
+  rr(-150, -500, 138, 214, 40, chrome(-150, -12), OUT, 3); // the coin plate
+  for (const x of [-118, -44]) { rr(x - 20, -488, 40, 30, 6, '#ffffff', OUT, 2); poly([x - 8, -480, x + 8, -480, x, -466], '#e2574c'); } // its two arrows: in here
+  { const ox = -81, oy = -386, a = turn ? G.t * 7 : 0; ctx.save(); ctx.translate(ox, oy); ctx.rotate(a); E(0, 0, 44, 44, chrome(-44, 44)); rr(-40, -10, 80, 20, 10, lin(0, -10, 0, 10, [[0, '#ffffff'], [1, '#b8c1ca']]), OUT, 2.6); rr(-14, -6, 28, 12, 6, '#3b3340', null); ctx.restore(); } // the handle: turns while the server picks
+  rr(-96, -318, 30, 14, 4, '#3b3340', null); // the key's lock
+  rr(16, -500, 136, 48, 12, '#ffffff', OUT, 2.6); ticketPic(54, -476, 0.62, -0.1); text(`× ${PULLS.includes(G.n) ? G.n : 1}`, 112, -475, 30, INK, 'center', null, F_T); // the price: a ticket, and how many
+  rr(16, -438, 136, 150, 30, lin(0, -438, 0, -288, [[0, '#2b2229'], [1, '#55474f']]), OUT, 3); rr(28, -428, 112, 60, 18, 'rgba(255,255,255,0.12)', null); // the door, its flap
+  rr(56, -404, 56, 28, 4, '#f6c445', OUT, 2); poly([84, -400, 76, -384, 92, -384], '#3b3340'); // a yellow sticker on the flap
+  // the glass case over it: capsules piled both sides, the card in the middle
+  rr(-178, -790, 356, 270, 34, shell(-178, 178), OUT, 3.4);
+  const gx = -164, gy = -776, gw = 328, gh = 242; rr(gx, gy, gw, gh, 26, 'rgba(214,236,255,0.6)', OUT, 3);
+  ctx.save(); rr(gx + 2, gy + 2, gw - 4, gh - 4, 24, null, null); ctx.clip();
+  for (const side of [-1, 1]) for (let row = 0; row < 2; row++) for (let q = 0; q < 6; q++) { const i = row * 12 + q + (side > 0 ? 6 : 0), x = side * (124 + (q % 2) * 22 - 11), y = gy + 50 + row * 120 + Math.floor(q / 2) * 34 - (q % 2) * 6, g = i % 11 === 0 ? 3 : i % 6 === 0 ? 2 : i % 3 === 0 ? 1 : 0, jig = turn ? Math.sin(now * 22 + i * 1.7) * 4 : 0;
+    capsule(x + jig, y - Math.abs(jig), 19, GRADE[g].c, i * 0.9 + (turn ? now * 5 : 0)); }
+  ctx.fillStyle = 'rgba(107,85,96,0.35)'; ctx.fillRect(gx, gy + gh / 2 - 2, gw, 4); // the shelf between the two piles
   ctx.restore();
-  ctx.lineWidth = 3.6; ctx.strokeStyle = OUT; ctx.beginPath(); ctx.arc(0, GY, GR, 0, 7); ctx.stroke();
-  ctx.lineWidth = 10; ctx.lineCap = 'round'; ctx.strokeStyle = 'rgba(255,255,255,0.65)'; ctx.beginPath(); ctx.arc(0, GY, GR - 20, Math.PI * 1.08, Math.PI * 1.38); ctx.stroke(); // the glass's gleam
-  ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.beginPath(); ctx.arc(0, GY, GR - 20, Math.PI * 1.45, Math.PI * 1.52); ctx.stroke(); ctx.lineCap = 'butt';
-  // the sign on top: 뽑기 in a red board, its bulbs chasing round
-  rr(-24, GY - GR - 26, 48, 30, 6, chrome(-24, 24), OUT, 3);
-  const sy = GY - GR - 92; rr(-150, sy, 300, 70, 18, lin(0, sy, 0, sy + 70, [[0, '#ff7a68'], [1, '#c8402f']]), OUT, 3.4); rr(-140, sy + 10, 280, 50, 12, null, '#f6c445', 3);
-  text('뽑기', 0, sy + 36, 40, '#fff8e7', 'center', OUT, F_T);
-  for (let q = 0; q < 14; q++) { const t = q / 14, bx = -150 + 300 * ((q % 7) + 0.5) / 7, by = q < 7 ? sy : sy + 70, on = (Math.floor(now * (turn ? 12 : 3)) + q) % 3 === 0; E(bx, by, 6, 6, on ? '#fff3c4' : '#f6c445'); }
-  // the prize rolling out of the chute
-  if (G.phase === 'drop' || G.phase === 'reveal') { const u = Math.min(1, G.t / 0.5), g = G.res.grade; capsule(-52, G.phase === 'drop' ? -210 + u * 50 : -160, 24, GRADE[g].c, G.t * 6); }
+  rr(-96, gy + 10, 192, gh - 20, 12, '#ffffff', OUT, 2.6); // the card
+  text('뽑기', 0, gy + 92, 64, CORAL, 'center', OUT, F_T); for (let q = 0; q < 4; q++) capsule(-54 + q * 36, gy + 168, 14, GRADE[q].c, q * 0.6);
+  ctx.lineWidth = 8; ctx.lineCap = 'round'; ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.beginPath(); ctx.moveTo(gx + 16, gy + 40); ctx.lineTo(gx + 16, gy + 120); ctx.stroke(); ctx.lineCap = 'butt'; ctx.lineWidth = 3.4; ctx.strokeStyle = OUT; // a gleam on the glass
+  // the lid
+  rr(-184, -826, 368, 46, 22, shell(-184, 184), OUT, 3.4); E(0, -803, 9, 9, chrome(-9, 9)); rr(-1.5, -808, 3, 10, 1, '#3b3340', null);
+  // the prize, in the door
+  if (G.phase === 'drop' || G.phase === 'reveal') { const u = Math.min(1, G.t / 0.5), g = G.res.grade; capsule(84, G.phase === 'drop' ? -420 + u * 80 : -340, 26, GRADE[g].c, G.t * 6); }
   ctx.restore();
 }
 function drawManyPrizes(G, y0, h) { // five or ten prizes: a grid, best first; tap one to read it
@@ -3892,7 +3886,7 @@ function drawTier(i, x, y, r) { // a tier's mark: a numbered medal in the colour
   ctx.restore();
 }
 const tierBoard = { list: null, loading: false, err: '' };
-async function loadTierBoard() { tierBoard.loading = true; tierBoard.err = ''; try { tierBoard.list = (await rpcAny('tier_board', { lim: 2000 })) || []; } catch (e) { tierBoard.err = '랭킹을 불러오지 못했어요 · 인터넷 연결을 확인해 주세요'; tierBoard.list = tierBoard.list || []; } tierBoard.loading = false; }
+async function loadTierBoard() { tierBoard.loading = true; tierBoard.err = ''; try { const L = (await rpcAny('tier_board', { lim: 2000 })) || []; if (!tierBoard.list || JSON.stringify(L) !== JSON.stringify(tierBoard.list)) tierBoard.list = L; } catch (e) { tierBoard.err = '랭킹을 불러오지 못했어요 · 인터넷 연결을 확인해 주세요'; tierBoard.list = tierBoard.list || []; } tierBoard.loading = false; }
 function myTier() { if (!acct.user || !acct.prof) return null; if (!acct.tierAsked) { acct.tierAsked = true; rpc('my_tier').then(t => { if (t) acct.tier = t; }).catch(() => {}); } return acct.tier || null; }
 const prof = { open: false, t: 0, who: null, rivals: null, menu: false, mt: 0 }; // who: another member's public profile, or null for mine
 async function rpcAny(fn, args) { if (!acct.sb) return null; const { data, error } = await acct.sb.rpc(fn, args || {}); if (error) throw new Error(error.message); return data; } // also for someone not signed in
@@ -4164,7 +4158,7 @@ const scenes = {
           fitText(r.nick, x0 + 162, cy - 11, 24, INK, 'left', F_T, LY.w - 340); text(TIERS[ti].n, x0 + 162, cy + 16, MIN_TEXT, tc, 'left', null, F_T);
           text(r.rating.toLocaleString(), LY.m + LY.w - LY.pad, cy, 27, INK, 'right', null, F_N); };
         const v0 = py + 54, v1 = py + ph - (pin ? rh + 22 : 12), key = JSON.stringify([nick, favOf(progOf()), L.map(r => [r.nick, r.rating, r.days, r.rank, r.fav])]);
-        if (SCR.tier.list !== L) { SCR.tier.list = L; SCR.tier.at = clock.now(); }
+        if (SCR.tier.list !== L) { if (!SCR.tier.list) SCR.tier.at = clock.now(); SCR.tier.list = L; } // the rows come in when the page opens (or the first list arrives), not again when it is refreshed
         const st = clock.now() - Math.max(SCR.tier.at || 0, sceneAt);
         scrollView(SCR.tier, v0, v1, key, L.length * rh + 4, () => {
           L.forEach((r, i) => { const y = i * rh, mine = r.nick === nick; btn(LY.m + 12, y + 3, LY.w - 24, rh - 6, () => openProfile(r.nick)); row(r, i + 1, y, mine, mine ? '#fff3c4' : i % 2 === 0 ? 'rgba(234,223,210,0.45)' : 'rgba(255,255,255,0)'); });
@@ -4421,7 +4415,7 @@ const scenes = {
     update(dt) { state.t += dt; if (pressed('Escape')) scene = 'title'; if (!state.hi) { state.hi = 1; hello(); }
       if (signedIn() && clock.now() - lobbyNet.at > 3 && !lobbyNet.loading) loadRooms(); },
     draw() {
-      menuBegin('온라인 대결', true);
+      menuBegin('온라인 대결'); // no home key: 뒤로 at the bottom already goes home
       if (lobbyNet.online) onlinePill(LY.m + LY.w - onlinePillW(), LY.titleY - 25); // the title page's pill, at the right of the title row
       const bh = 64, jw = textW('바로 참가', 27, F_T) + 80; // 방 만들기 (+) and 코드로 참가 (a key) as keys, 바로 참가 at the right
       iconKey(LY.m, LY.top, bh, 'plus', () => { state.pub = signedIn(); scene = 'make'; }); iconKey(LY.m + bh + 12, LY.top, bh, 'code', () => openNick('code'));
@@ -4474,7 +4468,7 @@ const scenes = {
         text(FORMATS[id].ko, bx + bw / 2, yy + 34, 27, INK, 'center', null, F_T); fitText(FD[id], bx + bw / 2, yy + 66, 19, '#7a6872', 'center', F_B, bw - 16); });
       yy += 96 + 30; drawPublicSwitch(x0, yy, inner, !!state.pub, () => { if (!state.pub && !signedIn()) { notify('로그인하면 공개 방으로 열 수 있어요'); return; } state.pub = !state.pub; tone(760, 0.06, 'sine', 0.18); }, 76); yy += 76 + 22;
       text('방을 만들면 방 코드가 생겨요 · 친구에게 보내거나 공개로 기다려요', W / 2, yy + 15, 19, '#5d4f58', 'center', null, F_B); text('방식 · 길이 · 공개 여부는 만든 뒤에도 바꿀 수 있어요', W / 2, yy + 45, 19, '#5d4f58', 'center', null, F_B); yy += 2 * 30 + 26;
-      { const lab = `${KINDS[state.mk].ko} 방 만들기`, bw2 = Math.max(MAIN_W, textW(lab, 31, F_T) + 64); button(lab, x + w - pad - bw2, yy, bw2, LY.btnH, makeRoom, { size: 31, fill: '#fff3c4' }); } // the window's own main key, at its bottom right
+      { const lab = '방 만들기', bw2 = MAIN_W; button(lab, x + w - pad - bw2, yy, bw2, LY.btnH, makeRoom, { size: 31, fill: '#fff3c4' }); } // the window's own main key, at its bottom right
       ctx.restore(); HX = null;
       if (!touchUI) text('← → 로 방식, Enter 로 만들어요', W / 2, LY.foot, 20, CREAM, 'center', OUT, F_B);
     },
@@ -4531,9 +4525,9 @@ const scenes = {
     draw() {
       menuBegin(net && net.role === 'guest' ? (net.status === 'joined' ? '친구의 방' : '방에 들어가는 중') : '내 방');
       const hostRoom = net && net.role === 'host' && net.status !== 'opening' && net.status !== 'error', K = KINDS[(net && net.plan) || 'versus'];
-      const seatsH = !hostRoom ? 0 : net.chg ? 144 : net.plan === 'versus' ? 204 + 58 : K.cap > 2 ? 204 : 96;
-      const gRoom = net && net.role === 'guest' && net.status === 'joined' && net.names, GK = gRoom && KINDS[net.plan || 'versus'], gH = !gRoom ? 0 : net.plan === 'versus' || Math.max(GK.cap, net.names.length) > 2 ? 204 : 96; // a friend's room, also sized to what it holds
-      const py = LY.top, ph = hostRoom ? 104 + 64 + seatsH + 20 + 68 + 56 : gRoom ? 172 + gH + 28 : SZ().lobby;
+      const seatsH = !hostRoom ? 0 : net.chg ? 144 : net.plan === 'versus' ? 2 * SEAT_H + 12 + 58 : K.cap > 2 ? 2 * SEAT_H + 12 : SEAT_H;
+      const gRoom = net && net.role === 'guest' && net.status === 'joined' && net.names, GK = gRoom && KINDS[net.plan || 'versus'], gH = !gRoom ? 0 : net.plan === 'versus' || Math.max(GK.cap, net.names.length) > 2 ? 2 * SEAT_H + 12 : SEAT_H; // a friend's room, also sized to what it holds
+      const py = LY.top, ph = hostRoom ? 104 + 64 + seatsH + 20 + 68 + 48 + 48 : gRoom ? 172 + gH + 28 : SZ().lobby;
       panel(LY.m, py, LY.w, ph);
       const dots = '.'.repeat(1 + Math.floor(state.t * 2) % 3);
       if (net && net.status === 'error') { text(net.msg, W / 2, py + 220, 23, '#e2574c', 'center', null, F_B); text('인터넷 연결을 확인하고 다시 시도해 주세요', W / 2, py + 266, 21, INK, 'center', null, F_B); }
@@ -4566,7 +4560,7 @@ const scenes = {
           } else y += drawSeats(x0, y, inner, L, K.cap, 0);
           y += 20;
           drawPublicSwitch(x0, y, inner, !!net.public, () => setPublic(!net.public));
-          y += 68 + 28;
+          y += 68 + 48; // the line under the switch with room above and below it
           if (location.protocol === 'file:') text('내 PC 안의 파일이라 다른 기기에서는 열리지 않아요', W / 2, y, 19, '#e2574c', 'center', null, F_B);
           else fit(L.length < 2 ? '친구가 들어오면 경기를 시작할 수 있어요' : net.plan === 'versus' && L.length < 4 ? '빈자리는 컴퓨터가 채워요' : '모두 모였어요!', W / 2, y, 20, '#7a6872', 'center', F_B, inner);
         }
@@ -4849,7 +4843,8 @@ function modalIn(dimA) { // a window over the match: the same pop as every other
   const PQ = popIn(clock.now() - sceneAt); ctx.fillStyle = `rgba(59,51,64,${dimA * PQ.a})`; ctx.fillRect(0, 0, W, H);
   ctx.save(); ctx.translate(W / 2, H / 2); ctx.scale(PQ.k, PQ.k); ctx.translate(-W / 2, -H / 2); ctx.globalAlpha = PQ.a; modalSaved = true;
 }
-function drawFrame() {
+function drawFrame() { const f0 = clock.now(); drawFrame0(); const d = clock.now() - f0 - 1 / 60; if (d > 0.02) { sceneAt += d; if (trans) trans.at += d; } } // a frame that took long (a long list drawn for the first time): the motions wait for it instead of jumping ahead
+function drawFrame0() {
   if (prof.nickEdit && !(prof.open && prof.menu)) endNickInline(); // the settings closed while typing: the typing ends
   viewWatch(); FIX = [];
   hot = []; scenes[scene].draw(); if (modalSaved) { ctx.restore(); modalSaved = false; } viewMove(); if (prof.open) drawProfile(); drawNotice();
@@ -4858,11 +4853,12 @@ function drawFrame() {
     text('휴대폰을 세로로 돌리면 화면이 더 커져요', W / 2, H - 31, 19, CREAM, 'center', null, F_B);
   }
   canvas.style.cursor = hitTest(mouse) ? 'pointer' : 'default'; }
-let edgeAt = 0, edgeKey = ''; const themeMeta = document.querySelector('meta[name=theme-color]');
-function matchEdges() { // the screen above and below the game takes the colour of the game's own top and bottom rows, so the page reads as one (four times a second)
-  const now = performance.now(); if (now - edgeAt < 250 || !canvas.width) return; edgeAt = now;
+let edgeView = '', edgeDue = 0, edgeKey = ''; const themeMeta = document.querySelector('meta[name=theme-color]'), edgeB = document.getElementById('edgeB');
+function matchEdges() { // the screen above and below the game takes the colour of the game's top and bottom rows, so the page reads as one; read once each time the view has settled (reading the canvas stalls a frame), the colours easing over
+  const now = performance.now(), v = scene + '|' + viewKey0 + '|' + canvas.width + 'x' + canvas.height + '|' + (prof.open ? 1 : 0);
+  if (v !== edgeView) { edgeView = v; edgeDue = now + 450; } if (!edgeDue || now < edgeDue || trans) return; edgeDue = 0;
   try { const g = canvas.getContext('2d'), px = (y) => { const d = g.getImageData(Math.min(8, canvas.width - 1), y, 1, 1).data; return `rgb(${d[0]},${d[1]},${d[2]})`; }, top = px(1), bot = px(canvas.height - 2), key = top + bot;
-    if (key === edgeKey) return; edgeKey = key; document.body.style.background = document.documentElement.style.background = `linear-gradient(to bottom, ${top} 50%, ${bot} 50%)`; if (themeMeta) themeMeta.content = top; } catch (e) { /* the canvas could not be read: the plain green stays */ }
+    if (key === edgeKey) return; edgeKey = key; document.documentElement.style.backgroundColor = top; if (edgeB) edgeB.style.backgroundColor = bot; if (themeMeta) themeMeta.content = top; } catch (e) { /* the canvas could not be read: the plain green stays */ }
 }
 function frame() { tick(); matchEdges(); requestAnimationFrame(frame); }
 // A headless browser on a time budget runs timers but almost no animation frames: a timer
