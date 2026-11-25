@@ -47,3 +47,8 @@ The owner reviews every change on a phone. These rules come from their repeated 
 - Lines are as short as a headline ("· 업적 80개, 히든 업적 추가"), no explanations.
 - Keep notes short so players can take them in at a glance: only big changes (new content, new features, rule changes, bugs players actually hit). Small touch-ups get no line at all: redrawn or renamed items, colours, layout nudges, wording. A push with nothing big gets no note, not even a patch note. Three or four lines per note at most; merge related lines.
 - created_at is UTC ISO (date -u); id is unique text such as "patch-2026-11-17" or "update-1.9.4". Newest first is not needed; the game sorts.
+
+## Design skills (.claude/skills, added 2026-11-25 from the owner's uploads)
+- Motion and polish: emil-design-eng (start here), animate, choreograph, animation-vocabulary, find-animation-opportunities, review-animations, improve-animations, remove-animations, animation-performance, gestures, apple-design, mobile-native, break-ui, learn-taste, ask-emil. UI/UX rules and search: ui-ux-pro-max (run its search with `python3 -I .claude/skills/ui-ux-pro-max/scripts/search.py "<query>" --domain <domain>` from the repo root). Accessibility and interface review: web-design-guidelines.
+- Use them for UI, motion and review work. They are written for DOM, CSS and React; this game draws everything on one canvas, so carry over the principle (timing, easing, what to animate, press feedback, touch targets) and implement it in the canvas code. Ignore their advice about frameworks, libraries and CSS that does not exist here.
+- These working rules come first where a skill disagrees.
