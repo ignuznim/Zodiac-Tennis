@@ -2423,12 +2423,13 @@ function drawHall() {
   else if (rank.err && !L.length) text(rank.err, W / 2, listTop + listH / 2, 19, '#5a1f22', 'center', null, F_B);
   else if (!L.length) text('아직 아무도 모셔지지 않았어요', W / 2, listTop + listH / 2, 24, '#2e2733', 'center', null, F_T);
   else {
-    for (let i = 3; i < 10; i++) { const r = L[i], y = listTop + 20 + (i - 3) * rowH + rowH / 2;
+    if (rank.seen !== rank.list) { rank.seen = rank.list; rank.seenAt = clock.now(); } const ht = Math.min(t - 1.1, clock.now() - (rank.seenAt || 0));
+    for (let i = 3; i < 10; i++) { const r = L[i], y = listTop + 20 + (i - 3) * rowH + rowH / 2, he = stagE(ht, i - 3); if (i > 3) ctx.restore(); ctx.save(); ctx.globalAlpha = he; ctx.translate(0, (1 - he) * STAG.rise);
       text((i + 1) + '', LY.m + 60, y, 22, '#2e2733', 'center', null, F_N);
       ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(LY.m + 44, y + rowH / 2); ctx.lineTo(LY.m + LY.w - 44, y + rowH / 2); ctx.stroke();
       if (!r) continue; if (r.sweet != null) btn(LY.m + 20, y - rowH / 2, LY.w - 40, rowH, () => { rank.sel = i; rank.from = [LY.m + 20, y - rowH / 2, LY.w - 40, rowH]; rank.selAt = clock.now(); tone(660, 0.05, 'sine', 0.15); }); const worn = {}; for (const id of (r.gear || '').split(',')) { const it = item(id); if (it) worn[it.slot] = id; }
       ctx.lineWidth = 2; ctx.strokeStyle = OUT; drawAnimal(r.animal, LY.m + 110, y + 12, 0.26, { front: true, t: 0.4, accent: CORAL, gear: worn });
-      text(r.nickname, LY.m + 142, y, 22, '#2a2330', 'left', null, F_T); text(LEVEL_KO[r.level] || '', LY.m + 430, y, 19, '#4a3d47', 'center', null, F_T); text(r.score.toLocaleString(), LY.m + LY.w - 44, y, 23, '#2a2330', 'right', null, F_N); } }
+      text(r.nickname, LY.m + 142, y, 22, '#2a2330', 'left', null, F_T); text(LEVEL_KO[r.level] || '', LY.m + 430, y, 19, '#4a3d47', 'center', null, F_T); text(r.score.toLocaleString(), LY.m + LY.w - 44, y, 23, '#2a2330', 'right', null, F_N); } ctx.restore(); }
   // the doors: shut when you come in, then they swing open
   const op = clamp((t - 0.35) / 1.1, 0, 1), e = 1 - Math.pow(1 - op, 3);
   if (op < 1) { const dTop = fy + 56, dBot = base + 40, half = W / 2;
@@ -3990,10 +3991,13 @@ const scenes = {
           fitText(r.nick, x0 + 162, cy - 11, 24, INK, 'left', F_T, LY.w - 340); text(TIERS[ti].n, x0 + 162, cy + 16, MIN_TEXT, tc, 'left', null, F_T);
           text(r.rating.toLocaleString(), LY.m + LY.w - LY.pad, cy, 27, INK, 'right', null, F_N); };
         const v0 = py + 54, v1 = py + ph - (pin ? rh + 22 : 12), key = JSON.stringify([nick, L.map(r => [r.nick, r.rating, r.days, r.rank, r.fav])]);
+        if (SCR.tier.list !== L) { SCR.tier.list = L; SCR.tier.at = clock.now(); }
+        const st = clock.now() - Math.max(SCR.tier.at || 0, sceneAt);
         scrollView(SCR.tier, v0, v1, key, L.length * rh + 4, () => {
           L.forEach((r, i) => { const y = i * rh, mine = r.nick === nick; btn(LY.m + 12, y + 3, LY.w - 24, rh - 6, () => openProfile(r.nick)); row(r, i + 1, y, mine, mine ? '#fff3c4' : i % 2 === 0 ? 'rgba(234,223,210,0.45)' : 'rgba(255,255,255,0)'); });
           return L.length * rh + 4; });
-        if (pin) { const y = v1 + 10; ctx.fillStyle = '#e6dccd'; ctx.fillRect(LY.m + 20, y - 6, LY.w - 40, 2); btn(LY.m + 12, y + 3, LY.w - 24, rh - 6, () => openProfile(nick)); row(Object.assign({ nick, fav: null }, me), mi >= 0 ? mi + 1 : '-', y, true, '#fff3c4'); }
+        staggerList(SCR.tier, v0, v1, rh, st, '#fff8e7');
+        if (pin) { ctx.save(); const pe = stagE(st, 0); ctx.globalAlpha = pe; ctx.translate(0, (1 - pe) * STAG.rise); const y = v1 + 10; ctx.fillStyle = '#e6dccd'; ctx.fillRect(LY.m + 20, y - 6, LY.w - 40, 2); btn(LY.m + 12, y + 3, LY.w - 24, rh - 6, () => openProfile(nick)); row(Object.assign({ nick, fav: null }, me), mi >= 0 ? mi + 1 : '-', y, true, '#fff3c4'); ctx.restore(); }
       }
       sideBtn('뒤로', () => { scene = 'title'; });
       refreshBtn(tierBoard.loading, () => { loadTierBoard(); acct.tierAsked = false; });
@@ -4012,7 +4016,7 @@ const scenes = {
       if (!L) { panel(LY.m, v0, LY.w, 240); text(news.loading ? '불러오는 중…' : news.err || '불러오는 중…', W / 2, v0 + 120, 26, news.err && !news.loading ? '#e2574c' : INK, 'center', null, F_T); }
       else if (!L.length) { panel(LY.m, v0, LY.w, 240); text('아직 공지가 없어요', W / 2, v0 + 120, 26, '#7a6872', 'center', null, F_T); }
       else { const pad = 28, inner = LY.w - pad * 2, { cards, height } = noticeGrow(noticeCards(inner));
-        scrollView(SCR.notice, v0, v1, 'n' + news.at + ':' + L.length + ':' + Object.keys(news.open).filter(k => news.open[k]).join(',') + ':' + cards.map(c => c.h | 0).join(','), height, () => {
+        scrollView(SCR.notice, v0, v1, 'n' + news.at + ':' + L.length + ':' + Object.keys(news.open).filter(k => news.open[k]).join(',') + ':' + cards.map(c => (c.h | 0) + '.' + c.body.length).join(','), height, () => {
           for (const c of cards) { const x = LY.m, n = c.n, [kname, kc] = NOTICE_KIND[n.kind] || NOTICE_KIND.info; let y = c.y + 24;
             btn(x, c.y, LY.w, c.h, () => { news.open[n.id] = !news.open[n.id]; (news.openAt = news.openAt || {})[n.id] = clock.now(); tone(660, 0.05, 'sine', 0.15); }); // a tap opens the note, another closes it
             ctx.save(); rr(x, c.y, LY.w, c.h, 20, n.pinned ? '#fff8dc' : '#fffaf0', n.pinned ? '#f0a020' : '#d9cbbd', n.pinned ? 3 : 2.4); rr(x, c.y, LY.w, c.h, 20, null, null); ctx.clip();
@@ -4629,6 +4633,16 @@ function viewMove() { // after the new frame: lay the old picture and the new on
   ctx.restore();
 }
 let modalSaved = false;
+const STAG = { gap: 0.04, dur: 0.26, rise: 12 }; // 순차 등장: the rows of a list, top first
+const stagE = (t, i) => CALM ? 1 : easeOut(Math.min(1, Math.max(0, (t - i * STAG.gap) / STAG.dur)));
+function staggerList(S, v0, v1, rh, t, bg) { // over a scrollView just drawn: while the rows come in, paint the visible ones again from its cache, each in turn
+  if (CALM || t > 2 || !S.cache) return; const r = canvas.width / W, first = Math.floor(S.scroll / rh); if (t > (Math.ceil((v1 - v0) / rh) + 1) * STAG.gap + STAG.dur) return;
+  ctx.save(); ctx.beginPath(); ctx.rect(0, v0, W, v1 - v0); ctx.clip(); ctx.fillStyle = bg; ctx.fillRect(LY.m + 4, v0, LY.w - 8, v1 - v0);
+  for (let i = first; ; i++) { const y = v0 + i * rh - S.scroll; if (y > v1) break; const e = stagE(t, i - first); if (e <= 0) continue;
+    const sy = Math.max(0, Math.round(i * rh * r)), sh = Math.min(S.cache.height - sy, Math.round(rh * r)); if (sh <= 0) break;
+    ctx.globalAlpha = e; ctx.drawImage(S.cache, 0, sy, S.cache.width, sh, 0, y + (1 - e) * STAG.rise, W, sh / r); }
+  ctx.restore();
+}
 function popIn(age) { const e = CALM ? 1 : easeOut(Math.min(1, Math.max(0, age) / 0.2)); return { k: 0.95 + 0.05 * e, a: e }; } // every window: grows from 95% and fades in, 200 ms
 function modalIn(dimA) { // a window over the match: the same pop as every other window
   const PQ = popIn(clock.now() - sceneAt); ctx.fillStyle = `rgba(59,51,64,${dimA * PQ.a})`; ctx.fillRect(0, 0, W, H);
