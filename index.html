@@ -2713,14 +2713,18 @@ nickBox.querySelector('form').onsubmit = async e => {
   }
   submitRecord(name);
 };
+function autoRecord() { // every win that counts goes into the hall by itself: a member under their nickname, a guest under the last name they used, or 손님
+  if (!canRank() || rank.sent === m || rank.sending) return; submitRecord((acct.prof && acct.prof.nickname) || store('zt_nick') || '손님');
+}
 async function submitRecord(name) {
   if (rank.sending || rank.sent === m) return; // a second tap or Enter while the first is on its way sends nothing
   rank.sending = true; nickErr.textContent = '등록하는 중…'; nickBox.querySelector('.go').disabled = true;
   try {
-    const r = await sendRecord(name); store('zt_nick', name);
-    rank.sent = m; rank.msg = `${r.score.toLocaleString()}점 등록!${r.all ? ` 역대 ${r.all}위` : ''}`;
+    let r; try { r = await sendRecord(name); } catch (e) { if (name === '손님' || !/회원이 쓰는/.test(e.message)) throw e; r = await sendRecord(name = '손님'); } // a guest's old name now a member's: as 손님
+    if (name !== '손님') store('zt_nick', name);
+    rank.sent = m; rank.msg = `명예의 전당 기록 · ${r.score.toLocaleString()}점${r.all ? ` · 역대 ${r.all}위` : ''}`;
     closeNick(); addProgress({ ranked: 1 }); tone(880, 0.1, 'triangle', 0.25); tone(1320, 0.18, 'triangle', 0.25, 0.1);
-  } catch (err) { if (nickBox.classList.contains('on')) nickErr.textContent = err.message; else toast(err.message); }
+  } catch (err) { if (nickBox.classList.contains('on')) nickErr.textContent = err.message; else { rank.sent = m; rank.msg = err.message; } }
   rank.sending = false; nickBox.querySelector('.go').disabled = false;
 }
 
@@ -3795,7 +3799,7 @@ function drawRivalIntro() { // 라이벌 등장: a card over the court for a few
   ctx.restore();
 }
 function matchProgress() { // what this match adds to the account's counts (online, each side counts its own)
-  matchGift = null; matchReward(m.format); tierReport(); logPlay();
+  matchGift = null; matchReward(m.format); tierReport(); logPlay(); autoRecord();
   { const o = oppOf(); if (o && acct.user && realNick()) { const won0 = m.sc.winner === (m.online ? view : 0) % 2; rpc('record_rival', { opp: o, won: won0 }).then(r => { if (r) rival.last = r; }).catch(() => {}); } rival.key = ''; }
   const me = m.online ? view : 0, won = m.sc.winner === me % 2;
   const d = { sweet: m.stats.sweet[me], aces: m.stats.aces[me], power: m.stats.power[me], matches: 1 }; setProgress('rally', m.stats.longest);
@@ -4482,8 +4486,7 @@ const scenes = {
       text(`가장 긴 랠리  ${S.longest}번`, W / 2, sy + 44 + 4 * 40 + 6, 25, '#c0605a', 'center', null, F_H);
       if (reg) {
         const ry = pb + LY.gap;
-        if (rank.sent === m) { rr(LY.m, ry, LY.w, 68, 18, 'rgba(255,248,231,0.92)', OUT); text(rank.msg, W / 2, ry + 34, 26, '#c0605a', 'center', null, F_H); }
-        else { const lb = rank.sending ? '등록하는 중…' : '명예의 전당에 기록 등록하기', bw = Math.min(LY.w, textW(lb, 24, F_T) + 72); button(lb, W / 2 - bw / 2, ry + 4, bw, 60, openNick, { size: 24, fill: '#ffe1a8' }); }
+        rr(LY.m, ry, LY.w, 68, 18, 'rgba(255,248,231,0.92)', OUT); fitText(rank.sent === m ? rank.msg : '명예의 전당에 기록하는 중…', W / 2, ry + 34, 24, rank.sent === m ? '#c0605a' : '#7a6872', 'center', F_T, LY.w - 40); // recorded by itself: only the outcome shows
       }
       else if (m.online && rival.last && rival.last.opp === oppOf()) { // our record after this match: a tap shows their profile
         const R = rival.last, ry = pb + LY.gap, over = btn(LY.m, ry, LY.w, 68, () => openProfile(R.opp)), st = streakOf(R.recent);
