@@ -4716,13 +4716,13 @@ const scenes = {
       { // a binder of two leaves: 조작법 and 경기 규칙 as tabs on its top edge; the open tab and its page are one outline (the first tab rises straight from the page's left edge), the other tucked behind
         const TT = 6, TB = 72, PX = 40, PW = 640, PB = 796, R = 26, tw = 236, fl = 12, tabs = [['조작법', PX], ['경기 규칙', PX + tw - 10]];
         const back = (x) => { ctx.beginPath(); ctx.moveTo(x, TB + 2); ctx.lineTo(x, TT + 20); ctx.quadraticCurveTo(x, TT, x + 20, TT); ctx.lineTo(x + tw - 20, TT); ctx.quadraticCurveTo(x + tw, TT, x + tw, TT + 20); ctx.lineTo(x + tw, TB + 2); ctx.fillStyle = '#eadfce'; ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = OUT; ctx.stroke(); };
-        tabs.forEach(([t, x], i) => { if (i !== helpPage) { back(x); text(t, x + tw / 2, (TT + TB) / 2 + 2, 26, '#8a7a82', 'center', null, F_T); } btn(x, TT, i ? tw : tw - 10, TB - TT, () => { if (helpPage !== i) { helpPage = i; tone(760, 0.06, 'sine', 0.18); } }); });
+        tabs.forEach(([t, x], i) => { if (i !== helpPage) { back(x); text(t, x + tw / 2, (TT + TB) / 2 + 2, 30, '#8a7a82', 'center', null, F_T); } btn(x, TT, i ? tw : tw - 10, TB - TT, () => { if (helpPage !== i) { helpPage = i; tone(760, 0.06, 'sine', 0.18); } }); });
         const [at, ax] = tabs[helpPage], first = ax === PX; ctx.beginPath(); // the open leaf: page and tab traced as one shape
         ctx.moveTo(PX, PB - R); if (first) { ctx.lineTo(PX, TT + 20); ctx.quadraticCurveTo(PX, TT, PX + 20, TT); } else { ctx.lineTo(PX, TB + R); ctx.quadraticCurveTo(PX, TB, PX + R, TB); ctx.lineTo(ax - fl, TB); ctx.quadraticCurveTo(ax, TB, ax, TB - fl); ctx.lineTo(ax, TT + 20); ctx.quadraticCurveTo(ax, TT, ax + 20, TT); }
         ctx.lineTo(ax + tw - 20, TT); ctx.quadraticCurveTo(ax + tw, TT, ax + tw, TT + 20); ctx.lineTo(ax + tw, TB - fl); ctx.quadraticCurveTo(ax + tw, TB, ax + tw + fl, TB); // down the tab's right side, flaring into the page's top edge
         ctx.lineTo(PX + PW - R, TB); ctx.quadraticCurveTo(PX + PW, TB, PX + PW, TB + R); ctx.lineTo(PX + PW, PB - R); ctx.quadraticCurveTo(PX + PW, PB, PX + PW - R, PB); ctx.lineTo(PX + R, PB); ctx.quadraticCurveTo(PX, PB, PX, PB - R); ctx.closePath();
         ctx.fillStyle = 'rgba(255,248,231,0.99)'; ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = OUT; ctx.stroke(); btn(PX, TB, PW, PB - TB, () => {});
-        text(at, ax + tw / 2, (TT + TB) / 2 + 2, 26, INK, 'center', null, F_T); }
+        text(at, ax + tw / 2, (TT + TB) / 2 + 2, 30, INK, 'center', null, F_T); }
       const T = touchUI;
       if (helpPage === 0) {
         helpRows([
@@ -4735,21 +4735,21 @@ const scenes = {
           [T ? '치는 순간' : '← / →', '치는 순간 누른 쪽으로 공이 가요', '#efe3d3'],
           ['타이밍', "'딱!' 은 완벽한 타이밍", '#efe3d3', "'빨랐어!' · '늦었어!' 는 공이 흔들려요"],
         ], 150, 76, 150, 1.15);
-        text(T ? '오른쪽 위: 일시정지 · 소리 · 낙하지점 · 도움말' : 'P 일시정지 · M 소리 · G 낙하지점 · H 도움말', W / 2, 763, 22, '#3d9be0', 'center', null, F_H); // apart from the rows above it, 22 from the card's foot
+        text(T ? '오른쪽 위: 일시정지 · 소리 · 낙하지점 · 도움말' : 'P 일시정지 · M 소리 · G 낙하지점 · H 도움말', W / 2, 729, 22, '#3d9be0', 'center', null, F_H); // as far from the page's foot as the first row is from its top (56): the whole text centred on the page // apart from the rows above it, 22 from the card's foot
       } else {
         helpRows([
           ['점수', '0 → 15 → 30 → 40 → 게임', '#fff1b0', '40-40은 듀스: 2점을 연달아 따야 해요'],
           ['서브', '대각선 서비스 박스에 넣기', '#ffd0c8', '기회는 두 번 · 둘 다 실패하면 실점'],
           ['실점', '선 밖이나 네트에 걸리면 실점', '#dbe9f7', '내 코트에서 두 번 튀기 전에 쳐야 해요'],
           ['타이브레이크', '게임 동점일 때 1점씩 결정전', '#e6dbf7', '7점 먼저, 2점 차 (매치 타이브레이크는 10점)'],
-        ], 156, 84, 150, 1.15);
-        rr(70, 470, 580, 2, 1, '#e2d4c4', null);
-        text('경기 방식', W / 2, 506, 27, INK, 'center', null, F_T);
-        FORMAT_IDS.forEach((id, i) => { const y = 556 + i * 58, on = id === (m.format || 'regular');
+        ], 150, 84, 150, 1.15); // both leaves start at the same height
+        rr(70, 464, 580, 2, 1, '#e2d4c4', null);
+        text('경기 방식', W / 2, 500, 27, INK, 'center', null, F_T);
+        FORMAT_IDS.forEach((id, i) => { const y = 550 + i * 58, on = id === (m.format || 'regular');
           if (on) rr(70, y - 26, 580, 52, 14, '#fff3c4', '#e3a46a', 2.4);
           text(FORMATS[id].ko, 94, y, 25, INK, 'left', null, F_T);
           text({ flash: '10점 먼저 (2점 차)', short: '4게임 먼저 · 노애드 · 4-4 타이브레이크', regular: '3세트 먼저 · 6게임 세트' }[id], 196, y, 21, '#5d4f58', 'left', null, F_B); });
-        text('지금 경기는 노란 칸의 방식이에요', W / 2, 763, 22, '#c0605a', 'center', null, F_H);
+        text('지금 경기는 노란 칸의 방식이에요', W / 2, 729, 22, '#c0605a', 'center', null, F_H);
       }
       ctx.restore(); OY = 0;
       if (!touchUI) text('← → 페이지 · H 또는 Esc 닫기', W / 2, top + 830, 21, CREAM, 'center', OUT, F_B);
