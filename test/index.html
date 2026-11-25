@@ -1971,17 +1971,17 @@ function iconBtn(x, y, kind, fn) { // the small square buttons: home and sound
     else { ctx.beginPath(); ctx.arc(cx + 3, cy, 7, -0.9, 0.9); ctx.stroke(); ctx.beginPath(); ctx.arc(cx + 3, cy, 13, -0.8, 0.8); ctx.stroke(); }
   }
 }
-function keycap(x, y, k, lit) {
-  rr(x, y + 3, 34, 32, 8, OUT, null); rr(x, y, 34, 32, 8, lit ? BALL : CREAM, OUT, 2.4); text(k, x + 17, y + 17, 21, INK, 'center', null, F_N);
+function keycap(x, y, k) {
+  rr(x, y + 3, 34, 32, 8, OUT, null); rr(x, y, 34, 32, 8, CREAM, OUT, 2.4); text(k, x + 17, y + 17, 21, INK, 'center', null, F_N);
 }
 function drawLegend() { // the shot keys, always on screen; each is also a button for the mouse
   const serving = serverIdx() === view && (m.phase === 'serve' || m.phase === 'toss') && !m.sc.done;
   const y = H - 108, chips = [['Q', serving ? (m.phase === 'serve' ? '토스' : '서브!') : '스트로크', 'KeyJ', K_A], ['W', '슬라이스', 'KeyK', K_K], ['E', '로브', 'KeyL', K_LOB], ['R', '스매시', 'KeyI', K_S]];
   chips.forEach((c, i) => {
-    const x = 14 + i * 174, on = anyDown(...c[3]), over = btn(x, y, 168, 46, null, c[2]);
+    const x = 14 + i * 174, d = anyDown(...c[3]) ? 3 : 0, over = btn(x, y, 168, 46, null, c[2]);
     const sv = i === 0 && serving; // the serve key turns green while you serve
-    rr(x, y, 168, 46, 14, on ? '#fff3c4' : sv ? '#7fd69a' : over ? '#fffdf3' : 'rgba(255,248,231,0.93)', sv ? '#2f8a4f' : OUT, sv ? 3.4 : 2.6);
-    keycap(x + 8, y + 6, c[0], on); text(c[1], x + 50, y + 24, 20, INK, 'left', null, F_T);
+    rr(x, y + 3, 168, 46, 14, OUT, null); rr(x, y + d, 168, 46, 14, sv ? '#7fd69a' : over ? '#fffdf3' : 'rgba(255,248,231,0.93)', sv ? '#2f8a4f' : OUT, sv ? 3.4 : 2.6);
+    keycap(x + 8, y + 6 + d, c[0]); text(c[1], x + 50, y + 24 + d, 20, INK, 'left', null, F_T);
   });
   rr(14, H - 56, W - 28, 44, 12, 'rgba(74,61,71,0.82)', null);
   text('Q 꾹: 파워샷 · 네트 앞: 발리 · W + ↓: 드롭샷 · H: 도움말', W / 2, H - 33, 20, CREAM, 'center', null, F_B);
@@ -2007,9 +2007,9 @@ function drawTouch() { // phones and tablets: a joystick on the left, the four s
   const serving = serverIdx() === view && (m.phase === 'serve' || m.phase === 'toss') && !m.sc.done;
   for (const [label0, code, x, y, r, col] of shotButtons()) {
     const on = down.has(code), big = r > 80, label = big && serving ? (m.phase === 'serve' ? '토스' : '서브!') : label0;
-    ctx.lineWidth = 4; ctx.strokeStyle = OUT; E(x, y + 5, r, r, OUT); E(x, y + (on ? 3 : 0), r, r, on ? '#fff3c4' : big && serving ? '#4fc37a' : col); // green while it serves
-    text(label, x, y - (big ? 10 : 0) + (on ? 3 : 0), big ? 32 : 25, INK, 'center', null, F_T);
-    if (big) text(serving ? (m.phase === 'serve' ? '공 띄우기' : '꼭대기에서!') : '꾹: 파워샷', x, y + 28 + (on ? 3 : 0), 19, INK, 'center', null, F_B);
+    ctx.lineWidth = 4; ctx.strokeStyle = OUT; E(x, y + 5, r, r, OUT); E(x, y + (on ? 4 : 0), r, r, big && serving ? '#4fc37a' : col); // green while it serves
+    text(label, x, y - (big ? 10 : 0) + (on ? 4 : 0), big ? 32 : 25, INK, 'center', null, F_T);
+    if (big) text(serving ? (m.phase === 'serve' ? '공 띄우기' : '꼭대기에서!') : '꾹: 파워샷', x, y + 28 + (on ? 4 : 0), 19, INK, 'center', null, F_B);
   }
   text('꾹 눌렀다 놓으면 파워샷 · 슬라이스 + 아래: 드롭샷', W / 2, H - 24, 20, CREAM, 'center', OUT, F_B);
 }
@@ -3514,7 +3514,7 @@ function sink(x, y, w, h, depth = 4) { // press feedback: how far a held button 
   P.d += (tgt - P.d) * (1 - Math.exp(-dt / ((inside ? 0.1 : 0.16) / 3))); P.t = now; PRESS.set(k, P); return P.d;
 }
 const hoverOn = over => over && !touchUI; // a hover tint is for a mouse; on a phone the finger only presses
-function card(x, y, w, h, fn, on, fill) { const over = btn(x, y, w, h, fn), pr = sink(x, y, w, h) > 1; rr(x, y + 5, w, h, 20, OUT, null); rr(x, y, w, h, 20, on ? '#fff3c4' : pr ? '#fffbe8' : hoverOn(over) ? '#fffdf3' : fill || 'rgba(255,248,231,0.96)', on ? CORAL : OUT, on ? 5 : 3); } // its picture is drawn by the caller, so a card lightens when pressed rather than sinking
+function card(x, y, w, h, fn, on, fill) { const over = btn(x, y, w, h, fn), d = sink(x, y, w, h); rr(x, y + 5, w, h, 20, OUT, null); rr(x, y + d, w, h, 20, on ? '#fff3c4' : hoverOn(over) ? '#fffdf3' : fill || 'rgba(255,248,231,0.96)', on ? CORAL : OUT, on ? 5 : 3); ctx.save(); ctx.translate(0, d); } // sinks like every button; the caller draws its picture and then calls ctx.restore(), so the picture goes down with it
 // The bottom row, the same on every page: a square key at the left (back or home), the main button in the middle sized to its words,
 // another square key at the right where there is one (refresh). A worded way out (방 목록, 방 닫기) sits at the left sized to its words.
 let barL = 0; // where the left part of the bottom row ends, so the middle button keeps clear of it
@@ -4178,7 +4178,7 @@ const scenes = {
         card(LY.m, y, LY.w, ch, () => pickMode(i), i === state.cur);
         rr(x, y + ch / 2 - 30, 132, 60, 18, c, OUT, 2.6); text(tg, x + 66, y + ch / 2 + 1, 30, '#ffffff', 'center', null, F_T); // the level, big and coloured
         text(net ? (net.kind === 'coop' ? '친구와 함께 컴퓨터 2명과' : '빈 자리를 채울 컴퓨터') : setup.doubles ? '파트너와 함께 컴퓨터 2명과' : '컴퓨터와 대결', x + 152, y + ch / 2 - 16, 26, INK, 'left', null, F_T);
-        text(r[1], x + 152, y + ch / 2 + 20, 19, '#7a6872', 'left', null, F_B); });
+        text(r[1], x + 152, y + ch / 2 + 20, 19, '#7a6872', 'left', null, F_B); ctx.restore(); });
       sideBtn('뒤로', () => { scene = 'format'; });
       menuEnd(net ? `${KINDS[net.kind].ko} · ${FORMATS[setup.format].ko}` : `${setup.doubles ? '복식 · ' : ''}${FORMATS[setup.format].ko} · ${{ flash: '10점 매치 타이브레이크', short: '4게임 짧은 세트', regular: '5세트 3선승' }[setup.format]} `);
     },
@@ -4212,6 +4212,7 @@ const scenes = {
           for (let k = 0; k < 3; k++) rr(tx + 112 + k * 40, yy - 10, 32, 20, 6, k < lv ? (r ? SKY : CORAL) : '#eadfd2', OUT, 2.2);
           text(r ? ['느림', '보통', '빠름'][lv - 1] : ['낮음', '보통', '높음'][lv - 1], tx + 244, yy, 20, '#7a6872', 'left', null, F_B);
         });
+        ctx.restore();
       });
       sideBtn('뒤로', () => { scene = 'select'; });
       menuEnd(`${ANIMALS[setup.animal].ko}의 강한 코트와 약한 코트가 표시돼요 · ↑ ↓ 로 고르고 Enter`);
@@ -4241,6 +4242,7 @@ const scenes = {
         if (tag) { const tw = tag.length * 21 + 26; rr(x + nw + 14, by + 3, tw, 34, 17, id === 'short' ? CORAL : SKY, OUT, 2.2); text(tag, x + nw + 14 + tw / 2, by + 20, 20, CREAM, 'center', null, F_T); }
         text(sub, x, by + 60, 22, id === 'practice' ? '#3d7fc0' : '#c0605a', 'left', null, F_H);
         if (full) text(how[id], x, by + 92, 20, '#7a6872', 'left', null, F_B);
+        ctx.restore();
       });
       sideBtn('뒤로', formatBack);
       menuEnd('↑ ↓ 로 고르고 Enter · 랭킹은 경기 방식마다 따로 집계돼요');
@@ -4325,7 +4327,7 @@ const scenes = {
         FORMAT_IDS.forEach((id, i) => { const y = top + i * (ch + LY.gap), x = LY.m + LY.pad; // the same cards as 개인전's formats
           card(LY.m, y, LY.w, ch, () => { Q.format = id; quickGo(); }, false);
           text(FORMATS[id].ko, x, y + ch / 2 - 18, 32, INK, 'left', null, F_T); text(rules(id).sub, x, y + ch / 2 + 20, 21, '#c0605a', 'left', null, F_H);
-          text('찾기 ▶', LY.m + LY.w - LY.pad, y + ch / 2, 22, '#3d8be0', 'right', null, F_T); });
+          text('찾기 ▶', LY.m + LY.w - LY.pad, y + ch / 2, 22, '#3d8be0', 'right', null, F_T); ctx.restore(); });
         sideBtn('뒤로', () => quickStop());
         menuEnd(Q.kind === 'versus' ? '모자란 자리는 20초 뒤 보통 컴퓨터가 채워요 · 코트는 무작위' : '같은 방식을 고른 사람과 바로 이어져요 · 코트는 무작위');
       } else {
