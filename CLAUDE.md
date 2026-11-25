@@ -11,7 +11,7 @@ The owner reviews every change on a phone. These rules come from their repeated 
 - Use the plain fonts (F_T, F_B) for anything that must read cleanly; the handwritten font (F_H) has uneven spacing, so keep it to short accents.
 
 ## Buttons and space
-- A button need not fill the width of its box or the screen: size it to its words plus comfortable padding, and centre it, unless it is one of the bottom row's main buttons. Popups and cards stay compact and dense (the 명예의 전당 score card is the model): no large empty areas, no oversized boxes; leave even margins instead.
+- A button need not fill the width of its box or the screen: size it to its words plus comfortable padding, and centre it, unless it is one of the bottom row's main buttons. Prefer a small icon to a worded button wherever the icon reads at once (a person for a profile, a cross to close), placed beside what it acts on. Popups and cards stay compact and dense (the 명예의 전당 score card is the model): no large empty areas, no oversized boxes; leave even margins instead.
 
 ## Drawing
 - Work of one kind stays of one kind: a redrawn animal, item or button must match the others in style (outline, shading with shade(), proportions).
