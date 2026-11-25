@@ -3504,7 +3504,7 @@ for (const n of ['pointerup', 'pointercancel']) addEventListener(n, e => { const
   if (closet.hdrag) { const w = LY.w + 32, pg = closet.page || 0; closet.px = clamp(pg - closet.hdx / w, 0, 1); if (closet.hdx < -60) closet.page = 1; else if (closet.hdx > 60) closet.page = 0; closet.hdrag = false; dragEndAt = performance.now(); } });
 function openCloset(back, a = null) { if (!acct.user) { toast('로그인하면 옷장을 쓸 수 있어요'); return; } closetBack = back; closet.animal = a; closet.sel = null; closet.page = 0; closet.px = 0; closet.pt = 0; SCR.closet.scroll = 0; SCR.closet.vel = 0; scene = 'closet'; zoomFrom = { x: mouse.x, y: mouse.y, at: clock.now(), r: (hot.slice().reverse().find(h => mouse.x >= h.x && mouse.x <= h.x + h.w && mouse.y >= h.y && mouse.y <= h.y + h.h) || null) }; tone(660, 0.06, 'sine', 0.15); }
 function drawGachaTab(y0, end) { // the machine, as tall as the page allows: a lit sign, a glass globe where the capsules tumble, the body with its slot, crank and chute
-  const G = acct.g, h = end - y0, MH = 616, k = Math.min((h - 8) / MH, (LY.w - 40) / 380);
+  const G = acct.g, h = end - y0, MH = 624, k = Math.min((h - 8) / MH, (LY.w - 40) / 370);
   drawGachaMachine(G, W / 2, end - 4, k);
   if (G.phase === 'reveal' && G.list && G.list.length > 1) { drawManyPrizes(G, y0, h); return; }
   if (G.phase === 'reveal') { // the prize, opened
@@ -3521,32 +3521,41 @@ function drawGachaTab(y0, end) { // the machine, as tall as the page allows: a l
     for (let i = 0; i < 8; i++) { const a = i / 8 * 6.283 + G.t, rr2 = 150 + Math.sin(G.t * 3 + i) * 10; star(W / 2 + Math.cos(a) * rr2, py + ph * 0.42 + Math.sin(a) * rr2 * 0.7, 9, i % 2 ? '#fff' : c); }
   }
 }
-function drawGachaMachine(G, cx, base, k) { // 뽑기 기계, soft clay: a round glass dome of pastel capsules on a chunky body with a big knob and a pill-shaped door; every part lit from the upper left (a pale gleam) and shaded at the lower right; from the floor (0) up to the dome's top (-596)
+function drawGachaMachine(G, cx, base, k) { // 뽑기 기계 in soft clay, after a shop's square gumball machine: a red lid, a tall glass case of see-through capsules between two silver posts, a silver band, a red cabinet with the coin dial, a key, a label and a white door; from the floor (0) up to the lid (-612)
   ctx.save(); ctx.translate(cx, base); ctx.scale(k, k); ctx.lineJoin = 'round'; const now = clock.now(), turn = G.phase === 'turn';
   const rad = (x0, y0, r, stops) => { const g = ctx.createRadialGradient(x0, y0, 0, x0, y0, r); stops.forEach(([o, c]) => g.addColorStop(o, c)); return g; };
-  const clay = (x, y, w, h, r, c0, c1, c2) => { rr(x, y + 8, w, h, r, 'rgba(59,51,64,0.18)', null); rr(x, y, w, h, r, rad(x + w * 0.3, y + h * 0.25, Math.max(w, h) * 1.05, [[0, c0], [0.55, c1], [1, c2]]), OUT, 3.4); }; // a soft block: lit at the upper left, deeper at the lower right, a soft shadow under it
-  // feet, then the body
-  for (const fx of [-104, 104]) clay(fx - 34, -26, 68, 30, 15, '#f7c9d4', '#e8a6b8', '#c9839a');
-  clay(-176, -330, 352, 312, 64, '#ffd9cf', '#ffab9c', '#e67e70');
-  ctx.save(); rr(-176, -330, 352, 312, 64, null, null); ctx.clip(); ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.beginPath(); ctx.ellipse(-96, -276, 70, 22, -0.25, 0, 7); ctx.fill(); ctx.fillStyle = 'rgba(160,60,60,0.12)'; ctx.beginPath(); ctx.ellipse(40, -18, 220, 48, 0, 0, 7); ctx.fill(); ctx.restore(); // a gleam up top, a deeper band at the foot
-  // the knob: a big soft dial with a raised bar, turning while the server picks
-  { const ox = 0, oy = -214, r = 66; E(ox + 4, oy + 8, r, r, 'rgba(59,51,64,0.18)', 0, true); ctx.lineWidth = 3.4; ctx.strokeStyle = OUT; E(ox, oy, r, r, rad(ox - 24, oy - 26, r * 1.6, [[0, '#ffffff'], [0.5, '#fff4dc'], [1, '#e9cfa8']]));
-    ctx.save(); ctx.translate(ox, oy); ctx.rotate(turn ? G.t * 7 : -0.35); rr(-50, -16, 100, 32, 16, rad(-20, -10, 80, [[0, '#ffb2a4'], [1, '#e2574c']]), OUT, 3); E(-30, -4, 8, 4, 'rgba(255,255,255,0.6)', 0, true); ctx.restore(); }
-  // the door: a pill-shaped hollow, the prize rolling into it
-  rr(-70, -112, 140, 62, 31, '#4a3a46', OUT, 3.4); rr(-62, -106, 124, 22, 11, 'rgba(255,255,255,0.10)', null);
-  if (G.phase === 'drop' || G.phase === 'reveal') { const u = Math.min(1, G.t / 0.5), g = G.res.grade; capsule(-10 + (G.phase === 'drop' ? 40 * (1 - u) : 0), -80, 24, GRADE[g].c, G.t * 6); }
-  // the collar, then the dome of glass full of capsules
-  clay(-150, -362, 300, 44, 22, '#efe7ff', '#cdbff2', '#a594d8');
-  const GY = -478, GR = 120, GW = 160; ctx.save(); ctx.beginPath(); ctx.ellipse(0, GY, GW, GR, 0, Math.PI, 0); ctx.lineTo(GW, -350); ctx.lineTo(-GW, -350); ctx.closePath();
-  ctx.fillStyle = rad(-60, GY - 60, 260, [[0, 'rgba(240,250,255,0.95)'], [1, 'rgba(190,220,245,0.85)']]); ctx.fill(); ctx.clip();
-  for (let i = 0; i < 26; i++) { const row = Math.floor(i / 7), col = i % 7, hx = (col - 3) * 42 + (row % 2) * 18 - 9, hy = -378 - row * 34 - Math.abs(col - 3) * 3, jig = turn ? Math.sin(now * 20 + i * 1.7) * 6 : 0;
-    const g = i % 11 === 0 ? 3 : i % 6 === 0 ? 2 : i % 3 === 0 ? 1 : 0; capsule(hx + jig * 0.6, hy - Math.abs(jig), 20, ['#ffb7c8', '#9fd8ff', '#c9b6ff', '#ffe17a'][(i + g) % 4], i * 0.9 + (turn ? now * 6 : 0)); }
+  const lin = (x0, y0, x1, y1, stops) => { const g = ctx.createLinearGradient(x0, y0, x1, y1); stops.forEach(([o, c]) => g.addColorStop(o, c)); return g; };
+  const clay = (x, y, w, h, r, c0, c1, c2) => { rr(x, y + 7, w, h, r, 'rgba(59,51,64,0.16)', null); rr(x, y, w, h, r, rad(x + w * 0.28, y + h * 0.22, Math.max(w, h) * 1.05, [[0, c0], [0.55, c1], [1, c2]]), OUT, 3.4); }; // lit at the upper left, deeper at the lower right, a soft shadow under it
+  const RED = ['#ffb1a4', '#f0685a', '#c8453a'], SILVER = ['#ffffff', '#d7dde4', '#9aa4b0'];
+  const chrome = (x0, x1) => lin(x0, 0, x1, 0, [[0, '#a3adb8'], [0.3, '#f7f9fb'], [0.6, '#cbd3db'], [1, '#8f99a5']]);
+  // the feet and the cabinet
+  for (const fx of [-150, 112]) clay(fx, -22, 38, 22, 8, ...RED);
+  clay(-164, -268, 328, 250, 26, ...RED);
+  ctx.save(); rr(-164, -268, 328, 250, 26, null, null); ctx.clip(); ctx.fillStyle = 'rgba(255,255,255,0.28)'; ctx.beginPath(); ctx.ellipse(-90, -236, 70, 16, -0.15, 0, 7); ctx.fill(); ctx.restore(); // its gleam
+  clay(-60, -248, 120, 120, 22, ...SILVER); // the coin works: a silver plate and its dial, turning while the server picks
+  { const ox = 0, oy = -188, r = 42; ctx.lineWidth = 3; ctx.strokeStyle = OUT; E(ox, oy, r, r, rad(ox - 14, oy - 16, r * 1.7, [[0, '#ffffff'], [0.6, '#dfe4ea'], [1, '#a7b0bb']])); ctx.save(); ctx.translate(ox, oy); ctx.rotate(turn ? G.t * 7 : 0); rr(-34, -12, 68, 24, 12, chrome(-34, 34), OUT, 2.6); rr(-16, -4, 32, 8, 4, '#4a4450', null); ctx.restore(); }
+  E(-124, -200, 11, 11, rad(-127, -204, 14, [[0, '#ffffff'], [1, '#9aa4b0']])); rr(-125.5, -205, 3, 10, 1.5, '#4a4450', null); // the key
+  clay(-140, -96, 136, 52, 12, '#e65a4c', '#d14a3e', '#b23a30'); // the label plate
+  clay(36, -112, 110, 92, 16, '#ffffff', '#f1f1f4', '#d6d8de'); // the white door
+  if (G.phase === 'drop' || G.phase === 'reveal') { const u = Math.min(1, G.t / 0.5), g = G.res.grade; ball(91, G.phase === 'drop' ? -96 + u * 30 : -66, 22, ['#ffb7c8', '#9fd8ff', '#c9b6ff', '#ffe17a'][g], 1); }
+  // the silver band
+  clay(-176, -300, 352, 36, 14, ...SILVER);
+  // the glass case: capsules piled to the top, two silver posts at its edges
+  const gx = -150, gy = -572, gw = 300, gh = 276; rr(gx, gy, gw, gh, 16, 'rgba(225,242,255,0.75)', OUT, 3);
+  ctx.save(); rr(gx + 2, gy + 2, gw - 4, gh - 4, 14, null, null); ctx.clip();
+  const C = ['#ffb7c8', '#9fd8ff', '#c9b6ff', '#ffe17a', '#a8f0c6', '#ffc89a']; let n = 0;
+  for (let row = 0; row < 7; row++) for (let col = 0; col < 6; col++) { const x = gx + 28 + col * 50 + (row % 2) * 24 - 12, y = gy + gh - 26 - row * 40 - ((col * 7 + row * 3) % 5) * 2, jig = turn ? Math.sin(now * 20 + n * 1.7) * 5 : 0; ball(x + jig * 0.6, y - Math.abs(jig), 24, C[(n * 5 + row) % 6], 0.85); n++; }
   ctx.restore();
-  ctx.lineWidth = 3.4; ctx.strokeStyle = OUT; ctx.beginPath(); ctx.ellipse(0, GY, GW, GR, 0, Math.PI, 0); ctx.lineTo(GW, -350); ctx.moveTo(-GW, -350); ctx.lineTo(-GW, GY); ctx.stroke();
-  ctx.lineCap = 'round'; ctx.lineWidth = 14; ctx.strokeStyle = 'rgba(255,255,255,0.75)'; ctx.beginPath(); ctx.ellipse(0, GY, GW - 30, GR - 30, 0, Math.PI * 1.12, Math.PI * 1.36); ctx.stroke(); ctx.lineWidth = 8; ctx.beginPath(); ctx.ellipse(0, GY, GW - 30, GR - 30, 0, Math.PI * 1.44, Math.PI * 1.5); ctx.stroke(); ctx.lineCap = 'butt'; // the glass's gleam
-  // a little cap on the dome
-  clay(-26, GY - GR - 18, 52, 26, 13, '#efe7ff', '#cdbff2', '#a594d8');
+  ctx.fillStyle = 'rgba(255,255,255,0.35)'; rr(gx + 14, gy + 14, 16, gh - 28, 8, 'rgba(255,255,255,0.45)', null); // a long gleam down the glass
+  for (const px of [gx - 8, gx + gw - 8]) clay(px, gy - 4, 16, gh + 8, 8, ...SILVER); // the posts
+  // the lid
+  clay(-180, -612, 360, 46, 14, ...RED);
   ctx.restore();
+}
+function ball(x, y, r, c, a) { // a see-through capsule: a tinted sphere, its seam, a white gleam
+  ctx.save(); ctx.globalAlpha = (ctx.globalAlpha || 1) * a; const g = ctx.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.1, x, y, r); g.addColorStop(0, '#ffffff'); g.addColorStop(0.35, c); g.addColorStop(1, mixHex(c, '#6b5560', 0.25));
+  ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(107,85,96,0.55)'; E(x, y, r, r, g); ctx.beginPath(); ctx.ellipse(x, y + 2, r - 1, r * 0.28, 0, 0, Math.PI); ctx.stroke();
+  ctx.globalAlpha = (ctx.globalAlpha || 1); E(x - r * 0.38, y - r * 0.42, r * 0.22, r * 0.14, 'rgba(255,255,255,0.85)', -0.6, true); ctx.restore();
 }
 function drawManyPrizes(G, y0, h) { // five or ten prizes: a grid, best first; tap one to read it
   const L = G.list, n = L.length, cols = 5, rows = Math.ceil(n / cols), x0 = LY.m + 20, pw = LY.w - 40, inner = pw - 48, gap = 10, cw = (inner - gap * (cols - 1)) / cols, chh = cw + 14;
@@ -4706,13 +4715,16 @@ const scenes = {
       modalIn(0.62);
       const top = Math.round(H / 2 - 400);
       ctx.save(); ctx.translate(0, top); OY = top;
-      { // a binder of two leaves: 조작법 and 경기 규칙 as tabs on its top edge, the open one joined to the page, the other tucked behind
-        const TT = 6, TB = 72, tw = 236, tabs = [['조작법', 58], ['경기 규칙', 58 + tw - 14]];
-        const tab = (x, fill, edge) => { ctx.beginPath(); ctx.moveTo(x - 12, TB + 2); ctx.quadraticCurveTo(x, TB + 2, x, TB - 12); ctx.lineTo(x, TT + 20); ctx.quadraticCurveTo(x, TT, x + 20, TT); ctx.lineTo(x + tw - 20, TT); ctx.quadraticCurveTo(x + tw, TT, x + tw, TT + 20); ctx.lineTo(x + tw, TB - 12); ctx.quadraticCurveTo(x + tw, TB + 2, x + tw + 12, TB + 2); // rounded on top, flaring into the page at its foot, as a browser's tab
-          ctx.fillStyle = fill; ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = edge; ctx.stroke(); };
-        tabs.forEach(([t, x], i) => { if (i !== helpPage) { tab(x, '#eadfce', OUT); text(t, x + tw / 2, (TT + TB) / 2 + 2, 26, '#8a7a82', 'center', null, F_T); } btn(x, TT, i ? tw : tw - 14, TB - TT, () => { if (helpPage !== i) { helpPage = i; tone(760, 0.06, 'sine', 0.18); } }); });
-        rr(40, TB, 640, 796 - TB, 26, 'rgba(255,248,231,0.98)', OUT, 4); btn(40, TB, 640, 796 - TB, () => {});
-        { const [t, x] = tabs[helpPage]; tab(x, '#fff8e7', OUT); ctx.fillStyle = '#fff8e7'; ctx.fillRect(x - 10, TB - 2, tw + 20, 8); text(t, x + tw / 2, (TT + TB) / 2 + 2, 26, INK, 'center', null, F_T); } } // the open tab: no line between it and its page
+      { // a binder of two leaves: 조작법 and 경기 규칙 as tabs on its top edge; the open tab and its page are one outline (the first tab rises straight from the page's left edge), the other tucked behind
+        const TT = 6, TB = 72, PX = 40, PW = 640, PB = 796, R = 26, tw = 236, fl = 12, tabs = [['조작법', PX], ['경기 규칙', PX + tw - 10]];
+        const back = (x) => { ctx.beginPath(); ctx.moveTo(x, TB + 2); ctx.lineTo(x, TT + 20); ctx.quadraticCurveTo(x, TT, x + 20, TT); ctx.lineTo(x + tw - 20, TT); ctx.quadraticCurveTo(x + tw, TT, x + tw, TT + 20); ctx.lineTo(x + tw, TB + 2); ctx.fillStyle = '#eadfce'; ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = OUT; ctx.stroke(); };
+        tabs.forEach(([t, x], i) => { if (i !== helpPage) { back(x); text(t, x + tw / 2, (TT + TB) / 2 + 2, 26, '#8a7a82', 'center', null, F_T); } btn(x, TT, i ? tw : tw - 10, TB - TT, () => { if (helpPage !== i) { helpPage = i; tone(760, 0.06, 'sine', 0.18); } }); });
+        const [at, ax] = tabs[helpPage], first = ax === PX; ctx.beginPath(); // the open leaf: page and tab traced as one shape
+        ctx.moveTo(PX, PB - R); if (first) { ctx.lineTo(PX, TT + 20); ctx.quadraticCurveTo(PX, TT, PX + 20, TT); } else { ctx.lineTo(PX, TB + R); ctx.quadraticCurveTo(PX, TB, PX + R, TB); ctx.lineTo(ax - fl, TB); ctx.quadraticCurveTo(ax, TB, ax, TB - fl); ctx.lineTo(ax, TT + 20); ctx.quadraticCurveTo(ax, TT, ax + 20, TT); }
+        ctx.lineTo(ax + tw - 20, TT); ctx.quadraticCurveTo(ax + tw, TT, ax + tw, TT + 20); ctx.lineTo(ax + tw, TB - fl); ctx.quadraticCurveTo(ax + tw, TB, ax + tw + fl, TB); // down the tab's right side, flaring into the page's top edge
+        ctx.lineTo(PX + PW - R, TB); ctx.quadraticCurveTo(PX + PW, TB, PX + PW, TB + R); ctx.lineTo(PX + PW, PB - R); ctx.quadraticCurveTo(PX + PW, PB, PX + PW - R, PB); ctx.lineTo(PX + R, PB); ctx.quadraticCurveTo(PX, PB, PX, PB - R); ctx.closePath();
+        ctx.fillStyle = 'rgba(255,248,231,0.99)'; ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = OUT; ctx.stroke(); btn(PX, TB, PW, PB - TB, () => {});
+        text(at, ax + tw / 2, (TT + TB) / 2 + 2, 26, INK, 'center', null, F_T); }
       const T = touchUI;
       if (helpPage === 0) {
         helpRows([
