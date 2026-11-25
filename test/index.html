@@ -4710,7 +4710,7 @@ const scenes = {
         const TT = 6, TB = 72, tw = 236, tabs = [['조작법', 58], ['경기 규칙', 58 + tw - 14]];
         const tab = (x, fill, edge) => { ctx.beginPath(); ctx.moveTo(x - 12, TB + 2); ctx.quadraticCurveTo(x, TB + 2, x, TB - 12); ctx.lineTo(x, TT + 20); ctx.quadraticCurveTo(x, TT, x + 20, TT); ctx.lineTo(x + tw - 20, TT); ctx.quadraticCurveTo(x + tw, TT, x + tw, TT + 20); ctx.lineTo(x + tw, TB - 12); ctx.quadraticCurveTo(x + tw, TB + 2, x + tw + 12, TB + 2); // rounded on top, flaring into the page at its foot, as a browser's tab
           ctx.fillStyle = fill; ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = edge; ctx.stroke(); };
-        tabs.forEach(([t, x], i) => { if (i !== helpPage) { tab(x, '#eadfce', OUT); text(t, x + tw / 2, (TT + TB) / 2 + 2, 26, '#8a7a82', 'center', null, F_T); } btn(x, TT, tw, TB - TT, () => { if (helpPage !== i) { helpPage = i; tone(760, 0.06, 'sine', 0.18); } }); });
+        tabs.forEach(([t, x], i) => { if (i !== helpPage) { tab(x, '#eadfce', OUT); text(t, x + tw / 2, (TT + TB) / 2 + 2, 26, '#8a7a82', 'center', null, F_T); } btn(x, TT, i ? tw : tw - 14, TB - TT, () => { if (helpPage !== i) { helpPage = i; tone(760, 0.06, 'sine', 0.18); } }); });
         rr(40, TB, 640, 796 - TB, 26, 'rgba(255,248,231,0.98)', OUT, 4); btn(40, TB, 640, 796 - TB, () => {});
         { const [t, x] = tabs[helpPage]; tab(x, '#fff8e7', OUT); ctx.fillStyle = '#fff8e7'; ctx.fillRect(x - 10, TB - 2, tw + 20, 8); text(t, x + tw / 2, (TT + TB) / 2 + 2, 26, INK, 'center', null, F_T); } } // the open tab: no line between it and its page
       const T = touchUI;
