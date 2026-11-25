@@ -3156,8 +3156,9 @@ function pull() { // the machine: the crank turns while the server picks
     if (acct.prof.tickets < G.n) G.n = PULLS.filter(k => k <= Math.max(1, acct.prof.tickets)).pop(); })();
 }
 const PULLS = [1, 5, 10];
+const wardW = () => Math.max(2 * 68 + Math.ceil(textW('10회 뽑기', 30, F_T)) + 28, Math.ceil(textW('모두 받기 · 99장', 31, F_T)) + 64); // 뽑기 and 모두 받기: one width, so the bottom row does not change as the switch flips
 function pullBtn() { // the 뽑기 button with − and + at its ends: how many at once, and the middle pulls
-  const G = acct.g, T = acct.prof.tickets, h = LY.btnH, sq = h - 20, zone = sq + 20, w = 2 * zone + Math.ceil(textW('10회 뽑기', 30, F_T)) + 28, x = LY.m + LY.w - w, y = LY.bot; // − and + at the ends, the words between, no wider than they need
+  const G = acct.g, T = acct.prof.tickets, h = LY.btnH, sq = h - 20, zone = sq + 20, w = wardW(), x = LY.m + LY.w - w, y = LY.bot; // − and + at the ends, the words between; as wide as the 업적 side's key
   if (!PULLS.includes(G.n)) G.n = 1; const i = PULLS.indexOf(G.n), canDown = i > 0, canUp = i < 2 && T >= PULLS[i + 1];
   const mid = btn(x + zone, y, w - zone * 2, h, pull);
   if (canDown) btn(x, y, zone, h, () => { G.n = PULLS[i - 1]; tone(660, 0.05, 'sine', 0.16); });
@@ -3514,7 +3515,7 @@ async function claimAll() { // every reward that is ready, one after another
 }
 function drawAchTab(y0, end) {
   const ready = ACH.filter(a => claimable(a[0])), sum = ready.reduce((n, a) => n + ACH_REWARD[a[0]], 0);
-  { const lab = ready.length ? `모두 받기 · ${sum}장` : '받기 완료', w = midW(lab), x = LY.m + LY.w - w; // at the right of the bottom row, as every page's main key
+  { const lab = ready.length ? `모두 받기 · ${sum}장` : '받기 완료', w = wardW(), x = LY.m + LY.w - w; // at the right of the bottom row, as every page's main key
     if (ready.length) button(lab, x, LY.bot, w, LY.btnH, claimAll, { size: 31, fill: '#ffd36b' });
     else { rr(x, LY.bot + 5, w, LY.btnH, 18, 'rgba(107,85,96,0.35)', null); rr(x, LY.bot + 3, w, LY.btnH, 18, '#efe7da', '#b3a4ac', 3); text(lab, x + w / 2, LY.bot + 3 + LY.btnH / 2 + 1, 31, '#9a8b93', 'center', null, F_T); } } // nothing to take: the same key, at rest and greyed
   const rh = 92, key = JSON.stringify([acct.prof.claimed, progOf(), acct.inv, acct.prof.equip, new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10)]);
@@ -3731,6 +3732,10 @@ async function matchReward(fmt) {
   try { const p = await rpc('claim_match_reward', { fmt }); if (p) { acct.prof = p; if (p.tickets > was && m === mm) { giftFor(mm).n = p.tickets - was; tone(880, 0.1, 'triangle', 0.25); tone(1320, 0.18, 'triangle', 0.25, 0.1); } } }
   catch (e) { /* too soon, or the server not ready: no reward this time */ }
 }
+const ticketPillW = n => textW(n.toLocaleString(), 18, F_N) + 60; // the ticket (26) and its number (6 apart), with 14 at each side
+function ticketPill(right, cy, n) { // my tickets: the same pill wherever they show (the profile, 뽑기 · 업적), its right edge at right, centred on cy
+  const tk = n.toLocaleString(), pw = ticketPillW(n), px = right - pw; rr(px, cy - 14, pw, 28, 14, '#fff3c4', '#e3a46a', 2); ticketPic(px + 27, cy, 0.42, -0.12); text(tk, px + 46, cy, 18, INK, 'left', null, F_N); return pw;
+}
 function ticketPic(x, y, s, rot = 0) { // a gacha ticket: notched ends, a torn-off stub, a capsule printed on it
   ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.scale(s, s); ctx.lineWidth = 2.4; ctx.strokeStyle = OUT; ctx.lineJoin = 'round';
   ctx.beginPath(); ctx.moveTo(-26, -15); ctx.lineTo(26, -15); ctx.lineTo(26, -5); ctx.arc(26, 0, 5, -Math.PI / 2, Math.PI / 2, true); ctx.lineTo(26, 15); ctx.lineTo(-26, 15); ctx.lineTo(-26, 5); ctx.arc(-26, 0, 5, Math.PI / 2, -Math.PI / 2, true); ctx.closePath(); ctx.fillStyle = '#ffd34d'; ctx.fill(); ctx.stroke();
@@ -3929,9 +3934,9 @@ function drawProfile() { // a member's record, packed like the score card: who; 
   const heading = (yy, title, sub) => { text(title, L0, yy + 13, 20, INK, 'left', null, F_T); if (sub) text(sub, R0, yy + 13, MIN_TEXT, '#9a8b93', 'right', null, F_B); return yy + HD; };
   // who: the picture, and beside it three lines with even gaps, the block centred on the picture
   const bs = 100, by = y + 20, ai = favI >= 0 ? favI : nickAnimal(name); rr(L0, by, bs, bs, 16, '#eef7f1', '#d9cbbd', 2); ctx.save(); ctx.beginPath(); ctx.rect(L0 + 2, by + 2, bs - 4, bs - 4); ctx.clip(); ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(ai, L0 + bs / 2, by + bs - 6, 0.64, { front: true, t: prof.t, accent: other ? SKY : CORAL }); ctx.restore();
-  const tx = L0 + bs + 16, tw = R0 - tx, l1 = by + 20, l2 = by + 52, l3 = by + 80, tk = other ? '' : (A.tickets || 0).toLocaleString(), pw = other ? 0 : textW(tk, 18, F_N) + 60; // the ticket (26) and its number (6 apart), with 14 at each side
+  const tx = L0 + bs + 16, tw = R0 - tx, l1 = by + 20, l2 = by + 52, l3 = by + 80, pw = other ? 0 : ticketPillW(A.tickets || 0);
   { const room = other ? tw : tw - 36 - pw - 10, sz = fitText(name, tx, l1, 25, INK, 'left', F_T, room); if (!other) { gearKey(tx + Math.min(textW(name, sz, F_T), room) + 22, l1, 14, () => { prof.menu = true; prof.mt = 0; tone(660, 0.05, 'sine', 0.15); }); // mine: a cog beside my name, for the settings
-    const px = R0 - pw; rr(px, l1 - 14, pw, 28, 14, '#fff3c4', '#e3a46a', 2); ticketPic(px + 27, l1, 0.42, -0.12); text(tk, px + 46, l1, 18, INK, 'left', null, F_N); } } // and my tickets at the right, on the name's line
+    ticketPill(R0, l1, A.tickets || 0); } } // and my tickets at the right, on the name's line
   { const tt = other ? other.tier : myTier(); if (tt && tt.rating != null) { const ti = tierOf(tt); drawTier(ti, tx + 12, l2, 12); fitText(`${TIERS[ti].n} · ${tt.rating.toLocaleString()}점`, tx + 32, l2, 19, TIERS[ti].c[1] === '#f6c445' ? '#c0392b' : TIERS[ti].c[1], 'left', F_T, tw - 32); }
     else fitText('경기를 하면 티어가 생겨요', tx, l2, 18, '#9a8b93', 'left', F_B, tw);
     fitText([tt && tt.days != null ? `출석 ${tt.days}일` : '', favI >= 0 ? `주로 쓰는 선수 ${ANIMALS[favI].ko}` : ''].filter(Boolean).join(' · ') || '경기를 하면 기록이 쌓여요', tx, l3, MIN_TEXT, '#7a6872', 'left', F_B, tw); }
@@ -4221,7 +4226,7 @@ const scenes = {
     },
     draw() {
       menuBegin('뽑기 · 업적', true);
-      if (acct.prof) { rr(LY.m + LY.w - 150, LY.titleY - 22, 150, 44, 22, 'rgba(255,248,231,0.95)', OUT, 2.4); text(`뽑기권 ${acct.prof.tickets}`, LY.m + LY.w - 75, LY.titleY + 1, 22, '#3d8be0', 'center', null, F_T); }
+      if (acct.prof) ticketPill(LY.m + LY.w, LY.titleY, acct.prof.tickets); // the profile's own pill
       { // 뽑기 기계 or 업적: the same switch as 단식 · 복식 (as tall, the same type), its thumb sliding to the side chosen; the page under it is pushed the same way
         const SH = WSW, x = LY.m, y = LY.top, hw = LY.w / 2, to = acct.wtab === 'ach' ? 1 : 0, e = CALM ? 1 : easeOut(Math.min(1, (clock.now() - (acct.wtabAt || -9)) / 0.24)), p = 1 - to + (2 * to - 1) * e;
         rr(x, y + 5, LY.w, SH, SH / 2, OUT, null); rr(x, y, LY.w, SH, SH / 2, '#fff8e7', OUT, 3); rr(x + p * hw + 7, y + 7, hw - 14, SH - 14, (SH - 14) / 2, mixHex(CORAL, SKY, p), OUT, 3);
@@ -4741,7 +4746,7 @@ const easeOut = u => 1 - Math.pow(1 - u, 3), easeDrawer = u => { let a = 0, b = 
 const FLOW = ['format', 'mode', 'select', 'court'], MODALS = ['pause', 'help', 'lessons'];
 const CLOSET_MO = 'sheet'; // the closet rises like a sheet and goes back down (push, fade, zoom and expand were tried on the test page)
 let zoomFrom = null; // where a page that zooms open was tapped
-let viewKey0 = '', viewScene0 = '', viewOv0 = 0, viewAt = 0, sceneAt = 0, trans = null, snapC = null, newC = null, FIX = [];
+let viewTab0 = -1, viewKey0 = '', viewScene0 = '', viewOv0 = 0, viewAt = 0, sceneAt = 0, trans = null, snapC = null, newC = null, FIX = [];
 // Three motions only, the same for the same kind of move:
 //  slide  a step in order (the solo flow, a tab): what changes slides 32 px and crossfades, 220 ms, the way you are going
 //  fade   any other page, and a window closing: the old picture fades out, 200 ms (160 for a window)
@@ -4759,7 +4764,7 @@ function viewWatch() { // before a frame: has the view changed since the last on
   const v = viewOf(), ov = overlays(); if (v.key === viewKey0 && ov === viewOv0) return;
   const from = viewScene0, to = scene, fi = FLOW.indexOf(from), ti = FLOW.indexOf(to); let kind = null, dir = 1, r = [0, 0, W, H], dur = 0.2;
   let win = false; if (v.key === viewKey0) { if (ov < viewOv0) { kind = 'fade'; dur = 0.16; win = true; } } // a window opened (it pops by itself) or closed (it fades away)
-  else if (from && from === to && v.tab >= 0) { kind = to === 'wardrobe' ? 'push' : 'slide'; dir = v.tab > (trans && trans.tabWas != null ? trans.tabWas : -1) ? 1 : -1; r = v.r; dur = kind === 'push' ? 0.34 : 0.22; }
+  else if (from && from === to && v.tab >= 0) { kind = to === 'wardrobe' ? 'push' : 'slide'; dir = v.tab > viewTab0 ? 1 : -1; r = v.r; dur = kind === 'push' ? 0.34 : 0.22; }
   else if (to === 'closet' || from === 'closet') { const M = CLOSET_MO, open = to === 'closet'; // the closet's way in and out
     if (M === 'sheet') { kind = open ? 'sheetUp' : 'sheetDown'; dur = open ? 0.36 : 0.28; }
     else if (M === 'push') { kind = 'slide'; dir = open ? 1 : -1; r = [0, LY.top - 14, W, LY.bot - 6]; dur = 0.22; }
@@ -4774,7 +4779,7 @@ function viewWatch() { // before a frame: has the view changed since the last on
   if (kind) trans = { kind: CALM ? 'fade' : kind, dir, r, dur, win, at: clock.now(), old: snapC = snap(snapC), keep: FIX };
   if (trans) trans.tabWas = v.tab != null ? v.tab : tabWas;
   if (v.key === 'wardrobe:ach' && v.key !== viewKey0) { const A = SCR.ach; A.scroll = 0; A.vel = 0; A.over = 0; A.ov = 0; } // the achievements open at the top, not where they were left
-  viewAt = clock.now(); viewKey0 = v.key; viewScene0 = scene; viewOv0 = ov;
+  viewAt = clock.now(); viewKey0 = v.key; viewScene0 = scene; viewOv0 = ov; viewTab0 = v.tab != null ? v.tab : -1; // the tab shown, so the next one comes from the right side
 }
 function keptRects(k) { // the buttons at the same place with the same words before and after, as canvas pixels with their shadow
   return FIX.filter(f => trans.keep.some(g => g[0] === f[0] && Math.abs(g[1] - f[1]) < 1 && Math.abs(g[2] - f[2]) < 1 && Math.abs(g[3] - f[3]) < 1)).map(f => [(f[1] - 4) * k, (f[2] - 4) * k, (f[3] + 8) * k, (f[4] + 14) * k]);
