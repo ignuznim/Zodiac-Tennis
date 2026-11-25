@@ -3943,7 +3943,7 @@ const scenes = {
     update(dt) { state.t += dt; acct.msgT += dt; if (pressed('Escape')) scene = 'title'; },
     draw() {
       menuBegin('계정', true);
-      const py = LY.top, ph = 420; panel(LY.m, py, LY.w, ph);
+      const py = LY.top, ph = acct.user ? 340 : 420; panel(LY.m, py, LY.w, ph); // signed in: no taller than its contents
       if (!acct.user) {
         text('로그인하면', W / 2, py + 56, 28, INK, 'center', null, F_T);
         text('옷장 · 뽑기 기계 · 업적을 쓸 수 있고', W / 2, py + 100, 22, '#5d4f58', 'center', null, F_B);
@@ -3957,8 +3957,7 @@ const scenes = {
         text(P && P.nickname ? P.nickname : '정하는 중…', W / 2, py + 96, 40, INK, 'center', null, F_T);
         text(`뽑기권 ${P ? P.tickets : '-'}장`, W / 2, py + 150, 26, '#3d8be0', 'center', null, F_T);
         text(acct.user.app_metadata && acct.user.app_metadata.provider === 'kakao' ? '카카오 계정으로 로그인됨' : 'Google 계정으로 로그인됨', W / 2, py + 190, 19, '#7a6872', 'center', null, F_B);
-        button('닉네임 바꾸기', LY.m + LY.pad, py + 236, LY.w - LY.pad * 2, 68, () => openNick('profile'), { size: 26 });
-        button('로그아웃', LY.m + LY.pad, py + 320, LY.w - LY.pad * 2, 68, signOut, { size: 26 });
+        { const bw = 196, g = 16; button('닉네임 바꾸기', W / 2 - bw - g / 2, py + 250, bw, 60, () => openNick('profile'), { size: 23 }); button('로그아웃', W / 2 + g / 2, py + 250, bw, 60, signOut, { size: 23 }); } // side by side, each as wide as its words need
       }
       if (acct.msg && acct.msgT < 3) text(acct.msg, W / 2, py + ph + 40, 22, '#c0605a', 'center', null, F_H);
       sideBtn('뒤로', () => { scene = 'title'; });
@@ -4441,7 +4440,7 @@ const scenes = {
       if (reg) {
         const ry = pb + LY.gap;
         if (rank.sent === m) { rr(LY.m, ry, LY.w, 68, 18, 'rgba(255,248,231,0.92)', OUT); text(rank.msg, W / 2, ry + 34, 26, '#c0605a', 'center', null, F_H); }
-        else button(rank.sending ? '등록하는 중…' : '명예의 전당에 기록 등록하기', LY.m, ry, LY.w, 68, openNick, { size: 28, fill: '#ffe1a8' });
+        else { const lb = rank.sending ? '등록하는 중…' : '명예의 전당에 기록 등록하기', bw = Math.min(LY.w, textW(lb, 24, F_T) + 72); button(lb, W / 2 - bw / 2, ry + 4, bw, 60, openNick, { size: 24, fill: '#ffe1a8' }); }
       }
       else if (m.online && rival.last && rival.last.opp === oppOf()) { // our record after this match: a tap shows their profile
         const R = rival.last, ry = pb + LY.gap, over = btn(LY.m, ry, LY.w, 68, () => openProfile(R.opp)), st = streakOf(R.recent);

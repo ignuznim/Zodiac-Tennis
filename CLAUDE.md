@@ -13,6 +13,8 @@ The owner reviews every change on a phone. These rules come from their repeated 
 ## Buttons and space
 - A button need not fill the width of its box or the screen: size it to its words plus comfortable padding, and centre it, unless it is one of the bottom row's main buttons. Prefer a small icon to a worded button wherever the icon reads at once (a person for a profile, a cross to close), placed beside what it acts on. Popups and cards stay compact and dense (the 명예의 전당 score card is the model): no large empty areas, no oversized boxes; leave even margins instead.
 
+- Before committing any UI change, check the whole screen, not just the part touched: nothing overlaps (text on text, text past its box, buttons on buttons, a popup's parts on the page under it), margins are even and the same from screen to screen, and things sit on a grid: rows share one left edge and one baseline, columns line up, equal items get equal sizes and gaps. Run the layout audit (overlaps and overflow at 390 x 844 and 390 x 600) and look at the screenshots.
+
 ## Drawing
 - Work of one kind stays of one kind: a redrawn animal, item or button must match the others in style (outline, shading with shade(), proportions).
 - After touching any shared drawing code (drawAnimal, drawHead, drawEars, drawTail, items), render all twelve animals front and back and look at every one before committing, not just the one changed.
