@@ -135,6 +135,7 @@ function text(s, x, y, size, c, align = 'center', edge, font = F_T) {
   if (font === F_H) size = Math.round(size * 1.15); // the handwriting face draws small for its size
   else if (font === F_B) size = Math.round(size * 1.1); // body text: read on a phone, where the page is half size
   ctx.font = font.startsWith('700') ? font.replace('1em', size + 'px') : `${size}px ${font}`; ctx.textAlign = align; ctx.textBaseline = 'middle';
+  y += size * (font === F_T ? 0.07 : font === F_N ? 0.05 : font === F_H ? 0.035 : 0.01); // these faces draw above their 'middle': nudged down so the letters' own centre sits on y, level with the box or icon beside them
   if (edge) { ctx.lineWidth = Math.max(3, size / 6); ctx.strokeStyle = edge; ctx.lineJoin = 'round'; ctx.strokeText(s, x, y); }
   ctx.fillStyle = c; ctx.fillText(s, x, y);
 }
@@ -2433,7 +2434,7 @@ function drawHall() {
   // buttons, where every menu keeps them
   const gb = (label, x, w, fill, ink, fn) => { const over = btn(x, LY.bot, w, LY.btnH, fn); rr(x, LY.bot + 5, w, LY.btnH, 18, '#1a1218', null); rr(x, LY.bot, w, LY.btnH, 18, over ? (fill === '#c8963a' ? '#dcaa4c' : '#3a2428') : fill, fill === '#c8963a' ? '#3a2010' : '#c8963a', 3); text(label, x + w / 2, LY.bot + LY.btnH / 2 + 1, 28, ink, 'center', null, F_T); };
   gb('랭킹', LY.m, LY.side, '#2a1a1c', '#f6c445', () => { scene = 'ranking'; loadTierBoard(); });
-  gb(rank.loading ? '불러오는 중…' : '새로고침', LY.m + LY.side + LY.gap, LY.w - LY.side - LY.gap, '#c8963a', '#2a1a1c', () => { if (!rank.loading) loadRanking(null, 'all'); });
+  refreshBtn(rank.loading, () => loadRanking(null, 'all'), true);
   text('지금까지 컴퓨터를 이긴 모든 기록 중 TOP 10', W / 2, LY.foot, 20, '#e9dcef', 'center', null, F_B);
   if (L[rank.sel] && L[rank.sel].sweet != null && (state.hallT || 0) > 1.5) drawScoreCard(L[rank.sel], rank.sel); // over the hall once the doors are open
 }
@@ -3492,6 +3493,16 @@ function panel(x, y, w, h) { rr(x, y, w, h, 24, 'rgba(255,248,231,0.96)', OUT); 
 function card(x, y, w, h, fn, on, fill) { const over = btn(x, y, w, h, fn); rr(x, y + 5, w, h, 20, OUT, null); rr(x, y, w, h, 20, on ? '#fff3c4' : over ? '#fffdf3' : fill || 'rgba(255,248,231,0.96)', on ? CORAL : OUT, on ? 5 : 3); }
 function sideBtn(label, fn) { button(label, LY.m, LY.bot, LY.side, LY.btnH, fn, { size: 28 }); }
 function mainBtn(label, fn) { button(label, LY.m + LY.side + LY.gap, LY.bot, LY.w - LY.side - LY.gap, LY.btnH, fn, { size: 31, fill: '#fff3c4' }); }
+function refreshBtn(loading, fn, dark) { // a square key at the right of the bottom row: two arrows chasing round, turning while it loads
+  const s = LY.btnH, x = LY.m + LY.w - s, y = LY.bot, over = btn(x, y, s, s, () => { if (!loading) fn(); });
+  rr(x, y + 5, s, s, 18, dark ? '#1a1218' : OUT, null); rr(x, y, s, s, 18, dark ? (over ? '#dcaa4c' : '#c8963a') : over ? '#fffdf3' : '#fff3c4', dark ? '#3a2428' : OUT, 3);
+  const cx = x + s / 2, cy = y + s / 2, R = s * 0.24, a0 = loading ? clock.now() * 6 : -0.5, col = dark ? '#2a1a1c' : INK;
+  ctx.save(); ctx.lineCap = 'round'; ctx.lineWidth = 4.4; ctx.strokeStyle = col; ctx.fillStyle = col;
+  for (const k of [0, Math.PI]) { const a = a0 + k, b = a + 2.3; ctx.beginPath(); ctx.arc(cx, cy, R, a, b); ctx.stroke();
+    const hx = cx + Math.cos(b) * R, hy = cy + Math.sin(b) * R, tx = -Math.sin(b), ty = Math.cos(b), nx = Math.cos(b), ny = Math.sin(b), L = 9;
+    ctx.beginPath(); ctx.moveTo(hx + tx * L * 0.9, hy + ty * L * 0.9); ctx.lineTo(hx + nx * L * 0.6 - tx * 2, hy + ny * L * 0.6 - ty * 2); ctx.lineTo(hx - nx * L * 0.6 - tx * 2, hy - ny * L * 0.6 - ty * 2); ctx.closePath(); ctx.fill(); }
+  ctx.restore();
+}
 function wideBtn(label, fn) { button(label, LY.m, LY.bot, LY.w, LY.btnH, fn, { size: 31, fill: '#fff3c4' }); }
 function button(label, x, y, w, h, fn, o = {}) { // a big rounded button, for the mouse and for show
   const over = btn(x, y, w, h, fn), on = o.on;
@@ -3675,14 +3686,35 @@ function drawTier(i, x, y, r) { // a tier's mark: a numbered medal in the colour
 const tierBoard = { list: null, loading: false, err: '' };
 async function loadTierBoard() { tierBoard.loading = true; tierBoard.err = ''; try { tierBoard.list = (await rpcAny('tier_board', { lim: 2000 })) || []; } catch (e) { tierBoard.err = '랭킹을 불러오지 못했어요 · 인터넷 연결을 확인해 주세요'; tierBoard.list = tierBoard.list || []; } tierBoard.loading = false; }
 function myTier() { if (!acct.user || !acct.prof) return null; if (!acct.tierAsked) { acct.tierAsked = true; rpc('my_tier').then(t => { if (t) acct.tier = t; }).catch(() => {}); } return acct.tier || null; }
-const prof = { open: false, t: 0, who: null, rivals: null }; // who: another member's public profile, or null for mine
+const prof = { open: false, t: 0, who: null, rivals: null, menu: false, mt: 0 }; // who: another member's public profile, or null for mine
 async function rpcAny(fn, args) { if (!acct.sb) return null; const { data, error } = await acct.sb.rpc(fn, args || {}); if (error) throw new Error(error.message); return data; } // also for someone not signed in
 const favOf = P => { let best = -1, bi = -1; ANIMALS.forEach((a, i) => { const v = P['pa_' + a.id] || 0; if (v > best) { best = v; bi = i; } }); return best > 0 ? bi : -1; };
 const streakOf = rc => { if (!rc) return ''; const c = rc[rc.length - 1]; let n = 0; for (let i = rc.length - 1; i >= 0 && rc[i] === c; i--) n++; return n >= 2 ? `${n}${c === 'W' ? '연승' : '연패'} 중` : ''; };
 function openProfile(nick) { // mine, or another member's (from the ranking or after an online match)
   const mine = acct.prof && acct.prof.nickname;
-  if (!nick || nick === mine) { if (!acct.user || !mine) { scene = 'account'; return; } prof.who = null; prof.open = true; prof.t = 0; tone(660, 0.06, 'sine', 0.15); prof.rivals = null; acct.tierAsked = false; rpc('my_rivals').then(r => { prof.rivals = r || []; }).catch(() => { prof.rivals = []; }); return; }
+  if (!nick || nick === mine) { if (!acct.user || !mine) { scene = 'account'; return; } prof.who = null; prof.menu = false; prof.open = true; prof.t = 0; tone(660, 0.06, 'sine', 0.15); prof.rivals = null; acct.tierAsked = false; rpc('my_rivals').then(r => { prof.rivals = r || []; }).catch(() => { prof.rivals = []; }); return; }
   Promise.all([rpcAny('public_profile', { nick }), rpcAny('tier_of', { nick }).catch(() => null)]).then(([d, t]) => { if (!d) { toast('회원이 아닌 플레이어라 프로필이 없어요'); return; } d.tier = t; prof.who = d; prof.open = true; prof.t = 0; tone(660, 0.06, 'sine', 0.15); }).catch(() => toast('프로필을 불러오지 못했어요'));
+}
+function drawSettings() { // the cog's menu, over my profile: nickname, linked sign-ins, signing out; a tap outside closes only the menu
+  const U = acct.user || {}, ids = (U.identities || []).map(d => d.provider), on = acct.providers || ['google', 'kakao'], PV = [['google', 'Google'], ['kakao', '카카오'], ['apple', 'Apple']].filter(q => on.includes(q[0]));
+  const w = 400, rh = 48, h = 20 + 30 + 14 + 48 + 16 + 26 + 8 + PV.length * rh + 16 + 48 + 20, x = (W - w) / 2, y = Math.max(16, (H - h) / 2), L0 = x + 20, R0 = x + w - 20, k = 0.9 + 0.1 * Math.min(1, (prof.mt || 0) / 0.15);
+  ctx.fillStyle = 'rgba(59,51,64,0.4)'; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, () => { prof.menu = false; }); btn(x, y, w, h, () => {});
+  ctx.save(); ctx.translate(W / 2, y + h / 2); ctx.scale(k, k); ctx.translate(-W / 2, -(y + h / 2));
+  rr(x, y + 6, w, h, 22, 'rgba(59,51,64,0.35)', null); rr(x, y, w, h, 22, '#fffaf0', OUT, 3);
+  let yy = y + 20; text('설정', W / 2, yy + 15, 24, INK, 'center', null, F_T); yy += 30 + 14;
+  rr(L0, yy, R0 - L0, 48, 14, '#ffffff', '#e6dccd', 2); text('닉네임', L0 + 16, yy + 24, MIN_TEXT, '#7a6872', 'left', null, F_B); fitText((acct.prof && acct.prof.nickname) || '-', L0 + 84, yy + 24, 20, INK, 'left', F_T, R0 - L0 - 190);
+  button('변경', R0 - 86, yy + 7, 76, 34, () => { prof.menu = false; openNick('profile'); }, { size: 18 }); yy += 48 + 16;
+  text('연동 계정', L0, yy + 13, 19, INK, 'left', null, F_T); text('여러 계정으로 같은 기록에 로그인', R0, yy + 13, MIN_TEXT, '#9a8b93', 'right', null, F_B); yy += 26 + 8;
+  PV.forEach(([id, nm], i) => { const cy = yy + rh / 2, linked = ids.includes(id); if (i) { ctx.fillStyle = '#efe7da'; ctx.fillRect(L0, yy, R0 - L0, 1); }
+    E(L0 + 14, cy, 6, 6, linked ? '#4fc37a' : '#d9cbbd', 0, true); text(nm, L0 + 30, cy, 20, INK, 'left', null, F_T);
+    if (linked) text('연동됨', R0 - 10, cy, MIN_TEXT, '#4f9a6a', 'right', null, F_T);
+    else button('연동하기', R0 - 96, cy - 17, 96, 34, () => linkAccount(id), { size: 17, fill: '#fff3c4' }); yy += rh; });
+  yy += 16; { const bw = 140; button('로그아웃', W / 2 - bw / 2, yy, bw, 44, () => { prof.menu = false; prof.open = false; signOut(); }, { size: 19 }); }
+  ctx.restore();
+}
+function linkAccount(provider) { // one more way to sign in to the same record; the server must allow manual linking (Supabase: Authentication -> Sign In / Providers)
+  if (!acct.sb || !acct.sb.auth.linkIdentity) { toast('연동 기능을 불러오지 못했어요'); return; }
+  acct.sb.auth.linkIdentity({ provider, options: { redirectTo: location.origin + location.pathname } }).then(r => { if (r && r.error) toast(/manual linking/i.test(r.error.message) ? '서버에서 계정 연동이 아직 꺼져 있어요' : '연동하지 못했어요'); }).catch(() => toast('연동하지 못했어요'));
 }
 function drawProfile() { // a member's record, packed like the score card: who, the totals, each kind of match, the best moments, rivals (mine) or a comparison (theirs)
   const other = prof.who, P = other ? other.progress || {} : progOf(), M = progOf(), A = acct.prof || {}, n = (o, k) => o[k] || 0, pct = (w, g) => g > 0 ? Math.round(100 * w / g) + '%' : '-';
@@ -3696,7 +3728,9 @@ function drawProfile() { // a member's record, packed like the score card: who, 
   rr(x, y + 6, w, h, 24, 'rgba(59,51,64,0.35)', null); rr(x, y, w, h, 24, '#fffaf0', OUT, 3);
   // who
   const bs = 100, by = y + 20, ai = favI >= 0 ? favI : (other ? 0 : (setup.animal || 0)); rr(L0, by, bs, bs, 16, '#eef7f1', '#d9cbbd', 2); ctx.save(); ctx.beginPath(); ctx.rect(L0 + 2, by + 2, bs - 4, bs - 4); ctx.clip(); ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(ai, L0 + bs / 2, by + bs - 6, 0.64, { front: true, t: prof.t, accent: other ? SKY : CORAL }); ctx.restore();
-  const tx = L0 + bs + 14, tw = R0 - tx; { const sz = fitText(name, tx, by + 20, 25, INK, 'left', F_T, other ? tw : tw - 46); if (!other) gearKey(tx + Math.min(textW(name, sz, F_T), tw - 46) + 24, by + 20, 17, () => { prof.open = false; scene = 'account'; }); } // mine: a cog beside my name for the account page
+  const tx = L0 + bs + 14, tw = R0 - tx, tk = other ? '' : (A.tickets || 0).toLocaleString(), pw = other ? 0 : textW(tk, 18, F_N) + 46;
+  { const room = other ? tw : tw - 46 - pw - 8, sz = fitText(name, tx, by + 20, 25, INK, 'left', F_T, room); if (!other) { gearKey(tx + Math.min(textW(name, sz, F_T), room) + 24, by + 20, 17, () => { prof.menu = true; prof.mt = 0; tone(660, 0.05, 'sine', 0.15); }); // mine: a cog beside my name, for the settings
+    const px = R0 - pw; rr(px, by + 6, pw, 28, 14, '#fff3c4', '#e3a46a', 2); ticketPic(px + 17, by + 20, 0.42, -0.12); text(tk, px + 32, by + 20, 18, INK, 'left', null, F_N); } } // and my tickets at the right
   fitText(favI >= 0 ? `주로 쓰는 선수 · ${ANIMALS[favI].ko}` : '경기를 하면 주로 쓰는 선수가 나와요', tx, by + 49, 18, '#7a6872', 'left', F_B, tw);
   { const tt = other ? other.tier : myTier(); if (tt) { const ti = tierOf(tt); drawTier(ti, tx + 12, by + 80, 12); fitText(`${TIERS[ti].n} · ${tt.rating.toLocaleString()}점 · 출석 ${tt.days}일`, tx + 31, by + 80, 18, TIERS[ti].c[1] === '#f6c445' ? '#c0392b' : TIERS[ti].c[1], 'left', F_T, tw - 31); } else fitText('경기를 하면 티어가 생겨요', tx, by + 80, MIN_TEXT, '#9a8b93', 'left', F_B, tw); }
   // the totals
@@ -3732,6 +3766,7 @@ function drawProfile() { // a member's record, packed like the score card: who, 
       text(`${r.w}승 ${r.l}패`, R0 - 84, yy + 23, 19, INK, 'right', null, F_N); const f = g ? r.w / g : 0; rr(R0 - 74, yy + 18, 62, 11, 5.5, '#eadfce', null); if (f > 0.02) rr(R0 - 74, yy + 18, 62 * f, 11, 5.5, f >= 0.5 ? '#4f9a6a' : '#e2574c', null); yy += 52; });
   }
   ctx.restore();
+  if (!other && prof.menu) drawSettings();
 }
 const rival = { key: '', at: 0, vs: null, last: null }; // online singles against a member: our record shown at the start and after
 function oppOf() { if (!m || !m.online || m.doubles) return null; const me = m.P[view]; if (!me) return null; const o = m.P.find(p => p.team !== me.team); return o && o.nick && o.nick !== realNick() ? o.nick : null; }
@@ -3900,7 +3935,7 @@ const scenes = {
         if (pin) { const y = v1 + 10; ctx.fillStyle = '#e6dccd'; ctx.fillRect(LY.m + 20, y - 6, LY.w - 40, 2); btn(LY.m + 12, y + 3, LY.w - 24, rh - 6, () => openProfile(nick)); row(Object.assign({ nick, fav: null }, me), mi >= 0 ? mi + 1 : '-', y, true, '#fff3c4'); }
       }
       sideBtn('뒤로', () => { scene = 'title'; });
-      mainBtn(tierBoard.loading ? '불러오는 중…' : '새로고침', () => { if (!tierBoard.loading) { loadTierBoard(); acct.tierAsked = false; } });
+      refreshBtn(tierBoard.loading, () => { loadTierBoard(); acct.tierAsked = false; });
       menuEnd(acct.user ? '실력 점수로 매기는 조선 품계 · 경기마다 바로 바뀌어요 · ↑ 명예의 전당' : '로그인하면 경기마다 티어 점수가 쌓여요 · ↑ 명예의 전당');
     },
   },
@@ -3930,7 +3965,7 @@ const scenes = {
             if (c.body.length) { y += 10; c.body.forEach(t => { text(t, x + pad, y + 16, 21, '#5d4f58', 'left', null, F_B); y += 32; }); } }
           return height; }); }
       sideBtn('뒤로', () => { scene = 'title'; });
-      mainBtn(news.loading ? '불러오는 중…' : '새로고침', () => { if (!news.loading) loadNotices(); });
+      refreshBtn(news.loading, loadNotices);
       menuEnd(news.err && L ? news.err : '업데이트 소식과 이벤트를 알려 드려요');
     },
   },
@@ -4464,7 +4499,7 @@ function step() {
   scrollStep(STEP);
   if (pressed('KeyM')) { setMuted(!muted); hit.delete('KeyM'); }
   while (clicks.length) { drawFrame(); const h = hitTest(clicks.shift()); if (h && h.fn) h.fn(); } // drawn again first: the buttons are where this frame puts them
-  if (prof.open) { prof.t += STEP; if (pressed('Escape') || pressed('Enter')) prof.open = false; hit.clear(); } // the profile card takes the keys while it is up
+  if (prof.open) { prof.t += STEP; prof.mt = (prof.mt || 0) + STEP; if (pressed('Escape') || pressed('Enter')) { if (prof.menu) prof.menu = false; else prof.open = false; } hit.clear(); } // the profile card takes the keys while it is up
   scenes[scene].update(STEP);
   if (scene === 'play' || scene === 'pause' || scene === 'help' || scene === 'results') netSend();
   hit.clear();
