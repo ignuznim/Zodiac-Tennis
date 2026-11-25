@@ -46,9 +46,9 @@
   #fb button, #nick button { transition: transform 100ms ease-out, box-shadow 100ms ease-out; }
   #fb button.x, #nick button.x { flex: none; width: calc(var(--u, 0.6) * 54px); height: calc(var(--u, 0.6) * 54px); padding: 0; display: grid; place-items: center; background: #fff8e7; border: max(1.5px, calc(var(--u, 0.6) * 3px)) solid #6b5560; border-radius: calc(var(--u, 0.6) * 14px); box-shadow: 0 max(2px, calc(var(--u, 0.6) * 4px)) 0 #6b5560; }
   #fb button.x svg, #nick button.x svg { width: 44%; height: 44%; }
-  #fb .kinds { display: flex; gap: 0; padding: calc(var(--u, 0.6) * 6px); margin-bottom: calc(var(--u, 0.6) * 16px); background: #fff8e7; border: max(1.5px, calc(var(--u, 0.6) * 3px)) solid #6b5560; border-radius: 999px; box-shadow: 0 max(2px, calc(var(--u, 0.6) * 4px)) 0 #6b5560; }
-  #fb .kinds button { padding: calc(var(--u, 0.6) * 10px) 0; font-size: calc(var(--u, 0.6) * 24px); color: #6f6068; border: max(1.5px, calc(var(--u, 0.6) * 3px)) solid transparent; border-radius: 999px; background: transparent; transition: background-color 180ms ease-out, color 180ms ease-out, border-color 180ms ease-out; }
-  #fb .kinds button.on { background: #ff8a7a; color: #fff; border-color: #6b5560; text-shadow: 0 0 2px #6b5560, 0 1px 0 #6b5560; }
+  #fb .kinds { display: flex; gap: calc(var(--u, 0.6) * 10px); margin-bottom: calc(var(--u, 0.6) * 16px); } /* what it is about: three chips, the chosen one filled */
+  #fb .kinds button { flex: none; padding: calc(var(--u, 0.6) * 9px) calc(var(--u, 0.6) * 22px); font-size: calc(var(--u, 0.6) * 22px); color: #6f6068; background: #fff8e7; border: max(1.5px, calc(var(--u, 0.6) * 2px)) solid #cdbfb3; border-radius: 999px; box-shadow: none; transition: background-color 160ms ease-out, color 160ms ease-out, border-color 160ms ease-out; }
+  #fb .kinds button.on { background: #ff8a7a; color: #fff; border-color: #6b5560; }
   #fb textarea { width: 100%; box-sizing: border-box; padding: calc(var(--u, 0.6) * 16px); font: max(16px, calc(var(--u, 0.6) * 22px)) 'Gowun Dodum', sans-serif; color: #4a3d47; border: max(1.5px, calc(var(--u, 0.6) * 3px)) solid #ff8a7a; border-radius: calc(var(--u, 0.6) * 16px); background: #fff; outline: none; resize: none; line-height: 1.45; display: block; }
   #fb textarea::placeholder { color: #b3a4ac; }
   #fb textarea:focus { border-color: #ff8a7a; } /* the same coral before, during and after writing, as the nickname box */
@@ -69,6 +69,7 @@
 <div id="fb"><form autocomplete="off">
   <div class="head"><h2>개발자에게 한마디</h2><button type="button" id="fbNo" class="x" aria-label="닫기"><svg viewBox="0 0 20 20"><path d="M4 4l12 12M16 4L4 16" stroke="#6b5560" stroke-width="3" stroke-linecap="round"/></svg></button></div>
   <p>버그도, 불편한 점도, 바라는 점도 좋아요</p>
+  <div class="kinds"><button type="button" data-k="bug" class="on">버그</button><button type="button" data-k="ux">불편해요</button><button type="button" data-k="idea">아이디어</button></div>
   <textarea id="fbIn" maxlength="1000" rows="4" placeholder="어떤 화면에서 무엇이 어땠는지 적어 주시면 큰 도움이 돼요"></textarea>
   <div class="err" id="fbErr"></div>
   <div class="row"><span class="count" id="fbN">0 / 1000</span><button type="submit" class="go">보내기</button></div>
@@ -2680,14 +2681,14 @@ async function fbPost(kind, message) {
   if (!r.ok) throw new Error(r.status);
 }
 function openFeedback() {
-  fbKind = 'idea'; // one kind for every note now (the switch is gone); the database still takes 버그 · 불편 · 아이디어
+  fbKind = 'bug'; fbBox.querySelectorAll('.kinds button').forEach(b => b.classList.toggle('on', b.dataset.k === fbKind));
   fbIn.value = ''; fbN.textContent = '0 / 1000'; fbErr.textContent = ''; fbBox.classList.add('on'); // no keyboard until the box itself is tapped
 }
 function closeFeedback() { fbBox.classList.remove('on'); fbIn.blur(); down.clear(); holdFit(); }
 fbBox.querySelectorAll('.kinds button').forEach(b => b.onclick = () => { fbKind = b.dataset.k; fbBox.querySelectorAll('.kinds button').forEach(x => x.classList.toggle('on', x === b)); });
 document.getElementById('fbNo').onclick = closeFeedback;
 const fbN = document.getElementById('fbN'); fbIn.addEventListener('input', () => { fbN.textContent = `${fbIn.value.length} / 1000`; });
-fbBox.addEventListener('pointerdown', e => { if (e.target === fbBox) { e.preventDefault(); closeFeedback(); } }); // a tap outside the card closes it, as on every window
+// 개발자에게 한마디 closes only with its cross: a stray tap outside must not lose what was written
 fbBox.addEventListener('pointerdown', e => e.stopPropagation()); fbBox.addEventListener('click', e => e.stopPropagation());
 fbBox.addEventListener('keydown', e => { if (e.key === 'Escape') closeFeedback(); e.stopPropagation(); });
 fbBox.querySelector('form').onsubmit = async e => {
@@ -3317,9 +3318,7 @@ function icon(kind, x, y, s) { // trophy, capsule, medal, hanger: drawn about s 
     rr(-30, -12, 60, 6, 1.5, '#e2d2ab', OUT, 2.6);
     for (const x of [-21, -12.6, -4.2, 4.2, 12.6, 21]) { rr(x - 2.6, -6, 5.2, 22, 1, '#fbf3df', OUT, 2); rr(x - 4, -7, 8, 3.2, 1.2, '#e2d2ab', OUT, 1.6); }
     rr(-30, 16, 60, 5, 1.5, '#e2d2ab', OUT, 2.4); rr(-33, 21, 66, 6, 1.5, '#cfc0a0', OUT, 2.4); // the steps
-  } else if (kind === 'capsule') { // 뽑기: the machine, small: a red lid, glass with capsules, a silver band, a red base with its dial and door
-    ctx.lineWidth = 3; rr(-18, -22, 36, 24, 4, 'rgba(225,242,255,0.95)', OUT, 3); for (const [bx, by, c] of [[-9, -6, '#ffb7c8'], [3, -7, '#9fd8ff'], [10, -12, '#ffe17a'], [-4, -15, '#c9b6ff'], [-12, -17, '#a8f0c6'], [9, -19, '#ffc89a']]) { ctx.lineWidth = 1.4; E(bx, by, 5, 5, c); } ctx.lineWidth = 3;
-    rr(-22, -30, 44, 9, 4, '#f0685a', OUT, 3); rr(-21, 1, 42, 6, 3, '#d7dde4', OUT, 2.6); rr(-19, 7, 38, 22, 6, '#f0685a', OUT, 3); E(-7, 17, 5, 5, '#e9edf2'); rr(5, 13, 10, 10, 3, '#ffffff', OUT, 2); }
+  } else if (kind === 'capsule') { capsule(0, 0, 24, '#9b5de5', -0.4); star(20, -20, 7, BALL); }
   else if (kind === 'medal') {
     poly([-14, -28, -4, -28, 4, -6, -6, -6], '#3d8be0'); poly([14, -28, 4, -28, -4, -6, 6, -6], '#e2574c');
     E(0, 8, 17, 17, '#ffd34d'); star(0, 8, 9, '#fff8e7');
@@ -3484,19 +3483,19 @@ function drawClosetWindow() { // over 선수 선택 (an animal's closet: what it
   [0, 1].forEach(i => { const on = Math.abs(disp - i) < 0.5, dw = on ? 26 : 10; rr(W / 2 - 22 + i * 32 - (on ? 8 : 0), y + h - 26, dw, 10, 5, on ? INK : '#cdbfb3', null); btn(W / 2 - 30 + i * 32, y + h - 40, 28, 36, () => { closet.page = i; }); }); // the page dots: a tap on one turns to it
   ctx.restore();
 }
-function drawWornPage(x, y, w, h, gear, eh) { // an animal's closet, first page: the animal where it stood on the select page, a little larger; down the left, its four items as cards, a line from each to where it is worn
-  const a = closet.animal, sp = selSpot || { ax: LY.m + LY.w - 130, ay: y + h * 0.7, ks: 1.8 }, kk = sp.ks * 1.15, ax = sp.ax, ay = Math.min(sp.ay + 20, y + h - 70), bonus = gearBonus(gear), lineH = 44;
-  ctx.fillStyle = 'rgba(70,90,140,0.16)'; ctx.beginPath(); ctx.ellipse(ax, ay, 26 * kk, 6 * kk, 0, 0, 7); ctx.fill(); ctx.lineWidth = 2.6; ctx.strokeStyle = OUT;
-  drawAnimal(a, ax, ay, kk, { front: true, t: clock.now(), anim: 'idle', accent: CORAL, gear });
-  const order = [['hat', '모자', [0, -88]], ['racket', '라켓', [30, -46]], ['uniform', '유니폼', [0, -30]], ['shoes', '신발', [0, -4]]]; // top to bottom as they are worn, so the lines never cross; where each sits on the animal, in its own units
-  const cw = Math.min(300, ax - 64 * kk - LY.m - 36), top = y + 6, bottom = y + h - lineH - 16, gap = 12, chh = Math.min(112, (bottom - top - gap * 3) / 4);
-  order.forEach(([sid, ko, [dx, dy]], i) => { const cx = LY.m, cy = top + i * (chh + gap), it = item(gear[sid]), over = btn(cx, cy, cw, chh, () => { if (it) { closet.sel = it.id; equip(sid, null); } else closet.page = 1; }), d = sink(cx, cy, cw, chh, 3);
-    const tx = ax + dx * kk, ty = ay + dy * kk; ctx.save(); ctx.setLineDash([5, 5]); ctx.lineWidth = 2; ctx.strokeStyle = it ? GRADE[it.grade].c : '#cdbfb3'; ctx.beginPath(); ctx.moveTo(cx + cw, cy + chh / 2); ctx.lineTo(cx + cw + 18, cy + chh / 2); ctx.lineTo(tx, ty); ctx.stroke(); ctx.setLineDash([]); ctx.lineWidth = 2; ctx.strokeStyle = OUT; E(tx, ty, 5, 5, it ? GRADE[it.grade].c : '#ffffff'); ctx.restore(); // the leader line, to where it is worn
-    rr(cx, cy + 4, cw, chh, 16, it ? OUT : 'rgba(107,85,96,0.2)', null); rr(cx, cy + d, cw, chh, 16, it ? '#ffffff' : hoverOn(over) ? '#fffdf3' : '#f6efe3', it ? GRADE[it.grade].c : '#cdbfb3', it ? 3.4 : 2.4); const yy = cy + d, isz = chh - 20;
-    if (it) { ctx.save(); rr(cx + 8, yy + 8, isz + 4, isz + 4, 12, '#fbf6ea', null); ctx.clip(); itemIcon(it.id, cx + 10 + isz / 2, yy + 10 + isz / 2, isz * 0.8); ctx.restore();
-      const tx2 = cx + isz + 26, tw = cw - isz - 38; text(ko, tx2, yy + chh / 2 - 24, MIN_TEXT, '#9a8b93', 'left', null, F_B); fitText(it.name, tx2, yy + chh / 2, 20, INK, 'left', F_T, tw); text(`${STAT_NAME[it.stat]} +${it.amt}`, tx2, yy + chh / 2 + 24, 17, GRADE[it.grade].c, 'left', null, F_T); } // its slot, its name, what it adds: one block, centred on the card
-    else { text(ko, cx + 20, yy + chh / 2 - 12, 20, '#9a8b93', 'left', null, F_T); text('비어 있음 · 넘겨서 고르기', cx + 20, yy + chh / 2 + 14, MIN_TEXT, '#b3a4ac', 'left', null, F_B); } });
-  const ly = y + h - lineH, parts = Object.keys(bonus).map(k => `${STAT_NAME[k]} +${bonus[k]}`);
+function drawWornPage(x, y, w, h, gear, eh) { // an animal's closet, first page: on a grid of two columns, its four items as cards down the left, the animal (a little larger than on the select page) standing on a stage at the right, what the items add along the foot
+  const a = closet.animal, bonus = gearBonus(gear), lineH = 48, gap = 14, colW = Math.round((LY.w - gap) * 0.56), top = y, bottom = y + h - lineH - gap, chh = (bottom - top - gap * 3) / 4;
+  const sx = LY.m + colW + gap, sw = LY.w - colW - gap, kk = Math.min((selSpot ? selSpot.ks : 1.8) * 1.15, (bottom - top - 40) / 210, sw / 120); // the stage: the right column, as tall as the cards
+  rr(sx, top, sw, bottom - top, 20, '#eef7f1', '#d9cbbd', 2); ctx.fillStyle = 'rgba(70,90,140,0.16)'; ctx.beginPath(); ctx.ellipse(sx + sw / 2, bottom - 28, 26 * kk, 6 * kk, 0, 0, 7); ctx.fill();
+  ctx.save(); rr(sx, top, sw, bottom - top, 20, null, null); ctx.clip(); ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(a, sx + sw / 2, bottom - 30, kk, { front: true, t: clock.now(), anim: 'idle', accent: CORAL, gear }); ctx.restore();
+  [['hat', '모자'], ['racket', '라켓'], ['uniform', '유니폼'], ['shoes', '신발']].forEach(([sid, ko], i) => { const cx = LY.m, cy = top + i * (chh + gap), cw = colW, it = item(gear[sid]), over = btn(cx, cy, cw, chh, () => { if (it) { closet.sel = it.id; equip(sid, null); } else closet.page = 1; }), d = sink(cx, cy, cw, chh, 3);
+    rr(cx, cy + 4, cw, chh, 16, it ? OUT : 'rgba(107,85,96,0.2)', null); rr(cx, cy + d, cw, chh, 16, it ? '#ffffff' : hoverOn(over) ? '#fffdf3' : '#f6efe3', it ? GRADE[it.grade].c : '#cdbfb3', it ? 3.4 : 2.4); const yy = cy + d, isz = chh - 24;
+    rr(cx + 12, yy + 12, isz, isz, 12, it ? '#fbf6ea' : 'rgba(255,255,255,0.6)', null); // the picture's square, the same on every card
+    const tx = cx + 12 + isz + 16, tw = cw - (tx - cx) - 14;
+    if (it) { ctx.save(); rr(cx + 12, yy + 12, isz, isz, 12, null, null); ctx.clip(); itemIcon(it.id, cx + 12 + isz / 2, yy + 12 + isz / 2, isz * 0.78); ctx.restore();
+      text(ko, tx, yy + chh / 2 - 26, MIN_TEXT, '#9a8b93', 'left', null, F_B); fitText(it.name, tx, yy + chh / 2, 22, INK, 'left', F_T, tw); text(`${STAT_NAME[it.stat]} +${it.amt}`, tx, yy + chh / 2 + 26, 18, GRADE[it.grade].c, 'left', null, F_T); } // slot, name, what it adds: one block centred on the card
+    else { text('+', cx + 12 + isz / 2, yy + 12 + isz / 2 + 2, 34, '#cdbfb3', 'center', null, F_T); text(ko, tx, yy + chh / 2 - 13, 21, '#9a8b93', 'left', null, F_T); text('넘겨서 고르기', tx, yy + chh / 2 + 14, MIN_TEXT, '#b3a4ac', 'left', null, F_B); } });
+  const ly = bottom + gap, parts = Object.keys(bonus).map(k => `${STAT_NAME[k]} +${bonus[k]}`);
   rr(LY.m, ly, LY.w, lineH, lineH / 2, '#fff3c4', '#e3a46a', 2); fitText(parts.length ? `장비 효과  ${parts.join(' · ')}` : '아이템을 입으면 능력치가 올라요', W / 2, ly + lineH / 2, 20, parts.length ? INK : '#9a8b93', 'center', F_T, LY.w - 32);
 }
 // the closet window's pages follow a sideways drag; an upright one scrolls the list
@@ -3547,7 +3546,7 @@ function drawGachaMachine(G, cx, base, k) { // 뽑기 기계 in soft clay, after
   // the glass case: capsules piled to the top, two silver posts at its edges
   const gx = -150, gy = -572, gw = 300, gh = 276; rr(gx, gy, gw, gh, 16, 'rgba(225,242,255,0.75)', OUT, 3);
   ctx.save(); rr(gx + 2, gy + 2, gw - 4, gh - 4, 14, null, null); ctx.clip();
-  PILE.forEach((b, n) => { const jig = turn ? Math.sin(now * 20 + n * 1.7) * 5 : 0; ball(gx + b.x + jig * 0.6, gy + b.y - Math.abs(jig), b.r, b.c, 0.85); });
+  PILE.forEach((b, n) => { const jig = turn ? Math.sin(now * 20 + n * 1.7) * 5 : 0; ball(gx + b.x + jig * 0.6, gy + b.y - Math.abs(jig), b.r, b.back ? mixHex(b.c, '#b9c6d6', 0.35) : b.c, b.back ? 0.7 : 0.92); }); // the far ones greyer and fainter, as through more glass
   ctx.restore();
   ctx.fillStyle = 'rgba(255,255,255,0.35)'; rr(gx + 14, gy + 14, 16, gh - 28, 8, 'rgba(255,255,255,0.45)', null); // a long gleam down the glass
   for (const px of [gx - 8, gx + gw - 8]) clay(px, gy - 4, 16, gh + 8, 8, ...SILVER); // the posts
@@ -3555,13 +3554,12 @@ function drawGachaMachine(G, cx, base, k) { // 뽑기 기계 in soft clay, after
   clay(-180, -612, 360, 46, 14, ...RED);
   ctx.restore();
 }
-const PILE = (() => { // the capsules in the glass, poured in and settled once (a little gravity and pushing apart, worked out at load): a loose heap that fills the glass, the same every time
-  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647, C = ['#ffb7c8', '#9fd8ff', '#c9b6ff', '#ffe17a', '#a8f0c6', '#ffc89a'], gw = 300, floor = 272, L = [];
-  for (let i = 0; i < 46; i++) { const r = 19 + rnd() * 7; L.push({ x: r + rnd() * (gw - 2 * r), y: floor - r - rnd() * 420, r, c: C[Math.floor(rnd() * C.length)] }); }
-  for (let it = 0; it < 400; it++) { for (const b of L) b.y += 2; // fall
-    for (let k = 0; k < 3; k++) for (let a = 0; a < L.length; a++) { const p = L[a]; for (let b = a + 1; b < L.length; b++) { const q = L[b], dx = q.x - p.x, dy = q.y - p.y, d = Math.hypot(dx, dy) || 0.01, m = p.r + q.r - 1.5; if (d < m) { const push = (m - d) / 2, ux = dx / d, uy = dy / d; p.x -= ux * push; p.y -= uy * push; q.x += ux * push; q.y += uy * push; } }
-      p.x = clamp(p.x, p.r + 2, gw - p.r - 2); p.y = Math.min(p.y, floor - p.r); } }
-  return L.filter(b => b.y > b.r * 0.2).sort((p, q) => q.y - p.y); // the lowest drawn first
+const PILE = (() => { // the capsules in the glass, all one size, in two depths: those further in drawn first, paler, half hidden behind those in front; set loosely (jittered), the same every time
+  let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647, C = ['#ffb7c8', '#9fd8ff', '#c9b6ff', '#ffe17a', '#a8f0c6', '#ffc89a'], r = 24, L = [];
+  for (const back of [1, 0]) for (let row = 0; row < 6; row++) for (let col = 0; col < 6; col++) {
+    const x = 26 + col * 50 + (row % 2 ? 22 : -2) + (back ? 25 : 0) + (rnd() - 0.5) * 14, y = 272 - r - row * 42 - (back ? 20 : 0) + (rnd() - 0.5) * 10;
+    if (x < r || x > 300 - r || y < -r * 0.3) continue; L.push({ x, y, r, c: C[Math.floor(rnd() * C.length)], back }); }
+  return L.sort((p, q) => (q.back - p.back) || (q.y - p.y)); // the far ones first, then the near ones, each lowest first
 })();
 function ball(x, y, r, c, a) { // a see-through capsule: a tinted sphere, its seam, a white gleam
   ctx.save(); ctx.globalAlpha = (ctx.globalAlpha || 1) * a; const g = ctx.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.1, x, y, r); g.addColorStop(0, '#ffffff'); g.addColorStop(0.35, c); g.addColorStop(1, mixHex(c, '#6b5560', 0.25));
