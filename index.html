@@ -2252,7 +2252,7 @@ function guestLeft(g) { // a friend has gone: mid-match the computer takes over;
   if (!net) return;
   net.guests = net.guests.filter(q => q !== g);
   if (scene === 'play' || scene === 'pause' || scene === 'help' || scene === 'results') {
-    if (m && g.seat != null && m.P[g.seat]) { m.P[g.seat].ctrl = 'ai'; net.msg = '친구가 나가서 컴퓨터가 대신해요'; }
+    if (m && g.seat != null && m.P[g.seat]) { m.P[g.seat].ctrl = 'ai'; notify('친구가 나가서 컴퓨터가 대신해요'); }
   } else { net.locked = false; net.kind = null; net.picks = {}; for (const q of net.guests) q.seat = null; sendAll({ t: 'relobby', n: net.guests.length, names: roomNames() }); scene = net.quick ? 'quick' : 'lobby'; }
   if (!net.guests.length && !(m && m.online && scene === 'play')) { net.status = 'waiting'; }
 }
@@ -3033,7 +3033,7 @@ function addDay(o) { const d = dayData(); for (const k in o) d[k] = (d[k] || 0) 
 function claimable(code) { const P = acct.prof; if (!P) return false; const today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
   if (DAILY.includes(code) || WEEKLY.includes(code)) { if (P.claimed[code] === (WEEKLY.includes(code) ? weekKST() : today)) return false; const a = ACH.find(x => x[0] === code), [c, g] = a[3](progOf()); return c >= g; } if (P.claimed[code]) return false; const a = ACH.find(x => x[0] === code), [c, g] = a[3](progOf()); return c >= g; }
 const anyClaimable = () => acct.prof && ACH.some(a => claimable(a[0]));
-function toast(s) { acct.msg = s; acct.msgT = 0; }
+function toast(s) { notify(s); } // every one-off message is the same toast
 async function rpc(fn, args) {
   if (!acct.sb || !acct.user) return null;
   const { data, error } = await acct.sb.rpc(fn, args || {});
@@ -3961,7 +3961,6 @@ const scenes = {
         round(cx - 12 - 50, FB_ICON, openFeedback); round(cx - 24 - 100, 'megaphone', openNotices, noticeUnread()); // beside my name, on the same row
         if (lobbyNet.online) { const s = `${lobbyNet.online}명 접속`, ow = Math.ceil(textW(s, 20, F_T)) + 46, ox = LY.m, o2 = btn(ox, cy, ow, 50, () => { scene = 'online'; }); // who is around, top left: a tap goes online
           rr(ox, cy, ow, 50, 25, o2 ? '#e6f7ea' : 'rgba(236,250,240,0.95)', '#3f9a5c', 2.6); ctx.lineWidth = 1.6; ctx.strokeStyle = OUT; E(ox + 19, cy + 25, 6, 6, '#4fc37a'); text(s, ox + 32, cy + 26, 20, '#2f7a48', 'left', null, F_T); } }
-      if (acct.msg && acct.msgT < 2.6) { notify(acct.msg); acct.msg = ''; } // a message from the account (signing in, out) shows at the top too
       text(`v${APP_VERSION} · © 2026 IGNUZNIM. All rights reserved.`, W / 2, LY.copy, 16, 'rgba(59,51,64,0.6)', 'center', null, F_B);
       menuEnd('Enter 를 눌러도 시작해요');
     },
@@ -4062,7 +4061,6 @@ const scenes = {
         text(acct.user.app_metadata && acct.user.app_metadata.provider === 'kakao' ? '카카오 계정으로 로그인됨' : 'Google 계정으로 로그인됨', W / 2, py + 190, 19, '#7a6872', 'center', null, F_B);
         { const g = 12, w2 = textW('로그아웃', 23, F_T) + 56, w1 = textW('닉네임 바꾸기', 23, F_T) + 56, xr = LY.m + LY.w - LY.pad; button('로그아웃', xr - w2, py + 250, w2, 60, signOut, { size: 23 }); button('닉네임 바꾸기', xr - w2 - g - w1, py + 250, w1, 60, () => openNick('profile'), { size: 23 }); } // side by side, each as wide as its words need
       }
-      if (acct.msg && acct.msgT < 3) text(acct.msg, W / 2, py + ph + 40, 22, '#c0605a', 'center', null, F_H);
       sideBtn('뒤로', () => { scene = 'title'; });
       menuEnd(acct.user ? '' : '처음 로그인하면 뽑기권 3장을 드려요');
     },
@@ -4091,7 +4089,6 @@ const scenes = {
         if (!acct.user) { text('아이템과 뽑기권은 계정에 저장돼요', W / 2, y0 + 116, 22, '#5d4f58', 'center', null, F_B); button('로그인하러 가기', LY.m + LY.w - LY.pad - (textW('로그인하러 가기', 28, F_T) + 64), y0 + 210, textW('로그인하러 가기', 28, F_T) + 64, 66, () => { scene = 'account'; }, { size: 28, fill: '#fff3c4' }); }
       } else if (acct.wtab === 'gacha') drawGachaTab(y0, end);
       else drawAchTab(y0, end);
-      if (acct.msg && acct.msgT < 2.6) { ctx.font = `24px ${F_B}`; const w = ctx.measureText(acct.msg).width + 60; rr(W / 2 - w / 2, LY.bot - 62, w, 46, 23, 'rgba(59,51,64,0.9)', null); text(acct.msg, W / 2, LY.bot - 38, 21, CREAM, 'center', null, F_B); }
       sideBtn('뒤로', () => { acct.g.phase = 'idle'; scene = 'title'; });
       if (acct.prof && acct.wtab === 'gacha') { if (acct.g.phase === 'idle') pullBtn(); else mainBtn(acct.g.phase === 'reveal' ? '확인' : '뽑는 중…', () => { if (acct.g.phase === 'reveal') acct.g.phase = 'idle'; }); }
       menuEnd(acct.wtab === 'gacha' ? `확률  일반 ${ODDS[0]}% · 희귀 ${ODDS[1]}% · 영웅 ${ODDS[2]}% · 전설 ${ODDS[3]}%` : '아이템 장착은 선수 선택 화면에서 해요 · 모든 경기(랭킹 포함)에 적용돼요');
@@ -4109,7 +4106,6 @@ const scenes = {
       const key = JSON.stringify([acct.inv, acct.prof && acct.prof.equip, closet.sel, closet.animal]), eh = 128, chh = 150, height = (coll ? 0 : 38 + 2 * (eh + 14) + 16) + SLOTS.reduce((t, [sid]) => t + 40 + Math.ceil(Object.keys(ITEMS).filter(k => ITEMS[k][0] === sid).length / 4) * (chh + 12) + 14, 0);
       scrollView(SCR.closet, LY.top, contentEnd(), key, height, () => drawClosetList(gear, eh, chh, coll));
       const sel = item(closet.sel);
-      if (acct.msg && acct.msgT < 2.6) { ctx.font = `24px ${F_B}`; const w = ctx.measureText(acct.msg).width + 60; rr(W / 2 - w / 2, LY.bot - 62, w, 46, 23, 'rgba(59,51,64,0.9)', null); text(acct.msg, W / 2, LY.bot - 38, 21, CREAM, 'center', null, F_B); }
       sideBtn('뒤로', () => { scene = closetBack; });
       menuEnd(sel ? `${acct.inv[sel.id] ? sel.name : '???'} · ${GRADE[sel.grade].ko} · ${STAT_NAME[sel.stat]} +${sel.amt}` : coll ? '입히기는 선수 선택 화면의 옷걸이에서 해요' : '같은 아이템은 가진 개수만큼 여러 선수가 입을 수 있어요');
     },
@@ -4149,7 +4145,6 @@ const scenes = {
       text(A.ko, lx, sy0 - 74, 34, INK, 'left', null, F_T);
       text(A.note, lx, sy0 - 38, 23, '#c0605a', 'left', null, F_H);
       statBars(a, lx, sy0, gearBonus(gear));
-      if (acct.msg && acct.msgT < 2.6) { ctx.font = `24px ${F_B}`; const w = ctx.measureText(acct.msg).width + 60; rr(W / 2 - w / 2, py + ph - 60, w, 46, 23, 'rgba(59,51,64,0.9)', null); text(acct.msg, W / 2, py + ph - 36, 21, CREAM, 'center', null, F_B); }
       sideBtn(net ? '나가기' : '뒤로', () => { if (net) goHome(); else scene = setup.practice ? 'format' : 'mode'; });
       mainBtn(net && net.myPick ? (net.myPick.animal === state.sel ? '준비 완료!' : '이 선수로 바꾸기') : '이 선수로 결정', pickAnimal);
       if (net) { const me = !!net.myPick, R = net.ready || { n: 0, need: 2 }, team = net.kind === 'single' ? '' : (net.role === 'host' ? 0 : net.seat) % 2 === 0 ? 'A팀 · ' : 'B팀 · ';
@@ -4586,7 +4581,7 @@ let notice = null; // { s, at }: a short message over any screen
 function notify(s) { notice = { s, at: clock.now() }; }
 function drawNotice() {
   if (!notice) return; const t = clock.now() - notice.at; if (t > 2.8) { notice = null; return; }
-  const a = Math.min(1, t * 6, (2.8 - t) * 3), y = (scene === 'play' || scene === 'pause' ? 138 + SB_EXTRA() : 82) + (1 - Math.min(1, t * 6)) * -16; // under the scoreboard in a match // drops in under the top row, then fades
+  const a = CALM ? 1 : Math.min(1, t / 0.2, (2.8 - t) / 0.3), y = scene === 'play' || scene === 'pause' ? 138 + SB_EXTRA() : 82; // a toast: fades in where it stands (200 ms), stays, fades out (300 ms); under the scoreboard in a match
   ctx.save(); ctx.globalAlpha = a; ctx.font = `25px ${F_T}`; const w = Math.min(W - 40, ctx.measureText(notice.s).width + 64);
   rr(W / 2 - w / 2, y + 4, w, 56, 28, 'rgba(59,51,64,0.35)', null); rr(W / 2 - w / 2, y, w, 56, 28, '#fff3c4', OUT, 2.6);
   text(notice.s, W / 2, y + 29, 25, INK, 'center', null, F_T); ctx.restore();
@@ -4631,6 +4626,9 @@ function viewWatch() { // before a frame: has the view changed since the last on
   if (trans) trans.tabWas = v.tab != null ? v.tab : tabWas;
   viewAt = clock.now(); viewKey0 = v.key; viewScene0 = scene; viewOv0 = ov;
 }
+function keptRects(k) { // the buttons at the same place with the same words before and after, as canvas pixels with their shadow
+  return FIX.filter(f => trans.keep.some(g => g[0] === f[0] && Math.abs(g[1] - f[1]) < 1 && Math.abs(g[2] - f[2]) < 1 && Math.abs(g[3] - f[3]) < 1)).map(f => [(f[1] - 4) * k, (f[2] - 4) * k, (f[3] + 8) * k, (f[4] + 14) * k]);
+}
 function viewMove() { // after the new frame: lay the old picture and the new one over each other as they move
   if (!trans) return; const u = Math.min(1, (clock.now() - trans.at) / trans.dur); if (u >= 1) { trans = null; return; }
   newC = snap(newC); const k = canvas.width / W, [x0, y0, x1, y1] = trans.r.map(v => v * k), w = x1 - x0, e = easeOut(u), a = easeOut(Math.min(1, u / 0.4));
@@ -4638,21 +4636,22 @@ function viewMove() { // after the new frame: lay the old picture and the new on
   if (trans.kind === 'sheetUp' || trans.kind === 'sheetDown') { const up = trans.kind === 'sheetUp', ee = up ? easeDrawer(u) : easeOut(u), off = (up ? 1 - ee : ee) * canvas.height; // a sheet: the closet rises over the page and goes back down
     const under = up ? trans.old : newC, sheet = up ? newC : trans.old, sy = Math.round(LY.sb * k), cw = canvas.width, ch = canvas.height - sy; // the garden above stays; only the page below it moves
     ctx.drawImage(under, 0, 0); ctx.fillStyle = 'rgba(59,51,64,' + 0.3 * (up ? ee : 1 - ee) + ')'; ctx.fillRect(0, sy, cw, ch);
-    ctx.shadowColor = 'rgba(59,51,64,0.35)'; ctx.shadowBlur = 24 * k; ctx.drawImage(sheet, 0, sy, cw, ch, 0, sy + off, cw, ch); ctx.restore(); return; }
-  if (trans.kind === 'expand') { const b = zoomFrom.r, ee = easeDrawer(u), lx = (p, q) => p + (q - p) * ee; // card expand: the button's box grows into the page, the page showing through it
+    if (!trans.bare) { const c = trans.bare = document.createElement('canvas'); c.width = sheet.width; c.height = sheet.height; const g = c.getContext('2d'); g.drawImage(sheet, 0, 0); // the sheet without the keys that stay put: their place filled from the stripe beside them
+      for (const [bx, by, bw, bh] of keptRects(k)) g.drawImage(sheet, bx - 2 * k, by, 1, bh, bx, by, bw, bh); }
+    ctx.save(); ctx.shadowColor = 'rgba(59,51,64,0.35)'; ctx.shadowBlur = 24 * k; ctx.drawImage(trans.bare, 0, sy, cw, ch, 0, sy + off, cw, ch); ctx.restore(); }
+  else if (trans.kind === 'expand') { const b = zoomFrom.r, ee = easeDrawer(u), lx = (p, q) => p + (q - p) * ee; // card expand: the button's box grows into the page, the page showing through it
     const X = lx(b.x, 0) * k, Y = lx(b.y, 0) * k, Wd = lx(b.w, W) * k, Hd = lx(b.h, H) * k, rad = lx(18, 0) * k;
     ctx.drawImage(trans.old, 0, 0); ctx.fillStyle = 'rgba(59,51,64,' + 0.25 * ee + ')'; ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.beginPath(); ctx.roundRect ? ctx.roundRect(X, Y, Wd, Hd, rad) : ctx.rect(X, Y, Wd, Hd); ctx.save(); ctx.clip(); ctx.fillStyle = '#fff8e7'; ctx.fillRect(X, Y, Wd, Hd);
     ctx.globalAlpha = Math.min(1, Math.max(0, (u - 0.15) / 0.5)); ctx.drawImage(newC, 0, 0); ctx.restore(); ctx.globalAlpha = 1 - ee; ctx.lineWidth = 3 * k; ctx.strokeStyle = OUT; ctx.stroke(); ctx.restore(); return; }
-  if (trans.kind === 'zoom') { const z = zoomFrom || { x: W / 2, y: H / 2 }, ox = z.x * k, oy = z.y * k, sc = 0.86 + 0.14 * e; // the old page stays; the new one grows out of the tapped point and fades in
+  else if (trans.kind === 'zoom') { const z = zoomFrom || { x: W / 2, y: H / 2 }, ox = z.x * k, oy = z.y * k, sc = 0.86 + 0.14 * e; // the old page stays; the new one grows out of the tapped point and fades in
     ctx.drawImage(trans.old, 0, 0); ctx.globalAlpha = Math.min(1, u * 1.8); ctx.translate(ox, oy); ctx.scale(sc, sc); ctx.translate(-ox, -oy); ctx.drawImage(newC, 0, 0); ctx.restore(); return; }
-  if (trans.kind === 'fade') { ctx.beginPath(); ctx.rect(x0, y0, w, y1 - y0); ctx.clip(); ctx.globalAlpha = 1 - e; ctx.drawImage(trans.old, 0, 0); }
+  else if (trans.kind === 'fade') { ctx.beginPath(); ctx.rect(x0, y0, w, y1 - y0); ctx.clip(); ctx.globalAlpha = 1 - e; ctx.drawImage(trans.old, 0, 0); }
   else { const d = trans.dir, D = 32 * k, fy = (trans.kind === 'slide' && FLOW.includes(scene) ? LY.sb : y0 / k) * k; // around the moving part, the rest crossfades where it stands
     ctx.save(); ctx.beginPath(); ctx.rect(0, fy, canvas.width, canvas.height - fy); ctx.rect(x0, y0, w, y1 - y0); ctx.clip('evenodd'); ctx.globalAlpha = 1 - a; ctx.drawImage(trans.old, 0, 0); ctx.restore();
     ctx.beginPath(); ctx.rect(x0, y0, w, y1 - y0); ctx.clip(); ctx.drawImage(trans.old, -d * e * D, 0); ctx.globalAlpha = a; ctx.drawImage(newC, d * (1 - e) * D, 0); }
   ctx.globalAlpha = 1; // the buttons that stayed put: drawn as they are now, still (not when a window closes: they sit under its dim)
-  if (!trans.win) for (const f of FIX) if (trans.keep.some(g => g[0] === f[0] && Math.abs(g[1] - f[1]) < 1 && Math.abs(g[2] - f[2]) < 1 && Math.abs(g[3] - f[3]) < 1)) {
-    const bx = (f[1] - 4) * k, by = (f[2] - 4) * k, bw = (f[3] + 8) * k, bh = (f[4] + 14) * k; ctx.drawImage(newC, bx, by, bw, bh, bx, by, bw, bh); }
+  if (!trans.win) for (const [bx, by, bw, bh] of keptRects(k)) ctx.drawImage(newC, bx, by, bw, bh, bx, by, bw, bh);
   ctx.restore();
 }
 let modalSaved = false;
