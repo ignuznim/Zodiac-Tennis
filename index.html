@@ -180,8 +180,9 @@ function shotButtons() { // the four shots, wide apart; a high ball played with 
 function nearestShot(p) { let best = null, bd = 1e9; for (const b of shotButtons()) { const d = Math.hypot(p.x - b[2], p.y - b[3]) - b[4]; if (d < bd) { bd = d; best = b[1]; } } return best; }
 let tapAt = null, lastTap = -1e9;
 function stickMove(p) { const c = stickC(), dx = (p.x - c.x) / STICK_R, dy = (p.y - c.y) / STICK_R, l = Math.hypot(dx, dy); stick.x = l > 1 ? dx / l : dx; stick.y = l > 1 ? dy / l : dy; }
+let ptrDown = false; // a finger or button is down: the button under it sinks
 addEventListener('pointerdown', e => {
-  startAudio(); if (e.pointerType === 'touch') touchUI = true;
+  ptrDown = true; startAudio(); if (e.pointerType === 'touch') touchUI = true;
   const p = toLogical(e); mouse = p; const h = hitTest(p);
   if (h && h.key) { held.set(e.pointerId, h.key); down.add(h.key); hit.add(h.key); return; }
   if (touchUI && scene === 'play' && p.y > H - TOUCH_ZONE) { // the bottom strip: the stick on the left, the shots on the right, no dead space
@@ -204,7 +205,7 @@ for (const n of ['pointerup', 'pointercancel']) addEventListener(n, e => {
   // a tap is a press and a release in one place: it never waits for the browser's own click, which phones may not send
   if (n === 'pointerup' && tapAt && tapAt.id === e.pointerId) { const p = toLogical(e); if (Math.hypot(p.x - tapAt.x, p.y - tapAt.y) < 40) { clicks.push(p); lastTap = performance.now(); } }
   if (tapAt && tapAt.id === e.pointerId) tapAt = null;
-  if (e.pointerType === 'touch') mouse = { x: -1, y: -1 };
+  ptrDown = false; if (e.pointerType === 'touch') mouse = { x: -1, y: -1 };
 });
 addEventListener('click', e => { if (performance.now() - lastTap < 700) return; const p = toLogical(e), h = hitTest(p); if (!(h && h.key)) clicks.push(p); });
 addEventListener('contextmenu', e => e.preventDefault());
@@ -1946,8 +1947,8 @@ function topIcon(kind, x, y) { // the little pictures on the round buttons at th
   ctx.restore();
 }
 function iconBtn(x, y, kind, fn) { // the small square buttons: home and sound
-  const over = btn(x, y, 56, 54, fn);
-  rr(x, y, 56, 54, 14, over ? '#fff3c4' : 'rgba(255,248,231,0.95)', OUT);
+  const over = btn(x, y, 56, 54, fn), d = sink(x, y, 56, 54, 3);
+  rr(x, y + 3, 56, 54, 14, OUT, null); rr(x, y + d, 56, 54, 14, hoverOn(over) ? '#fff3c4' : 'rgba(255,248,231,0.95)', OUT); y += d;
   ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; ctx.lineJoin = 'round';
   const cx = x + 28, cy = y + 28;
   if (kind === 'emo') { E(cx, cy, 16, 16, BALL); E(cx - 5.5, cy - 4, 2, 2.6, INK, 0, true); E(cx + 5.5, cy - 4, 2, 2.6, INK, 0, true); ctx.lineWidth = 2.4; ctx.beginPath(); ctx.arc(cx, cy + 1, 8, 0.35, Math.PI - 0.35); ctx.stroke(); }
@@ -3209,8 +3210,8 @@ function icon(kind, x, y, s) { // trophy, capsule, medal, hanger: drawn about s 
   ctx.restore();
 }
 function iconButton(kind, label, x, y, w, h, fn, dot) { // a small button: a picture over a word
-  const over = btn(x, y, w, h, fn);
-  rr(x, y + 5, w, h, 18, OUT, null); rr(x, y, w, h, 18, over ? '#fffdf3' : 'rgba(255,248,231,0.96)', OUT, 3);
+  const over = btn(x, y, w, h, fn), d = sink(x, y, w, h);
+  rr(x, y + 5, w, h, 18, OUT, null); rr(x, y + d, w, h, 18, hoverOn(over) ? '#fffdf3' : 'rgba(255,248,231,0.96)', OUT, 3); y += d;
   icon(kind, x + w / 2, y + h / 2 - 10, Math.min(46, h * 0.56)); text(label, x + w / 2, y + h - 15, 18, INK, 'center', null, F_T);
   if (dot) E(x + w - 14, y + 14, 8, 8, '#e2574c');
 }
@@ -3490,13 +3491,20 @@ function menuEnd(foot) { if (foot) { ctx.font = `20px ${F_B}`; const fw = ctx.me
 const contentEnd = () => LY.bot - LY.gap * 2;
 const cardH = n => (contentEnd() - LY.top - LY.gap * (n - 1)) / n; // n cards filling the content area
 function panel(x, y, w, h) { rr(x, y, w, h, 24, 'rgba(255,248,231,0.96)', OUT); }
-function card(x, y, w, h, fn, on, fill) { const over = btn(x, y, w, h, fn); rr(x, y + 5, w, h, 20, OUT, null); rr(x, y, w, h, 20, on ? '#fff3c4' : over ? '#fffdf3' : fill || 'rgba(255,248,231,0.96)', on ? CORAL : OUT, on ? 5 : 3); }
+const PRESS = new Map();
+function sink(x, y, w, h, depth = 4) { // press feedback: how far a held button has gone down into its shadow, 100 ms in and 160 ms back out, eased
+  const k = Math.round(x) + ',' + Math.round(y) + ',' + Math.round(w), now = clock.now(), P = PRESS.get(k) || { d: 0, t: now }, dt = Math.min(0.1, now - P.t);
+  const inside = ptrDown && mouse.x >= x && mouse.x <= x + w && mouse.y >= y + OY && mouse.y <= y + OY + h, tgt = inside ? depth : 0;
+  P.d += (tgt - P.d) * (1 - Math.exp(-dt / ((inside ? 0.1 : 0.16) / 3))); P.t = now; PRESS.set(k, P); return P.d;
+}
+const hoverOn = over => over && !touchUI; // a hover tint is for a mouse; on a phone the finger only presses
+function card(x, y, w, h, fn, on, fill) { const over = btn(x, y, w, h, fn), pr = sink(x, y, w, h) > 1; rr(x, y + 5, w, h, 20, OUT, null); rr(x, y, w, h, 20, on ? '#fff3c4' : pr ? '#fffbe8' : hoverOn(over) ? '#fffdf3' : fill || 'rgba(255,248,231,0.96)', on ? CORAL : OUT, on ? 5 : 3); } // its picture is drawn by the caller, so a card lightens when pressed rather than sinking
 function sideBtn(label, fn) { button(label, LY.m, LY.bot, LY.side, LY.btnH, fn, { size: 28 }); }
 function mainBtn(label, fn) { button(label, LY.m + LY.side + LY.gap, LY.bot, LY.w - LY.side - LY.gap, LY.btnH, fn, { size: 31, fill: '#fff3c4' }); }
 function refreshBtn(loading, fn, dark) { // a square key at the right of the bottom row: two arrows chasing round, turning while it loads
   const s = LY.btnH, x = LY.m + LY.w - s, y = LY.bot, over = btn(x, y, s, s, () => { if (!loading) fn(); });
-  rr(x, y + 5, s, s, 18, dark ? '#1a1218' : OUT, null); rr(x, y, s, s, 18, dark ? (over ? '#dcaa4c' : '#c8963a') : over ? '#fffdf3' : '#fff3c4', dark ? '#3a2428' : OUT, 3);
-  const cx = x + s / 2, cy = y + s / 2, R = s * 0.24, a0 = loading ? clock.now() * 6 : -0.5, col = dark ? '#2a1a1c' : INK;
+  const d0 = sink(x, y, s, s); rr(x, y + 5, s, s, 18, dark ? '#1a1218' : OUT, null); rr(x, y + d0, s, s, 18, dark ? (hoverOn(over) ? '#dcaa4c' : '#c8963a') : hoverOn(over) ? '#fffdf3' : '#fff3c4', dark ? '#3a2428' : OUT, 3);
+  const cx = x + s / 2, cy = y + d0 + s / 2, R = s * 0.24, a0 = loading ? clock.now() * 6 : -0.5, col = dark ? '#2a1a1c' : INK;
   ctx.save(); ctx.lineCap = 'round'; ctx.lineWidth = 4.4; ctx.strokeStyle = col; ctx.fillStyle = col;
   for (const k of [0, Math.PI]) { const a = a0 + k, b = a + 2.3; ctx.beginPath(); ctx.arc(cx, cy, R, a, b); ctx.stroke();
     const hx = cx + Math.cos(b) * R, hy = cy + Math.sin(b) * R, tx = -Math.sin(b), ty = Math.cos(b), nx = Math.cos(b), ny = Math.sin(b), L = 9;
@@ -3505,9 +3513,9 @@ function refreshBtn(loading, fn, dark) { // a square key at the right of the bot
 }
 function wideBtn(label, fn) { button(label, LY.m, LY.bot, LY.w, LY.btnH, fn, { size: 31, fill: '#fff3c4' }); }
 function button(label, x, y, w, h, fn, o = {}) { // a big rounded button, for the mouse and for show
-  const over = btn(x, y, w, h, fn), on = o.on;
+  const over = btn(x, y, w, h, fn), on = o.on, d = sink(x, y, w, h);
   rr(x, y + 5, w, h, 18, OUT, null);
-  rr(x, y, w, h, 18, on ? '#fff3c4' : over ? '#fffdf3' : o.fill || 'rgba(255,248,231,0.96)', on ? CORAL : OUT, on ? 5 : 3);
+  rr(x, y + d, w, h, 18, on ? '#fff3c4' : hoverOn(over) ? '#fffdf3' : o.fill || 'rgba(255,248,231,0.96)', on ? CORAL : OUT, on ? 5 : 3); y += d;
   if (o.sub) { text(label, x + LY.pad, y + h / 2 - 18, o.size || 27, INK, 'left', null, F_T); text(o.sub, x + LY.pad, y + h / 2 + 22, 21, '#7a6872', 'left', null, F_B); }
   else text(label, x + w / 2, y + h / 2 + 1, o.size || 28, o.ink || INK, 'center', null, F_T);
 }
