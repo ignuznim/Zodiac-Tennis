@@ -46,17 +46,12 @@
   #fb button, #nick button { transition: transform 100ms ease-out, box-shadow 100ms ease-out; }
   #fb button.x, #nick button.x { flex: none; width: calc(var(--u, 0.6) * 54px); height: calc(var(--u, 0.6) * 54px); padding: 0; display: grid; place-items: center; background: #fff8e7; border: max(1.5px, calc(var(--u, 0.6) * 3px)) solid #6b5560; border-radius: calc(var(--u, 0.6) * 14px); box-shadow: 0 max(2px, calc(var(--u, 0.6) * 4px)) 0 #6b5560; }
   #fb button.x svg, #nick button.x svg { width: 44%; height: 44%; }
-  /* what it is about: binder tabs on the writing box, like the help pages: the chosen tab is open into the box (it covers the box's top line), the others stand behind it, ending on that line */
-  #fb .kinds { display: flex; align-items: flex-end; gap: calc(var(--u, 0.6) * 6px); margin-bottom: calc(-1 * max(1.5px, calc(var(--u, 0.6) * 3px))); position: relative; z-index: 1; }
-  #fb .kinds button { flex: none; margin: 0 0 max(1.5px, calc(var(--u, 0.6) * 3px)); padding: calc(var(--u, 0.6) * 9px) calc(var(--u, 0.6) * 24px) calc(var(--u, 0.6) * 10px); font-size: calc(var(--u, 0.6) * 23px); line-height: 1.2; color: #8a7a82; background: #eadfce; border: max(1.5px, calc(var(--u, 0.6) * 3px)) solid #cdbfb3; border-bottom: none; border-radius: calc(var(--u, 0.6) * 14px) calc(var(--u, 0.6) * 14px) 0 0; box-shadow: none; transform: none !important; }
-  #fb .kinds button.on { margin-bottom: 0; padding-bottom: calc(var(--u, 0.6) * 10px + max(1.5px, calc(var(--u, 0.6) * 3px))); background: #fff; color: #4a3d47; border-color: #ff8a7a; }
-  #fb .kinds { --b: max(1.5px, calc(var(--u, 0.6) * 3px)); --r: calc(var(--u, 0.6) * 14px); }
-  #fb .kinds button.on { position: relative; overflow: visible; }
-  #fb .kinds button.on::before, #fb .kinds button.on::after { content: ''; position: absolute; bottom: 0; width: calc(var(--r) + var(--b)); height: calc(var(--r) + var(--b)); pointer-events: none; } /* the open tab's foot curves out into the box's top line, as the help binder's: a ring the border's width, white under it */
-  #fb .kinds button.on::after { left: 100%; background: radial-gradient(circle at 100% 0, transparent var(--r), #ff8a7a var(--r), #ff8a7a calc(var(--r) + var(--b)), #fff calc(var(--r) + var(--b))); }
-  #fb .kinds button.on::before { right: 100%; background: radial-gradient(circle at 0 0, transparent var(--r), #ff8a7a var(--r), #ff8a7a calc(var(--r) + var(--b)), #fff calc(var(--r) + var(--b))); }
-  #fb .kinds button.on:first-child::before { display: none; }
-  #fb form:has(.kinds button:first-child.on) textarea { border-top-left-radius: 0; } /* the first tab rises straight from the box's left edge */
+  /* what it is about: binder tabs on the writing box, drawn as one outline in an SVG behind them (fbBinder), as the help binder is drawn: the open tab and the box one shape, the first tab rising from the box's left edge */
+  #fb form { position: relative; } #fbShape { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+  #fb .kinds { display: flex; position: relative; z-index: 1; }
+  #fb .kinds button { flex: none; margin: 0; padding: calc(var(--u, 0.6) * 10px) calc(var(--u, 0.6) * 26px) calc(var(--u, 0.6) * 11px); font-size: calc(var(--u, 0.6) * 23px); line-height: 1.2; color: #8a7a82; background: transparent; border: none; box-shadow: none; }
+  #fb .kinds button.on { color: #4a3d47; }
+  #fb textarea { position: relative; z-index: 1; border-color: transparent !important; background: transparent !important; }
   #fb textarea { width: 100%; box-sizing: border-box; padding: calc(var(--u, 0.6) * 16px); font: max(16px, calc(var(--u, 0.6) * 22px)) 'Gowun Dodum', sans-serif; color: #4a3d47; border: max(1.5px, calc(var(--u, 0.6) * 3px)) solid #ff8a7a; border-radius: calc(var(--u, 0.6) * 16px); background: #fff; outline: none; resize: none; line-height: 1.45; display: block; }
   #fb textarea::placeholder { color: #b3a4ac; }
   #fb textarea:focus { border-color: #ff8a7a; } /* the same coral before, during and after writing, as the nickname box */
@@ -77,6 +72,7 @@
 <div id="fb"><form autocomplete="off">
   <div class="head"><h2>개발자에게 한마디</h2><button type="button" id="fbNo" class="x" aria-label="닫기"><svg viewBox="0 0 20 20"><path d="M4 4l12 12M16 4L4 16" stroke="#6b5560" stroke-width="3" stroke-linecap="round"/></svg></button></div>
   <p>버그도, 불편한 점도, 바라는 점도 좋아요</p>
+  <svg id="fbShape" aria-hidden="true"></svg>
   <div class="kinds"><button type="button" data-k="bug" class="on">버그</button><button type="button" data-k="ux">불편해요</button><button type="button" data-k="idea">아이디어</button></div>
   <textarea id="fbIn" maxlength="1000" rows="4" placeholder="어떤 화면에서 무엇이 어땠는지 적어 주시면 큰 도움이 돼요"></textarea>
   <div class="err" id="fbErr"></div>
@@ -2690,10 +2686,24 @@ async function fbPost(kind, message) {
 }
 function openFeedback() {
   fbKind = 'bug'; fbBox.querySelectorAll('.kinds button').forEach(b => b.classList.toggle('on', b.dataset.k === fbKind));
-  fbIn.value = ''; fbN.textContent = '0 / 1000'; fbErr.textContent = ''; fbBox.classList.add('on'); // no keyboard until the box itself is tapped
+  fbIn.value = ''; fbN.textContent = '0 / 1000'; fbErr.textContent = ''; fbBox.classList.add('on'); fbBinder(); requestAnimationFrame(fbBinder); // no keyboard until the box itself is tapped
 }
 function closeFeedback() { fbBox.classList.remove('on'); fbIn.blur(); down.clear(); holdFit(); }
-fbBox.querySelectorAll('.kinds button').forEach(b => b.onclick = () => { fbKind = b.dataset.k; fbBox.querySelectorAll('.kinds button').forEach(x => x.classList.toggle('on', x === b)); });
+fbBox.querySelectorAll('.kinds button').forEach(b => b.onclick = () => { fbKind = b.dataset.k; fbBox.querySelectorAll('.kinds button').forEach(x => x.classList.toggle('on', x === b)); fbBinder(); });
+function fbBinder() { // the tabs and the writing box as the help binder draws them: closed tabs behind, the open tab and the box traced as one outline
+  const form = fbBox.querySelector('form'), svg = document.getElementById('fbShape'), f = form.getBoundingClientRect(), ta = fbIn.getBoundingClientRect(), bs = [...fbBox.querySelectorAll('.kinds button')];
+  if (!f.width) return; const u = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--u')) || 0.6, lw = Math.max(1.5, 3 * u), R = 16 * u, tr = 14 * u, fl = 12 * u;
+  const X = v => v - f.left, Y = v => v - f.top, PX = X(ta.left), PW = ta.width, TB = Y(ta.top), PB = Y(ta.bottom);
+  const tab = b => { const r = b.getBoundingClientRect(); return { x: X(r.left), w: r.width, t: Y(r.top) }; };
+  const back = t => `M${t.x},${TB} L${t.x},${t.t + tr} Q${t.x},${t.t} ${t.x + tr},${t.t} L${t.x + t.w - tr},${t.t} Q${t.x + t.w},${t.t} ${t.x + t.w},${t.t + tr} L${t.x + t.w},${TB}`;
+  let out = ''; const on = bs.findIndex(b => b.classList.contains('on'));
+  bs.forEach((b, i) => { if (i !== on) out += `<path d="${back(tab(b))}" fill="#eadfce" stroke="#cdbfb3" stroke-width="${lw}" stroke-linejoin="round"/>`; });
+  const t = tab(bs[on]), first = Math.abs(t.x - PX) < 1; let d = `M${PX},${PB - R} `;
+  d += first ? `L${PX},${t.t + tr} Q${PX},${t.t} ${PX + tr},${t.t} ` : `L${PX},${TB + R} Q${PX},${TB} ${PX + R},${TB} L${t.x - fl},${TB} Q${t.x},${TB} ${t.x},${TB - fl} L${t.x},${t.t + tr} Q${t.x},${t.t} ${t.x + tr},${t.t} `;
+  d += `L${t.x + t.w - tr},${t.t} Q${t.x + t.w},${t.t} ${t.x + t.w},${t.t + tr} L${t.x + t.w},${TB - fl} Q${t.x + t.w},${TB} ${t.x + t.w + fl},${TB} L${PX + PW - R},${TB} Q${PX + PW},${TB} ${PX + PW},${TB + R} L${PX + PW},${PB - R} Q${PX + PW},${PB} ${PX + PW - R},${PB} L${PX + R},${PB} Q${PX},${PB} ${PX},${PB - R} Z`;
+  svg.innerHTML = out + `<path d="${d}" fill="#ffffff" stroke="#ff8a7a" stroke-width="${lw}" stroke-linejoin="round"/>`;
+}
+addEventListener('resize', () => { if (fbBox.classList.contains('on')) fbBinder(); });
 document.getElementById('fbNo').onclick = closeFeedback;
 const fbN = document.getElementById('fbN'); fbIn.addEventListener('input', () => { fbN.textContent = `${fbIn.value.length} / 1000`; });
 // 개발자에게 한마디 closes only with its cross: a stray tap outside must not lose what was written
