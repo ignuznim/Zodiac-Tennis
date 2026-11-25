@@ -10,6 +10,9 @@ The owner reviews every change on a phone. These rules come from their repeated 
 - No text is smaller than MIN_TEXT (16 in the 720-wide page, set beside text() in index.html). Shrink-to-fit stops there; if a label still does not fit, move it somewhere with room or use two lines instead of going smaller. Never cut a word into an abbreviation nobody can read (타이브레이크 is never 타이브).
 - Use the plain fonts (F_T, F_B) for anything that must read cleanly; the handwritten font (F_H) has uneven spacing, so keep it to short accents.
 
+## Buttons and space
+- A button need not fill the width of its box or the screen: size it to its words plus comfortable padding, and centre it, unless it is one of the bottom row's main buttons. Popups and cards stay compact and dense (the 명예의 전당 score card is the model): no large empty areas, no oversized boxes; leave even margins instead.
+
 ## Drawing
 - Work of one kind stays of one kind: a redrawn animal, item or button must match the others in style (outline, shading with shade(), proportions).
 - After touching any shared drawing code (drawAnimal, drawHead, drawEars, drawTail, items), render all twelve animals front and back and look at every one before committing, not just the one changed.
