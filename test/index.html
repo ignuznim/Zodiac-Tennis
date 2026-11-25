@@ -38,7 +38,6 @@
   #nick button.go, #fb button.go { background: #fff3c4; border-color: #ff8a7a; }
   #nick .err, #fb .err { min-height: calc(var(--u, 0.6) * 24px); margin-top: calc(var(--u, 0.6) * 10px); font: calc(var(--u, 0.6) * 20px) 'Gowun Dodum', sans-serif; color: #e2574c; }
   #nickInline { position: fixed; display: none; z-index: 4; left: 0; top: 0; width: 2px; height: 2px; margin: 0; padding: 0; border: none; outline: none; opacity: 0; font-size: 16px; -webkit-user-select: text; user-select: text; } /* the nickname's keyboard: the input sits out of sight at the very top (so the phone never scrolls to it); what is typed is drawn in the field */
-  html { transition: background-color 300ms ease-out; } body { background: transparent !important; } #edgeB, #edgeT { position: fixed; left: 0; right: 0; bottom: 0; height: 50%; z-index: -1; background: #a2e3c8; transition: background-color 300ms ease-out; pointer-events: none; } #edgeT { top: 0; bottom: auto; background: #fff3dc; } /* above and below the game: its own top and bottom colours */
   #safe { position: fixed; visibility: hidden; pointer-events: none; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
   /* 개발자에게 한마디, drawn like the game's own windows: the same outline and drop under every key, a switch like 단식 · 복식, a cross key at the right of the title */
   #fb form, #nick form { text-align: left; padding: calc(var(--u, 0.6) * 24px) calc(var(--u, 0.6) * 26px) calc(var(--u, 0.6) * 26px); background: #fffaf0; }
@@ -67,8 +66,6 @@
 <canvas id="game"></canvas>
 <div style="position:fixed;left:6px;bottom:6px;z-index:9;font:12px sans-serif;color:#fff;background:rgba(226,87,76,0.85);padding:2px 7px;border-radius:9px;pointer-events:none">테스트 버전</div>
 <div id="safe"></div>
-<div id="edgeT"></div>
-<div id="edgeB"></div>
 <input id="nickInline" maxlength="8" enterkeyhint="done" spellcheck="false" autocomplete="off" aria-label="닉네임">
 <div id="fb"><form autocomplete="off">
   <div class="head"><h2>개발자에게 한마디</h2><button type="button" id="fbNo" class="x" aria-label="닫기"><svg viewBox="0 0 20 20"><path d="M4 4l12 12M16 4L4 16" stroke="#6b5560" stroke-width="3" stroke-linecap="round"/></svg></button></div>
@@ -4933,12 +4930,10 @@ function drawFrame0() {
     text('휴대폰을 세로로 돌리면 화면이 더 커져요', W / 2, H - 31, 19, CREAM, 'center', null, F_B);
   }
   canvas.style.cursor = hitTest(mouse) ? 'pointer' : 'default'; }
-let edgeView = '', edgeDue = 0, edgeKey = ''; const themeMeta = document.querySelector('meta[name=theme-color]'), edgeB = document.getElementById('edgeB'), edgeT = document.getElementById('edgeT');
-function matchEdges() { // the screen above and below the game takes the colour of the game's top and bottom rows, so the page reads as one; read once each time the view has settled (reading the canvas stalls a frame), the colours easing over
-  const now = performance.now(), v = scene + '|' + viewKey0 + '|' + canvas.width + 'x' + canvas.height + '|' + (prof.open ? 1 : 0);
-  if (v !== edgeView) { edgeView = v; edgeDue = now + 450; } else if (!edgeDue && !trans) edgeDue = now + 1500; if (!edgeDue || now < edgeDue || trans) return; edgeDue = 0; // once the view settles, then every 1.5 s (a window's dim, a page's own change)
-  try { const g = canvas.getContext('2d'), px = (y) => { const d = g.getImageData(Math.min(8, canvas.width - 1), y, 1, 1).data; return `rgb(${d[0]},${d[1]},${d[2]})`; }, top = px(1), bot = px(canvas.height - 2), key = top + bot;
-    if (key === edgeKey) return; edgeKey = key; document.documentElement.style.backgroundColor = top; if (edgeT) edgeT.style.backgroundColor = top; if (edgeB) edgeB.style.backgroundColor = bot; if (themeMeta) themeMeta.content = top; } catch (e) { /* the canvas could not be read: the plain green stays */ }
+let edgeKey = ''; const themeMeta = document.querySelector('meta[name=theme-color]');
+function matchEdges() { // the page behind the game and the browser's bar take the colour at the game's top, known from the scene (the canvas is never read back: reading it, and layers kept under it, can leave a phone drawing it soft)
+  const top = scene === 'hall' ? '#2a2232' : (scene === 'play' || scene === 'pause' || scene === 'help' || scene === 'lessons') && m ? ({ hard: '#d8ecff', grass: '#eaf5fb', clay: '#e6eff8' }[m.court] || '#d8ecff') : '#fff3dc';
+  if (top === edgeKey) return; edgeKey = top; document.documentElement.style.backgroundColor = top; document.body.style.backgroundColor = top; if (themeMeta) themeMeta.content = top;
 }
 function frame() { tick(); matchEdges(); requestAnimationFrame(frame); }
 // A headless browser on a time budget runs timers but almost no animation frames: a timer
