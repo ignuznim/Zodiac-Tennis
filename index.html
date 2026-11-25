@@ -50,6 +50,12 @@
   #fb .kinds { display: flex; align-items: flex-end; gap: calc(var(--u, 0.6) * 6px); margin-bottom: calc(-1 * max(1.5px, calc(var(--u, 0.6) * 3px))); position: relative; z-index: 1; }
   #fb .kinds button { flex: none; margin: 0 0 max(1.5px, calc(var(--u, 0.6) * 3px)); padding: calc(var(--u, 0.6) * 9px) calc(var(--u, 0.6) * 24px) calc(var(--u, 0.6) * 10px); font-size: calc(var(--u, 0.6) * 23px); line-height: 1.2; color: #8a7a82; background: #eadfce; border: max(1.5px, calc(var(--u, 0.6) * 3px)) solid #cdbfb3; border-bottom: none; border-radius: calc(var(--u, 0.6) * 14px) calc(var(--u, 0.6) * 14px) 0 0; box-shadow: none; transform: none !important; }
   #fb .kinds button.on { margin-bottom: 0; padding-bottom: calc(var(--u, 0.6) * 10px + max(1.5px, calc(var(--u, 0.6) * 3px))); background: #fff; color: #4a3d47; border-color: #ff8a7a; }
+  #fb .kinds { --b: max(1.5px, calc(var(--u, 0.6) * 3px)); --r: calc(var(--u, 0.6) * 14px); }
+  #fb .kinds button.on { position: relative; overflow: visible; }
+  #fb .kinds button.on::before, #fb .kinds button.on::after { content: ''; position: absolute; bottom: 0; width: calc(var(--r) + var(--b)); height: calc(var(--r) + var(--b)); pointer-events: none; } /* the open tab's foot curves out into the box's top line, as the help binder's: a ring the border's width, white under it */
+  #fb .kinds button.on::after { left: 100%; background: radial-gradient(circle at 100% 0, transparent var(--r), #ff8a7a var(--r), #ff8a7a calc(var(--r) + var(--b)), #fff calc(var(--r) + var(--b))); }
+  #fb .kinds button.on::before { right: 100%; background: radial-gradient(circle at 0 0, transparent var(--r), #ff8a7a var(--r), #ff8a7a calc(var(--r) + var(--b)), #fff calc(var(--r) + var(--b))); }
+  #fb .kinds button.on:first-child::before { display: none; }
   #fb form:has(.kinds button:first-child.on) textarea { border-top-left-radius: 0; } /* the first tab rises straight from the box's left edge */
   #fb textarea { width: 100%; box-sizing: border-box; padding: calc(var(--u, 0.6) * 16px); font: max(16px, calc(var(--u, 0.6) * 22px)) 'Gowun Dodum', sans-serif; color: #4a3d47; border: max(1.5px, calc(var(--u, 0.6) * 3px)) solid #ff8a7a; border-radius: calc(var(--u, 0.6) * 16px); background: #fff; outline: none; resize: none; line-height: 1.45; display: block; }
   #fb textarea::placeholder { color: #b3a4ac; }
