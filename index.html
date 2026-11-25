@@ -3209,8 +3209,8 @@ function iconButton(kind, label, x, y, w, h, fn, dot) { // a small button: a pic
 let closetBack = 'select';
 const closet = { sel: null, animal: null }; // animal: whose gear (null: just the collection, from the gacha)
 const mkScroll = () => ({ scroll: 0, max: 0, v0: 0, v1: 0, drag: null, vel: 0, cache: null, key: '', rects: [], h: 0, r: 0 });
-const SCR = { closet: mkScroll(), ach: mkScroll(), rooms: mkScroll(), notice: mkScroll() };
-function activeScroll() { return scene === 'notice' ? SCR.notice : scene === 'online' && signedIn() ? SCR.rooms : scene === 'closet' ? SCR.closet : scene === 'wardrobe' && acct.wtab === 'ach' && acct.prof ? SCR.ach : null; }
+const SCR = { closet: mkScroll(), ach: mkScroll(), rooms: mkScroll(), notice: mkScroll(), tier: mkScroll() };
+function activeScroll() { return scene === 'ranking' ? SCR.tier : scene === 'notice' ? SCR.notice : scene === 'online' && signedIn() ? SCR.rooms : scene === 'closet' ? SCR.closet : scene === 'wardrobe' && acct.wtab === 'ach' && acct.prof ? SCR.ach : null; }
 function scrollStep(dt) { // after a flick the list glides on and slows
   const S = activeScroll(); if (!S || S.drag) return;
   if (Math.abs(S.vel) > 8) { S.scroll = clamp(S.scroll + S.vel * dt, 0, S.max); S.vel *= Math.exp(-4.5 * dt); if (S.scroll <= 0 || S.scroll >= S.max) S.vel = 0; } else S.vel = 0;
@@ -3665,7 +3665,7 @@ function drawTier(i, x, y, r) { // a tier's mark: a numbered medal in the colour
   ctx.restore();
 }
 const tierBoard = { list: null, loading: false, err: '' };
-async function loadTierBoard() { tierBoard.loading = true; tierBoard.err = ''; try { tierBoard.list = (await rpcAny('tier_board', { lim: 50 })) || []; } catch (e) { tierBoard.err = '랭킹을 불러오지 못했어요 · 인터넷 연결을 확인해 주세요'; tierBoard.list = tierBoard.list || []; } tierBoard.loading = false; }
+async function loadTierBoard() { tierBoard.loading = true; tierBoard.err = ''; try { tierBoard.list = (await rpcAny('tier_board', { lim: 2000 })) || []; } catch (e) { tierBoard.err = '랭킹을 불러오지 못했어요 · 인터넷 연결을 확인해 주세요'; tierBoard.list = tierBoard.list || []; } tierBoard.loading = false; }
 function myTier() { if (!acct.user || !acct.prof) return null; if (!acct.tierAsked) { acct.tierAsked = true; rpc('my_tier').then(t => { if (t) acct.tier = t; }).catch(() => {}); } return acct.tier || null; }
 const prof = { open: false, t: 0, who: null, rivals: null }; // who: another member's public profile, or null for mine
 async function rpcAny(fn, args) { if (!acct.sb) return null; const { data, error } = await acct.sb.rpc(fn, args || {}); if (error) throw new Error(error.message); return data; } // also for someone not signed in
@@ -3866,30 +3866,29 @@ const scenes = {
       { const hx = LY.m + LY.w - 100, hy = LY.titleY - 27, over = btn(hx, hy, 100, 54, openHall); // the hall of fame: its own gilded door
         rr(hx, hy, 100, 54, 14, over ? '#fff3c4' : 'rgba(255,248,231,0.95)', OUT, 2.6);
         icon('shrine', hx + 28, hy + 28, 36); text('명예의', hx + 70, hy + 18, MIN_TEXT, INK, 'center', null, F_T); text('전당', hx + 70, hy + 37, MIN_TEXT, INK, 'center', null, F_T); }
-      const py = LY.top, ph = Math.min(64 + 76 * 10 + LY.pad, contentEnd() - py); // ten rows, as tall as the screen allows
+      const py = LY.top, ph = contentEnd() - py; // as tall as the screen allows: the list scrolls
       panel(LY.m, py, LY.w, ph);
       const L = tierBoard.list, mid = py + ph / 2, nick = realNick(), me = myTier();
       if (tierBoard.loading && !L) text('불러오는 중…', W / 2, mid, 30, '#7a6872', 'center', null, F_H);
       else if (tierBoard.err && !(L && L.length)) text(tierBoard.err, W / 2, mid, 22, '#e2574c', 'center', null, F_B);
       else if (!L || !L.length) { text('아직 아무도 없어요', W / 2, mid - 22, 32, INK, 'center', null, F_T); text('경기를 하면 첫 번째 품계를 받아요!', W / 2, mid + 24, 26, '#c0605a', 'center', null, F_H); }
-      else {
-        let rows = L.slice(0, 10).map((r, i) => Object.assign({ place: i + 1 }, r)); const mi = nick ? L.findIndex(r => r.nick === nick) : -1;
-        if (nick && me && me.games > 0 && (mi >= 10 || mi < 0)) rows = rows.slice(0, 9).concat([Object.assign({ nick, fav: null, place: mi >= 0 ? mi + 1 : '-' }, me)]); // me, below the top nine
-        const hy = py + 32, x0 = LY.m + LY.pad;
+      else { // every member, a scrolling list; my own line stays pinned under it
+        const mi = nick ? L.findIndex(r => r.nick === nick) : -1, pin = nick && me && me.games > 0, rh = 66, x0 = LY.m + LY.pad, hy = py + 32;
         text('순위', x0 + 28, hy, 19, '#7a6872', 'center', null, F_B); text('선수', x0 + 70, hy, 19, '#7a6872', 'left', null, F_B); text('점수', LY.m + LY.w - LY.pad, hy, 19, '#7a6872', 'right', null, F_B);
-        const rh = (ph - 64 - LY.pad) / 10;
-        rows.forEach((r, i) => {
-          const y = py + 64 + rh * i + rh / 2, mine = r.nick === nick, over = btn(LY.m + 12, y - rh / 2 + 2, LY.w - 24, rh - 4, () => openProfile(r.nick));
-          if (mine || over || i % 2 === 0) rr(LY.m + 12, y - rh / 2 + 2, LY.w - 24, rh - 4, 12, mine ? '#fff3c4' : over ? '#fffdf3' : 'rgba(234,223,210,0.45)', mine ? '#e3a46a' : null, 2);
-          const medal = typeof r.place === 'number' ? ['#ffd34d', '#cfd8e3', '#e6a46a'][r.place - 1] : null;
-          if (medal) { ctx.lineWidth = 2.4; ctx.strokeStyle = OUT; E(x0 + 28, y, 18, 18, medal); }
-          fitText('' + r.place, x0 + 28, y + 1, 23, INK, 'center', F_N, 44);
-          const fi = r.fav ? ANIMALS.findIndex(a => 'pa_' + a.id === r.fav) : favOf(progOf()), ti = tierOf(r), tr = Math.min(rh * 0.34, 19);
-          miniFace(fi >= 0 ? fi : 0, x0 + 82, y, Math.min(rh * 0.36, 20)); drawTier(ti, x0 + 128, y, tr);
-          const tc = TIERS[ti].c[1] === '#f6c445' ? '#c0392b' : TIERS[ti].c[1];
-          const gap2 = Math.min(13, rh * 0.22); fitText(r.nick, x0 + 158, y - gap2, 24, INK, 'left', F_T, LY.w - 330); text(TIERS[ti].n, x0 + 158, y + gap2 + 3, MIN_TEXT, tc, 'left', null, F_T);
-          text(r.rating.toLocaleString(), LY.m + LY.w - LY.pad, y, 27, INK, 'right', null, F_N);
-        });
+        const row = (r, place, y, mine, fill) => { const cy = y + rh / 2;
+          rr(LY.m + 12, y + 3, LY.w - 24, rh - 6, 12, fill, mine ? '#e3a46a' : null, 2);
+          const medal = typeof place === 'number' ? ['#ffd34d', '#cfd8e3', '#e6a46a'][place - 1] : null;
+          if (medal) { ctx.lineWidth = 2.4; ctx.strokeStyle = OUT; E(x0 + 28, cy, 18, 18, medal); }
+          fitText('' + place, x0 + 28, cy + 1, 23, INK, 'center', F_N, 52);
+          const fi = r.fav ? ANIMALS.findIndex(a => 'pa_' + a.id === r.fav) : favOf(progOf()), ti = tierOf(r), tc = TIERS[ti].c[1] === '#f6c445' ? '#c0392b' : TIERS[ti].c[1];
+          miniFace(fi >= 0 ? fi : 0, x0 + 84, cy, 21); drawTier(ti, x0 + 132, cy, 19);
+          fitText(r.nick, x0 + 162, cy - 11, 24, INK, 'left', F_T, LY.w - 340); text(TIERS[ti].n, x0 + 162, cy + 16, MIN_TEXT, tc, 'left', null, F_T);
+          text(r.rating.toLocaleString(), LY.m + LY.w - LY.pad, cy, 27, INK, 'right', null, F_N); };
+        const v0 = py + 54, v1 = py + ph - (pin ? rh + 22 : 12), key = JSON.stringify([nick, L.map(r => [r.nick, r.rating, r.days, r.rank, r.fav])]);
+        scrollView(SCR.tier, v0, v1, key, L.length * rh + 4, () => {
+          L.forEach((r, i) => { const y = i * rh, mine = r.nick === nick; btn(LY.m + 12, y + 3, LY.w - 24, rh - 6, () => openProfile(r.nick)); row(r, i + 1, y, mine, mine ? '#fff3c4' : i % 2 === 0 ? 'rgba(234,223,210,0.45)' : 'rgba(255,255,255,0)'); });
+          return L.length * rh + 4; });
+        if (pin) { const y = v1 + 10; ctx.fillStyle = '#e6dccd'; ctx.fillRect(LY.m + 20, y - 6, LY.w - 40, 2); btn(LY.m + 12, y + 3, LY.w - 24, rh - 6, () => openProfile(nick)); row(Object.assign({ nick, fav: null }, me), mi >= 0 ? mi + 1 : '-', y, true, '#fff3c4'); }
       }
       sideBtn('뒤로', () => { scene = 'title'; });
       mainBtn(tierBoard.loading ? '불러오는 중…' : '새로고침', () => { if (!tierBoard.loading) { loadTierBoard(); acct.tierAsked = false; } });
