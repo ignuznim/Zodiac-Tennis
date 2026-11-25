@@ -3439,6 +3439,24 @@ function miniFace(a, cx, cy, r = 13) { // an animal's face in a little white cir
   const k = r / 13; ctx.save(); ctx.lineWidth = 2; ctx.strokeStyle = OUT; E(cx, cy, r, r, '#ffffff'); ctx.beginPath(); ctx.arc(cx, cy, r - 1, 0, 7); ctx.clip();
   ctx.lineWidth = 2.6 * k; ctx.strokeStyle = OUT; drawAnimal(a, cx, cy + 24 * k, 0.3 * k, { front: true, t: 0.4, accent: CORAL }); ctx.restore();
 }
+function itemCard(id, x, yy, cw, chh, sid, gear) { // an item's card, as the closet's lists show it (and its first page, the worn ones): the picture, the name, what it adds; worn here, who else wears it, how many
+  const it = item(id), have = acct.inv[id] || 0, on = gear[sid] === id, others = wearers(id).filter(k => k !== closet.animal), free = have - others.length - (on ? 1 : 0);
+    rr(x, yy, cw, chh, 16, have ? (on ? '#fff3c4' : closet.sel === id ? '#fffdf3' : '#ffffff') : '#e9e1d8', have ? GRADE[it.grade].c : closet.sel === id ? '#7a6872' : '#c9bdb2', on ? 5 : have ? 3.4 : 2.4);
+    if (have) { ctx.save(); ctx.beginPath(); ctx.rect(x + 4, yy + 4, cw - 8, chh - 56); ctx.clip(); itemIcon(id, x + cw / 2, yy + 4 + (chh - 60) / 2, Math.min(70, chh - 66)); ctx.restore();
+      text(it.name, x + cw / 2, yy + chh - 42, 17, INK, 'center', null, F_T); text(`${STAT_NAME[it.stat]} +${it.amt}`, x + cw / 2, yy + chh - 18, MIN_TEXT, GRADE[it.grade].c, 'center', null, F_T);
+      const worn = others.length + (on ? 1 : 0), all = !on && others.length && free <= 0;
+      if (all) rr(x, yy, cw, chh, 16, 'rgba(255,255,255,0.5)', null); // every copy is on another animal: faded, still a tap takes one back
+      let fx = x + 8;
+      if (on) { rr(fx, yy + 8, 50, 26, 13, CORAL, null); text('착용', fx + 25, yy + 21, MIN_TEXT, '#fff', 'center', null, F_T); fx += 56; }
+      const shown = others.slice(0, on ? 1 : 2); shown.forEach(k => { miniFace(k, fx + 13, yy + 21); fx += 29; }); // who else wears it
+      if (others.length > shown.length && !on) { rr(fx, yy + 9, 34, 24, 12, 'rgba(122,104,114,0.85)', null); text('+' + (others.length - shown.length), fx + 17, yy + 21, MIN_TEXT, '#fff', 'center', null, F_N); }
+      if (all) { rr(x + 12, yy + chh - 82, cw - 24, 26, 13, 'rgba(122,104,114,0.9)', null); text('모두 착용 중', x + cw / 2, yy + chh - 69, MIN_TEXT, '#fff', 'center', null, F_T); }
+      if (have > 1 && !all) { const t2 = worn ? `${worn}/${have}` : `×${have}`; ctx.font = `${MIN_TEXT}px ${F_N}`; const tw2 = ctx.measureText(t2).width + 14; rr(x + cw - 8 - tw2, yy + 9, tw2, 24, 12, 'rgba(234,223,210,0.95)', null); text(t2, x + cw - 8 - tw2 / 2, yy + 21, MIN_TEXT, '#7a6872', 'center', null, F_N); } } // worn of owned, top right
+    else { // a silhouette: the shape in shadow, the name a mystery
+      ctx.save(); ctx.beginPath(); ctx.rect(x + 4, yy + 4, cw - 8, chh - 56); ctx.clip(); ghostIcon(id, x + cw / 2, yy + 4 + (chh - 60) / 2, Math.min(70, chh - 66)); ctx.restore();
+      text('???', x + cw / 2, yy + chh - 42, 17, '#9a8b93', 'center', null, F_T); text(GRADE[it.grade].ko, x + cw / 2, yy + chh - 18, MIN_TEXT, GRADE[it.grade].c, 'center', null, F_T); }
+    E(x + cw - 14, yy + chh - 14, 5, 5, GRADE[it.grade].c);
+}
 function drawClosetList(gear, eh, chh, coll, worn = !coll) { // the closet's whole list, from y 0: worn gear big (for one animal, unless its window shows that on a page of its own), then each slot four across
   let y = 0;
   if (worn) {
@@ -3461,21 +3479,7 @@ function drawClosetList(gear, eh, chh, coll, worn = !coll) { // the closet's who
     ids.forEach((id, n) => { const it = item(id), have = acct.inv[id] || 0, on = gear[sid] === id, x = LY.m + (n % 4) * (cw + 12), yy = y + Math.floor(n / 4) * (chh + 12);
       const others = wearers(id).filter(k => k !== closet.animal), free = have - others.length - (on ? 1 : 0);
       btn(x, yy, cw, chh, () => { closet.sel = id; if (!have) toast('뽑기 기계에서 얻을 수 있어요'); else if (coll) toast(others.length ? `${others.map(k => ANIMALS[k].ko).join(', ')} 착용 중 · 선수 선택에서 바꿔요` : '선수 선택 화면의 옷걸이에서 입혀요'); else equip(sid, on ? null : id); });
-      rr(x, yy, cw, chh, 16, have ? (on ? '#fff3c4' : closet.sel === id ? '#fffdf3' : '#ffffff') : '#e9e1d8', have ? GRADE[it.grade].c : closet.sel === id ? '#7a6872' : '#c9bdb2', on ? 5 : have ? 3.4 : 2.4);
-      if (have) { ctx.save(); ctx.beginPath(); ctx.rect(x + 4, yy + 4, cw - 8, chh - 56); ctx.clip(); itemIcon(id, x + cw / 2, yy + 52, 70); ctx.restore();
-        text(it.name, x + cw / 2, yy + chh - 42, 17, INK, 'center', null, F_T); text(`${STAT_NAME[it.stat]} +${it.amt}`, x + cw / 2, yy + chh - 18, MIN_TEXT, GRADE[it.grade].c, 'center', null, F_T);
-        const worn = others.length + (on ? 1 : 0), all = !on && others.length && free <= 0;
-        if (all) rr(x, yy, cw, chh, 16, 'rgba(255,255,255,0.5)', null); // every copy is on another animal: faded, still a tap takes one back
-        let fx = x + 8;
-        if (on) { rr(fx, yy + 8, 50, 26, 13, CORAL, null); text('착용', fx + 25, yy + 21, MIN_TEXT, '#fff', 'center', null, F_T); fx += 56; }
-        const shown = others.slice(0, on ? 1 : 2); shown.forEach(k => { miniFace(k, fx + 13, yy + 21); fx += 29; }); // who else wears it
-        if (others.length > shown.length && !on) { rr(fx, yy + 9, 34, 24, 12, 'rgba(122,104,114,0.85)', null); text('+' + (others.length - shown.length), fx + 17, yy + 21, MIN_TEXT, '#fff', 'center', null, F_N); }
-        if (all) { rr(x + 12, yy + chh - 82, cw - 24, 26, 13, 'rgba(122,104,114,0.9)', null); text('모두 착용 중', x + cw / 2, yy + chh - 69, MIN_TEXT, '#fff', 'center', null, F_T); }
-        if (have > 1 && !all) { const t2 = worn ? `${worn}/${have}` : `×${have}`; ctx.font = `${MIN_TEXT}px ${F_N}`; const tw2 = ctx.measureText(t2).width + 14; rr(x + cw - 8 - tw2, yy + 9, tw2, 24, 12, 'rgba(234,223,210,0.95)', null); text(t2, x + cw - 8 - tw2 / 2, yy + 21, MIN_TEXT, '#7a6872', 'center', null, F_N); } } // worn of owned, top right
-      else { // a silhouette: the shape in shadow, the name a mystery
-        ctx.save(); ctx.beginPath(); ctx.rect(x + 4, yy + 4, cw - 8, chh - 56); ctx.clip(); ghostIcon(id, x + cw / 2, yy + 52, 70); ctx.restore();
-        text('???', x + cw / 2, yy + chh - 42, 17, '#9a8b93', 'center', null, F_T); text(GRADE[it.grade].ko, x + cw / 2, yy + chh - 18, MIN_TEXT, GRADE[it.grade].c, 'center', null, F_T); }
-      E(x + cw - 14, yy + chh - 14, 5, 5, GRADE[it.grade].c);
+      itemCard(id, x, yy, cw, chh, sid, gear);
     });
     y += Math.ceil(ids.length / 4) * (chh + 12) + 14;
   });
@@ -3495,6 +3499,7 @@ function drawClosetWindow() { // over 선수 선택 (an animal's closet: what it
   if (!two) { scrollView(SCR.closet, v0, v1, key, lh, () => drawClosetList(gear, eh, chh, true), '255,250,240'); ctx.restore(); return; }
   // two pages side by side: what it wears, and every item; the finger drags them, a flick turns the page
   const now = clock.now(), dt = Math.min(0.05, now - (closet.pt || now)); closet.pt = now; if (closet.px == null) closet.px = closet.page || 0;
+  if ((closet.page || 0) !== closet.lastPage) { if (closet.page === 1 && closet.lastPage === 0) { const S = SCR.closet; S.scroll = 0; S.vel = 0; S.over = 0; S.ov = 0; } closet.lastPage = closet.page || 0; } // every item opens at its top
   if (!closet.hdrag) closet.px += ((closet.page || 0) - closet.px) * (1 - Math.exp(-dt / 0.07)); const disp = clamp(closet.hdrag ? (closet.page || 0) - closet.hdx / w : closet.px, 0, 1); // two pages only: nothing past either end
   ctx.save(); ctx.beginPath(); ctx.rect(x + 3, v0 - 4, w - 6, v1 - v0 + 8); ctx.clip();
   if (disp < 0.999) { ctx.save(); ctx.translate(-disp * w, 0); const n0 = hot.length; drawWornPage(x, v0, w, v1 - v0, gear, eh); if (Math.abs(disp) > 0.01) hot.length = n0; ctx.restore(); }
@@ -3503,25 +3508,40 @@ function drawClosetWindow() { // over 선수 선택 (an animal's closet: what it
   [0, 1].forEach(i => { const on = Math.abs(disp - i) < 0.5, dw = on ? 26 : 10; rr(W / 2 - 22 + i * 32 - (on ? 8 : 0), y + h - 26, dw, 10, 5, on ? INK : '#cdbfb3', null); btn(W / 2 - 30 + i * 32, y + h - 40, 28, 36, () => { closet.page = i; }); }); // the page dots: a tap on one turns to it
   ctx.restore();
 }
-function drawWornPage(x, y, w, h, gear, eh) { // an animal's closet, first page: on a grid of two columns, its four items as cards down the left, the animal (a little larger than on the select page) standing on a stage at the right, what the items add along the foot
-  const a = closet.animal, bonus = gearBonus(gear), lineH = 48, gap = 14, colW = Math.round((LY.w - gap) * 0.56), top = y, bottom = y + h - lineH - gap, chh = (bottom - top - gap * 3) / 4;
-  const sx = LY.m + colW + gap, sw = LY.w - colW - gap, kk = Math.min((selSpot ? selSpot.ks : 1.8) * 1.15, (bottom - top - 40) / 210, sw / 120); // the stage: the right column, as tall as the cards
-  rr(sx, top, sw, bottom - top, 20, '#eef7f1', '#d9cbbd', 2); ctx.fillStyle = 'rgba(70,90,140,0.16)'; ctx.beginPath(); ctx.ellipse(sx + sw / 2, bottom - 28, 26 * kk, 6 * kk, 0, 0, 7); ctx.fill();
-  ctx.save(); rr(sx, top, sw, bottom - top, 20, null, null); ctx.clip(); ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(a, sx + sw / 2, bottom - 30, kk, { front: true, t: clock.now(), anim: 'idle', accent: CORAL, gear }); ctx.restore();
-  [['hat', '모자'], ['racket', '라켓'], ['uniform', '유니폼'], ['shoes', '신발']].forEach(([sid, ko], i) => { const cx = LY.m, cy = top + i * (chh + gap), cw = colW, it = item(gear[sid]), over = btn(cx, cy, cw, chh, () => { if (it) { closet.sel = it.id; equip(sid, null); } else closet.page = 1; }), d = sink(cx, cy, cw, chh, 3);
-    rr(cx, cy + 4, cw, chh, 16, it ? OUT : 'rgba(107,85,96,0.2)', null); rr(cx, cy + d, cw, chh, 16, it ? '#ffffff' : hoverOn(over) ? '#fffdf3' : '#f6efe3', it ? GRADE[it.grade].c : '#cdbfb3', it ? 3.4 : 2.4); const yy = cy + d, isz = chh - 24;
-    rr(cx + 12, yy + 12, isz, isz, 12, it ? '#fbf6ea' : 'rgba(255,255,255,0.6)', null); // the picture's square, the same on every card
-    const tx = cx + 12 + isz + 16, tw = cw - (tx - cx) - 14;
-    if (it) { ctx.save(); rr(cx + 12, yy + 12, isz, isz, 12, null, null); ctx.clip(); itemIcon(it.id, cx + 12 + isz / 2, yy + 12 + isz / 2, isz * 0.78); ctx.restore();
-      text(ko, tx, yy + chh / 2 - 26, MIN_TEXT, '#9a8b93', 'left', null, F_B); fitText(it.name, tx, yy + chh / 2, 22, INK, 'left', F_T, tw); text(`${STAT_NAME[it.stat]} +${it.amt}`, tx, yy + chh / 2 + 26, 18, GRADE[it.grade].c, 'left', null, F_T); } // slot, name, what it adds: one block centred on the card
-    else { text('+', cx + 12 + isz / 2, yy + 12 + isz / 2 + 2, 34, '#cdbfb3', 'center', null, F_T); text(ko, tx, yy + chh / 2 - 13, 21, '#9a8b93', 'left', null, F_T); text('넘겨서 고르기', tx, yy + chh / 2 + 14, MIN_TEXT, '#b3a4ac', 'left', null, F_B); } });
-  const ly = bottom + gap, parts = Object.keys(bonus).map(k => `${STAT_NAME[k]} +${bonus[k]}`);
+const STAGES = ['court', 'irwol', 'garden', 'night']; // the backdrops behind the animal in its closet; a tap on the stage turns to the next
+function stageBack(kind, x, y, w, h, a) {
+  ctx.save(); rr(x, y, w, h, 20, null, null); ctx.clip(); const g = (c0, c1, y0 = y, y1 = y + h) => { const q = ctx.createLinearGradient(0, y0, 0, y1); q.addColorStop(0, c0); q.addColorStop(1, c1); return q; };
+  if (kind === 'irwol') { const s = Math.max(w, h); irwol(x + w / 2 - s / 2, y + h - s, s); ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fillRect(x, y, w, h); } // 일월오봉도, the throne's screen
+  else if (kind === 'court') { const C = COURTS[(AFFINITY[ANIMALS[a].id] || ['hard'])[0]] || COURTS.hard, hz = y + h * 0.42; // its strong court, seen from the baseline
+    ctx.fillStyle = g('#dff0ff', '#f6fbff', y, hz); ctx.fillRect(x, y, w, hz - y); ctx.fillStyle = C.apron; ctx.fillRect(x, hz, w, h); ctx.fillStyle = C.ground;
+    ctx.beginPath(); ctx.moveTo(x + w * 0.3, hz); ctx.lineTo(x + w * 0.7, hz); ctx.lineTo(x + w * 1.1, y + h); ctx.lineTo(x - w * 0.1, y + h); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x + w * 0.3, hz); ctx.lineTo(x - w * 0.1, y + h); ctx.moveTo(x + w * 0.7, hz); ctx.lineTo(x + w * 1.1, y + h); ctx.moveTo(x + w * 0.5, hz); ctx.lineTo(x + w * 0.5, y + h); ctx.moveTo(x + w * 0.22, hz + (y + h - hz) * 0.25); ctx.lineTo(x + w * 0.78, hz + (y + h - hz) * 0.25); ctx.stroke();
+    ctx.fillStyle = '#3b3340'; ctx.fillRect(x + w * 0.26, hz - 16, w * 0.48, 3); ctx.fillStyle = 'rgba(255,255,255,0.7)'; for (let q = 0; q < 12; q++) ctx.fillRect(x + w * 0.26 + q * w * 0.04, hz - 14, 1.5, 14); } // the net across the far end
+  else if (kind === 'garden') { ctx.fillStyle = g('#fff3dc', '#ffd9cc'); ctx.fillRect(x, y, w, h); ctx.fillStyle = 'rgba(255,211,107,0.55)'; E(x + w * 0.72, y + h * 0.28, w * 0.13, w * 0.13, 'rgba(255,211,107,0.55)', 0, true); // the menus' sky, its mountains and a lantern string
+    ctx.fillStyle = '#d9c3ee'; ctx.beginPath(); ctx.moveTo(x, y + h * 0.62); ctx.quadraticCurveTo(x + w * 0.25, y + h * 0.36, x + w * 0.5, y + h * 0.58); ctx.quadraticCurveTo(x + w * 0.75, y + h * 0.4, x + w, y + h * 0.6); ctx.lineTo(x + w, y + h); ctx.lineTo(x, y + h); ctx.fill();
+    ctx.fillStyle = '#b9dcc5'; ctx.beginPath(); ctx.moveTo(x, y + h * 0.74); ctx.quadraticCurveTo(x + w * 0.4, y + h * 0.58, x + w, y + h * 0.72); ctx.lineTo(x + w, y + h); ctx.lineTo(x, y + h); ctx.fill(); ctx.fillStyle = '#a8e0c6'; ctx.fillRect(x, y + h * 0.84, w, h);
+    ctx.strokeStyle = OUT; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(x, y + 24); ctx.quadraticCurveTo(x + w / 2, y + 44, x + w, y + 24); ctx.stroke(); for (let q = 1; q < 5; q++) { const lx = x + w * q / 5, ly = y + 24 + Math.sin(Math.PI * q / 5) * 18; rr(lx - 8, ly, 16, 22, 5, q % 2 ? '#e2574c' : '#3d6fb0', OUT, 1.6); } }
+  else { ctx.fillStyle = g('#1d1b3a', '#4a3d6a'); ctx.fillRect(x, y, w, h); for (let q = 0; q < 26; q++) E(x + (q * 53) % w, y + (q * 37) % (h * 0.6), 1.4, 1.4, '#fff8e7', 0, true); // night: stars, the moon, a hill
+    E(x + w * 0.74, y + h * 0.22, w * 0.11, w * 0.11, '#fff3d0', 0, true); ctx.fillStyle = '#2e2a4a'; ctx.beginPath(); ctx.ellipse(x + w / 2, y + h + h * 0.1, w * 0.9, h * 0.28, 0, 0, 7); ctx.fill(); }
+  ctx.restore();
+}
+function drawWornPage(x, y, w, h, gear, eh) { // an animal's closet, first page: its four items down the left in the cards of the item list, the stage on the right filled by the animal standing at its foot, a backdrop behind it (a tap changes it); what the items add along the foot
+  const a = closet.animal, bonus = gearBonus(gear), lineH = 48, gap = 12, cw = (LY.w - 12 * 3) / 4, top = y, bottom = y + h - lineH - 14, chh = Math.min(150, (bottom - top - gap * 3) / 4);
+  [['hat', '모자'], ['racket', '라켓'], ['uniform', '유니폼'], ['shoes', '신발']].forEach(([sid, ko], i) => { const cx = LY.m, cy = top + i * (chh + gap), id = gear[sid];
+    if (id && item(id)) { btn(cx, cy, cw, chh, () => { closet.sel = id; equip(sid, null); }); itemCard(id, cx, cy, cw, chh, sid, gear); }
+    else { btn(cx, cy, cw, chh, () => { closet.page = 1; }); rr(cx, cy, cw, chh, 16, '#e9e1d8', '#c9bdb2', 2.4); text('+', cx + cw / 2, cy + (chh - 56) / 2 + 6, 40, '#b3a4ac', 'center', null, F_T); text(ko, cx + cw / 2, cy + chh - 42, 17, '#9a8b93', 'center', null, F_T); text('비어 있음', cx + cw / 2, cy + chh - 18, MIN_TEXT, '#b3a4ac', 'center', null, F_T); } });
+  const sx = LY.m + cw + 14, sw = LY.m + LY.w - sx, sh = bottom - top, bg = STAGES[(closet.bg != null ? closet.bg : a) % STAGES.length];
+  btn(sx, top, sw, sh, () => { closet.bg = ((closet.bg != null ? closet.bg : a) + 1) % STAGES.length; tone(700, 0.05, 'sine', 0.14); }); // a tap turns to the next backdrop
+  stageBack(bg, sx, top, sw, sh, a); rr(sx, top, sw, sh, 20, null, '#d9cbbd', 2);
+  const kk = Math.min((sh - 36) / 205, (sw - 24) / 130); ctx.fillStyle = 'rgba(40,40,60,0.2)'; ctx.beginPath(); ctx.ellipse(sx + sw / 2, bottom - 18, 26 * kk, 6 * kk, 0, 0, 7); ctx.fill();
+  ctx.save(); rr(sx, top, sw, sh, 20, null, null); ctx.clip(); ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(a, sx + sw / 2, bottom - 20, kk, { front: true, t: clock.now(), anim: 'idle', accent: CORAL, gear }); ctx.restore();
+  const ly = bottom + 14, parts = Object.keys(bonus).map(k => `${STAT_NAME[k]} +${bonus[k]}`);
   rr(LY.m, ly, LY.w, lineH, lineH / 2, '#fff3c4', '#e3a46a', 2); fitText(parts.length ? `장비 효과  ${parts.join(' · ')}` : '아이템을 입으면 능력치가 올라요', W / 2, ly + lineH / 2, 20, parts.length ? INK : '#9a8b93', 'center', F_T, LY.w - 32);
 }
 // the closet window's pages follow a sideways drag; an upright one scrolls the list
 addEventListener('pointerdown', e => { if (!closetWin() || closet.animal == null) return; const p = toLogical(e); closet.hd = { id: e.pointerId, x: p.x, y: p.y }; closet.hdrag = false; closet.hdx = 0; });
 addEventListener('pointermove', e => { const d = closet.hd; if (!d || d.id !== e.pointerId || !closetWin()) return; const p = toLogical(e), dx = p.x - d.x, dy = p.y - d.y;
-  if (!closet.hdrag && Math.abs(dx) > 14 && Math.abs(dx) > Math.abs(dy) * 1.2) { closet.hdrag = true; for (const k in SCR) SCR[k].drag = null; }
+  if (!closet.hdrag && Math.abs(dx) > 14 && Math.abs(dx) > Math.abs(dy) * 1.2) { closet.hdrag = true; for (const k in SCR) { const S = SCR[k]; if (S.drag) { scrollTo(S, S.drag.s); S.drag = null; S.vel = 0; } } } // a sideways swipe: the list puts back the little it moved
   if (closet.hdrag) closet.hdx = dx; });
 for (const n of ['pointerup', 'pointercancel']) addEventListener(n, e => { const d = closet.hd; if (!d || d.id !== e.pointerId) return; closet.hd = null;
   if (closet.hdrag) { const w = LY.w + 32, pg = closet.page || 0; closet.px = clamp(pg - closet.hdx / w, 0, 1); if (closet.hdx < -60) closet.page = 1; else if (closet.hdx > 60) closet.page = 0; closet.hdrag = false; dragEndAt = performance.now(); } });
