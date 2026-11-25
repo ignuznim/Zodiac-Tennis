@@ -38,12 +38,12 @@ begin
   return jsonb_build_object('opp', btrim(opp), 'w', r.wins, 'l', r.losses, 'recent', r.recent);
 end $$;
 
--- My three most-met rivals
+-- My three most-met rivals, each with the animal they play most (a tie goes to the first by its key, as the game picks it)
 create or replace function public.my_rivals() returns jsonb
 language sql stable security definer set search_path = public as $$
   select coalesce(jsonb_agg(x order by x.n desc, x.t desc), '[]'::jsonb) from (
     select p.nickname as nick, r.wins as w, r.losses as l, r.recent, r.wins + r.losses as n, r.last_at as t,
-           (select key from jsonb_each(p.progress) where key like 'pa\_%' order by (value #>> '{}')::numeric desc limit 1) as fav
+           (select key from jsonb_each(p.progress) where key like 'pa\_%' order by (value #>> '{}')::numeric desc, key collate "C" asc limit 1) as fav
       from public.rivals r join public.profiles p on p.id = r.opp_id
      where r.user_id = auth.uid() and p.nickname is not null
      order by r.wins + r.losses desc, r.last_at desc limit 3) x;

@@ -76,12 +76,12 @@ language sql stable security definer set search_path = public as $$
     jsonb_build_object('rating', 1000, 'days', 0, 'games', 0, 'best', 1000, 'rank', null));
 $$;
 
--- The board: every member who has played, by score, with the animal each plays most
+-- The board: every member who has played, by score, with the animal each plays most (a tie goes to the first by its key, as the game picks it)
 create or replace function public.tier_board(lim integer default 50) returns jsonb
 language sql stable security definer set search_path = public as $$
   select coalesce(jsonb_agg(x order by x.rating desc, x.t asc), '[]'::jsonb) from (
     select p.nickname as nick, r.rating, r.days, r.games, r.last_at as t, public.tier_rank(r.user_id) as rank,
-           (select key from jsonb_each(p.progress) where key like 'pa\_%' order by (value #>> '{}')::numeric desc limit 1) as fav
+           (select key from jsonb_each(p.progress) where key like 'pa\_%' order by (value #>> '{}')::numeric desc, key collate "C" asc limit 1) as fav
       from public.ratings r join public.profiles p on p.id = r.user_id
      where p.nickname is not null and r.games > 0
      order by r.rating desc, r.last_at asc limit least(greatest(lim, 1), 5000)) x;
