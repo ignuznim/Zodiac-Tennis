@@ -3635,6 +3635,18 @@ function menuBegin(title, home) {
   if (home) iconBtn(LY.m, LY.titleY - 27, 'home', goHome);
 }
 function menuEnd(foot, tip) { if (tip) infoTip(tip, LY.titleR + 30, LY.titleY); if (foot) { ctx.font = `20px ${F_B}`; const fw = ctx.measureText(foot).width; text(foot, W / 2, LY.foot, Math.max(MIN_TEXT, fw > LY.w ? 20 * LY.w / fw : 20), '#4f6f63', 'center', null, F_B); } ctx.restore(); OY = 0; } // the footnote shrinks to the page's margins
+const FLOW3 = new URLSearchParams(location.search).get('flow') === '3'; // draft (test page: ?flow=3): the level picked on the format page beside a 볼머신장 key, three steps with dots under them
+const LEVELS = [['쉬움', '#4fa86a'], ['보통', '#3d8be0'], ['어려움', '#e2574c']];
+function drawLevelSwitch(x, y, w, h) { // 쉬움 · 보통 · 어려움: the 단식 · 복식 switch with three places, its thumb in the level's colour
+  const lv = (setup.lv || 2) - 1, e = CALM ? 1 : easeOut(Math.min(1, (clock.now() - (setup.lvAt || -9)) / 0.24)), from = setup.lvFrom == null ? lv : setup.lvFrom, p = from + (lv - from) * e, tw = w / 3;
+  rr(x, y + 5, w, h, h / 2, OUT, null); rr(x, y, w, h, h / 2, '#fff8e7', OUT, 3);
+  const c0 = LEVELS[Math.floor(p)][1], c1 = LEVELS[Math.min(2, Math.ceil(p))][1]; rr(x + p * tw + 6, y + 6, tw - 12, h - 12, (h - 12) / 2, mixHex(c0, c1, p - Math.floor(p)), OUT, 3);
+  LEVELS.forEach(([t], i) => { const on = Math.round(p) === i; btn(x + i * tw, y, tw, h, () => { if (setup.lv !== i + 1) { setup.lvFrom = p; setup.lv = i + 1; setup.lvAt = clock.now(); store('zt_lv', String(i + 1)); tone(760, 0.06, 'sine', 0.18); } }); text(t, x + i * tw + tw / 2, y + h / 2 + 1, 27, on ? '#ffffff' : '#6f6068', 'center', on ? OUT : null, F_T); });
+}
+function flowDots(i) { // where in 개인전 you are: three dots under the page, the one you are on long
+  const n = 3, gap = 12, dw = 10, lw = 30, tot = lw + (n - 1) * dw + (n - 1) * gap; let x = W / 2 - tot / 2;
+  for (let k = 0; k < n; k++) { const w = k === i ? lw : dw; rr(x, LY.foot - 5, w, 10, 5, k === i ? INK : 'rgba(74,61,71,0.25)', null); x += w + gap; }
+}
 const WSW = 92; // the 뽑기 · 업적 switch: as tall as 단식 · 복식
 const KB = s => touchUI ? '' : s; // a hint about keys: only where there is a keyboard
 // 팁: a small (i) beside a page's title; a tap opens its note in a dark bubble pointing at it, grown from the (i) (160 ms); a tap anywhere closes it
@@ -3683,6 +3695,7 @@ function iconKey(x, y, s, kind, fn, fill) { // a square key with a picture: plus
   if (kind === 'plus') { ctx.lineWidth = 7; ctx.strokeStyle = INK; ctx.beginPath(); ctx.moveTo(-15, 0); ctx.lineTo(15, 0); ctx.moveTo(0, -15); ctx.lineTo(0, 15); ctx.stroke(); }
   else if (kind === 'code') { rr(-22, -13, 44, 26, 7, '#ffffff', OUT, 2.8); for (const dx of [-12, -2, 8]) E(dx, 0, 3.6, 3.6, INK, 0, true); ctx.lineWidth = 3; ctx.strokeStyle = CORAL; ctx.beginPath(); ctx.moveTo(16, -7); ctx.lineTo(16, 7); ctx.stroke(); } // a code field: three hidden letters and the cursor
   else if (kind === 'hanger') { ctx.scale(0.95, 0.95); icon('hanger', 0, 2, 50); } // 내 아이템
+  else if (kind === 'ballmachine') { rr(-20, -16, 40, 30, 6, SKY, OUT, 2.8); rr(-14, -26, 28, 12, 4, '#dbe9f7', OUT, 2.4); E(-8, -28, 6, 6, BALL); E(6, -29, 6, 6, BALL); E(0, 0, 8, 8, '#2b2229'); E(-12, 20, 5, 5, '#3b3340'); E(12, 20, 5, 5, '#3b3340'); E(30, -4, 7, 7, BALL); } // 볼머신장: the ball machine, a ball flying out
   else if (kind === 'check') { ctx.lineWidth = 7; ctx.strokeStyle = '#3f9a5c'; ctx.beginPath(); ctx.moveTo(-14, 1); ctx.lineTo(-4, 11); ctx.lineTo(15, -10); ctx.stroke(); } // a tick: save
   else if (kind === 'pencil') { ctx.rotate(-0.78 + Math.PI); ctx.lineWidth = 2.8; rr(-14, -6, 26, 12, 2, BALL, OUT, 2.8); poly([12, -6, 23, 0, 12, 6], '#f1c9a5'); poly([19.5, -2, 23, 0, 19.5, 2], INK); rr(-21, -6, 8, 12, 2.5, CORAL, OUT, 2.8); }
   ctx.restore();
@@ -3745,7 +3758,7 @@ function pickFormat(i) {
   tone(880, 0.12, 'triangle', 0.25);
   if (net) { if (i < FORMAT_IDS.length) { setup.format = FORMAT_IDS[i]; scene = netCpu() ? 'mode' : 'court'; } return; } // the host sets the match up
   if (i >= FORMAT_IDS.length) { setup.practice = true; scene = 'select'; return; } // the ball machine: pick an animal and a court, then practise
-  setup.practice = false; setup.format = FORMAT_IDS[i]; rank.mode = setup.format; scene = 'mode';
+  setup.practice = false; setup.format = FORMAT_IDS[i]; rank.mode = setup.format; if (FLOW3) { setup.pending = (setup.lv || 2) - 1; scene = 'select'; } else scene = 'mode';
 }
 function pickMode(i) { tone(880, 0.12, 'triangle', 0.25); if (net) { setup.level = i + 1; scene = 'court'; return; } setup.pending = i; scene = 'select'; }
 function pickCourt(i) {
@@ -4323,7 +4336,7 @@ const scenes = {
       if (anyHit(...K_R)) state.sel = (state.sel + 1) % 12; if (anyHit(...K_L)) state.sel = (state.sel + 11) % 12;
       if (anyHit(...K_D)) state.sel = (state.sel + 6) % 12; if (anyHit(...K_U)) state.sel = (state.sel + 6) % 12;
       if (anyHit(...K_R, ...K_L, ...K_D, ...K_U)) tone(660, 0.05, 'sine', 0.15);
-      if (pressed('Escape')) { if (net) goHome(); else scene = setup.practice ? 'format' : 'mode'; return; }
+      if (pressed('Escape')) { if (net) goHome(); else scene = setup.practice || FLOW3 ? 'format' : 'mode'; return; }
       if (anyHit(...K_OK)) pickAnimal();
     },
     draw() {
@@ -4338,21 +4351,22 @@ const scenes = {
         text(A.ko, cx, y + ch - 15, 20, INK, 'center', on ? '#fff3c4' : CREAM, F_T);
       });
       // the chosen animal: its card, wearing the account's gear, with the four slots along the bottom
-      const a = state.sel, A = ANIMALS[a], gear = myGear(a), py = LY.top + 2 * (ch + LY.gap), ph = LY.tall ? 372 : 356;
+      const a = state.sel, A = ANIMALS[a], gear = myGear(a), py = LY.top + 2 * (ch + LY.gap), ph = Math.min(LY.tall ? 372 : 356, contentEnd() - py); // never down into the bottom row
       panel(LY.m, py, LY.w, ph);
       ctx.font = `${Math.round(17 * 1.1)}px ${F_B}`; const dw = Math.max(...STAT_DO.map(d => ctx.measureText(d).width));
       // left: the hanger and the name at the top, the stats along the bottom; right: the animal, big, wearing its gear
-      const tw = barsWidth(dw), lx = LY.m + LY.pad, sy0 = py + ph - LY.pad - 4 * 30 - 12, free = LY.m + LY.w - LY.pad - (lx + tw);
+      const tw = barsWidth(dw), lx = LY.m + LY.pad, sy0 = py + (ph - 235) / 2 + 103, // the name (the hanger beside it), the line and the five bars as one block, centred in the card's height
+        free = LY.m + LY.w - LY.pad - (lx + tw);
       const ax = LY.m + LY.w - LY.pad - Math.max(free, 150) / 2, ay = py + Math.min(ph * 0.66, ph - 60), ks = LY.tall ? 2.0 : 1.75;
       ctx.fillStyle = 'rgba(70,90,140,0.2)'; ctx.beginPath(); ctx.ellipse(ax, ay, 26 * ks, 6 * ks, 0, 0, 7); ctx.fill();
       ctx.lineWidth = 2.6; ctx.strokeStyle = OUT;
       drawAnimal(a, ax, ay, ks, { front: true, t: state.t, accent: CORAL, gear });
-      { const hx = lx, hy = py + LY.pad, over = btn(hx, hy, 64, 64, () => openCloset('select', state.sel)); // the hanger: this animal's closet
-        rr(hx, hy + 4, 64, 64, 16, OUT, null); rr(hx, hy, 64, 64, 16, over ? '#fff3c4' : '#ffffff', OUT, 2.8); icon('hanger', hx + 32, hy + 32, 46); }
-      text(A.ko, lx, sy0 - 74, 34, INK, 'left', null, F_T);
+      { const hs = 52, hx = lx + textW(A.ko, 34, F_T) + 16, hy = sy0 - 86 - hs / 2, over = btn(hx, hy, hs, hs, () => openCloset('select', state.sel)), d = sink(hx, hy, hs, hs, 3); // the hanger: this animal's closet, beside its name
+        rr(hx, hy + 3, hs, hs, 14, OUT, null); rr(hx, hy + d, hs, hs, 14, hoverOn(over) ? '#fffdf3' : '#ffffff', OUT, 2.6); icon('hanger', hx + hs / 2, hy + d + hs / 2, 40); }
+      text(A.ko, lx, sy0 - 86, 34, INK, 'left', null, F_T);
       text(A.note, lx, sy0 - 38, 23, '#c0605a', 'left', null, F_H);
       statBars(a, lx, sy0, gearBonus(gear));
-      sideBtn(net ? '나가기' : '뒤로', () => { if (net) goHome(); else scene = setup.practice ? 'format' : 'mode'; });
+      sideBtn(net ? '나가기' : '뒤로', () => { if (net) goHome(); else scene = setup.practice || FLOW3 ? 'format' : 'mode'; }); if (FLOW3 && !net && !setup.practice) flowDots(1);
       mainBtn(net && net.myPick ? (net.myPick.animal === state.sel ? '준비 완료!' : '이 선수로 바꾸기') : '이 선수로 결정', pickAnimal);
       if (net) { const me = !!net.myPick, R = net.ready || { n: 0, need: 2 }, team = net.kind === 'single' ? '' : (net.role === 'host' ? 0 : net.seat) % 2 === 0 ? 'A팀 · ' : 'B팀 · ';
         rr(LY.m, LY.bot - 50, LY.w, 40, 20, 'rgba(59,51,64,0.85)', null);
@@ -4414,7 +4428,7 @@ const scenes = {
         });
         ctx.restore();
       });
-      sideBtn('뒤로', () => { scene = 'select'; }); mainBtn('이 코트로 선택', () => pickCourt(state.cc));
+      sideBtn('뒤로', () => { scene = 'select'; }); mainBtn('이 코트로 선택', () => pickCourt(state.cc)); if (FLOW3 && !net && !setup.practice) flowDots(2);
       menuEnd(KB('↑ ↓ 로 고르고 Enter'), `${ANIMALS[setup.animal].ko}의 강한 코트와 약한 코트가 표시돼요\n강한 코트에서는 능력치가 조금 올라요`);
     },
   },
@@ -4432,7 +4446,8 @@ const scenes = {
       menuBegin('경기 방식을 골라 주세요'); // the first step: 뒤로 already goes home (online, back to the room)
       const SH = net ? 0 : 92; if (!net) drawDoublesSwitch(LY.top, SH);
       const how = { flash: '10점을 먼저 따면 승리 (2점 차)', short: '4게임 먼저 · 40-40이면 한 포인트로 결정', regular: '세트 3개를 먼저 따면 승리', practice: '샷마다 타이밍 · 속도 · 떨어진 곳을 알려 줘요' };
-      const ids = net ? [...FORMAT_IDS] : [...FORMAT_IDS, 'practice'], top = net ? LY.top : LY.top + SH + LY.gap + 10, ch = Math.min(SZ().format4, (contentEnd() - top - LY.gap * (ids.length - 1)) / ids.length), full = ch >= 128;
+      const f3 = FLOW3 && !net, LH = 68, ids = net || f3 ? [...FORMAT_IDS] : [...FORMAT_IDS, 'practice'], top = net ? LY.top : LY.top + SH + LY.gap + 10, ch = Math.min(SZ().format4, (contentEnd() - (f3 ? LH + LY.gap + 10 : 0) - top - LY.gap * (ids.length - 1)) / ids.length), full = ch >= 128;
+      if (f3) { if (!setup.lv) setup.lv = +(store('zt_lv') || 2); const ly = contentEnd() - LH; drawLevelSwitch(LY.m, ly, LY.w - LH - 12, LH); iconKey(LY.m + LY.w - LH, ly, LH, 'ballmachine', () => pickFormat(3), '#eef7ff'); } // the level for every way of play, and the ball machine beside it
       ids.forEach((id, i) => {
         const y = top + i * (ch + LY.gap), x = LY.m + LY.pad, by = full ? y + LY.pad - 8 : y + ch / 2 - 37; // three lines from the card's padding, or two centred when the cards are short
         const name = id === 'practice' ? '볼머신장 가기' : FORMATS[id].ko, sub = id === 'practice' ? '볼머신과 레슨 9개 · 공 치는 법 익히기' : rules(id).sub;
@@ -4444,7 +4459,7 @@ const scenes = {
         if (full) text(how[id], x, by + 92, 20, '#7a6872', 'left', null, F_B);
         ctx.restore();
       });
-      sideBtn('뒤로', formatBack);
+      sideBtn('뒤로', formatBack); if (FLOW3 && !net) flowDots(0);
       menuEnd(KB('↑ ↓ 로 고르고 Enter'), '명예의 전당은 경기 방식마다 따로 집계돼요');
     },
   },
