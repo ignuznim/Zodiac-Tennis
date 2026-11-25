@@ -3521,12 +3521,12 @@ function backKey(kind, fn) { // a square key: an arrow back, or a house for home
   else { ctx.lineCap = 'round'; ctx.lineWidth = 5; ctx.strokeStyle = INK; ctx.beginPath(); ctx.moveTo(cx + 13, cy); ctx.lineTo(cx - 12, cy); ctx.moveTo(cx - 2, cy - 11); ctx.lineTo(cx - 13, cy); ctx.lineTo(cx - 2, cy + 11); ctx.stroke(); }
   ctx.restore(); barL = x + s;
 }
-function iconKey(x, y, s, kind, fn, fill) { // a square key with a picture: plus (make), key (a code), pencil (edit)
+function iconKey(x, y, s, kind, fn, fill) { // a square key with a picture: plus (make), code (a code field), pencil (edit)
   FIX.push(['k:' + kind, x, y + OY, s, s]); const over = btn(x, y, s, s, fn), d = sink(x, y, s, s, s > 50 ? 4 : 3);
   rr(x, y + (s > 50 ? 5 : 3), s, s, s * 0.26, OUT, null); rr(x, y + d, s, s, s * 0.26, hoverOn(over) ? '#fffdf3' : fill || '#fff8e7', OUT, s > 50 ? 3 : 2.4);
   const cx = x + s / 2, cy = y + d + s / 2, k = s / 68; ctx.save(); ctx.translate(cx, cy); ctx.scale(k, k); ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.strokeStyle = OUT;
   if (kind === 'plus') { ctx.lineWidth = 7; ctx.strokeStyle = INK; ctx.beginPath(); ctx.moveTo(-15, 0); ctx.lineTo(15, 0); ctx.moveTo(0, -15); ctx.lineTo(0, 15); ctx.stroke(); }
-  else if (kind === 'key') { ctx.rotate(-Math.PI / 4); ctx.translate(2, 0); ctx.lineWidth = 2.8; ctx.fillStyle = BALL; ctx.beginPath(); ctx.moveTo(-4, -4); ctx.lineTo(22, -4); ctx.lineTo(22, 10); ctx.lineTo(17, 10); ctx.lineTo(17, 4); ctx.lineTo(13, 4); ctx.lineTo(13, 8); ctx.lineTo(8, 8); ctx.lineTo(8, 4); ctx.lineTo(-4, 4); ctx.closePath(); ctx.fill(); ctx.stroke(); E(-12, 0, 11, 11, BALL); E(-12, 0, 4, 4, '#fff8e7'); }
+  else if (kind === 'code') { rr(-22, -13, 44, 26, 7, '#ffffff', OUT, 2.8); for (const dx of [-12, -2, 8]) E(dx, 0, 3.6, 3.6, INK, 0, true); ctx.lineWidth = 3; ctx.strokeStyle = CORAL; ctx.beginPath(); ctx.moveTo(16, -7); ctx.lineTo(16, 7); ctx.stroke(); } // a code field: three hidden letters and the cursor
   else if (kind === 'pencil') { ctx.rotate(-0.78 + Math.PI); ctx.lineWidth = 2.8; rr(-14, -6, 26, 12, 2, BALL, OUT, 2.8); poly([12, -6, 23, 0, 12, 6], '#f1c9a5'); poly([19.5, -2, 23, 0, 19.5, 2], INK); rr(-21, -6, 8, 12, 2.5, CORAL, OUT, 2.8); }
   ctx.restore();
 }
@@ -3555,11 +3555,16 @@ function button(label, x, y, w, h, fn, o = {}) { // a big rounded button, for th
   else if (o.icon) { const tw = textW(label, o.size || 28, F_T), x0 = x + (w - (34 + 12 + tw)) / 2; o.icon(x0 + 17, y + h / 2); text(label, x0 + 46, y + h / 2 + 1, o.size || 28, o.ink || INK, 'left', null, F_T); } // a logo, then the words, centred together
   else text(label, x + w / 2, y + h / 2 + 1, o.size || 28, o.ink || INK, 'center', null, F_T);
 }
-function brandLogo(id, cx, cy) { // the sign-in marks, small: Google's four-colour G, Kakao's speech bubble, Apple's apple
-  ctx.save();
-  if (id === 'google') { const r = 13, cols = [['#ea4335', -2.45, -0.75], ['#fbbc05', 2.35, 3.85], ['#34a853', 0.75, 2.35], ['#4285f4', -0.75, 0.75]]; ctx.lineWidth = 5.6; ctx.lineCap = 'butt';
-    for (const [c, a, b] of cols) { ctx.strokeStyle = c; ctx.beginPath(); ctx.arc(cx, cy, r, a, b); ctx.stroke(); } ctx.fillStyle = '#4285f4'; ctx.fillRect(cx, cy - 2.8, r + 2.8, 5.6); }
-  else if (id === 'kakao') { ctx.fillStyle = '#3c1e1e'; ctx.beginPath(); ctx.ellipse(cx, cy - 2, 15, 12, 0, 0, 7); ctx.fill(); ctx.beginPath(); ctx.moveTo(cx - 8, cy + 6); ctx.lineTo(cx - 11, cy + 14); ctx.lineTo(cx - 1, cy + 8); ctx.fill(); }
+const BRAND = { // the sign-in marks as their owners publish them (the G from Google's sign-in button, Kakao's speech-bubble symbol), drawn from their paths
+  google: { v: 48, p: [['#EA4335', 'M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z'],
+    ['#4285F4', 'M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z'],
+    ['#FBBC05', 'M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z'],
+    ['#34A853', 'M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z']] },
+  kakao: { v: 24, p: [['#000000', 'M12 3C6.48 3 2 6.58 2 11c0 2.85 1.86 5.35 4.66 6.77-.15.53-.97 3.41-1 3.63 0 0-.02.17.09.24.11.06.24.01.24.01.32-.04 3.7-2.42 4.29-2.83.56.08 1.13.12 1.72.12 5.52 0 10-3.58 10-8S17.52 3 12 3z']] },
+};
+function brandLogo(id, cx, cy, size = 30) { // a sign-in mark, size across, centred on cx, cy
+  const B = BRAND[id]; ctx.save();
+  if (B && typeof Path2D !== 'undefined') { const k = size / B.v; ctx.translate(cx - size / 2, cy - size / 2); ctx.scale(k, k); for (const [c, d] of B.p) { ctx.fillStyle = c; B.p2 = B.p2 || {}; ctx.fill(B.p2[d] = B.p2[d] || new Path2D(d)); } }
   else { ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(cx - 5, cy + 3, 9, 0, 7); ctx.arc(cx + 5, cy + 3, 9, 0, 7); ctx.fill(); ctx.beginPath(); ctx.ellipse(cx + 3, cy - 12, 3, 6, 0.6, 0, 7); ctx.fill(); }
   ctx.restore();
 }
@@ -4034,7 +4039,7 @@ const scenes = {
     update(dt) { state.t += dt; acct.msgT += dt; if (pressed('Escape')) scene = 'title'; if (acct.user && acct.prof && acct.prof.nickname) { scene = 'title'; openProfile(); } },
     draw() {
       menuBegin('로그인', true);
-      const on = acct.providers || ['google', 'kakao'], PV = [['google', 'Google로 로그인', '#ffffff'], ['kakao', '카카오로 로그인', '#fee500'], ['apple', 'Apple로 로그인', '#ffffff']].filter(q => on.includes(q[0])); // until the list arrives, show both
+      const on = acct.providers || ['google', 'kakao'], PV = [['google', 'Google로 로그인', '#ffffff'], ['kakao', '카카오로 로그인', '#FEE500'], ['apple', 'Apple로 로그인', '#ffffff']].filter(q => on.includes(q[0])); // until the list arrives, show both
       const bh = 64, bg = 14, bw = Math.max(...PV.map(q => textW(q[1], 24, F_T))) + 34 + 12 + 56, colH = PV.length * bh + (PV.length - 1) * bg;
       const py = LY.top, ph = acct.user ? 340 : Math.max(130, colH) + LY.pad * 2 + 6; panel(LY.m, py, LY.w, ph); // signed in: no taller than its contents
       if (!acct.user) { // what signing in brings at the left, the ways to sign in at the right, each as wide as the widest
@@ -4240,7 +4245,7 @@ const scenes = {
       menuBegin('온라인 대결', true);
       if (signedIn() && lobbyNet.online) { ctx.lineWidth = 2; ctx.strokeStyle = OUT; E(LY.m + LY.w - 112, LY.titleY, 6, 6, '#4fc37a'); text(`${lobbyNet.online}명 접속`, LY.m + LY.w, LY.titleY, 20, '#3f9a5c', 'right', null, F_T); }
       const bh = 64, jw = textW('바로 참가', 27, F_T) + 80; // 방 만들기 (+) and 코드로 참가 (a key) as keys, 바로 참가 at the right
-      iconKey(LY.m, LY.top, bh, 'plus', () => { state.pub = signedIn(); scene = 'make'; }); iconKey(LY.m + bh + 12, LY.top, bh, 'key', () => openNick('code'));
+      iconKey(LY.m, LY.top, bh, 'plus', () => { state.pub = signedIn(); scene = 'make'; }); iconKey(LY.m + bh + 12, LY.top, bh, 'code', () => openNick('code'));
       text('방 만들기 · 코드로 참가', LY.m + bh * 2 + 26, LY.top + bh / 2, MIN_TEXT, '#4f6f63', 'left', null, F_B);
       button('바로 참가', LY.m + LY.w - jw, LY.top, jw, bh, joinAny, { size: 27, fill: '#fff3c4' });
       const py = LY.top + bh + LY.gap + 6, ph = contentEnd() - py, rh = 100; panel(LY.m, py, LY.w, ph);
