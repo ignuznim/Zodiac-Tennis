@@ -38,24 +38,25 @@
   #nick button.go, #fb button.go { background: #fff3c4; border-color: #ff8a7a; }
   #nick .err, #fb .err { min-height: calc(var(--u, 0.6) * 24px); margin-top: calc(var(--u, 0.6) * 10px); font: calc(var(--u, 0.6) * 20px) 'Gowun Dodum', sans-serif; color: #e2574c; }
   #safe { position: fixed; visibility: hidden; pointer-events: none; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
-  /* 개발자에게 한마디: the title with a cross at its right, a segmented switch, a quiet box to write in, the count and 보내기 at the right */
-  #fb form { text-align: left; padding: calc(var(--u, 0.6) * 26px) calc(var(--u, 0.6) * 28px) calc(var(--u, 0.6) * 28px); }
+  /* 개발자에게 한마디, drawn like the game's own windows: the same outline and drop under every key, a switch like 단식 · 복식, a cross key at the right of the title */
+  #fb form { text-align: left; padding: calc(var(--u, 0.6) * 24px) calc(var(--u, 0.6) * 26px) calc(var(--u, 0.6) * 26px); background: #fffaf0; }
   #fb .head { display: flex; align-items: center; justify-content: space-between; gap: calc(var(--u, 0.6) * 12px); }
   #fb h2 { margin: 0; font-size: calc(var(--u, 0.6) * 32px); }
   #fb p { margin: calc(var(--u, 0.6) * 6px) 0 calc(var(--u, 0.6) * 18px); font-size: calc(var(--u, 0.6) * 21px); }
-  #fb button.x { flex: none; width: calc(var(--u, 0.6) * 52px); height: calc(var(--u, 0.6) * 52px); padding: 0; display: grid; place-items: center; border: none; border-radius: 50%; background: #f1e8d9; }
-  #fb button.x svg { width: 42%; height: 42%; }
-  #fb .kinds { display: flex; gap: calc(var(--u, 0.6) * 4px); padding: calc(var(--u, 0.6) * 5px); margin-bottom: calc(var(--u, 0.6) * 14px); background: #f1e8d9; border-radius: calc(var(--u, 0.6) * 18px); }
-  #fb .kinds button { padding: calc(var(--u, 0.6) * 11px) 0; font-size: calc(var(--u, 0.6) * 23px); color: #9a8b93; border: none; border-radius: calc(var(--u, 0.6) * 14px); background: transparent; transition: background-color 160ms ease-out, color 160ms ease-out, box-shadow 160ms ease-out; }
-  #fb .kinds button.on { background: #fff; color: #4a3d47; box-shadow: 0 1px 0 rgba(107,85,96,0.25), 0 calc(var(--u, 0.6) * 3px) calc(var(--u, 0.6) * 8px) rgba(107,85,96,0.12); }
-  #fb textarea { width: 100%; box-sizing: border-box; padding: calc(var(--u, 0.6) * 16px); font: max(16px, calc(var(--u, 0.6) * 22px)) 'Gowun Dodum', sans-serif; color: #4a3d47; border: max(1px, calc(var(--u, 0.6) * 2px)) solid #e6dccd; border-radius: calc(var(--u, 0.6) * 16px); background: #fff; outline: none; resize: none; line-height: 1.45; display: block; transition: border-color 160ms ease-out; }
+  #fb button { transition: transform 100ms ease-out, box-shadow 100ms ease-out; }
+  #fb button.x { flex: none; width: calc(var(--u, 0.6) * 54px); height: calc(var(--u, 0.6) * 54px); padding: 0; display: grid; place-items: center; background: #fff8e7; border: max(1.5px, calc(var(--u, 0.6) * 3px)) solid #6b5560; border-radius: calc(var(--u, 0.6) * 14px); box-shadow: 0 max(2px, calc(var(--u, 0.6) * 4px)) 0 #6b5560; }
+  #fb button.x svg { width: 44%; height: 44%; }
+  #fb .kinds { display: flex; gap: 0; padding: calc(var(--u, 0.6) * 6px); margin-bottom: calc(var(--u, 0.6) * 16px); background: #fff8e7; border: max(1.5px, calc(var(--u, 0.6) * 3px)) solid #6b5560; border-radius: 999px; box-shadow: 0 max(2px, calc(var(--u, 0.6) * 4px)) 0 #6b5560; }
+  #fb .kinds button { padding: calc(var(--u, 0.6) * 10px) 0; font-size: calc(var(--u, 0.6) * 24px); color: #6f6068; border: max(1.5px, calc(var(--u, 0.6) * 3px)) solid transparent; border-radius: 999px; background: transparent; transition: background-color 180ms ease-out, color 180ms ease-out, border-color 180ms ease-out; }
+  #fb .kinds button.on { background: #ff8a7a; color: #fff; border-color: #6b5560; text-shadow: 0 0 2px #6b5560, 0 1px 0 #6b5560; }
+  #fb textarea { width: 100%; box-sizing: border-box; padding: calc(var(--u, 0.6) * 16px); font: max(16px, calc(var(--u, 0.6) * 22px)) 'Gowun Dodum', sans-serif; color: #4a3d47; border: max(1px, calc(var(--u, 0.6) * 2px)) solid #e6dccd; border-radius: calc(var(--u, 0.6) * 14px); background: #fff; outline: none; resize: none; line-height: 1.45; display: block; transition: border-color 160ms ease-out; }
   #fb textarea::placeholder { color: #b3a4ac; }
-  #fb textarea:focus { border-color: #ff8a7a; }
+  #fb textarea:focus { border-color: #6b5560; }
   #fb .err { min-height: 0; margin-top: calc(var(--u, 0.6) * 8px); text-align: center; } #fb .err:empty { margin-top: 0; }
-  #fb .row { align-items: center; justify-content: space-between; margin-top: calc(var(--u, 0.6) * 16px); }
-  #fb .count { font: calc(var(--u, 0.6) * 18px) 'Gowun Dodum', sans-serif; color: #b3a4ac; }
-  #fb button.go { flex: none; padding: calc(var(--u, 0.6) * 13px) calc(var(--u, 0.6) * 36px); box-shadow: 0 max(2px, calc(var(--u, 0.6) * 4px)) 0 #6b5560; border-color: #6b5560; transition: transform 100ms ease-out, box-shadow 100ms ease-out; }
-  #fb button.go:active { transform: translateY(max(2px, calc(var(--u, 0.6) * 4px))); box-shadow: 0 0 0 #6b5560; }
+  #fb .row { align-items: center; justify-content: space-between; margin-top: calc(var(--u, 0.6) * 18px); }
+  #fb .count { font: calc(var(--u, 0.6) * 18px) 'Gowun Dodum', sans-serif; color: #9a8b93; }
+  #fb button.go { flex: none; padding: calc(var(--u, 0.6) * 14px) calc(var(--u, 0.6) * 40px); font-size: calc(var(--u, 0.6) * 28px); background: #fff3c4; border-color: #6b5560; box-shadow: 0 max(2px, calc(var(--u, 0.6) * 5px)) 0 #6b5560; }
+  #fb button.x:active, #fb button.go:active { transform: translateY(max(2px, calc(var(--u, 0.6) * 4px))); box-shadow: 0 0 0 #6b5560; } /* pressed: it sinks into its shadow, as every key in the game */
 </style>
 </head>
 <body>
@@ -2337,7 +2338,7 @@ function guestStep() { // the guest draws what the host sends and sends its own 
 // ---- 명예의 전당: the all-time top ten, kept like ancestral tablets in Jongmyo's long hall ----
 const HALL_TIME = 'night'; // 'night': a full moon; 'dusk': the sun going down
 const HALL_SKY = { night: ['#1d1b3a', '#3b2f5c', '#6a4a6e'], dusk: ['#3b2c58', '#b05a6a', '#f2a46a'] };
-function openHall() { scene = 'hall'; state.hallT = 0; rank.list = null; loadRanking(null, 'all'); tone(392, 0.4, 'sine', 0.18); tone(587, 0.6, 'sine', 0.14, 0.25); }
+function openHall() { scene = 'hall'; state.hallT = 0; rank.list = HALLC[rank.mode] ? HALLC[rank.mode].list : null; rank.litAt = rank.list ? clock.now() : null; loadRanking(null, 'all'); tone(392, 0.4, 'sine', 0.18); tone(587, 0.6, 'sine', 0.14, 0.25); }
 function irwol(x, y, s) { // 일월오봉도, the sun, the moon and five peaks behind the throne, under a night-blue sky, drawn into a square
   const u = s / 100, P = (pts, fill) => { ctx.beginPath(); pts.forEach(([a, b], k) => k ? ctx.lineTo(x + a * u, y + b * u) : ctx.moveTo(x + a * u, y + b * u)); ctx.closePath(); ctx.fillStyle = fill; ctx.fill(); };
   const g = ctx.createLinearGradient(0, y, 0, y + s); g.addColorStop(0, '#1d2b55'); g.addColorStop(1, '#34497c'); ctx.fillStyle = g; ctx.fillRect(x, y, s, s);
@@ -2380,6 +2381,10 @@ function drawScoreCard(r, i) { // how a record's score was made: who played, dre
   text(`= ${r.score.toLocaleString()}점`, R0, cy, 28, INK, 'right', null, F_N);
   ctx.restore(); HX = null;
 }
+function shimmerBar(x, y, w, h) { // a grey bar with a light sweeping across it, left to right, every 1.2 s: something is loading here
+  rr(x, y, w, h, h / 2, '#ece3d3', null); if (CALM) return; const sx = ((clock.now() / 1.2) % 1) * (W + 300) - 150, g = ctx.createLinearGradient(sx - 90, 0, sx + 90, 0);
+  g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, 'rgba(255,255,255,0.75)'); g.addColorStop(1, 'rgba(255,255,255,0)'); ctx.save(); rr(x, y, w, h, h / 2, null, null); ctx.clip(); ctx.fillStyle = g; ctx.fillRect(x, y, w, h); ctx.restore();
+}
 function hallFrame(cx, cy, w, h, r, ri, rankNo, on) { // a portrait in a gilt frame, the player as dressed for the record; dark until its light comes on
   const f = Math.max(10, w * 0.07); rr(cx - w / 2 + 4, cy - h / 2 + 8, w, h, 4, 'rgba(10,6,12,0.45)', null); // its shadow on the wall
   rr(cx - w / 2, cy - h / 2, w, h, 4, '#c9a24b', '#5a4318', 2.4); rr(cx - w / 2 + f * 0.35, cy - h / 2 + f * 0.35, w - f * 0.7, h - f * 0.7, 3, null, '#e8c873', 1.6); // the gilt, a bright bead inside it
@@ -2389,8 +2394,29 @@ function hallFrame(cx, cy, w, h, r, ri, rankNo, on) { // a portrait in a gilt fr
   const lg = ctx.createRadialGradient(cx, iy + ih * 0.42, 4, cx, iy + ih * 0.42, ih * 0.7); lg.addColorStop(0, 'rgba(255,236,200,0.3)'); lg.addColorStop(1, 'rgba(255,236,200,0)'); ctx.fillStyle = lg; ctx.fillRect(ix, iy, iw, ih); // the painter's light behind the sitter
   if (r) { const worn = {}; for (const id of (r.gear || '').split(',')) { const it = item(id); if (it) worn[it.slot] = id; }
     ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(r.animal, cx, iy + ih * 0.97, ih / 170, { front: true, t: rankNo === 0 ? state.hallT || 0 : 0.4, anim: rankNo === 0 ? 'cheer' : 'idle', accent: CORAL, gear: worn }); }
-  else text('비어 있어요', cx, cy, MIN_TEXT, 'rgba(255,240,220,0.5)', 'center', null, F_T);
+  else if (rank.list) text('비어 있어요', cx, cy, MIN_TEXT, 'rgba(255,240,220,0.5)', 'center', null, F_T);
   ctx.restore(); ctx.fillStyle = `rgba(14,8,16,${0.62 * (1 - on)})`; ctx.fillRect(cx - w / 2, cy - h / 2, w, h); // before its light comes on
+}
+const HALL_VIEW = new URLSearchParams(location.search).get('view') || 'now'; // what the hall's windows look out on: 'now' (석조전 small in the first window), 'sky', 'stone', 'roof' (shown as drafts on the test page)
+function hallView(v, XS, ww, wy0, wy1, t) { // the view through the windows, drawn once across all three so it lines up behind the bars
+  const b = wy1 - 8, hh = wy1 - wy0;
+  if (v === 'now') { if (hh > 160) sukjojeon(XS[0] + ww / 2, b, Math.min(100, ww * 0.9), '#f6d48a'); return; }
+  if (v === 'sky') { for (const [x0, d] of [[XS[0] + 8, 1], [XS[2] + ww - 8, -1]]) for (let k = 0; k < 3; k++) { const y = b - 60 - k * 70, L = 110 - k * 22; // a pine at each side window, its boughs in tiers
+      ctx.fillStyle = '#2a3a3a'; ctx.beginPath(); ctx.moveTo(x0, y - 22); ctx.quadraticCurveTo(x0 + d * L * 0.5, y - 26, x0 + d * L, y + 4); ctx.quadraticCurveTo(x0 + d * L * 0.55, y + 12, x0, y + 14); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#3a4d48'; ctx.beginPath(); ctx.moveTo(x0, y - 18); ctx.quadraticCurveTo(x0 + d * L * 0.45, y - 22, x0 + d * L * 0.85, y - 2); ctx.quadraticCurveTo(x0 + d * L * 0.4, y - 6, x0, y - 6); ctx.closePath(); ctx.fill(); }
+    ctx.fillStyle = '#4a3326'; ctx.fillRect(XS[0] + 8, b - 220, 10, 230); ctx.fillRect(XS[2] + ww - 18, b - 220, 10, 230); // their trunks
+    ctx.fillStyle = '#25304a'; ctx.beginPath(); ctx.moveTo(0, b); for (let x = 0; x <= W; x += 40) ctx.lineTo(x, b - 26 - 14 * Math.sin(x / 90)); ctx.lineTo(W, b + 10); ctx.lineTo(0, b + 10); ctx.closePath(); ctx.fill(); return; } // and low trees along the bottom
+  if (v === 'stone') { const H0 = Math.min(150, hh * 0.45), top = b - H0; // 석조전's long front across all three windows: columns along it, the pediment in the middle, its windows lit
+    ctx.fillStyle = '#3f4a5e'; ctx.fillRect(0, top + 18, W, H0); ctx.fillStyle = '#4c5a6e'; ctx.fillRect(0, top + 10, W, 10);
+    ctx.beginPath(); ctx.moveTo(W / 2 - 150, top + 12); ctx.lineTo(W / 2, top - 50); ctx.lineTo(W / 2 + 150, top + 12); ctx.closePath(); ctx.fillStyle = '#56657a'; ctx.fill();
+    ctx.fillStyle = '#5b6a80'; for (let x = 20; x < W; x += 44) ctx.fillRect(x, top + 22, 12, H0 - 30);
+    ctx.fillStyle = '#f6d48a'; for (let x = 40; x < W - 20; x += 44) { ctx.globalAlpha = 0.55 + 0.25 * Math.sin(x); ctx.fillRect(x, top + 40, 14, 22); ctx.fillRect(x, top + 84, 14, 22); } ctx.globalAlpha = 1;
+    ctx.fillStyle = '#323b4d'; ctx.fillRect(0, b - 10, W, 14); return; }
+  if (v === 'roof') { const top = b - Math.min(120, hh * 0.38); // the old palace's tiled roof across the windows: the eaves curling up at both ends, the ridge dark against the moonlit sky
+    ctx.fillStyle = '#2b3048'; ctx.beginPath(); ctx.moveTo(-20, top + 30); ctx.quadraticCurveTo(W / 2, top + 60, W + 20, top + 30); ctx.lineTo(W + 20, b + 10); ctx.lineTo(-20, b + 10); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#3a4060'; ctx.beginPath(); ctx.moveTo(-30, top + 26); ctx.quadraticCurveTo(60, top + 10, W / 2 - 200, top - 4); ctx.lineTo(W / 2 + 200, top - 4); ctx.quadraticCurveTo(W - 60, top + 10, W + 30, top + 26); ctx.quadraticCurveTo(W / 2, top + 46, -30, top + 26); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,240,200,0.25)'; ctx.lineWidth = 1.4; ctx.beginPath(); for (let x = 30; x < W; x += 18) { ctx.moveTo(x, top + 2); ctx.lineTo(x + (x - W / 2) * 0.05, top + 30); } ctx.stroke();
+    ctx.fillStyle = '#20243a'; ctx.fillRect(W / 2 - 210, top - 12, 420, 9); for (const x of [W / 2 - 214, W / 2 + 198]) { ctx.beginPath(); ctx.moveTo(x, top - 12); ctx.quadraticCurveTo(x + 8, top - 30, x + 16, top - 20); ctx.lineTo(x + 16, top - 3); ctx.closePath(); ctx.fill(); } ctx.fillStyle = '#f6d48a'; ctx.globalAlpha = 0.6; for (const x of [140, 260, 460, 580]) ctx.fillRect(x, top + 62, 26, 34); ctx.globalAlpha = 1; return; }
 }
 function sukjojeon(cx, base, s, lit) { // 석조전 at night, small, through the window: steps, six columns, the pediment
   const u = s / 100; ctx.save(); ctx.translate(cx, base); ctx.scale(u, u); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(20,16,30,0.6)';
@@ -2406,16 +2432,17 @@ function drawHall() { // 명예의 전당: a gallery in 석조전 at night, the 
   // the wall: tall arched windows onto the night (the moon, the stars, the other wing of 석조전), stone pilasters between, a cornice
   ctx.fillStyle = '#2a2232'; ctx.fillRect(-40, -40, W + 80, H + 80);
   const wy0 = 26, wy1 = ty - 34;
-  if (wy1 - wy0 > 70) { const n = 3, ww = 150, gap = (W - n * ww) / (n + 1);
-    for (let q = 0; q < n; q++) { const x = gap + q * (ww + gap), arch = ww / 2;
-      ctx.save(); ctx.beginPath(); ctx.moveTo(x, wy1); ctx.lineTo(x, wy0 + arch); ctx.arc(x + arch, wy0 + arch, arch, Math.PI, 0); ctx.lineTo(x + ww, wy1); ctx.closePath();
-      ctx.fillStyle = '#cdbfa6'; ctx.fill(); ctx.clip(); const g = ctx.createLinearGradient(0, wy0, 0, wy1); g.addColorStop(0, '#16163a'); g.addColorStop(1, '#3b3462'); ctx.fillStyle = g; ctx.fillRect(x + 8, wy0 + 8, ww - 16, wy1 - wy0);
-      for (let k = 0; k < 14; k++) { const sx = x + 14 + (k * 53 + q * 31) % (ww - 28), sy = wy0 + 20 + (k * 37 + q * 17) % Math.max(20, wy1 - wy0 - 60); ctx.globalAlpha = 0.4 + 0.4 * Math.abs(Math.sin(t * 1.6 + k + q)); E(sx, sy, 1.3, 1.3, '#fff8e7', 0, true); } ctx.globalAlpha = 1;
-      if (q === 2) { const mx = x + ww * 0.62, my = wy0 + Math.min(70, (wy1 - wy0) * 0.3), mg = ctx.createRadialGradient(mx, my, 4, mx, my, 70); mg.addColorStop(0, 'rgba(255,240,200,0.5)'); mg.addColorStop(1, 'rgba(255,240,200,0)'); ctx.fillStyle = mg; ctx.fillRect(mx - 70, my - 70, 140, 140); E(mx, my, 22, 22, '#fff3d0', 0, true); }
-      if (q === 0 && wy1 - wy0 > 160) sukjojeon(x + ww / 2, wy1 - 8, Math.min(100, ww * 0.9), '#f6d48a');
-      ctx.restore();
-      ctx.lineWidth = 6; ctx.strokeStyle = '#cdbfa6'; ctx.beginPath(); ctx.moveTo(x + ww / 2, wy0 + 8); ctx.lineTo(x + ww / 2, wy1); for (let yy = wy0 + arch + 40; yy < wy1 - 10; yy += 80) { ctx.moveTo(x + 6, yy); ctx.lineTo(x + ww - 6, yy); } ctx.stroke(); // the glazing bars
-      ctx.lineWidth = 3; ctx.strokeStyle = '#8c7f6a'; ctx.beginPath(); ctx.moveTo(x, wy1); ctx.lineTo(x, wy0 + arch); ctx.arc(x + arch, wy0 + arch, arch, Math.PI, 0); ctx.lineTo(x + ww, wy1); ctx.stroke(); }
+  if (wy1 - wy0 > 70) { const n = 3, ww = 150, gap = (W - n * ww) / (n + 1), arch = ww / 2, XS = [0, 1, 2].map(q => gap + q * (ww + gap));
+    const win = (x, inset) => { ctx.moveTo(x + inset, wy1); ctx.lineTo(x + inset, wy0 + arch); ctx.arc(x + arch, wy0 + arch, arch - inset, Math.PI, 0); ctx.lineTo(x + ww - inset, wy1); ctx.closePath(); };
+    ctx.fillStyle = '#cdbfa6'; ctx.beginPath(); XS.forEach(x => win(x, 0)); ctx.fill(); // the stone round each window
+    ctx.save(); ctx.beginPath(); XS.forEach(x => win(x, 8)); ctx.clip(); // the night outside: one view through all three windows
+    const g = ctx.createLinearGradient(0, wy0, 0, wy1); g.addColorStop(0, '#16163a'); g.addColorStop(1, '#3b3462'); ctx.fillStyle = g; ctx.fillRect(0, wy0, W, wy1 - wy0);
+    for (let k = 0; k < 42; k++) { const sx = (k * 137) % W, sy = wy0 + 20 + (k * 71) % Math.max(20, wy1 - wy0 - 60); ctx.globalAlpha = 0.4 + 0.4 * Math.abs(Math.sin(t * 1.6 + k)); E(sx, sy, 1.3, 1.3, '#fff8e7', 0, true); } ctx.globalAlpha = 1;
+    { const mx = XS[2] + ww * 0.62, my = wy0 + Math.min(70, (wy1 - wy0) * 0.3), mg = ctx.createRadialGradient(mx, my, 4, mx, my, 70); mg.addColorStop(0, 'rgba(255,240,200,0.5)'); mg.addColorStop(1, 'rgba(255,240,200,0)'); ctx.fillStyle = mg; ctx.fillRect(mx - 70, my - 70, 140, 140); E(mx, my, 22, 22, '#fff3d0', 0, true); }
+    hallView(HALL_VIEW, XS, ww, wy0, wy1, t);
+    ctx.restore();
+    for (const x of XS) { ctx.lineWidth = 6; ctx.strokeStyle = '#cdbfa6'; ctx.beginPath(); ctx.moveTo(x + ww / 2, wy0 + 8); ctx.lineTo(x + ww / 2, wy1); for (let yy = wy0 + arch + 40; yy < wy1 - 10; yy += 80) { ctx.moveTo(x + 6, yy); ctx.lineTo(x + ww - 6, yy); } ctx.stroke(); // the glazing bars
+      ctx.lineWidth = 3; ctx.strokeStyle = '#8c7f6a'; ctx.beginPath(); win(x, 0); ctx.stroke(); }
     for (let q = 0; q <= n; q++) { const x = q * (ww + gap) + gap / 2 - 14; rr(x, wy0 + 20, 28, wy1 - wy0 - 20, 2, '#b9ab95', null); ctx.fillStyle = '#9c8f7b'; ctx.fillRect(x + 20, wy0 + 20, 8, wy1 - wy0 - 20); rr(x - 6, wy0 + 10, 40, 12, 4, '#d4c8b3', null); E(x - 2, wy0 + 16, 5, 5, '#b9ab95', 0, true); E(x + 30, wy0 + 16, 5, 5, '#b9ab95', 0, true); } } // Ionic pilasters: a scroll at each side of the capital
   ctx.fillStyle = '#b9ab95'; ctx.fillRect(-40, wy1, W + 80, 14); ctx.fillStyle = '#d4c8b3'; ctx.fillRect(-40, wy1, W + 80, 4); ctx.fillStyle = '#8c7f6a'; ctx.fillRect(-40, wy1 + 14, W + 80, 4); // the cornice
   const wall = ctx.createLinearGradient(0, wy1 + 18, 0, H); wall.addColorStop(0, '#4a2430'); wall.addColorStop(1, '#3a1c26'); ctx.fillStyle = wall; ctx.fillRect(-40, wy1 + 18, W + 80, H); // the gallery's red cloth wall
@@ -2424,19 +2451,19 @@ function drawHall() { // 명예의 전당: a gallery in 석조전 at night, the 
   text('명예의 전당', W / 2, ty + 34, 36, '#f0cf78', 'center', '#2a1a10', F_T);
   iconBtn(LY.m, LY.titleY - 27, 'home', goHome);
   const tw = (LY.w - LY.gap * 2) / 3;
-  FORMAT_IDS.forEach((id, i) => { const x = LY.m + i * (tw + LY.gap), on = id === rank.mode, over = btn(x, fy, tw, 46, () => { if (!on) { rank.list = null; loadRanking(id, 'all'); } });
+  FORMAT_IDS.forEach((id, i) => { const x = LY.m + i * (tw + LY.gap), on = id === rank.mode, over = btn(x, fy, tw, 46, () => { if (!on) { rank.list = HALLC[id] ? HALLC[id].list : null; loadRanking(id, 'all'); } });
     rr(x, fy, tw, 46, 14, on ? 'rgba(240,207,120,0.24)' : over ? 'rgba(255,248,231,0.16)' : 'rgba(255,248,231,0.07)', on ? '#f0cf78' : 'rgba(255,248,231,0.3)', on ? 2.6 : 2);
     text(MODE_KO[id], x + tw / 2, fy + 24, 21, on ? '#fff3d0' : '#d9c4cc', 'center', null, F_T); });
   // the exhibition: it moves as one when pulled down to load again
   const S = SCR.hall, v0 = fy + 46 + 8, v1 = LY.bot - 10, off = -S.over; S.v0 = v0; S.v1 = v1; S.max = 0;
   ctx.fillStyle = '#33241d'; ctx.fillRect(-40, v1, W + 80, H - v1 + 40); // the floor under the bottom row stays put
   ctx.save(); ctx.beginPath(); ctx.rect(-40, v0, W + 80, v1 - v0); ctx.clip(); OY = off; ctx.translate(0, off);
-  const L = rank.list || [];
+  const L = rank.list || []; if (rank.list && rank.litAt == null) rank.litAt = clock.now(); const lt = rank.list ? clock.now() - rank.litAt : -9, wait = !rank.list && !rank.err; // the lights come on when the records are in
   const rowH = clamp((LY.bot - 22 - fy - 46 - 360 - 36) / 7, 32, 42), listH = 16 + 7 * rowH + 16, listTop = LY.bot - 22 - listH, floorY = listTop - 34;
   const gTop = v0 + 34, capH = 58, gBot = floorY - 14 - capH - 12, cH = clamp(gBot - gTop, 150, 330), cW = Math.min(cH * 0.78, 226), sW = cW * 0.82, sH = cH * 0.82, gap = (LY.w - cW - 2 * sW) / 2, my = gTop + cH / 2;
   ctx.fillStyle = '#6e5a3a'; ctx.fillRect(-40, v0 + 6, W + 80, 5); // the lighting track
   const sS = Math.max(sW, 196), cS = Math.max(cW, 210), xs = [LY.m + sS / 2, W / 2, LY.m + LY.w - sS / 2], order = [1, 0, 2]; // each portrait in a slot as wide as its caption needs // second, first, third from the left
-  for (let q = 0; q < 3; q++) { const ri = order[q], r = L[ri], fw = ri === 0 ? cW : sW, fh = ri === 0 ? cH : sH, cx = xs[q], on = CALM ? 1 : easeOut(clamp((t - 0.25 - [0.3, 0, 0.15][q]) / 0.35, 0, 1)); // the first's light first, then the third's, then the second's
+  for (let q = 0; q < 3; q++) { const ri = order[q], r = L[ri], fw = ri === 0 ? cW : sW, fh = ri === 0 ? cH : sH, cx = xs[q], on = CALM ? (rank.list ? 1 : 0) : easeOut(clamp((lt - 0.12 - [0.3, 0, 0.15][q]) / 0.35, 0, 1)); // the first's light first, then the third's, then the second's
     if (on > 0) { ctx.save(); ctx.globalAlpha = on; const sg = ctx.createLinearGradient(0, v0 + 10, 0, gTop + fh + capH); sg.addColorStop(0, 'rgba(255,226,170,0.32)'); sg.addColorStop(1, 'rgba(255,226,170,0.02)');
       ctx.fillStyle = sg; ctx.beginPath(); ctx.moveTo(cx - 10, v0 + 14); ctx.lineTo(cx + 10, v0 + 14); ctx.lineTo(cx + fw / 2 + 34, my + fh / 2 + 20); ctx.lineTo(cx - fw / 2 - 34, my + fh / 2 + 20); ctx.closePath(); ctx.fill(); ctx.restore(); } // its spotlight
     rr(cx - 9, v0 + 4, 18, 14, 4, '#2a2028', '#6e5a3a', 2); E(cx, v0 + 19, 6, 3, on > 0.5 ? '#ffe7b0' : '#5a4a44', 0, true); // the lamp
@@ -2444,12 +2471,13 @@ function drawHall() { // 명예의 전당: a gallery in 석조전 at night, the 
     hallFrame(cx, my, fw, fh, r, ri, ri, on);
     const cy0 = my + cH / 2 + 12, cw2 = ri === 0 ? cS : sS; rr(cx - cw2 / 2, cy0, cw2, capH, 6, '#f6efe2', ri === 0 ? '#c9a24b' : '#d9cbbd', ri === 0 ? 2.6 : 2); // the caption card, on one line under all three
     if (r) { fitText(r.nickname, cx, cy0 + 19, 20, INK, 'center', F_T, cw2 - 20); fitText(`${ri + 1}위 · ${r.score.toLocaleString()}점`, cx, cy0 + 41, 18, ri === 0 ? '#a0701c' : '#7a6872', 'center', F_N, cw2 - 20); }
+    else if (wait) { shimmerBar(cx - cw2 / 2 + 24, cy0 + 12, cw2 - 48, 14); shimmerBar(cx - cw2 / 2 + 44, cy0 + 34, cw2 - 88, 12); }
     else text(`${ri + 1}위`, cx, cy0 + capH / 2, 18, '#9a8b93', 'center', null, F_T); }
   // the floor, and the panel for fourth to tenth standing on it
   ctx.fillStyle = '#33241d'; ctx.fillRect(-40, floorY, W + 80, H - floorY + 80);
   ctx.fillStyle = '#c9a24b'; ctx.fillRect(-40, floorY - 3, W + 80, 3); ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 1; ctx.beginPath(); for (let x = -20; x < W; x += 60) { ctx.moveTo(x, floorY); ctx.lineTo(x - 40 * (H - floorY) / 600, H); } ctx.stroke(); // the skirting and the boards
   rr(LY.m, listTop + 5, LY.w, listH, 16, 'rgba(10,6,12,0.45)', null); rr(LY.m, listTop, LY.w, listH, 16, '#f6efe2', '#c9a24b', 3);
-  if (rank.loading && !rank.list) text('불러오는 중…', W / 2, listTop + listH / 2, 22, '#7a6872', 'center', null, F_B);
+  if (wait) for (let i = 0; i < 7; i++) { const y = listTop + 16 + i * rowH + rowH / 2; shimmerBar(LY.m + 36, y - 7, 22, 14); E(LY.m + 96, y, 13, 13, '#ece3d3', 0, true); shimmerBar(LY.m + 128, y - 8, 150 - (i * 37) % 60, 16); shimmerBar(LY.m + LY.w - 128, y - 8, 100, 16); } // loading: the rows' shapes, a light passing over them
   else if (rank.err && !L.length) text(rank.err, W / 2, listTop + listH / 2, 19, '#c0392b', 'center', null, F_B);
   else if (!L.length) text('아직 걸린 기록이 없어요', W / 2, listTop + listH / 2, 22, '#7a6872', 'center', null, F_T);
   else {
@@ -2465,7 +2493,7 @@ function drawHall() { // 명예의 전당: a gallery in 석조전 at night, the 
   // the bottom row, where every menu keeps it
   const gb = (label, x, w, fill, ink, fn) => { const over = btn(x, LY.bot, w, LY.btnH, fn), d = sink(x, LY.bot, w, LY.btnH); rr(x, LY.bot + 5, w, LY.btnH, 18, '#1a1218', null); rr(x, LY.bot + d, w, LY.btnH, 18, hoverOn(over) ? '#3a2428' : fill, '#c9a24b', 3); text(label, x + w / 2, LY.bot + d + LY.btnH / 2 + 1, 28, ink, 'center', null, F_T); };
   gb('랭킹', LY.m, textW('랭킹', 28, F_T) + 64, '#2a1a1c', '#f0cf78', () => { scene = 'ranking'; loadTierBoard(); });
-  text('컴퓨터를 이긴 모든 기록 중 TOP 10 · 당겨서 새로고침', W / 2, LY.foot, 20, '#d9c4cc', 'center', null, F_B);
+  infoTip('컴퓨터를 이긴 모든 기록 중 TOP 10이에요\n액자나 줄을 누르면 점수 계산을 볼 수 있어요', W / 2 + 160 + 28, ty + 33, true);
   if (L[rank.sel] && L[rank.sel].sweet != null && t > 0.6) drawScoreCard(L[rank.sel], rank.sel); // over the hall once the lights are on
 }
 // ---- 빠른 대전 · 방 목록: open rooms kept in Supabase (supabase/4_lobby.sql), the match itself phone to phone ----
@@ -2680,17 +2708,26 @@ function matchRecord(nickname) {
     sweet: m.stats.sweet[0], combo: (m.stats.combo || [0])[0], hits: (m.stats.hits || [0])[0], streak: (m.stats.best || [0])[0], duration_s: Math.round(m.t), client_id: clientId(), gear: SLOTS.map(q => (m.P[0].gearIds || {})[q[0]] || '-').join(',') };
 }
 const monthStart = () => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1).toISOString(); }; // this month, by the player's clock
-async function loadRanking(mode, period) {
-  rank.mode = mode || rank.mode; rank.period = period || rank.period; rank.loading = true; rank.err = '';
-  try { // the top ten records, the same name as often as it earned a place
-    const since = rank.period === 'month' ? `&created_at=gte.${encodeURIComponent(monthStart())}` : '&no_fame=is.false'; // the hall leaves out records found to be cheats
-    const q = `?select=nickname,level,animal,court,sets,score,created_at,gear,pts_for,pts_against,sweet,combo,hits,streak,duration_s&mode=eq.${rank.mode}${since}&order=score.desc,created_at.asc&limit=10`;
-    let r = await fetch(RANK.url + q, { headers: rankHeaders() }); rank.sel = -1;
-    if (!r.ok && r.status !== 429) r = await fetch(RANK.url + q.replace(',gear,pts_for,pts_against,sweet,combo,hits,streak,duration_s', '').replace('&no_fame=is.false', ''), { headers: rankHeaders() }); // a column missing or not readable: the board without the extras
-    if (!r.ok) throw new Error(r.status);
-    rank.list = await r.json();
-  } catch (e) { rank.err = '랭킹을 불러오지 못했어요 · 인터넷 연결을 확인해 주세요'; rank.list = rank.list || []; }
+const HALLC = {}, hallBusy = {}; // the hall's lists by way of play, kept: the hall opens on what is here and loads again behind it
+async function fetchHall(md) { // the top ten records, the same name as often as it earned a place; records found to be cheats left out
+  const q = `?select=nickname,level,animal,court,sets,score,created_at,gear,pts_for,pts_against,sweet,combo,hits,streak,duration_s&mode=eq.${md}&no_fame=is.false&order=score.desc,created_at.asc&limit=10`;
+  let r = await fetch(RANK.url + q, { headers: rankHeaders() });
+  if (!r.ok && r.status !== 429) r = await fetch(RANK.url + q.replace(',gear,pts_for,pts_against,sweet,combo,hits,streak,duration_s', '').replace('&no_fame=is.false', ''), { headers: rankHeaders() }); // a column missing or not readable: the board without the extras
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
+function keepHall(md, L) { const c = HALLC[md], same = c && JSON.stringify(c.list) === JSON.stringify(L); HALLC[md] = { list: same ? c.list : L, at: Date.now() }; return HALLC[md].list; } // the same records keep the same list, so nothing replays
+async function loadRanking(mode, period, force) {
+  rank.mode = mode || rank.mode; rank.period = period || rank.period; const md = rank.mode, c = HALLC[md];
+  if (c) rank.list = c.list; if (c && !force && Date.now() - c.at < 30e3) return; // fresh enough: shown at once, nothing to fetch
+  rank.loading = true; rank.err = '';
+  try { const L = keepHall(md, await fetchHall(md)); if (rank.mode === md) { if (rank.list !== L) rank.sel = -1; rank.list = L; } }
+  catch (e) { if (rank.mode === md) { rank.err = '랭킹을 불러오지 못했어요 · 인터넷 연결을 확인해 주세요'; rank.list = rank.list || []; } }
   rank.loading = false;
+}
+function prefetchHall() { // from the ranking page: all three ways of play, so the hall opens full
+  for (const md of FORMAT_IDS) { const c = HALLC[md]; if (hallBusy[md] || (c && Date.now() - c.at < 60e3)) continue; hallBusy[md] = true;
+    fetchHall(md).then(L => keepHall(md, L)).catch(() => {}).finally(() => { hallBusy[md] = false; }); }
 }
 async function sendRecord(nickname) {
   const rec = matchRecord(nickname);
@@ -3263,7 +3300,7 @@ const SCR = { closet: mkScroll(), ach: mkScroll(), rooms: mkScroll(), notice: mk
 SCR.tier.pull = { fn: () => { loadTierBoard(); acct.tierAsked = false; }, busy: () => tierBoard.loading };
 SCR.notice.pull = { fn: () => loadNotices(), busy: () => news.loading };
 SCR.rooms.pull = { fn: () => loadRooms(), busy: () => lobbyNet.loading };
-SCR.hall.pull = { fn: () => loadRanking(null, 'all'), busy: () => rank.loading };
+SCR.hall.pull = { fn: () => loadRanking(null, 'all', true), busy: () => rank.loading };
 // Scrolling as on an iPhone (Bas Ording's): no bar; a flick glides and slows (0.998 a millisecond); past an end the list follows the finger
 // less and less, and let go it springs back, critically damped; a flick that reaches an end runs on into it and bounces back.
 const RUBBER = 0.55, PULL_AT = 72, PULL_HOLD = 56;
@@ -3477,8 +3514,8 @@ async function claimAll() { // every reward that is ready, one after another
 }
 function drawAchTab(y0, end) {
   const ready = ACH.filter(a => claimable(a[0])), sum = ready.reduce((n, a) => n + ACH_REWARD[a[0]], 0);
-  text(ready.length ? `받을 보상 ${ready.length}개 · 뽑기권 ${sum}장` : '받을 보상이 없어요', LY.m, y0 + 26, 21, ready.length ? INK : '#9a8b93', 'left', null, F_T);
-  if (ready.length) button('모두 받기', LY.m + LY.w - 170, y0, 170, 52, claimAll, { size: 23, fill: '#ffd36b' });
+  if (ready.length) { text(`받을 보상 ${ready.length}개 · 뽑기권 ${sum}장`, LY.m, y0 + 26, 21, INK, 'left', null, F_T); button('모두 받기', LY.m + LY.w - 170, y0, 170, 52, claimAll, { size: 23, fill: '#ffd36b' }); }
+  else { rr(LY.m + LY.w - 170, y0 + 5, 170, 52, 18, 'rgba(107,85,96,0.35)', null); rr(LY.m + LY.w - 170, y0 + 3, 170, 52, 18, '#efe7da', '#b3a4ac', 3); text('받기 완료', LY.m + LY.w - 85, y0 + 30, 23, '#9a8b93', 'center', null, F_T); } // nothing to take: the same key, at rest and greyed
   const rh = 92, key = JSON.stringify([acct.prof.claimed, progOf(), acct.inv, acct.prof.equip, new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10)]);
   const today = todayKST(), isDone = code => WEEKLY.includes(code) ? acct.prof.claimed[code] === weekKST() : DAILY.includes(code) ? acct.prof.claimed[code] === today : !!acct.prof.claimed[code], rank = a => claimable(a[0]) ? 0 : isDone(a[0]) ? 2 : a[4] ? 1.5 : 1, LIST = ACH.slice().sort((a, b) => rank(a) - rank(b)); // ready first, finished last
   scrollView(SCR.ach, y0 + 68, end, key, ACH.length * rh + 8, () => {
@@ -3546,10 +3583,25 @@ function menuBegin(title, home) {
   drawBackdrop('#8fd3b8', LY.sb, LY.tall);
   for (let i = 0; i * 56 < H - LY.sb; i++) { ctx.fillStyle = i % 2 ? '#a2e3c8' : '#aeead2'; ctx.fillRect(0, LY.sb + i * 56, W, 56); }
   ctx.save();
-  if (title) text(title, W / 2, LY.titleY, 40, INK, 'center', CREAM, F_T);
+  if (title) text(title, W / 2, LY.titleY, 40, INK, 'center', CREAM, F_T); LY.titleR = title ? W / 2 + textW(title, 40, F_T) / 2 : W / 2; // where an (i) beside the title goes
   if (home) iconBtn(LY.m, LY.titleY - 27, 'home', goHome);
 }
-function menuEnd(foot) { if (foot) { ctx.font = `20px ${F_B}`; const fw = ctx.measureText(foot).width; text(foot, W / 2, LY.foot, Math.max(MIN_TEXT, fw > LY.w ? 20 * LY.w / fw : 20), '#4f6f63', 'center', null, F_B); } ctx.restore(); OY = 0; } // the footnote shrinks to the page's margins
+function menuEnd(foot, tip) { if (tip) infoTip(tip, LY.titleR + 30, LY.titleY); if (foot) { ctx.font = `20px ${F_B}`; const fw = ctx.measureText(foot).width; text(foot, W / 2, LY.foot, Math.max(MIN_TEXT, fw > LY.w ? 20 * LY.w / fw : 20), '#4f6f63', 'center', null, F_B); } ctx.restore(); OY = 0; } // the footnote shrinks to the page's margins
+const KB = s => touchUI ? '' : s; // a hint about keys: only where there is a keyboard
+// 팁: a small (i) beside a page's title; a tap opens its note in a dark bubble pointing at it, grown from the (i) (160 ms); a tap anywhere closes it
+const TIP = { key: null, at: 0, shut: 0 };
+function infoTip(msg, cx, cy, dark) {
+  const key = scene + ':' + msg, open = TIP.key === key, r = 15;
+  const over = btn(cx - r - 8, cy - r - 8, 2 * r + 16, 2 * r + 16, () => { if (open) { TIP.key = null; TIP.shut = clock.now(); } else { TIP.key = key; TIP.at = clock.now(); } tone(700, 0.04, 'sine', 0.12); });
+  ctx.save(); ctx.lineWidth = 2.4; ctx.strokeStyle = dark ? '#c9a24b' : OUT; E(cx, cy, r, r, open ? (dark ? '#c9a24b' : INK) : hoverOn(over) ? (dark ? '#3a2428' : '#fffdf3') : (dark ? '#2a1f2b' : 'rgba(255,248,231,0.95)'));
+  const ic = open ? (dark ? '#2a1f2b' : CREAM) : dark ? '#f0cf78' : INK; E(cx, cy - 7, 2.3, 2.3, ic, 0, true); rr(cx - 2, cy - 2.5, 4, 11, 2, ic, null); ctx.restore();
+  if (!open) return; const age = clock.now() - TIP.at, e = CALM ? 1 : easeOut(Math.min(1, age / 0.16)), lines = msg.split('\n'), lw = Math.max(...lines.map(l => textW(l, 19, F_B))), w = Math.min(LY.w, lw + 44), h = 22 + lines.length * 28;
+  const bx = clamp(cx - w / 2, LY.m, LY.m + LY.w - w), by = cy + r + 14;
+  btn(0, 0, W, H, () => { TIP.key = null; TIP.shut = clock.now(); }); // a tap anywhere closes it
+  ctx.save(); ctx.globalAlpha = e; ctx.translate(cx, by); ctx.scale(0.9 + 0.1 * e, 0.9 + 0.1 * e); ctx.translate(-cx, -by); // it grows out of the (i)
+  rr(bx, by + 4, w, h, 16, 'rgba(59,51,64,0.3)', null); ctx.fillStyle = 'rgba(59,51,64,0.96)'; ctx.beginPath(); ctx.moveTo(cx - 9, by + 1); ctx.lineTo(cx, by - 9); ctx.lineTo(cx + 9, by + 1); ctx.closePath(); ctx.fill(); rr(bx, by, w, h, 16, 'rgba(59,51,64,0.96)', null);
+  lines.forEach((l, i) => fitText(l, bx + w / 2, by + 11 + 14 + i * 28, 19, CREAM, 'center', F_B, w - 32)); ctx.restore();
+}
 const contentEnd = () => LY.bot - LY.gap * 2;
 const cardH = n => (contentEnd() - LY.top - LY.gap * (n - 1)) / n; // n cards filling the content area
 function panel(x, y, w, h) { rr(x, y, w, h, 24, 'rgba(255,248,231,0.96)', OUT); }
@@ -3560,7 +3612,7 @@ function sink(x, y, w, h, depth = 4) { // press feedback: how far a held button 
   P.d += (tgt - P.d) * (1 - Math.exp(-dt / ((inside ? 0.1 : 0.16) / 3))); P.t = now; PRESS.set(k, P); return P.d;
 }
 const hoverOn = over => over && !touchUI; // a hover tint is for a mouse; on a phone the finger only presses
-function card(x, y, w, h, fn, on, fill) { const over = btn(x, y, w, h, fn), d = sink(x, y, w, h); rr(x, y + 5, w, h, 20, OUT, null); rr(x, y + d, w, h, 20, on ? '#fff3c4' : hoverOn(over) ? '#fffdf3' : fill || 'rgba(255,248,231,0.96)', on ? CORAL : OUT, on ? 5 : 3); ctx.save(); ctx.translate(0, d); } // sinks like every button; the caller draws its picture and then calls ctx.restore(), so the picture goes down with it
+function card(x, y, w, h, fn, on, fill) { const over = btn(x, y, w, h, fn), d = sink(x, y, w, h); rr(x, y + 5, w, h, 20, OUT, null); rr(x, y + d, w, h, 20, on ? '#fff3c4' : hoverOn(over) ? '#fffdf3' : fill || 'rgba(255,248,231,0.96)', OUT, 3); ctx.save(); ctx.translate(0, d); } // the chosen one (keys move it) only warmer, no orange ring // sinks like every button; the caller draws its picture and then calls ctx.restore(), so the picture goes down with it
 // The bottom row, the same on every page: a square key at the left (back or home), the main button in the middle sized to its words,
 // another square key at the right where there is one (refresh). A worded way out (방 목록, 방 닫기) sits at the left sized to its words.
 let barL = 0; // where the left part of the bottom row ends, so the middle button keeps clear of it
@@ -3728,6 +3780,22 @@ function tierOf(t) { // t: { rating, days, rank } from the server
   if (!t) return 1; if (t.rank) return t.rank === 1 ? 13 : t.rank <= 4 ? 12 : t.rank <= 10 ? 11 : 10;
   for (let i = 10; i > 0; i--) if (t.rating >= TIERS[i].min && t.days >= TIERS[i].d) return i; return t.rating >= 1000 ? 1 : 0;
 }
+const tierGuide = { open: false, t: 0 };
+function drawTierGuide() { // every tier at a glance, highest first, in three groups by what earns them; mine marked; a tap outside closes it
+  const me = myTier(), mi = me && me.games > 0 ? tierOf(me) : -1, G = [['순위로', [13, 12, 11]], ['점수와 출석으로', [10, 9, 8, 7, 6, 5, 4]], ['점수로', [3, 2, 1, 0]]], rh = 36;
+  const w = 470, h = 20 + 30 + 8 + 2 * 24 + 14 + G.length * 32 + 14 * rh + (G.length - 1) * 10 + 20, x = (W - w) / 2, S = bigWin(w, h), y = H / 2 - h / 2, L0 = x + 20, R0 = x + w - 20, PQ = popIn(clock.now() - tierGuide.t), k = PQ.k * S;
+  ctx.fillStyle = `rgba(59,51,64,${0.55 * PQ.a})`; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, () => { tierGuide.open = false; }); HX = { cx: W / 2, cy: H / 2, s: S }; btn(x, y, w, h, () => {});
+  ctx.save(); ctx.translate(W / 2, y + h / 2); ctx.scale(k, k); ctx.translate(-W / 2, -(y + h / 2)); ctx.globalAlpha = PQ.a;
+  rr(x, y + 6, w, h, 24, 'rgba(59,51,64,0.35)', null); rr(x, y, w, h, 24, '#fffaf0', OUT, 3);
+  let yy = y + 20; text('조선 품계', W / 2, yy + 15, 24, INK, 'center', null, F_T); yy += 30 + 8;
+  text('이기면 실력 점수가 오르고 지면 내려가요', W / 2, yy + 12, MIN_TEXT, '#7a6872', 'center', null, F_B); text('품계는 점수와 출석한 날, 맨 위는 순위로 정해져요', W / 2, yy + 36, MIN_TEXT, '#7a6872', 'center', null, F_B); yy += 48 + 14;
+  G.forEach(([title, list], gi) => { if (gi) yy += 10; text(title, L0, yy + 13, 19, INK, 'left', null, F_T); yy += 26; ctx.fillStyle = '#e6dccd'; ctx.fillRect(L0, yy + 3, R0 - L0, 1.5); yy += 6;
+    list.forEach(i => { const T = TIERS[i], cy = yy + rh / 2, mine = i === mi; if (mine) rr(L0 - 8, yy + 2, R0 - L0 + 16, rh - 4, 10, '#fff3c4', '#e3a46a', 2);
+      drawTier(i, L0 + 16, cy, 13); text(T.n, L0 + 40, cy, 20, T.c[1] === '#f6c445' ? '#c0392b' : T.c[1], 'left', null, F_T); if (mine) text('나', L0 + 40 + textW(T.n, 20, F_T) + 12, cy, MIN_TEXT, CORAL, 'left', null, F_T);
+      const cond = T.place ? `3품 이상 중 ${T.place}` : T.min < 0 ? '1,000점 아래' : [`${T.min.toLocaleString()}점`, T.d ? `출석 ${T.d}일` : ''].filter(Boolean).join(' · ');
+      text(cond, R0, cy, 18, '#5d4f58', 'right', null, F_B); yy += rh; }); });
+  ctx.restore(); HX = null;
+}
 function tierNext(t) { // what the next step asks for, in a few words
   const i = tierOf(t); if (i >= 13) return '최고 자리예요'; if (i >= 10) return `3품 이상 순위 ${t.rank || '-'}위 · 10위 안이면 2품`;
   const N = TIERS[i + 1], pts = Math.max(0, N.min - t.rating), dd = Math.max(0, N.d - t.days);
@@ -3804,13 +3872,14 @@ function openProfile(nick) { // mine, or another member's (from the ranking or a
 }
 function drawSettings() { // the cog's menu, over my profile: nickname, linked sign-ins, signing out; a tap outside closes only the menu
   const U = acct.user || {}, ids = (U.identities || []).map(d => d.provider), on = acct.providers || ['google', 'kakao'], PV = [['google', 'Google'], ['kakao', '카카오'], ['apple', 'Apple']].filter(q => on.includes(q[0]));
-  const w = 400, rh = 48, h = 20 + 30 + 14 + 48 + 16 + 26 + 8 + PV.length * rh + 16 + 48 + 20, x = (W - w) / 2, S = bigWin(w, h), y = H / 2 - h / 2, L0 = x + 20, R0 = x + w - 20, PQ = popIn(prof.mt || 0), k = PQ.k * S;
+  const w = 400, rh = 48, h = 20 + 30 + 14 + 26 + 8 + 52 + 18 + 26 + 8 + PV.length * rh + 16 + 44 + 20, x = (W - w) / 2, S = bigWin(w, h), y = H / 2 - h / 2, L0 = x + 20, R0 = x + w - 20, PQ = popIn(prof.mt || 0), k = PQ.k * S;
   ctx.fillStyle = `rgba(59,51,64,${0.4 * PQ.a})`; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, () => { prof.menu = false; }); HX = { cx: W / 2, cy: H / 2, s: S }; btn(x, y, w, h, () => {});
   ctx.save(); ctx.translate(W / 2, y + h / 2); ctx.scale(k, k); ctx.translate(-W / 2, -(y + h / 2)); ctx.globalAlpha = PQ.a;
   rr(x, y + 6, w, h, 22, 'rgba(59,51,64,0.35)', null); rr(x, y, w, h, 22, '#fffaf0', OUT, 3);
   let yy = y + 20; text('설정', W / 2, yy + 15, 24, INK, 'center', null, F_T); yy += 30 + 14;
-  rr(L0, yy, R0 - L0, 48, 14, '#ffffff', '#e6dccd', 2); text('닉네임', L0 + 16, yy + 24, MIN_TEXT, '#7a6872', 'left', null, F_B); fitText((acct.prof && acct.prof.nickname) || '-', L0 + 84, yy + 24, 20, INK, 'left', F_T, R0 - L0 - 190);
-  iconKey(R0 - 46, yy + 6, 34, 'pencil', () => { prof.menu = false; openNick('profile'); }); yy += 48 + 16;
+  text('닉네임', L0, yy + 13, 19, INK, 'left', null, F_T); text('1~8자', R0, yy + 13, MIN_TEXT, '#9a8b93', 'right', null, F_B); yy += 26 + 8; // a heading like 연동 계정's, the name in its field under it
+  rr(L0, yy, R0 - L0, 52, 14, '#ffffff', '#e6dccd', 2); fitText((acct.prof && acct.prof.nickname) || '-', L0 + 16, yy + 26, 21, INK, 'left', F_T, R0 - L0 - 80);
+  iconKey(R0 - 44, yy + 8, 36, 'pencil', () => { prof.menu = false; openNick('profile'); }); yy += 52 + 18;
   text('연동 계정', L0, yy + 13, 19, INK, 'left', null, F_T); text('여러 계정으로 같은 기록에 로그인', R0, yy + 13, MIN_TEXT, '#9a8b93', 'right', null, F_B); yy += 26 + 8;
   PV.forEach(([id, nm], i) => { const cy = yy + rh / 2, linked = ids.includes(id); if (i) { ctx.fillStyle = '#efe7da'; ctx.fillRect(L0, yy, R0 - L0, 1); }
     E(L0 + 14, cy, 6, 6, linked ? '#4fc37a' : '#d9cbbd', 0, true); text(nm, L0 + 30, cy, 20, INK, 'left', null, F_T);
@@ -3837,9 +3906,9 @@ function drawProfile() { // a member's record, packed like the score card: who; 
   const heading = (yy, title, sub) => { text(title, L0, yy + 13, 20, INK, 'left', null, F_T); if (sub) text(sub, R0, yy + 13, MIN_TEXT, '#9a8b93', 'right', null, F_B); return yy + HD; };
   // who: the picture, and beside it three lines with even gaps, the block centred on the picture
   const bs = 100, by = y + 20, ai = favI >= 0 ? favI : nickAnimal(name); rr(L0, by, bs, bs, 16, '#eef7f1', '#d9cbbd', 2); ctx.save(); ctx.beginPath(); ctx.rect(L0 + 2, by + 2, bs - 4, bs - 4); ctx.clip(); ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(ai, L0 + bs / 2, by + bs - 6, 0.64, { front: true, t: prof.t, accent: other ? SKY : CORAL }); ctx.restore();
-  const tx = L0 + bs + 16, tw = R0 - tx, l1 = by + 20, l2 = by + 52, l3 = by + 80, tk = other ? '' : (A.tickets || 0).toLocaleString(), pw = other ? 0 : textW(tk, 18, F_N) + 46;
+  const tx = L0 + bs + 16, tw = R0 - tx, l1 = by + 20, l2 = by + 52, l3 = by + 80, tk = other ? '' : (A.tickets || 0).toLocaleString(), pw = other ? 0 : textW(tk, 18, F_N) + 60; // the ticket (26) and its number (6 apart), with 14 at each side
   { const room = other ? tw : tw - 36 - pw - 10, sz = fitText(name, tx, l1, 25, INK, 'left', F_T, room); if (!other) { gearKey(tx + Math.min(textW(name, sz, F_T), room) + 22, l1, 14, () => { prof.menu = true; prof.mt = 0; tone(660, 0.05, 'sine', 0.15); }); // mine: a cog beside my name, for the settings
-    const px = R0 - pw; rr(px, l1 - 14, pw, 28, 14, '#fff3c4', '#e3a46a', 2); ticketPic(px + 17, l1, 0.42, -0.12); text(tk, px + 32, l1, 18, INK, 'left', null, F_N); } } // and my tickets at the right, on the name's line
+    const px = R0 - pw; rr(px, l1 - 14, pw, 28, 14, '#fff3c4', '#e3a46a', 2); ticketPic(px + 27, l1, 0.42, -0.12); text(tk, px + 46, l1, 18, INK, 'left', null, F_N); } } // and my tickets at the right, on the name's line
   { const tt = other ? other.tier : myTier(); if (tt && tt.rating != null) { const ti = tierOf(tt); drawTier(ti, tx + 12, l2, 12); fitText(`${TIERS[ti].n} · ${tt.rating.toLocaleString()}점`, tx + 32, l2, 19, TIERS[ti].c[1] === '#f6c445' ? '#c0392b' : TIERS[ti].c[1], 'left', F_T, tw - 32); }
     else fitText('경기를 하면 티어가 생겨요', tx, l2, 18, '#9a8b93', 'left', F_B, tw);
     fitText([tt && tt.days != null ? `출석 ${tt.days}일` : '', favI >= 0 ? `주로 쓰는 선수 ${ANIMALS[favI].ko}` : ''].filter(Boolean).join(' · ') || '경기를 하면 기록이 쌓여요', tx, l3, MIN_TEXT, '#7a6872', 'left', F_B, tw); }
@@ -3950,12 +4019,13 @@ function wrapLines(str, size, font, maxW) { // words to lines that fit maxW; a w
   while (out.length && out[out.length - 1] === '') out.pop(); return out;
 }
 const kDate = t => { const d = new Date(new Date(t).getTime() + 9 * 3600e3); return `${d.getUTCMonth() + 1}월 ${d.getUTCDate()}일`; };
-function noticeGrow(L) { // a note's body unrolls when it opens and rolls back up when it closes, 260 ms; the notes below move with it
-  let off = 0; for (const c of L.cards) { c.y += off; const at = news.openAt && news.openAt[c.n.id]; if (c.body.length && at != null && !CALM) { const u = Math.min(1, (clock.now() - at) / 0.26), full = 10 + c.body.length * 32, e = easeDrawer(u), cut = full * (news.open[c.n.id] ? 1 - e : e); c.h -= cut; off -= cut; } }
+const noteDur = id => news.open[id] ? 0.26 : 0.16; // opening unrolls in 260 ms; closing is quicker (160 ms) and fastest at its start, so it shuts at the tap
+function noticeGrow(L) { // a note's body unrolls when it opens and rolls back up when it closes; the notes below move with it
+  let off = 0; for (const c of L.cards) { c.y += off; const at = news.openAt && news.openAt[c.n.id]; if (c.body.length && at != null && !CALM) { const op = !!news.open[c.n.id], u = Math.min(1, (clock.now() - at) / noteDur(c.n.id)), full = 10 + c.body.length * 32, e = op ? easeDrawer(u) : 1 - (1 - u) * (1 - u), cut = full * (op ? 1 - e : e); c.h -= cut; off -= cut; } }
   return { cards: L.cards, height: L.height + off };
 }
 function noticeCards(inner) { // each note as a card: kind and date, the title, and the body only when tapped open; returns the cards and the whole height
-  let y = 4; const cards = (news.list || []).map(n => { const at = news.openAt && news.openAt[n.id], open = !!news.open[n.id] || (at != null && !CALM && clock.now() - at < 0.26), title = wrapLines(n.title, 27, F_T, inner - 40), body = open ? wrapLines(n.body || '', 21, F_B, inner) : [], h = 24 + 32 + 14 + title.length * 36 + (body.length ? 10 + body.length * 32 : 0) + 22;
+  let y = 4; const cards = (news.list || []).map(n => { const at = news.openAt && news.openAt[n.id], open = !!news.open[n.id] || (at != null && !CALM && clock.now() - at < noteDur(n.id)), title = wrapLines(n.title, 27, F_T, inner - 40), body = open ? wrapLines(n.body || '', 21, F_B, inner) : [], h = 24 + 32 + 14 + title.length * 36 + (body.length ? 10 + body.length * 32 : 0) + 22;
     const c = { n, title, body, y, h }; y += h + 16; return c; });
   return { cards, height: Math.max(0, y - 16) + 8 };
 }
@@ -4016,17 +4086,19 @@ const scenes = {
         if (lobbyNet.online) { const s = `${lobbyNet.online}명 접속`, ow = Math.ceil(textW(s, 20, F_T)) + 46, ox = LY.m, o2 = btn(ox, cy, ow, 50, () => { scene = 'online'; }); // who is around, top left: a tap goes online
           rr(ox, cy, ow, 50, 25, o2 ? '#e6f7ea' : 'rgba(236,250,240,0.95)', '#3f9a5c', 2.6); ctx.lineWidth = 1.6; ctx.strokeStyle = OUT; E(ox + 19, cy + 25, 6, 6, '#4fc37a'); text(s, ox + 32, cy + 26, 20, '#2f7a48', 'left', null, F_T); } }
       text(`v${APP_VERSION} · © 2026 IGNUZNIM. All rights reserved.`, W / 2, LY.copy, 16, 'rgba(59,51,64,0.6)', 'center', null, F_B);
-      menuEnd('Enter 를 눌러도 시작해요');
+      menuEnd(KB('Enter 를 눌러도 시작해요'));
     },
   },
   ranking: { // 티어 랭킹: members by their score, the tier beside each name; the one-match records live in 명예의 전당
-    update(dt) { state.t += dt; if (pressed('Escape')) scene = 'title'; if (pressed('KeyR') && !tierBoard.loading) loadTierBoard(); if (anyHit(...K_U) || pressed('KeyH')) openHall(); },
+    update(dt) { state.t += dt; if (pressed('Escape')) { if (tierGuide.open) tierGuide.open = false; else scene = 'title'; } if (pressed('KeyR') && !tierBoard.loading) loadTierBoard(); if (anyHit(...K_U) || pressed('KeyH')) openHall(); },
     draw() {
-      if (!tierBoard.list && !tierBoard.loading) loadTierBoard();
+      if (!tierBoard.list && !tierBoard.loading) loadTierBoard(); prefetchHall();
       menuBegin('티어 랭킹', true);
-      { const hx = LY.m + LY.w - 100, hy0 = LY.titleY - 27, over = btn(hx, hy0, 100, 54, openHall), hy = hy0 + sink(hx, hy0, 100, 54, 3); // the hall of fame: 석조전 on its key
-        rr(hx, hy0 + 3, 100, 54, 14, OUT, null); rr(hx, hy, 100, 54, 14, hoverOn(over) ? '#fffdf3' : 'rgba(255,248,231,0.95)', OUT, 2.6);
-        icon('shrine', hx + 28, hy + 27, 40); text('명예의', hx + 70, hy + 18, MIN_TEXT, INK, 'center', null, F_T); text('전당', hx + 70, hy + 37, MIN_TEXT, INK, 'center', null, F_T); }
+      { const hs = 56, hx = LY.m + LY.w - hs, hy0 = LY.titleY - 27, over = btn(hx, hy0, hs, 54, openHall), hy = hy0 + sink(hx, hy0, hs, 54, 3); // the hall of fame: 석조전 alone on its key, square like the home key
+        FIX.push(['k:hall', hx, hy0 + OY, hs, 54]); rr(hx, hy0 + 3, hs, 54, 14, OUT, null); rr(hx, hy, hs, 54, 14, hoverOn(over) ? '#fffdf3' : 'rgba(255,248,231,0.95)', OUT, 2.6); icon('shrine', hx + hs / 2, hy + 27, 40);
+        const gx = hx - 12 - hs, o2 = btn(gx, hy0, hs, 54, () => { tierGuide.open = true; tierGuide.t = clock.now(); tone(660, 0.05, 'sine', 0.15); }), gy = hy0 + sink(gx, hy0, hs, 54, 3); // beside it: every tier, a ladder of three marks
+        FIX.push(['k:tiers', gx, hy0 + OY, hs, 54]); rr(gx, hy0 + 3, hs, 54, 14, OUT, null); rr(gx, gy, hs, 54, 14, hoverOn(o2) ? '#fffdf3' : 'rgba(255,248,231,0.95)', OUT, 2.6);
+        ctx.save(); ctx.lineWidth = 2; ctx.strokeStyle = OUT; [TIER_R, TIER_B, TIER_G].forEach((c, i) => { const ly = gy + 14 + i * 13; E(gx + 17, ly, 5.5, 5.5, c[1]); rr(gx + 27, ly - 2.5, 16 - i * 3, 5, 2.5, '#b3a4ac', null); }); ctx.restore(); } // a list of tiers: three marks, red over blue over green, each with its line
       const py = LY.top, ph = contentEnd() - py; // as tall as the screen allows: the list scrolls
       panel(LY.m, py, LY.w, ph);
       const L = tierBoard.list, mid = py + ph / 2, nick = realNick(), me = myTier();
@@ -4055,7 +4127,8 @@ const scenes = {
         if (pin) { ctx.save(); const pe = stagE(st, 0); ctx.globalAlpha = pe; ctx.translate(0, (1 - pe) * STAG.rise); const y = v1 + 10; ctx.fillStyle = '#e6dccd'; ctx.fillRect(LY.m + 20, y - 6, LY.w - 40, 2); btn(LY.m + 12, y + 3, LY.w - 24, rh - 6, () => openProfile(nick)); row(Object.assign({ nick, fav: null }, me), mi >= 0 ? mi + 1 : '-', y, true, '#fff3c4'); ctx.restore(); }
       }
       sideBtn('뒤로', () => { scene = 'title'; });
-      menuEnd(acct.user ? '실력 점수로 매기는 조선 품계 · 경기마다 바로 바뀌어요 · ↑ 명예의 전당' : '로그인하면 경기마다 티어 점수가 쌓여요 · ↑ 명예의 전당');
+      menuEnd(KB('R: 새로고침 · H: 명예의 전당'), acct.user ? '실력 점수로 매기는 조선 품계예요 · 경기마다 바로 바뀌어요' : '로그인하면 경기마다 티어 점수가 쌓여요');
+      if (tierGuide.open) drawTierGuide(); // over everything on the page, its (i) included
     },
   },
   notice: {
@@ -4084,12 +4157,12 @@ const scenes = {
             if (c.body.length) { y += 10; c.body.forEach(t => { text(t, x + pad, y + 16, 21, '#5d4f58', 'left', null, F_B); y += 32; }); } ctx.restore(); }
           return height; }); }
       sideBtn('뒤로', () => { scene = 'title'; });
-      menuEnd(news.err && L ? news.err : '업데이트 소식과 이벤트를 알려 드려요');
+      menuEnd(news.err && L ? news.err : '');
     },
   },
   hall: {
-    update(dt) { state.hallT = (state.hallT || 0) + dt; if (pressed('Escape')) { if (rank.sel >= 0) rank.sel = -1; else { scene = 'ranking'; loadTierBoard(); } } if (pressed('KeyR') && !rank.loading) loadRanking(null, 'all');
-      const d = anyHit(...K_R) ? 1 : anyHit(...K_L) ? 2 : 0; if (d && !rank.loading) { rank.list = null; loadRanking(FORMAT_IDS[(FORMAT_IDS.indexOf(rank.mode) + d) % 3], 'all'); } },
+    update(dt) { state.hallT = (state.hallT || 0) + dt; if (pressed('Escape')) { if (rank.sel >= 0) rank.sel = -1; else { scene = 'ranking'; loadTierBoard(); } } if (pressed('KeyR') && !rank.loading) loadRanking(null, 'all', true);
+      const d = anyHit(...K_R) ? 1 : anyHit(...K_L) ? 2 : 0; if (d && !rank.loading) { const id = FORMAT_IDS[(FORMAT_IDS.indexOf(rank.mode) + d) % 3]; rank.list = HALLC[id] ? HALLC[id].list : null; loadRanking(id, 'all'); } },
     draw() { drawHall(); },
   },
   account: { // signing in; once signed in the profile (and its cog) does the rest
@@ -4114,27 +4187,28 @@ const scenes = {
         { const g = 12, w2 = textW('로그아웃', 23, F_T) + 56, w1 = textW('닉네임 바꾸기', 23, F_T) + 56, xr = LY.m + LY.w - LY.pad; button('로그아웃', xr - w2, py + 250, w2, 60, signOut, { size: 23 }); button('닉네임 바꾸기', xr - w2 - g - w1, py + 250, w1, 60, () => openNick('profile'), { size: 23 }); } // side by side, each as wide as its words need
       }
       sideBtn('뒤로', () => { scene = 'title'; });
-      menuEnd(acct.user ? '' : '처음 로그인하면 뽑기권 3장을 드려요');
+      menuEnd('', acct.user ? '' : '처음 로그인하면 뽑기권 3장을 드려요');
     },
   },
   wardrobe: { // equip / the gacha machine / achievements
     update(dt) {
       state.t += dt; gachaStep(dt);
       if (pressed('Escape')) { if (acct.g.phase === 'reveal') acct.g.phase = 'idle'; else scene = 'title'; }
-      if (anyHit(...K_R, ...K_L) && acct.g.phase === 'idle') acct.wtab = acct.wtab === 'gacha' ? 'ach' : 'gacha';
+      if (anyHit(...K_R, ...K_L) && acct.g.phase === 'idle') { acct.wtab = acct.wtab === 'gacha' ? 'ach' : 'gacha'; acct.wtabAt = clock.now(); }
       if (acct.wtab === 'gacha' && acct.g.phase === 'idle' && anyHit(...K_U, ...K_D)) { const i = PULLS.indexOf(acct.g.n), j = clamp(i + (anyHit(...K_D) ? 1 : -1), 0, 2); if (acct.prof && acct.prof.tickets >= PULLS[j]) acct.g.n = PULLS[j]; }
       if (acct.wtab === 'gacha' && anyHit(...K_OK)) { if (acct.g.phase === 'reveal') acct.g.phase = 'idle'; else pull(); }
     },
     draw() {
       menuBegin('뽑기 · 업적', true);
       if (acct.prof) { rr(LY.m + LY.w - 150, LY.titleY - 22, 150, 44, 22, 'rgba(255,248,231,0.95)', OUT, 2.4); text(`뽑기권 ${acct.prof.tickets}`, LY.m + LY.w - 75, LY.titleY + 1, 22, '#3d8be0', 'center', null, F_T); }
-      const tw = (LY.w - LY.gap) / 2;
-      [['gacha', '뽑기 기계'], ['ach', '업적']].forEach(([id, t], i) => { const x = LY.m + i * (tw + LY.gap), on = id === acct.wtab;
-        const over = btn(x, LY.top, tw, 56, () => { if (acct.g.phase === 'idle' || acct.g.phase === 'reveal') { acct.g.phase = 'idle'; acct.wtab = id; } });
-        rr(x, LY.top, tw, 56, 16, on ? '#fff3c4' : over ? '#fffdf3' : 'rgba(255,248,231,0.8)', on ? CORAL : OUT, on ? 4 : 2.6);
-        text(t, x + tw / 2, LY.top + 29, 25, on ? INK : '#7a6872', 'center', null, F_T);
-        if ((id === 'ach' && anyClaimable()) || (id === 'gacha' && acct.prof && acct.prof.tickets > 0)) E(x + tw - 18, LY.top + 14, 8, 8, '#e2574c'); });
-      const y0 = LY.top + 56 + LY.gap, end = contentEnd();
+      { // 뽑기 기계 or 업적: a switch like 단식 · 복식, its thumb sliding to the side chosen; the page under it is pushed the same way
+        const SH = 58, x = LY.m, y = LY.top, hw = LY.w / 2, to = acct.wtab === 'ach' ? 1 : 0, e = CALM ? 1 : easeOut(Math.min(1, (clock.now() - (acct.wtabAt || -9)) / 0.24)), p = 1 - to + (2 * to - 1) * e;
+        rr(x, y + 5, LY.w, SH, SH / 2, OUT, null); rr(x, y, LY.w, SH, SH / 2, '#fff8e7', OUT, 3); rr(x + p * hw + 6, y + 6, hw - 12, SH - 12, (SH - 12) / 2, mixHex(CORAL, SKY, p), OUT, 3);
+        [['gacha', '뽑기 기계'], ['ach', '업적']].forEach(([id, t], i) => { const kx = x + i * hw, on = i ? p > 0.5 : p <= 0.5;
+          btn(kx, y, hw, SH, () => { if ((acct.g.phase === 'idle' || acct.g.phase === 'reveal') && acct.wtab !== id) { acct.g.phase = 'idle'; acct.wtab = id; acct.wtabAt = clock.now(); tone(760, 0.06, 'sine', 0.18); } });
+          text(t, kx + hw / 2, y + SH / 2 + 1, 25, on ? '#ffffff' : '#6f6068', 'center', on ? OUT : null, F_T);
+          if ((id === 'ach' && anyClaimable()) || (id === 'gacha' && acct.prof && acct.prof.tickets > 0)) { ctx.lineWidth = 2; ctx.strokeStyle = OUT; E(kx + hw / 2 + textW(t, 25, F_T) / 2 + 14, y + SH / 2 - 10, 7, 7, '#e2574c'); } }); }
+      const y0 = LY.top + 58 + LY.gap + 4, end = contentEnd();
       if (!acct.user || !acct.prof) {
         panel(LY.m, y0, LY.w, 300);
         text(acct.user ? '불러오는 중…' : '로그인이 필요해요', W / 2, y0 + 70, 30, INK, 'center', null, F_T);
@@ -4143,7 +4217,7 @@ const scenes = {
       else drawAchTab(y0, end);
       sideBtn('뒤로', () => { acct.g.phase = 'idle'; scene = 'title'; });
       if (acct.prof && acct.wtab === 'gacha') { if (acct.g.phase === 'idle') pullBtn(); else mainBtn(acct.g.phase === 'reveal' ? '확인' : '뽑는 중…', () => { if (acct.g.phase === 'reveal') acct.g.phase = 'idle'; }); }
-      menuEnd(acct.wtab === 'gacha' ? `확률  일반 ${ODDS[0]}% · 희귀 ${ODDS[1]}% · 영웅 ${ODDS[2]}% · 전설 ${ODDS[3]}%` : '아이템 장착은 선수 선택 화면에서 해요 · 모든 경기(랭킹 포함)에 적용돼요');
+      menuEnd('', acct.wtab === 'gacha' ? `나올 확률\n일반 ${ODDS[0]}% · 희귀 ${ODDS[1]}% · 영웅 ${ODDS[2]}% · 전설 ${ODDS[3]}%` : '아이템은 선수 선택 화면의 옷걸이에서 입혀요\n모든 경기(랭킹 포함)에 적용돼요');
     },
   },
   closet: {
@@ -4159,7 +4233,7 @@ const scenes = {
       scrollView(SCR.closet, LY.top, contentEnd(), key, height, () => drawClosetList(gear, eh, chh, coll));
       const sel = item(closet.sel);
       sideBtn('뒤로', () => { scene = closetBack; });
-      menuEnd(sel ? `${acct.inv[sel.id] ? sel.name : '???'} · ${GRADE[sel.grade].ko} · ${STAT_NAME[sel.stat]} +${sel.amt}` : coll ? '입히기는 선수 선택 화면의 옷걸이에서 해요' : '같은 아이템은 가진 개수만큼 여러 선수가 입을 수 있어요');
+      menuEnd(sel ? `${acct.inv[sel.id] ? sel.name : '???'} · ${GRADE[sel.grade].ko} · ${STAT_NAME[sel.stat]} +${sel.amt}` : '', coll ? '입히기는 선수 선택 화면의 옷걸이에서 해요' : '같은 아이템은 가진 개수만큼 여러 선수가 입을 수 있어요');
     },
   },
   select: {
@@ -4202,7 +4276,7 @@ const scenes = {
       if (net) { const me = !!net.myPick, R = net.ready || { n: 0, need: 2 }, team = net.kind === 'single' ? '' : (net.role === 'host' ? 0 : net.seat) % 2 === 0 ? 'A팀 · ' : 'B팀 · ';
         rr(LY.m, LY.bot - 50, LY.w, 40, 20, 'rgba(59,51,64,0.85)', null);
         text(`${KINDS[net.kind] ? KINDS[net.kind].ko + ' · ' : ''}${FORMATS[setup.format].ko} · ${COURTS[setup.court].ko}  |  ${team}나 ${me ? '준비 완료' : '고르는 중'} · 준비 ${R.n}/${R.need}`, W / 2, LY.bot - 30, 18, CREAM, 'center', null, F_B); }
-      menuEnd(net ? (net.myPick ? '모두 고르면 시작해요 · 다른 선수를 눌러 바꿀 수 있어요' : '선수를 고르고 결정을 눌러요') : '← → ↑ ↓ 로 고르고 Enter · 옷걸이를 눌러 옷장 열기');
+      menuEnd(net ? (net.myPick ? '모두 고르면 시작해요 · 다른 선수를 눌러 바꿀 수 있어요' : '선수를 고르고 결정을 눌러요') : KB('← → ↑ ↓ 로 고르고 Enter'), net ? '' : '옷걸이를 누르면 옷장이 열려요\n입힌 아이템은 이 선수에게만 적용돼요');
     },
   },
   mode: {
@@ -4260,7 +4334,7 @@ const scenes = {
         ctx.restore();
       });
       sideBtn('뒤로', () => { scene = 'select'; });
-      menuEnd(`${ANIMALS[setup.animal].ko}의 강한 코트와 약한 코트가 표시돼요 · ↑ ↓ 로 고르고 Enter`);
+      menuEnd(KB('↑ ↓ 로 고르고 Enter'), `${ANIMALS[setup.animal].ko}의 강한 코트와 약한 코트가 표시돼요\n강한 코트에서는 능력치가 조금 올라요`);
     },
   },
   format: {
@@ -4290,7 +4364,7 @@ const scenes = {
         ctx.restore();
       });
       sideBtn('뒤로', formatBack);
-      menuEnd('↑ ↓ 로 고르고 Enter · 랭킹은 경기 방식마다 따로 집계돼요');
+      menuEnd(KB('↑ ↓ 로 고르고 Enter'), '명예의 전당은 경기 방식마다 따로 집계돼요');
     },
   },
   online: { // the open rooms, scrolling; the three other ways in fixed above them
@@ -4325,7 +4399,7 @@ const scenes = {
             button('참가', x + w - 116, y + 16, 104, 58, () => joinRoom(r.code), { size: 24, fill: '#fff3c4' }); });
           return L.length * rh + 4; }); }
       sideBtn('뒤로', () => { scene = 'title'; });
-      menuEnd('바로 참가: 빈자리가 있는 방에 바로 들어가요');
+      menuEnd('', '바로 참가: 빈자리가 있는 방에 바로 들어가요\n+: 방 만들기 · 코드: 친구의 방 코드로 참가');
     },
   },
   make: { // a room, before it opens: how to play, public or private, then 방 만들기
@@ -4351,7 +4425,7 @@ const scenes = {
       text('방식 · 길이 · 공개 여부는 방을 만든 뒤에도 바꿀 수 있어요', W / 2, py + 476, 18, '#4f6f63', 'center', null, F_B);
       sideBtn('뒤로', () => { scene = 'online'; });
       mainBtn(`${KINDS[state.mk].ko} 방 만들기`, makeRoom);
-      menuEnd('← → 로 방식, Enter 로 만들어요');
+      menuEnd(KB('← → 로 방식, Enter 로 만들어요'));
     },
   },
   quick: {
@@ -4374,7 +4448,7 @@ const scenes = {
           text(FORMATS[id].ko, x, y + ch / 2 - 18, 32, INK, 'left', null, F_T); text(rules(id).sub, x, y + ch / 2 + 20, 21, '#c0605a', 'left', null, F_H);
           text('찾기 ▶', LY.m + LY.w - LY.pad, y + ch / 2, 22, '#3d8be0', 'right', null, F_T); ctx.restore(); });
         sideBtn('뒤로', () => quickStop());
-        menuEnd(Q.kind === 'versus' ? '모자란 자리는 20초 뒤 보통 컴퓨터가 채워요 · 코트는 무작위' : '같은 방식을 고른 사람과 바로 이어져요 · 코트는 무작위');
+        menuEnd('', Q.kind === 'versus' ? '모자란 자리는 20초 뒤 보통 컴퓨터가 채워요\n코트는 무작위로 정해져요' : '같은 방식을 고른 사람과 바로 이어져요\n코트는 무작위로 정해져요');
       } else {
         const t = Q.t, cy = py + ph * 0.36, hop = Math.abs(Math.sin(t * 4)) * 40;
         ctx.lineWidth = 2.6; ctx.strokeStyle = OUT;
@@ -4389,7 +4463,7 @@ const scenes = {
           button('컴퓨터와 먼저 하기', LY.m + LY.w - LY.pad - (textW('컴퓨터와 먼저 하기', 25, F_T) + 64), cy + 252, textW('컴퓨터와 먼저 하기', 25, F_T) + 64, 64, () => { quickStop('format'); }, { size: 25, fill: '#fff3c4' });
         }
         sideBtn('그만두기', () => quickStop());
-        menuEnd('이 화면을 닫으면 찾기를 멈춰요');
+        menuEnd('', '이 화면을 닫으면 찾기를 멈춰요');
       }
     },
   },
@@ -4454,7 +4528,7 @@ const scenes = {
       }
       sideBtn(net && net.role === 'host' ? '방 닫기' : '뒤로', () => { netClose(); scene = 'online'; }); // back to make or join, e.g. when both made a room at once
       if (net && net.role === 'host' && net.status !== 'opening' && net.status !== 'error') mainBtn(!net.guests.length ? '친구를 기다리는 중…' : allIn() ? '경기 시작' : '친구가 고르는 중…', () => { if (allIn()) startRoom(); });
-      menuEnd('Esc 를 눌러도 돌아가요');
+      menuEnd(KB('Esc 를 눌러도 돌아가요'));
     },
   },
   play: {
@@ -4605,7 +4679,7 @@ const scenes = {
       if (guest && net.ask) mainBtn('다시 하기 (방에 남기)', guestStay); // the host asked: stay for another, or leave with 방 목록
       else if (guest) { const gw = midW('방장이 다시 하자고 하면', 21), gx = LY.m + LY.w - gw; rr(gx, LY.bot, gw, LY.btnH, 18, 'rgba(255,248,231,0.7)', '#cdbfb3', 2.4); text('방장이 다시 하자고 하면', gx + gw / 2, LY.bot + LY.btnH / 2 - 13, 21, INK, 'center', null, F_T); text('남을지 고를 수 있어요', gx + gw / 2, LY.bot + LY.btnH / 2 + 15, 21, INK, 'center', null, F_T); }
       else mainBtn(net ? '다시 하기 (방으로)' : '다시 하기', () => { if (net) onlineAgain(); else { reset(); scene = 'play'; } });
-      menuEnd(guest ? (net.ask ? '방장이 한 판 더 하자고 해요 · 남거나 방 목록으로 나가요' : '') : net ? '다시 하기를 누르면 방으로 돌아가요 · 친구들은 남을지 골라요' : 'Enter : 다시 하기 · Esc : 홈으로');
+      menuEnd(guest ? (net.ask ? '방장이 한 판 더 하자고 해요 · 남거나 방 목록으로 나가요' : '') : net ? '다시 하기를 누르면 방으로 돌아가요 · 친구들은 남을지 골라요' : KB('Enter : 다시 하기 · Esc : 홈으로'));
       drawGift();
     },
   },
@@ -4651,18 +4725,18 @@ let viewKey0 = '', viewScene0 = '', viewOv0 = 0, viewAt = 0, sceneAt = 0, trans 
 //  pop    a window opening: grows from 95% and fades in, 200 ms (popIn)
 // A button that sits at the same place with the same words before and after (뒤로, home) does not move at all.
 function viewOf() { // what counts as 'a different view', and the part of the screen that moves with it
-  if (scene === 'wardrobe') return { key: 'wardrobe:' + acct.wtab, tab: ['gacha', 'ach'].indexOf(acct.wtab), r: [0, LY.top + 70, W, LY.bot - 6] };
+  if (scene === 'wardrobe') return { key: 'wardrobe:' + acct.wtab, tab: ['gacha', 'ach'].indexOf(acct.wtab), r: [0, LY.top + 66, W, LY.bot - 6] };
   if (scene === 'hall') return { key: 'hall:' + rank.mode, tab: FORMAT_IDS.indexOf(rank.mode), r: [0, LY.top + 60, W, LY.bot - 8] };
   if (scene === 'help') { const top = Math.round(H / 2 - 400); return { key: 'help:' + helpPage, tab: helpPage, r: [44, top + 84, W - 44, top + 796] }; }
   return { key: scene };
 }
-const overlays = () => (prof.open ? 1 : 0) + (prof.open && prof.menu ? 1 : 0) + (scene === 'hall' && rank.sel >= 0 ? 1 : 0) + (typeof matchGift !== 'undefined' && matchGift && matchGift.open && scene === 'results' ? 1 : 0);
+const overlays = () => (prof.open ? 1 : 0) + (scene === 'ranking' && tierGuide.open ? 1 : 0) + (prof.open && prof.menu ? 1 : 0) + (scene === 'hall' && rank.sel >= 0 ? 1 : 0) + (typeof matchGift !== 'undefined' && matchGift && matchGift.open && scene === 'results' ? 1 : 0);
 function snap(into) { const c = into || document.createElement('canvas'); if (c.width !== canvas.width || c.height !== canvas.height) { c.width = canvas.width; c.height = canvas.height; } const g = c.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, c.width, c.height); g.drawImage(canvas, 0, 0); return c; }
 function viewWatch() { // before a frame: has the view changed since the last one? keep a picture of the last one to move away
   const v = viewOf(), ov = overlays(); if (v.key === viewKey0 && ov === viewOv0) return;
   const from = viewScene0, to = scene, fi = FLOW.indexOf(from), ti = FLOW.indexOf(to); let kind = null, dir = 1, r = [0, 0, W, H], dur = 0.2;
   let win = false; if (v.key === viewKey0) { if (ov < viewOv0) { kind = 'fade'; dur = 0.16; win = true; } } // a window opened (it pops by itself) or closed (it fades away)
-  else if (from && from === to && v.tab >= 0) { kind = 'slide'; dir = v.tab > (trans && trans.tabWas != null ? trans.tabWas : -1) ? 1 : -1; r = v.r; dur = 0.22; }
+  else if (from && from === to && v.tab >= 0) { kind = to === 'wardrobe' ? 'push' : 'slide'; dir = v.tab > (trans && trans.tabWas != null ? trans.tabWas : -1) ? 1 : -1; r = v.r; dur = kind === 'push' ? 0.34 : 0.22; }
   else if (to === 'closet' || from === 'closet') { const M = CLOSET_MO, open = to === 'closet'; // test: the closet's way in and out, chosen by ?closet=
     if (M === 'sheet') { kind = open ? 'sheetUp' : 'sheetDown'; dur = open ? 0.36 : 0.28; }
     else if (M === 'push') { kind = 'slide'; dir = open ? 1 : -1; r = [0, LY.top - 14, W, LY.bot - 6]; dur = 0.22; }
@@ -4672,10 +4746,11 @@ function viewWatch() { // before a frame: has the view changed since the last on
   else if (fi >= 0 && ti >= 0) { kind = 'slide'; dir = ti > fi ? 1 : -1; r = [0, LY.top - 14, W, LY.bot - 6]; dur = 0.22; }
   else if (MODALS.includes(from) && !MODALS.includes(to)) { kind = 'fade'; dur = 0.16; win = true; }
   else if (from && !MODALS.includes(to) && to !== 'cover') kind = 'fade';
-  if (from !== to) sceneAt = clock.now();
+  if (from !== to) { sceneAt = clock.now(); TIP.key = null; } // a tip open on the page left behind is closed
   const tabWas = trans ? trans.tabWas : null;
   if (kind) trans = { kind: CALM ? 'fade' : kind, dir, r, dur, win, at: clock.now(), old: snapC = snap(snapC), keep: FIX };
   if (trans) trans.tabWas = v.tab != null ? v.tab : tabWas;
+  if (v.key === 'wardrobe:ach' && v.key !== viewKey0) { const A = SCR.ach; A.scroll = 0; A.vel = 0; A.over = 0; A.ov = 0; } // the achievements open at the top, not where they were left
   viewAt = clock.now(); viewKey0 = v.key; viewScene0 = scene; viewOv0 = ov;
 }
 function keptRects(k) { // the buttons at the same place with the same words before and after, as canvas pixels with their shadow
@@ -4699,9 +4774,9 @@ function viewMove() { // after the new frame: lay the old picture and the new on
   else if (trans.kind === 'zoom') { const z = zoomFrom || { x: W / 2, y: H / 2 }, ox = z.x * k, oy = z.y * k, sc = 0.86 + 0.14 * e; // the old page stays; the new one grows out of the tapped point and fades in
     ctx.drawImage(trans.old, 0, 0); ctx.globalAlpha = Math.min(1, u * 1.8); ctx.translate(ox, oy); ctx.scale(sc, sc); ctx.translate(-ox, -oy); ctx.drawImage(newC, 0, 0); ctx.restore(); return; }
   else if (trans.kind === 'fade') { ctx.beginPath(); ctx.rect(x0, y0, w, y1 - y0); ctx.clip(); ctx.globalAlpha = 1 - e; ctx.drawImage(trans.old, 0, 0); }
-  else { const d = trans.dir, D = 32 * k, fy = (trans.kind === 'slide' && FLOW.includes(scene) ? LY.sb : y0 / k) * k; // around the moving part, the rest crossfades where it stands
+  else { const d = trans.dir, push = trans.kind === 'push', ee = push ? easeDrawer(u) : e, D = push ? w : 32 * k, fy = (trans.kind === 'slide' && FLOW.includes(scene) ? LY.sb : y0 / k) * k; // around the moving part, the rest crossfades where it stands
     ctx.save(); ctx.beginPath(); ctx.rect(0, fy, canvas.width, canvas.height - fy); ctx.rect(x0, y0, w, y1 - y0); ctx.clip('evenodd'); ctx.globalAlpha = 1 - a; ctx.drawImage(trans.old, 0, 0); ctx.restore();
-    ctx.beginPath(); ctx.rect(x0, y0, w, y1 - y0); ctx.clip(); ctx.drawImage(trans.old, -d * e * D, 0); ctx.globalAlpha = a; ctx.drawImage(newC, d * (1 - e) * D, 0); }
+    ctx.beginPath(); ctx.rect(x0, y0, w, y1 - y0); ctx.clip(); ctx.drawImage(trans.old, -d * ee * D, 0); ctx.globalAlpha = push ? 1 : a; ctx.drawImage(newC, d * (1 - ee) * D, 0); } // push (a tab of pages side by side): the whole page goes and the next comes in after it
   ctx.globalAlpha = 1; // the buttons that stayed put: drawn as they are now, still (not when a window closes: they sit under its dim)
   if (!trans.win) for (const [bx, by, bw, bh] of keptRects(k)) ctx.drawImage(newC, bx, by, bw, bh, bx, by, bw, bh);
   ctx.restore();
