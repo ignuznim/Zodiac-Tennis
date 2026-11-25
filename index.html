@@ -24,7 +24,7 @@
   html, body { margin: 0; height: 100%; background: #5fb49a; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; overscroll-behavior: none; }
   body { font-variant-numeric: tabular-nums; }
   html, body { position: fixed; inset: 0; width: 100%; }
-  canvas { display: block; position: absolute; left: 0; top: 0; box-shadow: 0 0 40px rgba(59,51,64,0.35); touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+  canvas { display: block; position: absolute; left: 0; top: 0; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
   #nick, #fb { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(59,51,64,0.55); z-index: 5; }
   #nick.on, #fb.on { display: flex; }
   #nick form, #fb form { width: calc(var(--u, 0.6) * 560px); max-width: 92vw; box-sizing: border-box; padding: calc(var(--u, 0.6) * 30px) calc(var(--u, 0.6) * 28px) calc(var(--u, 0.6) * 26px); background: #fff8e7; border: max(1.5px, calc(var(--u, 0.6) * 3px)) solid #6b5560; border-radius: calc(var(--u, 0.6) * 24px); box-shadow: 0 max(2px, calc(var(--u, 0.6) * 5px)) 0 #6b5560; text-align: center; font-family: 'Jua', sans-serif; color: #4a3d47; }
@@ -36,27 +36,28 @@
   #nick button, #fb button { flex: 1; padding: calc(var(--u, 0.6) * 16px) 0; font: calc(var(--u, 0.6) * 28px) 'Jua', sans-serif; color: #4a3d47; border: max(1.5px, calc(var(--u, 0.6) * 3px)) solid #6b5560; border-radius: calc(var(--u, 0.6) * 18px); background: #fff; cursor: pointer; }
   #nick button.go, #fb button.go { background: #fff3c4; border-color: #ff8a7a; }
   #nick .err, #fb .err { min-height: calc(var(--u, 0.6) * 24px); margin-top: calc(var(--u, 0.6) * 10px); font: calc(var(--u, 0.6) * 20px) 'Gowun Dodum', sans-serif; color: #e2574c; }
-  #nickInline { position: fixed; display: none; z-index: 4; box-sizing: border-box; margin: 0; padding: 0; border: none; outline: none; background: transparent; font-family: 'Jua', sans-serif; color: #4a3d47; caret-color: #ff8a7a; -webkit-user-select: text; user-select: text; } /* the nickname, typed where it is shown in 설정 */
+  #nickInline { position: fixed; display: none; z-index: 4; left: 0; top: 0; width: 2px; height: 2px; margin: 0; padding: 0; border: none; outline: none; opacity: 0; font-size: 16px; -webkit-user-select: text; user-select: text; } /* the nickname's keyboard: the input sits out of sight at the very top (so the phone never scrolls to it); what is typed is drawn in the field */
   #safe { position: fixed; visibility: hidden; pointer-events: none; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
   /* 개발자에게 한마디, drawn like the game's own windows: the same outline and drop under every key, a switch like 단식 · 복식, a cross key at the right of the title */
-  #fb form { text-align: left; padding: calc(var(--u, 0.6) * 24px) calc(var(--u, 0.6) * 26px) calc(var(--u, 0.6) * 26px); background: #fffaf0; }
-  #fb .head { display: flex; align-items: center; justify-content: space-between; gap: calc(var(--u, 0.6) * 12px); }
-  #fb h2 { margin: 0; font-size: calc(var(--u, 0.6) * 32px); }
-  #fb p { margin: calc(var(--u, 0.6) * 6px) 0 calc(var(--u, 0.6) * 18px); font-size: calc(var(--u, 0.6) * 21px); }
-  #fb button { transition: transform 100ms ease-out, box-shadow 100ms ease-out; }
-  #fb button.x { flex: none; width: calc(var(--u, 0.6) * 54px); height: calc(var(--u, 0.6) * 54px); padding: 0; display: grid; place-items: center; background: #fff8e7; border: max(1.5px, calc(var(--u, 0.6) * 3px)) solid #6b5560; border-radius: calc(var(--u, 0.6) * 14px); box-shadow: 0 max(2px, calc(var(--u, 0.6) * 4px)) 0 #6b5560; }
-  #fb button.x svg { width: 44%; height: 44%; }
+  #fb form, #nick form { text-align: left; padding: calc(var(--u, 0.6) * 24px) calc(var(--u, 0.6) * 26px) calc(var(--u, 0.6) * 26px); background: #fffaf0; }
+  #fb .head, #nick .head { display: flex; align-items: center; justify-content: space-between; gap: calc(var(--u, 0.6) * 12px); }
+  #fb h2, #nick h2 { margin: 0; font-size: calc(var(--u, 0.6) * 32px); }
+  #fb p, #nick p { margin: calc(var(--u, 0.6) * 6px) 0 calc(var(--u, 0.6) * 18px); font-size: calc(var(--u, 0.6) * 21px); }
+  #fb button, #nick button { transition: transform 100ms ease-out, box-shadow 100ms ease-out; }
+  #fb button.x, #nick button.x { flex: none; width: calc(var(--u, 0.6) * 54px); height: calc(var(--u, 0.6) * 54px); padding: 0; display: grid; place-items: center; background: #fff8e7; border: max(1.5px, calc(var(--u, 0.6) * 3px)) solid #6b5560; border-radius: calc(var(--u, 0.6) * 14px); box-shadow: 0 max(2px, calc(var(--u, 0.6) * 4px)) 0 #6b5560; }
+  #fb button.x svg, #nick button.x svg { width: 44%; height: 44%; }
   #fb .kinds { display: flex; gap: 0; padding: calc(var(--u, 0.6) * 6px); margin-bottom: calc(var(--u, 0.6) * 16px); background: #fff8e7; border: max(1.5px, calc(var(--u, 0.6) * 3px)) solid #6b5560; border-radius: 999px; box-shadow: 0 max(2px, calc(var(--u, 0.6) * 4px)) 0 #6b5560; }
   #fb .kinds button { padding: calc(var(--u, 0.6) * 10px) 0; font-size: calc(var(--u, 0.6) * 24px); color: #6f6068; border: max(1.5px, calc(var(--u, 0.6) * 3px)) solid transparent; border-radius: 999px; background: transparent; transition: background-color 180ms ease-out, color 180ms ease-out, border-color 180ms ease-out; }
   #fb .kinds button.on { background: #ff8a7a; color: #fff; border-color: #6b5560; text-shadow: 0 0 2px #6b5560, 0 1px 0 #6b5560; }
   #fb textarea { width: 100%; box-sizing: border-box; padding: calc(var(--u, 0.6) * 16px); font: max(16px, calc(var(--u, 0.6) * 22px)) 'Gowun Dodum', sans-serif; color: #4a3d47; border: max(1.5px, calc(var(--u, 0.6) * 3px)) solid #ff8a7a; border-radius: calc(var(--u, 0.6) * 16px); background: #fff; outline: none; resize: none; line-height: 1.45; display: block; }
   #fb textarea::placeholder { color: #b3a4ac; }
   #fb textarea:focus { border-color: #ff8a7a; } /* the same coral before, during and after writing, as the nickname box */
-  #fb .err { min-height: 0; margin-top: calc(var(--u, 0.6) * 8px); text-align: center; } #fb .err:empty { margin-top: 0; }
-  #fb .row { align-items: center; justify-content: space-between; margin-top: calc(var(--u, 0.6) * 18px); }
+  #fb .err, #nick .err { min-height: 0; margin-top: calc(var(--u, 0.6) * 8px); text-align: center; } #fb .err:empty, #nick .err:empty { margin-top: 0; }
+  #fb .row, #nick .row { align-items: center; justify-content: space-between; margin-top: calc(var(--u, 0.6) * 18px); }
   #fb .count { font: calc(var(--u, 0.6) * 18px) 'Gowun Dodum', sans-serif; color: #9a8b93; }
-  #fb button.go { flex: none; padding: calc(var(--u, 0.6) * 14px) calc(var(--u, 0.6) * 40px); font-size: calc(var(--u, 0.6) * 28px); background: #fff3c4; border-color: #6b5560; box-shadow: 0 max(2px, calc(var(--u, 0.6) * 5px)) 0 #6b5560; }
-  #fb button.x:active, #fb button.go:active { transform: translateY(max(2px, calc(var(--u, 0.6) * 4px))); box-shadow: 0 0 0 #6b5560; } /* pressed: it sinks into its shadow, as every key in the game */
+  #fb button.go, #nick button.go { flex: none; padding: calc(var(--u, 0.6) * 14px) calc(var(--u, 0.6) * 40px); font-size: calc(var(--u, 0.6) * 28px); background: #fff3c4; border-color: #6b5560; box-shadow: 0 max(2px, calc(var(--u, 0.6) * 5px)) 0 #6b5560; }
+  #fb button.x:active, #fb button.go:active, #nick button.x:active, #nick button.go:active { transform: translateY(max(2px, calc(var(--u, 0.6) * 4px))); box-shadow: 0 0 0 #6b5560; } /* pressed: it sinks into its shadow, as every key in the game */
+  #nick input { border: max(1.5px, calc(var(--u, 0.6) * 3px)) solid #ff8a7a; text-align: left; padding: calc(var(--u, 0.6) * 14px) calc(var(--u, 0.6) * 18px); } #nick .row { margin-top: calc(var(--u, 0.6) * 18px); } /* the code or name box: the coral border of 개발자에게 한마디's */
 </style>
 </head>
 <body>
@@ -72,10 +73,11 @@
   <div class="row"><span class="count" id="fbN">0 / 1000</span><button type="submit" class="go">보내기</button></div>
 </form></div>
 <div id="nick"><form autocomplete="off">
-  <h2>랭킹 등록</h2><p>랭킹에 표시할 닉네임 (1~10자)</p>
+  <div class="head"><h2>랭킹 등록</h2><button type="button" id="nickNo" class="x" aria-label="닫기"><svg viewBox="0 0 20 20"><path d="M4 4l12 12M16 4L4 16" stroke="#6b5560" stroke-width="3" stroke-linecap="round"/></svg></button></div>
+  <p>랭킹에 표시할 닉네임 (1~8자)</p>
   <input id="nickIn" maxlength="8" enterkeyhint="done" spellcheck="false">
   <div class="err" id="nickErr"></div>
-  <div class="row"><button type="button" id="nickNo">취소</button><button type="submit" class="go">등록</button></div>
+  <div class="row"><span></span><button type="submit" class="go">등록</button></div>
 </form></div>
 <script src="vendor/supabase.js"></script>
 <script src="config.js"></script>
@@ -122,7 +124,7 @@ function viewBox() { // the part of the screen really visible: the visual viewpo
   return { x: il, y: it, w: Math.max(1, w - il - ir), h: Math.max(1, h - it - ib) };
 }
 function fit(force) { // fills the visible screen at any shape and pixel ratio, never past its edges
-  if (force !== true && document.querySelector('#nick.on, #fb.on')) return; // the on-screen keyboard is up: keep the game and the dialog the size they were
+  if (force !== true && (document.querySelector('#nick.on, #fb.on') || (typeof prof !== 'undefined' && prof.nickEdit))) return; // the on-screen keyboard is up: keep the game and the dialog the size they were
   const v = viewBox(), dpr = devicePixelRatio || 1, key = [v.x, v.y, v.w, v.h, dpr].join();
   if (key === fitKey && force !== true) return; fitKey = key;
   H = COVER ? 571 : Math.round(W * Math.max(1.25, Math.min(2.4, v.h / v.w))); // the page reshapes itself: 4:5 to 12:5 tall; past that, bars
@@ -1953,6 +1955,14 @@ function drawScoreboard() { // one row a side: sets won, a cell for each of the 
   }
 }
 let FB_ICON = 'pencil'; // what the feedback button shows: a letter, or a face that speaks
+const onlinePillW = () => Math.ceil(textW(`${lobbyNet.online}명 접속`, 20, F_T)) + 46;
+function onlinePill(x, y, fn) { // how many are here: the same green pill on the title page and the online page
+  const s = `${lobbyNet.online}명 접속`, ow = onlinePillW(), o2 = fn ? btn(x, y, ow, 50, fn) : false;
+  rr(x, y, ow, 50, 25, hoverOn(o2) ? '#e6f7ea' : 'rgba(236,250,240,0.95)', '#3f9a5c', 2.6); ctx.lineWidth = 1.6; ctx.strokeStyle = OUT; E(x + 19, y + 25, 6, 6, '#4fc37a'); text(s, x + 32, y + 26, 20, '#2f7a48', 'left', null, F_T);
+}
+function roundKey(x, y, kind, fn, dot) { // a round picture key, 50 across (notices, feedback): the same wherever it shows
+  const o = btn(x, y, 50, 50, fn); rr(x, y, 50, 50, 25, hoverOn(o) ? '#fff3c4' : 'rgba(255,248,231,0.95)', OUT, 2.6); topIcon(kind, x + 25, y + 25); if (dot) { ctx.lineWidth = 2; E(x + 43, y + 6, 7, 7, '#e2574c'); }
+}
 function topIcon(kind, x, y) { // the little pictures on the round buttons at the top of home
   ctx.save(); ctx.translate(x, y); ctx.lineWidth = 2.2; ctx.strokeStyle = OUT; ctx.lineJoin = 'round';
   if (kind === 'megaphone') { ctx.rotate(-0.25); poly([-9, -5, 4, -12, 4, 12, -9, 5], '#ff8a7a'); rr(-13, -5, 5, 10, 1.5, '#ffd34d', OUT, 2); E(4, 0, 3, 12, '#ff6f61'); rr(-8, 5, 4, 8, 1.5, '#ffd34d', OUT, 1.8); ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(10, -7); ctx.lineTo(14, -10); ctx.moveTo(11, 0); ctx.lineTo(16, 0); ctx.moveTo(10, 7); ctx.lineTo(14, 10); ctx.stroke(); }
@@ -2025,7 +2035,6 @@ function drawTouch() { // phones and tablets: a joystick on the left, the four s
     text(label, x, y - (big ? 10 : 0) + (on ? 4 : 0), big ? 32 : 25, INK, 'center', null, F_T);
     if (big) text(serving ? (m.phase === 'serve' ? '공 띄우기' : '꼭대기에서!') : '꾹: 파워샷', x, y + 28 + (on ? 4 : 0), 19, INK, 'center', null, F_B);
   }
-  text('꾹 눌렀다 놓으면 파워샷 · 슬라이스 + 아래: 드롭샷', W / 2, H - 24, 20, CREAM, 'center', OUT, F_B);
 }
 function drawMatch() {
   OY = 0;
@@ -2056,9 +2065,9 @@ function drawMatch() {
   ctx.restore();
   if (m.practice) { drawLesson(); drawPracticeResult(); } else drawScoreboard();
   iconBtn(W - 68, 10, 'pause', () => { if (scene === 'play') scene = 'pause'; });
-  iconBtn(W - 68, 68, 'sound', () => setMuted(!muted));
+  iconBtn(W - 128, 68, 'sound', () => setMuted(!muted));
   iconBtn(W - 128, 10, 'guide', toggleGuide);
-  iconBtn(W - 128, 68, 'help', () => openHelp(0));
+  iconBtn(W - 68, 68, 'help', () => openHelp(0));
   drawEmotes(); drawEmoteBar(); if (m.online) { rivalWatch(); drawRivalIntro(); }
   if (m.banner) {
     const B = m.banner, k = Math.min(1, B.t * 6), a = Math.min(1, (Math.max(1.5, m.pause) - B.t) * 4), cy = Math.round(H * 0.42);
@@ -2573,11 +2582,11 @@ function changePlan(k, f) { // the host changes how this room will play; everyon
 }
 function setPublic(on) { if (!net || net.role !== 'host') return; if (on && !signedIn()) { notify('로그인하면 공개 방으로 열 수 있어요'); return; }
   net.public = on; if (!on && net.listed) { unlist(net.code); net.listed = false; } tone(760, 0.06, 'sine', 0.18); }
-function drawPublicSwitch(x, y, w, on, fn) { // one row: what the room is, and a switch to change it
-  const sw = signedIn(), over = btn(x, y, w, 68, fn);
-  rr(x, y, w, 68, 18, on ? '#e3f6e8' : over ? '#fffdf3' : '#ffffff', on ? '#4fa86a' : '#cdbfb3', 2.6);
-  text(on ? '공개 방 · 방 목록에 보여요' : sw ? '비공개 방 · 코드로만 들어와요' : '비공개 방 · 로그인하면 공개할 수 있어요', x + 24, y + 34, 22, INK, 'left', null, F_T);
-  rr(x + w - 90, y + 17, 70, 34, 17, on ? '#4fa86a' : '#cdbfb3', null); E(x + w - (on ? 37 : 73), y + 34, 13, 13, '#ffffff', 0, true);
+function drawPublicSwitch(x, y, w, on, fn, h = 68) { // one row: what the room is, and a switch to change it
+  const sw = signedIn(), over = btn(x, y, w, h, fn);
+  rr(x, y, w, h, 18, on ? '#e3f6e8' : over ? '#fffdf3' : '#ffffff', on ? '#4fa86a' : '#cdbfb3', 2.6);
+  fitText(on ? '공개 방 · 방 목록에 보여요' : sw ? '비공개 방 · 코드로만 들어와요' : '비공개 방 · 로그인하면 공개할 수 있어요', x + 24, y + h / 2, h > 70 ? 24 : 22, INK, 'left', F_T, w - 140);
+  rr(x + w - 90, y + h / 2 - 17, 70, 34, 17, on ? '#4fa86a' : '#cdbfb3', null); E(x + w - (on ? 37 : 73), y + h / 2, 13, 13, '#ffffff', 0, true);
 }
 function makeRoom() { const pub = !!state.pub && signedIn(); netHost(); net.public = pub; net.plan = state.mk || 'single'; net.fmt = state.mf || 'short'; scene = 'lobby'; tone(880, 0.12, 'triangle', 0.25); }
 async function joinAny() { // one tap: into the oldest open room that still has a seat
@@ -2761,7 +2770,7 @@ function openNick(mode = 'rank') {
   setTimeout(() => nickIn.focus(), 30);
 }
 function closeNick() { nickBox.classList.remove('on'); nickIn.blur(); down.clear(); setTimeout(() => fit(true), 350); } // the keyboard has gone: fit again
-document.getElementById('nickNo').onclick = closeNick;
+document.getElementById('nickNo').onclick = closeNick; nickBox.addEventListener('click', e => { if (e.target === nickBox) closeNick(); }); // a tap outside the card closes it, as on every window
 nickBox.addEventListener('pointerdown', e => e.stopPropagation()); nickBox.addEventListener('click', e => e.stopPropagation());
 nickBox.addEventListener('keydown', e => { if (e.key === 'Escape') closeNick(); e.stopPropagation(); });
 nickBox.querySelector('form').onsubmit = async e => {
@@ -2857,14 +2866,15 @@ function drawTitleShow(t, ly = 136, gy = 412) { // ly: the name's line, gy: the 
 
 // ---- Help: two pages over the match, controls then rules ----
 let helpPage = 0, helpBack = 'play';
+let helpAt = -9;
 function openHelp(pg) { if (scene !== 'play' && scene !== 'pause') return; helpBack = scene; helpPage = pg; scene = 'help'; tone(660, 0.06, 'sine', 0.15); }
 function closeHelp() { scene = helpBack === 'pause' ? 'pause' : 'play'; }
-function helpRows(rows, y0, gap, kw) { // a two-column list: the label, then what it does
+function helpRows(rows, y0, gap, kw, z = 1) { // a two-column list: the label, then what it does; z: larger type where there is room
   rows.forEach((r, i) => {
     const y = y0 + i * gap;
-    if (r[0]) { rr(76, y - 19, kw, 38, 12, r[2] || '#efe3d3', OUT, 2); text(r[0], 76 + kw / 2, y, 19, INK, 'center', null, F_T); }
-    text(r[1], 96 + kw, y - (r[3] ? 12 : 0), 21, INK, 'left', null, F_B);
-    if (r[3]) text(r[3], 96 + kw, y + 15, 18, '#7a6872', 'left', null, F_B);
+    if (r[0]) { rr(76, y - 19 * z, kw, 38 * z, 12, r[2] || '#efe3d3', OUT, 2); text(r[0], 76 + kw / 2, y, 19 * z, INK, 'center', null, F_T); }
+    fitText(r[1], 96 + kw, y - (r[3] ? 13 * z : 0), 21 * z, INK, 'left', F_B, 650 - 96 - kw);
+    if (r[3]) fitText(r[3], 96 + kw, y + 15 * z, 18 * z, '#7a6872', 'left', F_B, 650 - 96 - kw);
   });
 }
 
@@ -3156,7 +3166,7 @@ function pull() { // the machine: the crank turns while the server picks
     if (acct.prof.tickets < G.n) G.n = PULLS.filter(k => k <= Math.max(1, acct.prof.tickets)).pop(); })();
 }
 const PULLS = [1, 5, 10];
-const wardW = () => Math.max(2 * 68 + Math.ceil(textW('10회 뽑기', 30, F_T)) + 28, Math.ceil(textW('모두 받기 · 99장', 31, F_T)) + 64); // 뽑기 and 모두 받기: one width, so the bottom row does not change as the switch flips
+const wardW = () => Math.max(MAIN_W, 2 * 68 + Math.ceil(textW('10회 뽑기', 30, F_T)) + 28, Math.ceil(textW('모두 받기 · 99장', 31, F_T)) + 64); // 뽑기 and 모두 받기: one width, so the bottom row does not change as the switch flips
 function pullBtn() { // the 뽑기 button with − and + at its ends: how many at once, and the middle pulls
   const G = acct.g, T = acct.prof.tickets, h = LY.btnH, sq = h - 20, zone = sq + 20, w = wardW(), x = LY.m + LY.w - w, y = LY.bot; // − and + at the ends, the words between; as wide as the 업적 side's key
   if (!PULLS.includes(G.n)) G.n = 1; const i = PULLS.indexOf(G.n), canDown = i > 0, canUp = i < 2 && T >= PULLS[i + 1];
@@ -3324,7 +3334,7 @@ function pullMark(S, v0, col = '#9a8b93') { // in the gap a pull opens: the twin
   ctx.save(); ctx.beginPath(); ctx.rect(0, v0, W, g); ctx.clip(); ctx.globalAlpha = S.hold ? 1 : p;
   refreshArrows(W / 2, v0 + Math.max(g / 2, g - PULL_HOLD / 2), 13, S.hold ? clock.now() * 6 : -0.5 + p * 4.2, S.hold || p >= 1 ? CORAL : col, 3.6); ctx.restore();
 }
-function scrollView(S, v0, v1, key, height, draw) { // draw() paints the content from y 0 once; afterwards only the visible slice is copied
+function scrollView(S, v0, v1, key, height, draw, fade = '162,227,200') { // fade: the colour the list's end melts into (the page's stripes, or a window's cream) // draw() paints the content from y 0 once; afterwards only the visible slice is copied
   S.v0 = v0; S.v1 = v1; const r = canvas.width / W;
   if (!S.cache || S.key !== key || S.r !== r) {
     const c = S.cache && S.r === r && S.cache.height >= Math.ceil(height * r) ? S.cache : document.createElement('canvas');
@@ -3338,7 +3348,7 @@ function scrollView(S, v0, v1, key, height, draw) { // draw() paints the content
   if (rows > 0) ctx.drawImage(S.cache, 0, top, S.cache.width, rows, 0, dy, W, rows / r);
   pullMark(S, v0);
   for (const h of S.rects) { const a = Math.max(h.y - eff + v0, v0), b = Math.min(h.y + h.h - eff + v0, v1); if (b > a) hot.push({ x: h.x, y: a, w: h.w, h: b - a, fn: h.fn }); }
-  if (S.scroll < S.max - 4) { const g = ctx.createLinearGradient(0, v1 - 36, 0, v1); g.addColorStop(0, 'rgba(162,227,200,0)'); g.addColorStop(1, 'rgba(162,227,200,0.9)'); ctx.fillStyle = g; ctx.fillRect(LY.m - 10, v1 - 36, LY.w + 20, 36); }
+  if (S.scroll < S.max - 4) { const g = ctx.createLinearGradient(0, v1 - 36, 0, v1); g.addColorStop(0, `rgba(${fade},0)`); g.addColorStop(1, `rgba(${fade},0.9)`); ctx.fillStyle = g; ctx.fillRect(LY.m - 10, v1 - 36, LY.w + 20, 36); }
 }
 const GHOSTS = new Map();
 function ghostOutline(id, s) { // traces an item's silhouette (marching squares) into smooth closed paths, centred on 0, 0
@@ -3417,51 +3427,21 @@ function drawClosetList(gear, eh, chh, coll) { // the closet's whole list, from 
   });
   return y;
 }
+function drawClosetWindow() { // the closet as a window over 선수 선택: it pops in, a tap outside it closes it; no home, no back
+  scenes.select.draw(); hot = []; FIX = []; const PQ = popIn(clock.now() - sceneAt);
+  ctx.fillStyle = `rgba(59,51,64,${0.55 * PQ.a})`; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, () => { scene = 'select'; });
+  const x = LY.m - 16, w = LY.w + 32, y = LY.titleY - 38, h = LY.bot - 14 - y, gear = myGear(closet.animal), own = Object.keys(ITEMS).filter(id => acct.inv[id]).length;
+  ctx.save(); ctx.translate(W / 2, y + h / 2); ctx.scale(PQ.k, PQ.k); ctx.translate(-W / 2, -(y + h / 2)); ctx.globalAlpha = PQ.a;
+  rr(x, y + 6, w, h, 26, 'rgba(59,51,64,0.35)', null); rr(x, y, w, h, 26, '#fffaf0', OUT, 3); btn(x, y, w, h, () => {});
+  text(`${ANIMALS[closet.animal].ko}의 옷장`, x + 24, y + 38, 30, INK, 'left', null, F_T); text(`보유 ${own} / ${Object.keys(ITEMS).length}`, x + w - 24, y + 38, 20, '#3d8be0', 'right', null, F_T);
+  const key = JSON.stringify([acct.inv, acct.prof && acct.prof.equip, closet.sel, closet.animal, 'w']), eh = 128, chh = 150, height = 38 + 2 * (eh + 14) + 16 + SLOTS.reduce((t, [sid]) => t + 40 + Math.ceil(Object.keys(ITEMS).filter(k => ITEMS[k][0] === sid).length / 4) * (chh + 12) + 14, 0);
+  scrollView(SCR.closet, y + 70, y + h - 16, key, height, () => drawClosetList(gear, eh, chh, false), '255,250,240');
+  ctx.restore();
+}
 function openCloset(back, a = null) { if (!acct.user) { toast('로그인하면 옷장을 쓸 수 있어요'); return; } closetBack = back; closet.animal = a; closet.sel = null; SCR.closet.scroll = 0; SCR.closet.vel = 0; scene = 'closet'; zoomFrom = { x: mouse.x, y: mouse.y, at: clock.now(), r: (hot.slice().reverse().find(h => mouse.x >= h.x && mouse.x <= h.x + h.w && mouse.y >= h.y && mouse.y <= h.y + h.h) || null) }; tone(660, 0.06, 'sine', 0.15); }
-function drawGachaTab(y0, end) {
-  const G = acct.g, cx = W / 2, h = end - y0, base = y0 + h - 12, k = Math.min(1, (h - 96) / 545);
-  ctx.save(); ctx.translate(cx, base); ctx.scale(k, k); ctx.lineWidth = 3.4; ctx.strokeStyle = OUT; ctx.lineJoin = 'round';
-  const lin = (x0, y0, x1, y1, stops) => { const g = ctx.createLinearGradient(x0, y0, x1, y1); stops.forEach(([o, c]) => g.addColorStop(o, c)); return g; };
-  const chrome = (x0, x1) => lin(x0, 0, x1, 0, [[0, '#8f99a3'], [0.3, '#f4f7fa'], [0.55, '#c3ccd5'], [1, '#7d8792']]);
-  // the base: a little stand on two feet
-  rr(-128, -12, 44, 14, 6, '#8a3b2a', OUT, 3); rr(84, -12, 44, 14, 6, '#8a3b2a', OUT, 3);
-  rr(-150, -50, 300, 42, 16, lin(0, -50, 0, -8, [[0, '#e8785a'], [1, '#b8492f']]), OUT, 3.4);
-  // the body: a rounded cabinet, lit from the upper left
-  rr(-128, -232, 256, 188, 30, lin(-128, -232, 128, -44, [[0, '#ffb3a3'], [0.45, CORAL], [1, '#d9644a']]), OUT, 3.4);
-  ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.beginPath(); ctx.ellipse(-80, -206, 34, 9, -0.2, 0, 7); ctx.fill();
-  // the label plate
-  rr(-108, -214, 132, 44, 12, '#fff8e7', OUT, 3); text(`뽑기권 ${PULLS.includes(G.n) ? G.n : 1}장`, -42, -191, 20, INK, 'center', null, F_T); star(-96, -202, 5, BALL); star(14, -182, 4, BALL);
-  // the dial: a chrome ring, a knob with four grips; it turns while the server picks
-  const turn = G.phase === 'turn' ? G.t * 7 : 0;
-  E(74, -146, 40, 40, chrome(34, 114)); E(74, -146, 31, 31, lin(0, -177, 0, -115, [[0, '#fff3c4'], [1, '#f6c445']]));
-  ctx.save(); ctx.translate(74, -146); ctx.rotate(turn);
-  for (let q = 0; q < 4; q++) { ctx.save(); ctx.rotate(q * Math.PI / 2); rr(-7, -30, 14, 24, 6, '#fff8e7', OUT, 2.6); ctx.restore(); }
-  E(0, 0, 12, 12, '#e2574c'); E(-3, -4, 4, 3, 'rgba(255,255,255,0.7)', 0, true); ctx.restore();
-  // the chute: a dark mouth behind a see-through flap, and a lip to catch the capsule
-  rr(-106, -148, 108, 84, 22, lin(0, -148, 0, -64, [[0, '#2b2229'], [1, '#55474f']]), OUT, 3);
-  rr(-112, -74, 120, 16, 8, chrome(-112, 8), OUT, 2.6);
-  // the neck: a chrome collar between the cabinet and the globe
-  rr(-74, -258, 148, 30, 12, chrome(-74, 74), OUT, 3);
-  // the globe: tinted glass over a heap of capsules
-  const GY = -380, GR = 134;
-  E(0, GY, GR, GR, 'rgba(214,236,255,0.45)');
-  ctx.save(); ctx.beginPath(); ctx.arc(0, GY, GR - 4, 0, 7); ctx.clip();
-  const heap = []; for (let row = 0; row < 6; row++) { const n = 7 - (row > 3 ? row - 2 : 0); for (let c = 0; c < n; c++) heap.push([(c - (n - 1) / 2) * 34 + (row % 2) * 9, GY + GR - 22 - row * 30]); }
-  heap.forEach(([x, y], i) => { const g = i % 11 === 0 ? 3 : i % 6 === 0 ? 2 : i % 3 === 0 ? 1 : 0, jig = G.phase === 'turn' ? Math.sin(G.t * 22 + i * 1.7) * 5 : 0; capsule(x + jig * 0.6, y - Math.abs(jig), 16, GRADE[g].c, i * 0.9 + (G.phase === 'turn' ? G.t * 3 : 0)); });
-  const sh = ctx.createRadialGradient(-50, GY - 60, 10, 0, GY, GR); sh.addColorStop(0, 'rgba(255,255,255,0.35)'); sh.addColorStop(0.5, 'rgba(255,255,255,0)'); sh.addColorStop(1, 'rgba(80,110,160,0.25)'); ctx.fillStyle = sh; ctx.fillRect(-GR, GY - GR, GR * 2, GR * 2);
-  ctx.restore();
-  ctx.lineWidth = 3.6; ctx.strokeStyle = OUT; ctx.beginPath(); ctx.arc(0, GY, GR, 0, 7); ctx.stroke();
-  ctx.lineWidth = 9; ctx.lineCap = 'round'; ctx.strokeStyle = 'rgba(255,255,255,0.65)'; ctx.beginPath(); ctx.arc(0, GY, GR - 18, Math.PI * 1.08, Math.PI * 1.38); ctx.stroke(); // the glass's gleam
-  ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.beginPath(); ctx.arc(0, GY, GR - 18, Math.PI * 1.45, Math.PI * 1.52); ctx.stroke();
-  star(70, GY - 80, 8, '#ffffff');
-  // the cap on top
-  ctx.lineWidth = 3; ctx.strokeStyle = OUT; ctx.beginPath(); ctx.ellipse(0, GY - GR + 2, 46, 16, 0, Math.PI, 0); ctx.closePath(); ctx.fillStyle = chrome(-46, 46); ctx.fill(); ctx.stroke();
-  E(0, GY - GR - 16, 12, 10, '#e2574c'); E(-3, GY - GR - 19, 4, 3, 'rgba(255,255,255,0.7)', 0, true);
-  // the prize rolling out
-  if (G.phase === 'drop' || G.phase === 'reveal') { const u = Math.min(1, G.t / 0.5), g = G.res.grade; capsule(-52, G.phase === 'drop' ? -124 + u * 42 : -84, 22, GRADE[g].c, G.t * 6); }
-  ctx.restore();
-  if (G.phase === 'idle') iconButton('hanger', '내 아이템', LY.m + LY.w - 104, end - 12 - 84, 104, 84, () => openCloset('wardrobe', null)); // beside the machine's foot, the size of the picture keys on the title page
-  if (acct.prof.tickets < 1) text('경기를 마치거나 업적을 달성하면 뽑기권을 받아요', LY.m + LY.pad, y0 + 40, 20, '#7a6872', 'left', null, F_B);
+function drawGachaTab(y0, end) { // the machine, as tall as the page allows: a lit sign, a glass globe where the capsules tumble, the body with its slot, crank and chute
+  const G = acct.g, h = end - y0, MH = 826, k = Math.min((h - 8) / MH, (LY.w - 40) / 380);
+  drawGachaMachine(G, W / 2, end - 4, k);
   if (G.phase === 'reveal' && G.list && G.list.length > 1) { drawManyPrizes(G, y0, h); return; }
   if (G.phase === 'reveal') { // the prize, opened
     const r = G.res, it = item(r.item), c = GRADE[it.grade].c, py = y0 + 20, ph = Math.min(360, h - 110);
@@ -3476,6 +3456,47 @@ function drawGachaTab(y0, end) {
     button('전체 아이템 보기', LY.m + LY.w - (textW('전체 아이템 보기', 24, F_T) + 56), py + ph + 18, textW('전체 아이템 보기', 24, F_T) + 56, 60, () => { G.phase = 'idle'; openCloset('wardrobe', null); }, { size: 24, fill: '#eef7ff' });
     for (let i = 0; i < 8; i++) { const a = i / 8 * 6.283 + G.t, rr2 = 150 + Math.sin(G.t * 3 + i) * 10; star(W / 2 + Math.cos(a) * rr2, py + ph * 0.42 + Math.sin(a) * rr2 * 0.7, 9, i % 2 ? '#fff' : c); }
   }
+}
+function drawGachaMachine(G, cx, base, k) { // drawn from its foot (0) up to its sign (-814), k to scale; no small words on it (scaled down they would fall under MIN_TEXT): the price is on the 뽑기 key
+  ctx.save(); ctx.translate(cx, base); ctx.scale(k, k); ctx.lineWidth = 3.4; ctx.strokeStyle = OUT; ctx.lineJoin = 'round';
+  const lin = (x0, y0, x1, y1, stops) => { const g = ctx.createLinearGradient(x0, y0, x1, y1); stops.forEach(([o, c]) => g.addColorStop(o, c)); return g; };
+  const chrome = (x0, x1) => lin(x0, 0, x1, 0, [[0, '#8f99a3'], [0.3, '#f4f7fa'], [0.55, '#c3ccd5'], [1, '#7d8792']]), now = clock.now(), turn = G.phase === 'turn';
+  // the plinth on its feet
+  rr(-150, -14, 52, 14, 6, '#7a2f22', OUT, 3); rr(98, -14, 52, 14, 6, '#7a2f22', OUT, 3);
+  rr(-178, -46, 356, 36, 14, lin(0, -46, 0, -10, [[0, '#e8785a'], [1, '#b8492f']]), OUT, 3.4);
+  // the body: red, with white stripes down its sides, and a cream panel
+  rr(-158, -330, 316, 290, 28, lin(-158, 0, 158, 0, [[0, '#d9503e'], [0.45, '#ff7a68'], [1, '#c8402f']]), OUT, 3.4);
+  ctx.save(); rr(-158, -330, 316, 290, 28, null, null); ctx.clip(); ctx.fillStyle = 'rgba(255,255,255,0.85)'; for (const x of [-150, -136, 128, 142]) ctx.fillRect(x, -330, 7, 290); ctx.restore();
+  rr(-118, -312, 236, 254, 18, '#fff8e7', OUT, 3);
+  rr(-104, -298, 132, 42, 12, '#ffe7a0', OUT, 2.6); for (let q = 0; q < 3; q++) capsule(-72 + q * 34, -277, 13, GRADE[q + 1].c, 0.3 * q); // the plate: what is inside
+  rr(42, -298, 62, 42, 10, chrome(42, 104), OUT, 2.6); rr(56, -286, 34, 8, 4, '#2b2229', null); // the coin slot
+  rr(-104, -238, 104, 92, 22, lin(0, -238, 0, -146, [[0, '#2b2229'], [1, '#55474f']]), OUT, 3); // the chute's dark mouth
+  rr(-110, -156, 116, 16, 8, chrome(-110, 6), OUT, 2.6);
+  { const ox = 56, oy = -190, a = turn ? G.t * 7 : 0; // the crank: a chrome ring, a gold knob with four grips, turning while the server picks
+    E(ox, oy, 44, 44, chrome(ox - 44, ox + 44)); E(ox, oy, 34, 34, lin(0, oy - 34, 0, oy + 34, [[0, '#fff3c4'], [1, '#f6c445']]));
+    ctx.save(); ctx.translate(ox, oy); ctx.rotate(a); for (let q = 0; q < 4; q++) { ctx.save(); ctx.rotate(q * Math.PI / 2); rr(-7, -32, 14, 26, 6, '#fff8e7', OUT, 2.6); ctx.restore(); } E(0, 0, 12, 12, '#e2574c'); ctx.restore(); }
+  for (let q = 0; q < 5; q++) star(-80 + q * 40, -98, 9, q % 2 ? '#f6c445' : '#ff8a7a'); // a row of stars along the foot of the panel
+  // the collar, and the glass globe: a lotto drum, the capsules tumbling in it while it turns, settled in a heap when it rests
+  rr(-110, -362, 220, 38, 14, chrome(-110, 110), OUT, 3);
+  const GY = -540, GR = 182; E(0, GY, GR, GR, 'rgba(214,236,255,0.45)');
+  ctx.save(); ctx.beginPath(); ctx.arc(0, GY, GR - 4, 0, 7); ctx.clip();
+  const spin = turn ? Math.min(1, G.t * 4) : 0;
+  for (let i = 0; i < 40; i++) { const row = Math.floor(i / 8), col = i % 8, hx = (col - 3.5) * 40 + (row % 2) * 12, hy = GY + GR - 26 - row * 34 - Math.abs(col - 3.5) * 4; // where it lies at rest
+    const r = 36 + (i * 37) % 130, a = i * 2.4 + now * (2.4 + (i % 5) * 0.5), ox = Math.cos(a) * r, oy = GY + Math.sin(a) * r * 0.85, bob = Math.sin(now * 2 + i) * 1.5; // where the air throws it
+    const g = i % 11 === 0 ? 3 : i % 6 === 0 ? 2 : i % 3 === 0 ? 1 : 0; capsule(hx + (ox - hx) * spin, hy + bob + (oy - hy) * spin, 18, GRADE[g].c, i * 0.9 + (turn ? now * 6 : 0)); }
+  const sh = ctx.createRadialGradient(-60, GY - 70, 10, 0, GY, GR); sh.addColorStop(0, 'rgba(255,255,255,0.35)'); sh.addColorStop(0.5, 'rgba(255,255,255,0)'); sh.addColorStop(1, 'rgba(80,110,160,0.25)'); ctx.fillStyle = sh; ctx.fillRect(-GR, GY - GR, GR * 2, GR * 2);
+  ctx.restore();
+  ctx.lineWidth = 3.6; ctx.strokeStyle = OUT; ctx.beginPath(); ctx.arc(0, GY, GR, 0, 7); ctx.stroke();
+  ctx.lineWidth = 10; ctx.lineCap = 'round'; ctx.strokeStyle = 'rgba(255,255,255,0.65)'; ctx.beginPath(); ctx.arc(0, GY, GR - 20, Math.PI * 1.08, Math.PI * 1.38); ctx.stroke(); // the glass's gleam
+  ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.beginPath(); ctx.arc(0, GY, GR - 20, Math.PI * 1.45, Math.PI * 1.52); ctx.stroke(); ctx.lineCap = 'butt';
+  // the sign on top: 뽑기 in a red board, its bulbs chasing round
+  rr(-24, GY - GR - 26, 48, 30, 6, chrome(-24, 24), OUT, 3);
+  const sy = GY - GR - 92; rr(-150, sy, 300, 70, 18, lin(0, sy, 0, sy + 70, [[0, '#ff7a68'], [1, '#c8402f']]), OUT, 3.4); rr(-140, sy + 10, 280, 50, 12, null, '#f6c445', 3);
+  text('뽑기', 0, sy + 36, 40, '#fff8e7', 'center', OUT, F_T);
+  for (let q = 0; q < 14; q++) { const t = q / 14, bx = -150 + 300 * ((q % 7) + 0.5) / 7, by = q < 7 ? sy : sy + 70, on = (Math.floor(now * (turn ? 12 : 3)) + q) % 3 === 0; E(bx, by, 6, 6, on ? '#fff3c4' : '#f6c445'); }
+  // the prize rolling out of the chute
+  if (G.phase === 'drop' || G.phase === 'reveal') { const u = Math.min(1, G.t / 0.5), g = G.res.grade; capsule(-52, G.phase === 'drop' ? -210 + u * 50 : -160, 24, GRADE[g].c, G.t * 6); }
+  ctx.restore();
 }
 function drawManyPrizes(G, y0, h) { // five or ten prizes: a grid, best first; tap one to read it
   const L = G.list, n = L.length, cols = 5, rows = Math.ceil(n / cols), x0 = LY.m + 20, pw = LY.w - 40, inner = pw - 48, gap = 10, cw = (inner - gap * (cols - 1)) / cols, chh = cw + 14;
@@ -3531,12 +3552,13 @@ function drawAchTab(y0, end) {
       fitText(name, LY.m + LY.pad, cy - 14, 25, done ? '#9a8b93' : INK, 'left', F_T, 280);
       fitText(desc, LY.m + LY.pad, cy + 18, 18, '#7a6872', 'left', F_B, 280);
       const bx0 = LY.m + 318, bw = 168;
-      text(`뽑기권 ${ACH_REWARD[code]}`, bx0, cy - 16, 18, '#3d8be0', 'left', null, F_T);
-      if (code !== 'daily' && g > 1) { // the bar: a plain track, filled from the left by a clipped rectangle (no dots at nought, no ripples)
+      const bar = code !== 'daily' && g > 1, ly = bar ? cy - 10 : cy; // the reward and its bar as one block, in the middle of the row
+      text(`뽑기권 ${ACH_REWARD[code]}`, bx0, ly, 18, '#3d8be0', 'left', null, F_T);
+      if (bar) { // the bar: a plain track, filled from the left by a clipped rectangle (no dots at nought, no ripples)
         const fw = Math.round(bw * Math.min(1, c / g));
-        rr(bx0, cy + 2, bw, 14, 7, '#eadfd2', null);
-        if (fw > 0) { ctx.save(); rr(bx0, cy + 2, bw, 14, 7, null, null); ctx.clip(); ctx.fillStyle = '#3d8be0'; ctx.fillRect(bx0, cy + 2, fw, 14); ctx.restore(); }
-        text(`${Math.min(c, g)} / ${g}`, bx0 + bw, cy - 16, MIN_TEXT, '#7a6872', 'right', null, F_N);
+        rr(bx0, cy + 5, bw, 14, 7, '#eadfd2', null);
+        if (fw > 0) { ctx.save(); rr(bx0, cy + 5, bw, 14, 7, null, null); ctx.clip(); ctx.fillStyle = '#3d8be0'; ctx.fillRect(bx0, cy + 5, fw, 14); ctx.restore(); }
+        text(`${Math.min(c, g)} / ${g}`, bx0 + bw, ly, MIN_TEXT, '#7a6872', 'right', null, F_N);
       }
       const bx = LY.m + LY.w - LY.pad - 96;
       if (can) { btn(bx, cy - 20, 96, 40, () => claim(code)); rr(bx, cy - 20, 96, 40, 20, '#ffd36b', OUT, 2.4); text('받기', bx + 48, cy + 1, 21, INK, 'center', null, F_T); }
@@ -3574,11 +3596,9 @@ function drawDoublesSwitch(y, SH) { // 단식 or 복식, a big switch on top of 
   rr(x + p * hw + 7, y + 7, hw - 14, SH - 14, (SH - 14) / 2, mixHex(CORAL, SKY, p), OUT, 3);
   [['단식', '1 : 1 · 혼자서', false, CORAL, '#6b2a22'], ['복식', '2 : 2 · 파트너와 함께', true, SKY, '#1d4a73']].forEach(([t, sub, d, col, dark], k) => { const on = d ? p > 0.5 : p <= 0.5, kx = x + k * hw;
     btn(kx, y, hw, SH, () => setDoubles(d));
-    const fx = kx + 60, fy = y + SH / 2; ctx.save(); ctx.translate(fx, fy); ctx.scale(1.4, 1.4); ctx.translate(-fx, -fy);
-    if (d) { miniFace(3, fx - 9, fy); miniFace(setup.animal, fx + 9, fy); } else miniFace(setup.animal, fx, fy); ctx.restore();
-    const tx = kx + 100, room = hw - 100 - 22; ctx.font = `20px ${F_T}`; const sw = ctx.measureText(sub).width;
-    text(t, tx, fy - 8, 32, on ? '#ffffff' : '#6f6068', 'left', on ? OUT : null, F_T);
-    text(sub, tx, fy + 25, Math.max(MIN_TEXT, sw > room ? 20 * room / sw : 20), on ? dark : '#6f6068', 'left', null, F_T); });
+    const fy = y + SH / 2, pw = d ? 62 : 38, room = hw - 28 - pw - 14, sz = Math.max(MIN_TEXT, Math.min(20, 20 * room / textW(sub, 20, F_T))), tw = Math.max(textW(t, 32, F_T), textW(sub, sz, F_T)), gx = kx + (hw - (pw + 14 + tw)) / 2, fx = gx + pw / 2; // the picture and the two lines as one block, in the middle of the half both ways
+    ctx.save(); ctx.translate(fx, fy); ctx.scale(1.4, 1.4); ctx.translate(-fx, -fy); if (d) { miniFace(3, fx - 9, fy); miniFace(setup.animal, fx + 9, fy); } else miniFace(setup.animal, fx, fy); ctx.restore();
+    const tx = gx + pw + 14; text(t, tx, fy - 14, 32, on ? '#ffffff' : '#6f6068', 'left', on ? OUT : null, F_T); text(sub, tx, fy + 19, sz, on ? dark : '#6f6068', 'left', null, F_T); });
 }
 function menuBegin(title, home) {
   OY = 0; computeLayout(); barL = 0;
@@ -3618,7 +3638,7 @@ function sink(x, y, w, h, depth = 4) { // press feedback: how far a held button 
   P.d += (tgt - P.d) * (1 - Math.exp(-dt / ((inside ? 0.1 : 0.16) / 3))); P.t = now; PRESS.set(k, P); return P.d;
 }
 const hoverOn = over => over && !touchUI; // a hover tint is for a mouse; on a phone the finger only presses
-function card(x, y, w, h, fn, on, fill) { const over = btn(x, y, w, h, fn), d = sink(x, y, w, h); rr(x, y + 5, w, h, 20, OUT, null); rr(x, y + d, w, h, 20, on ? '#fff3c4' : hoverOn(over) ? '#fffdf3' : fill || 'rgba(255,248,231,0.96)', OUT, 3); ctx.save(); ctx.translate(0, d); } // the chosen one (keys move it) only warmer, no orange ring // sinks like every button; the caller draws its picture and then calls ctx.restore(), so the picture goes down with it
+function card(x, y, w, h, fn, on, fill) { const over = btn(x, y, w, h, fn), d = sink(x, y, w, h); rr(x, y + 5, w, h, 20, OUT, null); rr(x, y + d, w, h, 20, (on && !touchUI) || hoverOn(over) ? '#fffdf3' : fill || 'rgba(255,248,231,0.96)', OUT, 3); ctx.save(); ctx.translate(0, d); } // every card the same colour; only with keys does the chosen one show, faintly // sinks like every button; the caller draws its picture and then calls ctx.restore(), so the picture goes down with it
 // The bottom row, the same on every page: a square key at the left (back or home), the main button in the middle sized to its words,
 // another square key at the right where there is one (refresh). A worded way out (방 목록, 방 닫기) sits at the left sized to its words.
 let barL = 0; // where the left part of the bottom row ends, so the middle button keeps clear of it
@@ -3636,6 +3656,7 @@ function iconKey(x, y, s, kind, fn, fill) { // a square key with a picture: plus
   const cx = x + s / 2, cy = y + d + s / 2, k = s / 68; ctx.save(); ctx.translate(cx, cy); ctx.scale(k, k); ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.strokeStyle = OUT;
   if (kind === 'plus') { ctx.lineWidth = 7; ctx.strokeStyle = INK; ctx.beginPath(); ctx.moveTo(-15, 0); ctx.lineTo(15, 0); ctx.moveTo(0, -15); ctx.lineTo(0, 15); ctx.stroke(); }
   else if (kind === 'code') { rr(-22, -13, 44, 26, 7, '#ffffff', OUT, 2.8); for (const dx of [-12, -2, 8]) E(dx, 0, 3.6, 3.6, INK, 0, true); ctx.lineWidth = 3; ctx.strokeStyle = CORAL; ctx.beginPath(); ctx.moveTo(16, -7); ctx.lineTo(16, 7); ctx.stroke(); } // a code field: three hidden letters and the cursor
+  else if (kind === 'hanger') { ctx.scale(0.95, 0.95); icon('hanger', 0, 2, 50); } // 내 아이템
   else if (kind === 'check') { ctx.lineWidth = 7; ctx.strokeStyle = '#3f9a5c'; ctx.beginPath(); ctx.moveTo(-14, 1); ctx.lineTo(-4, 11); ctx.lineTo(15, -10); ctx.stroke(); } // a tick: save
   else if (kind === 'pencil') { ctx.rotate(-0.78 + Math.PI); ctx.lineWidth = 2.8; rr(-14, -6, 26, 12, 2, BALL, OUT, 2.8); poly([12, -6, 23, 0, 12, 6], '#f1c9a5'); poly([19.5, -2, 23, 0, 19.5, 2], INK); rr(-21, -6, 8, 12, 2.5, CORAL, OUT, 2.8); }
   ctx.restore();
@@ -3644,7 +3665,8 @@ function sideBtn(label, fn) {
   if (label === '뒤로') return backKey('back', fn); if (label === '홈으로') return backKey('home', fn);
   const w = Math.max(LY.btnH, textW(label, 26, F_T) + 56); button(label, LY.m, LY.bot, w, LY.btnH, fn, { size: 26 }); barL = LY.m + w;
 }
-function midW(label, size = 31) { const room = LY.m + LY.w - Math.max(barL, LY.m + LY.btnH) - LY.gap; return Math.min(room, Math.max(260, textW(label, size, F_T) + 96)); } // words plus padding, kept clear of the key at the left
+const MAIN_W = 300; // every page's main key at the bottom right is this wide (뽑기, 모두 받기, 이 선수로 결정, 다시 하기 …), wider only for words that need it
+function midW(label, size = 31) { const room = LY.m + LY.w - Math.max(barL, LY.m + LY.btnH) - LY.gap; return Math.min(room, Math.max(MAIN_W, textW(label, size, F_T) + 64)); } // words plus padding, kept clear of the key at the left
 function mainBtn(label, fn) { const w = midW(label); button(label, LY.m + LY.w - w, LY.bot, w, LY.btnH, fn, { size: 31, fill: '#fff3c4' }); }
 function refreshArrows(cx, cy, R, a0, col, lw = 4.4) { // two arrows chasing round: the pull-to-refresh mark
   ctx.save(); ctx.lineCap = 'round'; ctx.lineWidth = lw; ctx.strokeStyle = col; ctx.fillStyle = col; const L = R * 0.6;
@@ -3733,7 +3755,7 @@ async function matchReward(fmt) {
   catch (e) { /* too soon, or the server not ready: no reward this time */ }
 }
 const ticketPillW = n => textW(n.toLocaleString(), 18, F_N) + 60; // the ticket (26) and its number (6 apart), with 14 at each side
-function ticketPill(right, cy, n) { // my tickets: the same pill wherever they show (the profile, 뽑기 · 업적), its right edge at right, centred on cy
+function ticketPill(right, cy, n, k = 1) { if (k !== 1) { ctx.save(); ctx.translate(right, cy); ctx.scale(k, k); const w = ticketPill(0, 0, n); ctx.restore(); return w * k; } // k: larger where it stands alone in a title row // my tickets: the same pill wherever they show (the profile, 뽑기 · 업적), its right edge at right, centred on cy
   const tk = n.toLocaleString(), pw = ticketPillW(n), px = right - pw; rr(px, cy - 14, pw, 28, 14, '#fff3c4', '#e3a46a', 2); ticketPic(px + 27, cy, 0.42, -0.12); text(tk, px + 46, cy, 18, INK, 'left', null, F_N); return pw;
 }
 function ticketPic(x, y, s, rot = 0) { // a gacha ticket: notched ends, a torn-off stub, a capsule printed on it
@@ -3889,7 +3911,7 @@ function drawSettings() { // the cog's menu, over my profile: nickname, linked s
   rr(x, y + 6, w, h, 22, 'rgba(59,51,64,0.35)', null); rr(x, y, w, h, 22, '#fffaf0', OUT, 3);
   let yy = y + 20; text('설정', W / 2, yy + 15, 24, INK, 'center', null, F_T); yy += 30 + 14;
   text('닉네임', L0, yy + 13, 19, INK, 'left', null, F_T); text('1~8자', R0, yy + 13, MIN_TEXT, '#9a8b93', 'right', null, F_B); yy += 26 + 8; // a heading like 연동 계정's, the name in its field under it
-  if (prof.nickEdit) { rr(L0, yy, R0 - L0, 52, 14, '#ffffff', CORAL, 3); placeNickInline(L0 + 16, yy + 6, R0 - L0 - 80, 40, W / 2, y + h / 2, k); iconKey(R0 - 44, yy + 8, 36, 'check', saveNickInline, '#fff3c4'); } // typing here: a coral field, ✓ saves
+  if (prof.nickEdit) { rr(L0, yy, R0 - L0, 52, 14, '#ffffff', CORAL, 3); const v = nickInline.value, sz = fitText(v, L0 + 16, yy + 26, 21, INK, 'left', F_T, R0 - L0 - 80), cx = L0 + 16 + Math.min(textW(v, sz, F_T), R0 - L0 - 80) + 2; if (Math.floor(clock.now() * 2) % 2 === 0) rr(cx, yy + 13, 2.5, 26, 1, CORAL, null); iconKey(R0 - 44, yy + 8, 36, 'check', saveNickInline, '#fff3c4'); } // typing here: a coral field, the caret blinking after the words, ✓ saves
   else { rr(L0, yy, R0 - L0, 52, 14, '#ffffff', '#e6dccd', 2); fitText((acct.prof && acct.prof.nickname) || '-', L0 + 16, yy + 26, 21, INK, 'left', F_T, R0 - L0 - 80);
     iconKey(R0 - 44, yy + 8, 36, 'pencil', startNickInline); } yy += 52 + 18;
   text('연동 계정', L0, yy + 13, 19, INK, 'left', null, F_T); text('여러 계정으로 같은 기록에 로그인', R0, yy + 13, MIN_TEXT, '#9a8b93', 'right', null, F_B); yy += 26 + 8;
@@ -3903,10 +3925,6 @@ function drawSettings() { // the cog's menu, over my profile: nickname, linked s
 const nickInline = document.getElementById('nickInline');
 function startNickInline() { prof.nickEdit = true; nickInline.value = (acct.prof && acct.prof.nickname) || ''; nickInline.style.display = 'block'; down.clear(); setTimeout(() => { nickInline.focus(); nickInline.setSelectionRange(nickInline.value.length, nickInline.value.length); }, 30); }
 function endNickInline() { prof.nickEdit = false; nickInline.style.display = 'none'; nickInline.blur(); down.clear(); setTimeout(() => fit(true), 350); } // the keyboard has gone: fit again
-function placeNickInline(x, y, w, h, ox, oy, k) { // the input over the field, through the window's scale, in screen pixels; never under 16px, so phones do not zoom
-  const r = canvas.getBoundingClientRect(), sc = r.width / W, X = ox + (x - ox) * k, Y = oy + (y - oy) * k, st = nickInline.style;
-  st.left = r.left + X * sc + 'px'; st.top = r.top + Y * sc + 'px'; st.width = w * k * sc + 'px'; st.height = h * k * sc + 'px'; st.fontSize = Math.max(16, 21 * k * sc) + 'px';
-}
 async function saveNickInline() {
   const name = nickInline.value.trim(); if (name === ((acct.prof && acct.prof.nickname) || '')) { endNickInline(); return; }
   if (!name || [...name].length > 8) { toast('닉네임은 1~8자로 정해 주세요'); return; }
@@ -3914,6 +3932,7 @@ async function saveNickInline() {
   try { acct.prof = await rpc('set_nickname', { n: name }); store('zt_nick', name); endNickInline(); toast('닉네임을 저장했어요'); tone(880, 0.08, 'triangle', 0.2); } catch (err) { toast(err.message); }
   prof.nickBusy = false;
 }
+nickInline.addEventListener('input', () => { const n = nickInline.value.length; nickInline.setSelectionRange(n, n); }); // always typing at the end, where the caret is drawn
 nickInline.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); saveNickInline(); } else if (e.key === 'Escape') endNickInline(); e.stopPropagation(); }); // typing is not playing
 nickInline.addEventListener('pointerdown', e => e.stopPropagation()); nickInline.addEventListener('click', e => e.stopPropagation());
 function linkAccount(provider) { // one more way to sign in to the same record; the server must allow manual linking (Supabase: Authentication -> Sign In / Providers)
@@ -4109,10 +4128,9 @@ const scenes = {
       { const P = acct.prof, t = acct.user ? (P && P.nickname ? P.nickname : '로그인됨') : '로그인', mt = P && P.nickname ? myTier() : null, cw = Math.max(132, t.length * 17 + 44) + (mt ? 30 : 0), cx = W - LY.m - cw, cy = 14;
         const over = btn(cx, cy, cw, 50, () => openProfile(null)); // my name: my profile (no name yet: the account page)
         rr(cx, cy, cw, 50, 25, over ? '#fff3c4' : 'rgba(255,248,231,0.95)', OUT, 2.6); if (mt) drawTier(tierOf(mt), cx + 25, cy + 25, 15); text(t, cx + (mt ? 30 : 0) + (cw - (mt ? 30 : 0)) / 2, cy + 26, 21, acct.user ? INK : '#3d8be0', 'center', null, F_T);
-        const ry = cy, round = (x, kind, fn, dot) => { const o = btn(x, ry, 50, 50, fn); rr(x, ry, 50, 50, 25, o ? '#fff3c4' : 'rgba(255,248,231,0.95)', OUT, 2.6); topIcon(kind, x + 25, ry + 25); if (dot) { ctx.lineWidth = 2; E(x + 43, ry + 6, 7, 7, '#e2574c'); } }; // round picture buttons under my name, edged like it
+        const ry = cy, round = (x, kind, fn, dot) => roundKey(x, ry, kind, fn, dot); // round picture buttons under my name, edged like it
         round(cx - 12 - 50, FB_ICON, openFeedback); round(cx - 24 - 100, 'megaphone', openNotices, noticeUnread()); // beside my name, on the same row
-        if (lobbyNet.online) { const s = `${lobbyNet.online}명 접속`, ow = Math.ceil(textW(s, 20, F_T)) + 46, ox = LY.m, o2 = btn(ox, cy, ow, 50, () => { scene = 'online'; }); // who is around, top left: a tap goes online
-          rr(ox, cy, ow, 50, 25, o2 ? '#e6f7ea' : 'rgba(236,250,240,0.95)', '#3f9a5c', 2.6); ctx.lineWidth = 1.6; ctx.strokeStyle = OUT; E(ox + 19, cy + 25, 6, 6, '#4fc37a'); text(s, ox + 32, cy + 26, 20, '#2f7a48', 'left', null, F_T); } }
+        if (lobbyNet.online) onlinePill(LY.m, cy, () => { scene = 'online'; }); } // who is around, top left: a tap goes online
       text(`v${APP_VERSION} · © 2026 IGNUZNIM. All rights reserved.`, W / 2, LY.copy, 16, 'rgba(59,51,64,0.6)', 'center', null, F_B);
       menuEnd(KB('Enter 를 눌러도 시작해요'));
     },
@@ -4226,16 +4244,16 @@ const scenes = {
     },
     draw() {
       menuBegin('뽑기 · 업적', true);
-      if (acct.prof) ticketPill(LY.m + LY.w, LY.titleY, acct.prof.tickets); // the profile's own pill
+      if (acct.prof) ticketPill(LY.m + LY.w, LY.titleY, acct.prof.tickets, 1.55); // the profile's own pill, at the size of the title row's keys
       { // 뽑기 기계 or 업적: the same switch as 단식 · 복식 (as tall, the same type), its thumb sliding to the side chosen; the page under it is pushed the same way
         const SH = WSW, x = LY.m, y = LY.top, hw = LY.w / 2, to = acct.wtab === 'ach' ? 1 : 0, e = CALM ? 1 : easeOut(Math.min(1, (clock.now() - (acct.wtabAt || -9)) / 0.24)), p = 1 - to + (2 * to - 1) * e;
         rr(x, y + 5, LY.w, SH, SH / 2, OUT, null); rr(x, y, LY.w, SH, SH / 2, '#fff8e7', OUT, 3); rr(x + p * hw + 7, y + 7, hw - 14, SH - 14, (SH - 14) / 2, mixHex(CORAL, SKY, p), OUT, 3);
         const ready = acct.prof ? ACH.filter(a => claimable(a[0])).length : 0;
         [['gacha', '뽑기 기계', acct.prof ? `뽑기권 ${acct.prof.tickets}장` : '로그인이 필요해요', 'capsule', '#6b2a22'], ['ach', '업적', !acct.prof ? '로그인이 필요해요' : ready ? `받을 보상 ${ready}개` : '모두 받았어요', 'medal', '#1d4a73']].forEach(([id, t, sub, ic, dark], i) => { const kx = x + i * hw, on = i ? p > 0.5 : p <= 0.5, fy = y + SH / 2;
           btn(kx, y, hw, SH, () => { if ((acct.g.phase === 'idle' || acct.g.phase === 'reveal') && acct.wtab !== id) { acct.g.phase = 'idle'; acct.wtab = id; acct.wtabAt = clock.now(); tone(760, 0.06, 'sine', 0.18); } });
-          icon(ic, kx + 60, fy, 46); const tx = kx + 100, room = hw - 100 - 22;
-          text(t, tx, fy - 8, 32, on ? '#ffffff' : '#6f6068', 'left', on ? OUT : null, F_T); fitText(sub, tx, fy + 25, 20, on ? dark : '#6f6068', 'left', F_T, room);
-          if ((id === 'ach' && ready) || (id === 'gacha' && acct.prof && acct.prof.tickets > 0)) { ctx.lineWidth = 2; ctx.strokeStyle = OUT; E(tx + textW(t, 32, F_T) + 14, fy - 18, 7, 7, '#e2574c'); } }); }
+          const gw = 46 + 14 + textW(t, 32, F_T), gx = kx + (hw - gw) / 2, tx = gx + 60; icon(ic, gx + 23, fy, 46); // the picture and the word as one block in the middle of the half
+          text(t, tx, fy + 1, 32, on ? '#ffffff' : '#6f6068', 'left', on ? OUT : null, F_T);
+          if ((id === 'ach' && ready) || (id === 'gacha' && acct.prof && acct.prof.tickets > 0)) { ctx.lineWidth = 2; ctx.strokeStyle = OUT; E(tx + textW(t, 32, F_T) + 12, fy - 14, 7, 7, '#e2574c'); } }); }
       const y0 = LY.top + WSW + LY.gap + 10, end = contentEnd();
       if (!acct.user || !acct.prof) {
         panel(LY.m, y0, LY.w, 300);
@@ -4244,8 +4262,9 @@ const scenes = {
       } else if (acct.wtab === 'gacha') drawGachaTab(y0, end);
       else drawAchTab(y0, end);
       sideBtn('뒤로', () => { acct.g.phase = 'idle'; scene = 'title'; });
+      if (acct.prof && acct.wtab === 'gacha' && acct.g.phase === 'idle') { const kx = LY.m + LY.btnH + 12; iconKey(kx, LY.bot, LY.btnH, 'hanger', () => openCloset('wardrobe', null)); barL = kx + LY.btnH; } // 내 아이템: a key like the back key, beside it
       if (acct.prof && acct.wtab === 'gacha') { if (acct.g.phase === 'idle') pullBtn(); else mainBtn(acct.g.phase === 'reveal' ? '확인' : '뽑는 중…', () => { if (acct.g.phase === 'reveal') acct.g.phase = 'idle'; }); }
-      menuEnd('', acct.wtab === 'gacha' ? `나올 확률\n일반 ${ODDS[0]}% · 희귀 ${ODDS[1]}% · 영웅 ${ODDS[2]}% · 전설 ${ODDS[3]}%` : '아이템은 선수 선택 화면의 옷걸이에서 입혀요\n모든 경기(랭킹 포함)에 적용돼요');
+      menuEnd('', acct.wtab === 'gacha' ? `나올 확률: 일반 ${ODDS[0]}% · 희귀 ${ODDS[1]}% · 영웅 ${ODDS[2]}% · 전설 ${ODDS[3]}%\n뽑기권은 경기를 마치거나 업적을 달성하면 받아요` : '아이템은 선수 선택 화면의 옷걸이에서 입혀요\n모든 경기(랭킹 포함)에 적용돼요');
     },
   },
   closet: {
@@ -4254,6 +4273,7 @@ const scenes = {
       const S = SCR.closet; if (anyHit(...K_D)) S.vel = 900; if (anyHit(...K_U)) S.vel = -900;
     },
     draw() {
+      if (closetBack === 'select' && closet.animal != null) return drawClosetWindow(); // from the player's hanger: a window over the select page
       menuBegin(closet.animal != null ? `${ANIMALS[closet.animal].ko}의 옷장` : '내 아이템', true);
       const gear = closet.animal != null ? myGear(closet.animal) : {}, own = Object.keys(ITEMS).filter(id => acct.inv[id]).length, coll = closet.animal == null;
       text(`보유 ${own} / ${Object.keys(ITEMS).length}`, LY.m + LY.w, LY.titleY, 21, '#3d8be0', 'right', null, F_T);
@@ -4304,7 +4324,7 @@ const scenes = {
       if (net) { const me = !!net.myPick, R = net.ready || { n: 0, need: 2 }, team = net.kind === 'single' ? '' : (net.role === 'host' ? 0 : net.seat) % 2 === 0 ? 'A팀 · ' : 'B팀 · ';
         rr(LY.m, LY.bot - 50, LY.w, 40, 20, 'rgba(59,51,64,0.85)', null);
         text(`${KINDS[net.kind] ? KINDS[net.kind].ko + ' · ' : ''}${FORMATS[setup.format].ko} · ${COURTS[setup.court].ko}  |  ${team}나 ${me ? '준비 완료' : '고르는 중'} · 준비 ${R.n}/${R.need}`, W / 2, LY.bot - 30, 18, CREAM, 'center', null, F_B); }
-      menuEnd(net ? (net.myPick ? '모두 고르면 시작해요 · 다른 선수를 눌러 바꿀 수 있어요' : '선수를 고르고 결정을 눌러요') : KB('← → ↑ ↓ 로 고르고 Enter'), net ? '' : '옷걸이를 누르면 옷장이 열려요\n입힌 아이템은 이 선수에게만 적용돼요');
+      menuEnd(net ? '' : KB('← → ↑ ↓ 로 고르고 Enter'), net ? (net.myPick ? '모두 고르면 시작해요\n다른 선수를 눌러 바꿀 수 있어요' : '선수를 고르고 결정을 눌러요') : '옷걸이를 누르면 옷장이 열려요\n입힌 아이템은 이 선수에게만 적용돼요');
     },
   },
   mode: {
@@ -4327,7 +4347,7 @@ const scenes = {
         text(net ? (net.kind === 'coop' ? '친구와 함께 컴퓨터 2명과' : '빈 자리를 채울 컴퓨터') : setup.doubles ? '파트너와 함께 컴퓨터 2명과' : '컴퓨터와 대결', x + 152, y + ch / 2 - 16, 26, INK, 'left', null, F_T);
         text(r[1], x + 152, y + ch / 2 + 20, 19, '#7a6872', 'left', null, F_B); ctx.restore(); });
       sideBtn('뒤로', () => { scene = 'format'; });
-      menuEnd(net ? `${KINDS[net.kind].ko} · ${FORMATS[setup.format].ko}` : `${setup.doubles ? '복식 · ' : ''}${FORMATS[setup.format].ko} · ${{ flash: '10점 매치 타이브레이크', short: '4게임 짧은 세트', regular: '5세트 3선승' }[setup.format]} `);
+      menuEnd('', net ? `${KINDS[net.kind].ko} · ${FORMATS[setup.format].ko}` : `${setup.doubles ? '복식 · ' : ''}${FORMATS[setup.format].ko} · ${{ flash: '10점 매치 타이브레이크', short: '4게임 짧은 세트', regular: '5세트 3선승' }[setup.format]} `);
     },
   },
   court: {
@@ -4400,7 +4420,7 @@ const scenes = {
       if (signedIn() && clock.now() - lobbyNet.at > 3 && !lobbyNet.loading) loadRooms(); },
     draw() {
       menuBegin('온라인 대결', true);
-      if (signedIn() && lobbyNet.online) { ctx.lineWidth = 2; ctx.strokeStyle = OUT; E(LY.m + LY.w - 112, LY.titleY, 6, 6, '#4fc37a'); text(`${lobbyNet.online}명 접속`, LY.m + LY.w, LY.titleY, 20, '#3f9a5c', 'right', null, F_T); }
+      if (lobbyNet.online) onlinePill(LY.m + LY.w - onlinePillW(), LY.titleY - 25); // the title page's pill, at the right of the title row
       const bh = 64, jw = textW('바로 참가', 27, F_T) + 80; // 방 만들기 (+) and 코드로 참가 (a key) as keys, 바로 참가 at the right
       iconKey(LY.m, LY.top, bh, 'plus', () => { state.pub = signedIn(); scene = 'make'; }); iconKey(LY.m + bh + 12, LY.top, bh, 'code', () => openNick('code'));
       text('방 만들기 · 코드로 참가', LY.m + bh * 2 + 26, LY.top + bh / 2, MIN_TEXT, '#4f6f63', 'left', null, F_B);
@@ -4433,27 +4453,28 @@ const scenes = {
   make: { // a room, before it opens: how to play, public or private, then 방 만들기
     update(dt) { state.t += dt; if (!state.mk) state.mk = 'single'; if (!state.mf) state.mf = 'short'; if (pressed('Escape')) { scene = 'online'; return; } if (anyHit(...K_OK)) makeRoom();
       const ks = ['single', 'coop', 'versus'], d = anyHit(...K_R) ? 1 : anyHit(...K_L) ? 2 : 0; if (d) state.mk = ks[(ks.indexOf(state.mk) + d) % 3]; },
-    draw() {
+    draw() { // a window over the online page: what kind, how long, public or not, then 방 만들기 at its bottom right; a tap outside closes it
       if (!state.mk) state.mk = 'single'; if (!state.mf) state.mf = 'short';
-      menuBegin('방 만들기', true);
-      const x0 = LY.m + LY.pad, inner = LY.w - LY.pad * 2, py = LY.top, ph = 520; panel(LY.m, py, LY.w, ph);
-      text('어떻게 할까요?', x0, py + 36, 24, INK, 'left', null, F_T);
-      const bw = (inner - 24) / 3, by = py + 64;
-      ['single', 'coop', 'versus'].forEach((k, i) => { const x = x0 + i * (bw + 12), on = state.mk === k, K = KINDS[k], bh = 112, over = btn(x, by, bw, bh, () => { state.mk = k; tone(760, 0.06, 'sine', 0.18); });
-        rr(x, by + 4, bw, bh, 18, OUT, null); rr(x, by, bw, bh, 18, on ? '#fff3c4' : over ? '#fffdf3' : '#ffffff', on ? CORAL : OUT, on ? 3.6 : 2.6);
-        text(K.ko, x + bw / 2, by + 28, 23, INK, 'center', null, F_T); text(`최대 ${K.cap}명`, x + bw / 2, by + 60, 18, '#c0605a', 'center', null, F_T);
-        text(K.sub.split(' · ')[1], x + bw / 2, by + 88, 17, '#7a6872', 'center', null, F_B); });
-      text('경기 길이', x0, py + 214, 24, INK, 'left', null, F_T);
+      scenes.online.draw(); hot = []; FIX = []; const PQ = popIn(clock.now() - sceneAt);
+      ctx.fillStyle = `rgba(59,51,64,${0.55 * PQ.a})`; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, () => { scene = 'online'; });
+      const w = LY.w + 32, x = (W - w) / 2, pad = 28, x0 = x + pad, inner = w - pad * 2, h = 28 + 34 + 14 + 136 + 30 + 34 + 14 + 96 + 30 + 76 + 22 + 2 * 30 + 26 + LY.btnH + 28, S = bigWin(w, h), y = H / 2 - h / 2;
+      HX = { cx: W / 2, cy: H / 2, s: S }; ctx.save(); ctx.translate(W / 2, H / 2); ctx.scale(PQ.k * S, PQ.k * S); ctx.translate(-W / 2, -H / 2); ctx.globalAlpha = PQ.a;
+      rr(x, y + 6, w, h, 26, 'rgba(59,51,64,0.35)', null); rr(x, y, w, h, 26, '#fffaf0', OUT, 3); btn(x, y, w, h, () => {});
+      let yy = y + 28; text('어떻게 할까요?', x0, yy + 17, 27, INK, 'left', null, F_T); yy += 34 + 14;
+      const bw = (inner - 24) / 3;
+      ['single', 'coop', 'versus'].forEach((k, i) => { const bx = x0 + i * (bw + 12), on = state.mk === k, K = KINDS[k], bh = 136, over = btn(bx, yy, bw, bh, () => { state.mk = k; tone(760, 0.06, 'sine', 0.18); });
+        rr(bx, yy + 4, bw, bh, 18, OUT, null); rr(bx, yy, bw, bh, 18, on ? '#fff3c4' : hoverOn(over) ? '#fffdf3' : '#ffffff', on ? CORAL : OUT, on ? 3.6 : 2.6);
+        text(K.ko, bx + bw / 2, yy + 36, 27, INK, 'center', null, F_T); text(`최대 ${K.cap}명`, bx + bw / 2, yy + 72, 21, '#c0605a', 'center', null, F_T); fitText(K.sub.split(' · ')[1], bx + bw / 2, yy + 104, 19, '#7a6872', 'center', F_B, bw - 16); });
+      yy += 136 + 30; text('경기 길이', x0, yy + 17, 27, INK, 'left', null, F_T); yy += 34 + 14;
       const FD = { flash: '10점 · 6~9분', short: '4게임 · 10~15분', regular: '3세트 · 30분+' };
-      FORMAT_IDS.forEach((id, i) => { const x = x0 + i * (bw + 12), y = py + 238, on = state.mf === id, over = btn(x, y, bw, 78, () => { state.mf = id; tone(760, 0.06, 'sine', 0.18); });
-        rr(x, y + 4, bw, 78, 16, OUT, null); rr(x, y, bw, 78, 16, on ? '#fff3c4' : over ? '#fffdf3' : '#ffffff', on ? CORAL : OUT, on ? 3.6 : 2.6);
-        text(FORMATS[id].ko, x + bw / 2, y + 26, 23, INK, 'center', null, F_T); text(FD[id], x + bw / 2, y + 56, 17, '#7a6872', 'center', null, F_B); });
-      drawPublicSwitch(x0, py + 338, inner, !!state.pub, () => { if (!state.pub && !signedIn()) { notify('로그인하면 공개 방으로 열 수 있어요'); return; } state.pub = !state.pub; tone(760, 0.06, 'sine', 0.18); });
-      text('방을 만들면 방 코드가 생겨요 · 친구에게 보내거나 공개 방으로 기다려요', W / 2, py + 442, 18, '#4f6f63', 'center', null, F_B);
-      text('방식 · 길이 · 공개 여부는 방을 만든 뒤에도 바꿀 수 있어요', W / 2, py + 476, 18, '#4f6f63', 'center', null, F_B);
-      sideBtn('뒤로', () => { scene = 'online'; });
-      mainBtn(`${KINDS[state.mk].ko} 방 만들기`, makeRoom);
-      menuEnd(KB('← → 로 방식, Enter 로 만들어요'));
+      FORMAT_IDS.forEach((id, i) => { const bx = x0 + i * (bw + 12), on = state.mf === id, over = btn(bx, yy, bw, 96, () => { state.mf = id; tone(760, 0.06, 'sine', 0.18); });
+        rr(bx, yy + 4, bw, 96, 16, OUT, null); rr(bx, yy, bw, 96, 16, on ? '#fff3c4' : hoverOn(over) ? '#fffdf3' : '#ffffff', on ? CORAL : OUT, on ? 3.6 : 2.6);
+        text(FORMATS[id].ko, bx + bw / 2, yy + 34, 27, INK, 'center', null, F_T); fitText(FD[id], bx + bw / 2, yy + 66, 19, '#7a6872', 'center', F_B, bw - 16); });
+      yy += 96 + 30; drawPublicSwitch(x0, yy, inner, !!state.pub, () => { if (!state.pub && !signedIn()) { notify('로그인하면 공개 방으로 열 수 있어요'); return; } state.pub = !state.pub; tone(760, 0.06, 'sine', 0.18); }, 76); yy += 76 + 22;
+      text('방을 만들면 방 코드가 생겨요 · 친구에게 보내거나 공개로 기다려요', W / 2, yy + 15, 19, '#5d4f58', 'center', null, F_B); text('방식 · 길이 · 공개 여부는 만든 뒤에도 바꿀 수 있어요', W / 2, yy + 45, 19, '#5d4f58', 'center', null, F_B); yy += 2 * 30 + 26;
+      { const lab = `${KINDS[state.mk].ko} 방 만들기`, bw2 = Math.max(MAIN_W, textW(lab, 31, F_T) + 64); button(lab, x + w - pad - bw2, yy, bw2, LY.btnH, makeRoom, { size: 31, fill: '#fff3c4' }); } // the window's own main key, at its bottom right
+      ctx.restore(); HX = null;
+      if (!touchUI) text('← → 로 방식, Enter 로 만들어요', W / 2, LY.foot, 20, CREAM, 'center', OUT, F_B);
     },
   },
   quick: {
@@ -4594,18 +4615,19 @@ const scenes = {
   help: {
     update(dt) {
       if (m.online) { playCore(dt); if (scene !== 'help') return; }
-      if (anyHit(...K_R)) helpPage = 1; if (anyHit(...K_L)) helpPage = 0;
+      if (anyHit(...K_R) && helpPage !== 1) { helpPage = 1; helpAt = clock.now(); } if (anyHit(...K_L) && helpPage !== 0) { helpPage = 0; helpAt = clock.now(); }
       if (pressed('Escape') || pressed('KeyH') || pressed('KeyP')) closeHelp();
     },
     draw() {
       drawMatch(); hot = []; OY = 0;
+      btn(0, 0, W, H, closeHelp); // a tap outside the card closes it
       modalIn(0.62);
       const top = Math.round(H / 2 - 400);
       ctx.save(); ctx.translate(0, top); OY = top;
-      rr(40, 0, 640, 800, 26, 'rgba(255,248,231,0.98)', OUT, 4);
-      ['조작법', '경기 규칙'].forEach((t, i) => { const x = 70 + i * 296, on = helpPage === i;
-        btn(x, 22, 284, 54, () => { helpPage = i; });
-        rr(x, 22, 284, 54, 16, on ? '#fff3c4' : '#f3e8da', on ? CORAL : OUT, on ? 4 : 2.4); text(`${i + 1}. ${t}`, x + 142, 50, 25, on ? INK : '#7a6872', 'center', null, F_T); });
+      rr(40, 0, 640, 800, 26, 'rgba(255,248,231,0.98)', OUT, 4); btn(40, 0, 640, 800, () => {});
+      { const x = 70, w = 580, SH = 64, hw = w / 2, e = CALM ? 1 : easeOut(Math.min(1, (clock.now() - (helpAt || -9)) / 0.24)), p = helpPage ? e : 1 - e; // 조작법 or 경기 규칙: the same switch as 단식 · 복식, smaller
+        rr(x, 22 + 5, w, SH, SH / 2, OUT, null); rr(x, 22, w, SH, SH / 2, '#fff8e7', OUT, 3); rr(x + p * hw + 6, 28, hw - 12, SH - 12, (SH - 12) / 2, mixHex(CORAL, SKY, p), OUT, 3);
+        ['조작법', '경기 규칙'].forEach((t, i) => { const on = i ? p > 0.5 : p <= 0.5; btn(x + i * hw, 22, hw, SH, () => { if (helpPage !== i) { helpPage = i; helpAt = clock.now(); tone(760, 0.06, 'sine', 0.18); } }); text(t, x + i * hw + hw / 2, 22 + SH / 2 + 1, 27, on ? '#ffffff' : '#6f6068', 'center', on ? OUT : null, F_T); }); }
       const T = touchUI;
       if (helpPage === 0) {
         helpRows([
@@ -4617,26 +4639,25 @@ const scenes = {
           ['서브', (T ? '스트로크' : 'Q') + ' 로 토스, 꼭대기에서 한 번 더', '#ffd0c8', '고리가 초록이면 좋은 타이밍'],
           [T ? '치는 순간' : '← / →', '치는 순간 누른 쪽으로 공이 가요', '#efe3d3'],
           ['타이밍', "'딱!' 은 완벽한 타이밍", '#efe3d3', "'빨랐어!' · '늦었어!' 는 공이 흔들려요"],
-        ], 140, 66, 130);
-        text(T ? '오른쪽 위: 일시정지 · 소리 · 낙하지점 · 도움말' : 'P 일시정지 · M 소리 · G 낙하지점 · H 도움말', W / 2, 676, 21, '#3d9be0', 'center', null, F_H);
+        ], 150, 76, 150, 1.15);
+        text(T ? '오른쪽 위: 일시정지 · 소리 · 낙하지점 · 도움말' : 'P 일시정지 · M 소리 · G 낙하지점 · H 도움말', W / 2, 752, 22, '#3d9be0', 'center', null, F_T);
       } else {
         helpRows([
           ['점수', '0 → 15 → 30 → 40 → 게임', '#fff1b0', '40-40은 듀스: 2점을 연달아 따야 해요'],
           ['서브', '대각선 서비스 박스에 넣기', '#ffd0c8', '기회는 두 번 · 둘 다 실패하면 실점'],
           ['실점', '선 밖이나 네트에 걸리면 실점', '#dbe9f7', '내 코트에서 두 번 튀기 전에 쳐야 해요'],
           ['타이브레이크', '게임 동점일 때 1점씩 결정전', '#e6dbf7', '7점 먼저, 2점 차 (매치 타이브레이크는 10점)'],
-        ], 140, 76, 130);
-        rr(70, 448, 580, 2, 1, '#e2d4c4', null);
-        text('경기 방식', W / 2, 482, 25, INK, 'center', null, F_T);
-        FORMAT_IDS.forEach((id, i) => { const y = 530 + i * 54, on = id === (m.format || 'regular');
-          if (on) rr(70, y - 24, 580, 48, 14, '#fff3c4', CORAL, 2.4);
-          text(FORMATS[id].ko, 92, y, 23, INK, 'left', null, F_T);
-          text({ flash: '10점 먼저 (2점 차)', short: '4게임 먼저 · 노애드 · 4-4 타이브레이크', regular: '3세트 먼저 · 6게임 세트' }[id], 190, y, 20, '#5d4f58', 'left', null, F_B); });
-        text('지금 경기는 노란 칸의 방식이에요', W / 2, 692, 21, '#c0605a', 'center', null, F_H);
+        ], 156, 88, 150, 1.15);
+        rr(70, 494, 580, 2, 1, '#e2d4c4', null);
+        text('경기 방식', W / 2, 532, 27, INK, 'center', null, F_T);
+        FORMAT_IDS.forEach((id, i) => { const y = 590 + i * 60, on = id === (m.format || 'regular');
+          if (on) rr(70, y - 26, 580, 52, 14, '#fff3c4', '#e3a46a', 2.4);
+          text(FORMATS[id].ko, 94, y, 25, INK, 'left', null, F_T);
+          text({ flash: '10점 먼저 (2점 차)', short: '4게임 먼저 · 노애드 · 4-4 타이브레이크', regular: '3세트 먼저 · 6게임 세트' }[id], 196, y, 21, '#5d4f58', 'left', null, F_B); });
+        text('지금 경기는 노란 칸의 방식이에요', W / 2, 764, 22, '#c0605a', 'center', null, F_T);
       }
-      button('닫기', W - 44 - 28 - 150, 718, 150, 62, closeHelp, { size: 27, fill: '#fff3c4' });
       ctx.restore(); OY = 0;
-      text(T ? '위의 탭을 눌러 페이지를 넘겨요' : '← → 페이지 · H 또는 Esc 닫기', W / 2, top + 830, 21, CREAM, 'center', OUT, F_B);
+      if (!touchUI) text('← → 페이지 · H 또는 Esc 닫기', W / 2, top + 830, 21, CREAM, 'center', OUT, F_B);
     },
   },
   pause: {
@@ -4650,13 +4671,13 @@ const scenes = {
       drawMatch(); hot = []; OY = 0;
       modalIn(0.6);
       const cy = Math.round(H / 2);
-      rr(110, cy - 226, 500, 458, 26, 'rgba(255,248,231,0.97)', OUT, 4);
-      text(m.online ? '잠깐!' : '일시정지', W / 2, cy - 168, 52, INK, 'center', null, F_T);
-      text(m.online ? '온라인 경기는 멈추지 않아요' : '숨 한번 고르고 가요', W / 2, cy - 118, 24, '#c0605a', 'center', null, F_T);
-      button('계속하기', 170, cy - 84, 380, 68, () => { scene = 'play'; }, { size: 30, fill: '#fff3c4' });
-      button('홈으로', 170, cy - 2, 380, 68, goHome, { size: 28 });
-      button('개발자에게 한마디', 170, cy + 80, 380, 68, openFeedback, { size: 28 }); // the same size as the two above
-      text('P 계속하기 · Backspace 홈으로 · H 도움말', W / 2, cy + 192, 20, '#7a6872', 'center', null, F_B);
+      const ct = cy - 186; rr(110, ct, 500, 372, 26, 'rgba(255,248,231,0.97)', OUT, 4); // the card: its title, a line, two keys, even margins all round
+      roundKey(610 - 24 - 50, ct + 24, FB_ICON, openFeedback); // 개발자에게 한마디, the round key it has on the title page, in the card's corner
+      text(m.online ? '잠깐!' : '일시정지', W / 2, ct + 78, 52, INK, 'center', null, F_T);
+      text(m.online ? '온라인 경기는 멈추지 않아요' : '숨 한번 고르고 가요', W / 2, ct + 128, 24, '#c0605a', 'center', null, F_T);
+      button('계속하기', 170, ct + 170, 380, 68, () => { scene = 'play'; }, { size: 30, fill: '#fff3c4' });
+      button('홈으로', 170, ct + 256, 380, 68, goHome, { size: 28 });
+      if (!touchUI) text('P 계속하기 · Backspace 홈으로 · H 도움말', W / 2, ct + 372 + 34, 20, CREAM, 'center', OUT, F_B);
     },
   },
   results: {
@@ -4707,7 +4728,7 @@ const scenes = {
       if (guest && net.ask) mainBtn('다시 하기 (방에 남기)', guestStay); // the host asked: stay for another, or leave with 방 목록
       else if (guest) { const gw = midW('방장이 다시 하자고 하면', 21), gx = LY.m + LY.w - gw; rr(gx, LY.bot, gw, LY.btnH, 18, 'rgba(255,248,231,0.7)', '#cdbfb3', 2.4); text('방장이 다시 하자고 하면', gx + gw / 2, LY.bot + LY.btnH / 2 - 13, 21, INK, 'center', null, F_T); text('남을지 고를 수 있어요', gx + gw / 2, LY.bot + LY.btnH / 2 + 15, 21, INK, 'center', null, F_T); }
       else mainBtn(net ? '다시 하기 (방으로)' : '다시 하기', () => { if (net) onlineAgain(); else { reset(); scene = 'play'; } });
-      menuEnd(guest ? (net.ask ? '방장이 한 판 더 하자고 해요 · 남거나 방 목록으로 나가요' : '') : net ? '다시 하기를 누르면 방으로 돌아가요 · 친구들은 남을지 골라요' : KB('Enter : 다시 하기 · Esc : 홈으로'));
+      menuEnd(guest ? (net.ask ? '방장이 한 판 더 하자고 해요 · 남거나 방 목록으로 나가요' : '') : net ? '' : KB('Enter : 다시 하기 · Esc : 홈으로'));
       drawGift();
     },
   },
@@ -4755,7 +4776,6 @@ let viewTab0 = -1, viewKey0 = '', viewScene0 = '', viewOv0 = 0, viewAt = 0, scen
 function viewOf() { // what counts as 'a different view', and the part of the screen that moves with it
   if (scene === 'wardrobe') return { key: 'wardrobe:' + acct.wtab, tab: ['gacha', 'ach'].indexOf(acct.wtab), r: [0, LY.top + WSW + 10, W, LY.bot - 6] };
   if (scene === 'hall') return { key: 'hall:' + rank.mode, tab: FORMAT_IDS.indexOf(rank.mode), r: [0, LY.top + 60, W, LY.bot - 8] };
-  if (scene === 'help') { const top = Math.round(H / 2 - 400); return { key: 'help:' + helpPage, tab: helpPage, r: [44, top + 84, W - 44, top + 796] }; }
   return { key: scene };
 }
 const overlays = () => (prof.open ? 1 : 0) + (scene === 'ranking' && tierGuide.open ? 1 : 0) + (prof.open && prof.menu ? 1 : 0) + (scene === 'hall' && rank.sel >= 0 ? 1 : 0) + (typeof matchGift !== 'undefined' && matchGift && matchGift.open && scene === 'results' ? 1 : 0);
@@ -4765,6 +4785,8 @@ function viewWatch() { // before a frame: has the view changed since the last on
   const from = viewScene0, to = scene, fi = FLOW.indexOf(from), ti = FLOW.indexOf(to); let kind = null, dir = 1, r = [0, 0, W, H], dur = 0.2;
   let win = false; if (v.key === viewKey0) { if (ov < viewOv0) { kind = 'fade'; dur = 0.16; win = true; } } // a window opened (it pops by itself) or closed (it fades away)
   else if (from && from === to && v.tab >= 0) { kind = to === 'wardrobe' ? 'push' : 'slide'; dir = v.tab > viewTab0 ? 1 : -1; r = v.r; dur = kind === 'push' ? 0.34 : 0.22; }
+  else if ((to === 'make' && from === 'online') || (from === 'make' && to === 'online')) { if (from === 'make') { kind = 'fade'; dur = 0.16; win = true; } } // 방 만들기 is a window over the online page
+  else if ((to === 'closet' && from === 'select' && closetBack === 'select') || (from === 'closet' && to === 'select')) { if (from === 'closet') { kind = 'fade'; dur = 0.16; win = true; } } // over 선수 선택 the closet is a window: it pops in by itself and fades away
   else if (to === 'closet' || from === 'closet') { const M = CLOSET_MO, open = to === 'closet'; // the closet's way in and out
     if (M === 'sheet') { kind = open ? 'sheetUp' : 'sheetDown'; dur = open ? 0.36 : 0.28; }
     else if (M === 'push') { kind = 'slide'; dir = open ? 1 : -1; r = [0, LY.top - 14, W, LY.bot - 6]; dur = 0.22; }
@@ -4834,7 +4856,13 @@ function drawFrame() {
     text('휴대폰을 세로로 돌리면 화면이 더 커져요', W / 2, H - 31, 19, CREAM, 'center', null, F_B);
   }
   canvas.style.cursor = hitTest(mouse) ? 'pointer' : 'default'; }
-function frame() { tick(); requestAnimationFrame(frame); }
+let edgeAt = 0, edgeKey = ''; const themeMeta = document.querySelector('meta[name=theme-color]');
+function matchEdges() { // the screen above and below the game takes the colour of the game's own top and bottom rows, so the page reads as one (four times a second)
+  const now = performance.now(); if (now - edgeAt < 250 || !canvas.width) return; edgeAt = now;
+  try { const g = canvas.getContext('2d'), px = (y) => { const d = g.getImageData(Math.min(8, canvas.width - 1), y, 1, 1).data; return `rgb(${d[0]},${d[1]},${d[2]})`; }, top = px(1), bot = px(canvas.height - 2), key = top + bot;
+    if (key === edgeKey) return; edgeKey = key; document.body.style.background = document.documentElement.style.background = `linear-gradient(to bottom, ${top} 50%, ${bot} 50%)`; if (themeMeta) themeMeta.content = top; } catch (e) { /* the canvas could not be read: the plain green stays */ }
+}
+function frame() { tick(); matchEdges(); requestAnimationFrame(frame); }
 // A headless browser on a time budget runs timers but almost no animation frames: a timer
 // ticks when no frame has come for 100 ms on a visible page; a hidden tab stays paused.
 function timer() { if (document.visibilityState === 'visible' && clock.now() - last > 0.1) tick(); }

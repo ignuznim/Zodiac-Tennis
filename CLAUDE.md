@@ -5,6 +5,7 @@ The owner reviews every change on a phone. These rules come from their repeated 
 ## Text inside boxes
 - Every piece of text sits inside its box with even margins: the same space above and below, and on both sides.
 - When a box holds several lines (a title and one or two lines under it), centre the whole block vertically and check the bottom margin as carefully as the top.
+- Everything inside one button or card is one block, centred in it both ways (the owner has asked many times): a picture with a title and a line under it, a label with a bar under it, an icon with a word. Measure the block (picture width + gap + widest line; first line top to last line bottom) and place the block, never the parts one by one at fixed offsets.
 - Text must never run past a box's edge or be cut off. Shrink it to fit (measure with `ctx.measureText`) rather than let it overflow.
 - After any layout change, take a screenshot at phone size (390 x 844, and a short screen such as 390 x 600) and look at the margins before committing.
 - No text is smaller than MIN_TEXT (16 in the 720-wide page, set beside text() in index.html). Shrink-to-fit stops there; if a label still does not fit, move it somewhere with room or use two lines instead of going smaller. Never cut a word into an abbreviation nobody can read (타이브레이크 is never 타이브).
