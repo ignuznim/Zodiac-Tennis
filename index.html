@@ -3046,7 +3046,7 @@ function itemOrder(p, q) { // by grade, then items of a kind together (all the h
   return ITEMS[p][1] - ITEMS[q][1] || KIND_AT[ITEMS[p][0] + ':' + kindOf(p)] - KIND_AT[ITEMS[q][0] + ':' + kindOf(q)] || hueAt(p) - hueAt(q) || ITEM_KEYS.indexOf(p) - ITEM_KEYS.indexOf(q);
 }
 const STAT_NAME = { power: '파워', stamina: '체력', spin: '스핀', reflex: '순발력', speed: '스피드' };
-function gearBonus(ids) { const b = {}; for (const id of Object.values(ids || {})) { const it = item(id); if (it) b[it.stat] = (b[it.stat] || 0) + it.amt; } return b; }
+function gearBonus(ids) { const b = {}; for (const id of Object.values(ids || {})) { const it = item(id); if (it) b[it.stat] = Math.round(((b[it.stat] || 0) + it.amt) * 100) / 100; } return b; } // summed in hundredths: 0.1 + 0.2 is 0.3, not 0.30000000000000004
 const ACH = [ // the achievements: what counts, the goal; the server holds the reward
   ['daily', '오늘의 출석', '하루에 한 번', () => [1, 1]],
   ['d_play', '오늘의 경기', '오늘 경기 1번 끝까지 하기', () => [dayCount('play'), 1]],
