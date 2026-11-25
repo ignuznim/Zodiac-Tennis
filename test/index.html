@@ -47,10 +47,10 @@
   #fb button, #nick button { transition: transform 100ms ease-out, box-shadow 100ms ease-out; }
   #fb button.x, #nick button.x { flex: none; width: calc(var(--u, 0.6) * 54px); height: calc(var(--u, 0.6) * 54px); padding: 0; display: grid; place-items: center; background: #fff8e7; border: max(1.5px, calc(var(--u, 0.6) * 3px)) solid #6b5560; border-radius: calc(var(--u, 0.6) * 14px); box-shadow: 0 max(2px, calc(var(--u, 0.6) * 4px)) 0 #6b5560; }
   #fb button.x svg, #nick button.x svg { width: 44%; height: 44%; }
-  #fb .kinds { display: flex; gap: calc(var(--u, 0.6) * 10px); margin-bottom: calc(var(--u, 0.6) * 16px); } /* what it is about: three chips, the chosen one filled */
-  #fb .kinds button { flex: none; padding: calc(var(--u, 0.6) * 9px) calc(var(--u, 0.6) * 22px); font-size: calc(var(--u, 0.6) * 22px); color: #6f6068; background: #fff8e7; border: max(1.5px, calc(var(--u, 0.6) * 2px)) solid #cdbfb3; border-radius: 999px; box-shadow: none; transition: background-color 160ms ease-out, color 160ms ease-out, border-color 160ms ease-out; }
-  #fb .kinds button.on { background: #ff8a7a; color: #fff; border-color: #6b5560; }
-  #fb textarea { width: 100%; box-sizing: border-box; padding: calc(var(--u, 0.6) * 16px); font: max(16px, calc(var(--u, 0.6) * 22px)) 'Gowun Dodum', sans-serif; color: #4a3d47; border: max(1.5px, calc(var(--u, 0.6) * 3px)) solid #ff8a7a; border-radius: calc(var(--u, 0.6) * 16px); background: #fff; outline: none; resize: none; line-height: 1.45; display: block; }
+  #fb .kinds { display: flex; gap: 0; margin-bottom: max(-1.5px, calc(var(--u, 0.6) * -3px)); position: relative; z-index: 1; } /* what it is about: tabs on the writing box's top edge, the chosen one joined to it, the first rising from its left edge */
+  #fb .kinds button { flex: none; margin: 0 max(-1.5px, calc(var(--u, 0.6) * -3px)) 0 0; padding: calc(var(--u, 0.6) * 10px) calc(var(--u, 0.6) * 24px) calc(var(--u, 0.6) * 12px); font-size: calc(var(--u, 0.6) * 23px); color: #8a7a82; background: #eadfce; border: max(1.5px, calc(var(--u, 0.6) * 3px)) solid #cdbfb3; border-bottom-color: #ff8a7a; border-radius: calc(var(--u, 0.6) * 16px) calc(var(--u, 0.6) * 16px) 0 0; box-shadow: none; }
+  #fb .kinds button.on { background: #fff; color: #4a3d47; border-color: #ff8a7a; border-bottom-color: #fff; z-index: 2; }
+  #fb textarea { border-top-left-radius: 0 !important; width: 100%; box-sizing: border-box; padding: calc(var(--u, 0.6) * 16px); font: max(16px, calc(var(--u, 0.6) * 22px)) 'Gowun Dodum', sans-serif; color: #4a3d47; border: max(1.5px, calc(var(--u, 0.6) * 3px)) solid #ff8a7a; border-radius: calc(var(--u, 0.6) * 16px); background: #fff; outline: none; resize: none; line-height: 1.45; display: block; }
   #fb textarea::placeholder { color: #b3a4ac; }
   #fb textarea:focus { border-color: #ff8a7a; } /* the same coral before, during and after writing, as the nickname box */
   #fb .err, #nick .err { min-height: 0; margin-top: calc(var(--u, 0.6) * 8px); text-align: center; } #fb .err:empty, #nick .err:empty { margin-top: 0; }
@@ -3558,9 +3558,10 @@ function drawGachaMachine(G, cx, base, k) { // 뽑기 기계 in soft clay, after
 }
 const PILE = (() => { // the capsules in the glass, all one size, in two depths: those further in drawn first, paler, half hidden behind those in front; set loosely (jittered), the same every time
   let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647, C = ['#ffb7c8', '#9fd8ff', '#c9b6ff', '#ffe17a', '#a8f0c6', '#ffc89a'], r = 24, L = [];
-  for (const back of [1, 0]) for (let row = 0; row < 6; row++) for (let col = 0; col < 6; col++) {
-    const x = 26 + col * 50 + (row % 2 ? 22 : -2) + (back ? 25 : 0) + (rnd() - 0.5) * 14, y = 272 - r - row * 42 - (back ? 20 : 0) + (rnd() - 0.5) * 10;
-    if (x < r || x > 300 - r || y < -r * 0.3) continue; L.push({ x, y, r, c: C[Math.floor(rnd() * C.length)], back }); }
+  for (const back of [1, 0]) for (let row = 0; row < 5; row++) for (let col = 0; col < 7; col++) { // packed from the floor up, the top row only a mound in the middle: the glass full below, some air above
+    if (row === 4 && (col < 1 || col > 4)) continue; if (row === 3 && (col === 0 || col === 6) && rnd() < 0.5) continue;
+    const x = 22 + col * 44 + (row % 2 ? 20 : 0) + (back ? 22 : 0) + (rnd() - 0.5) * 10, y = 272 - r - row * 38 - (back ? 16 : 0) + (rnd() - 0.5) * 8;
+    if (x < r || x > 300 - r) continue; L.push({ x, y, r, c: C[Math.floor(rnd() * C.length)], back }); }
   return L.sort((p, q) => (q.back - p.back) || (q.y - p.y)); // the far ones first, then the near ones, each lowest first
 })();
 function ball(x, y, r, c, a) { // a see-through capsule: a tinted sphere, its seam, a white gleam
