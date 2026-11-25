@@ -4908,7 +4908,10 @@ function modalIn(dimA) { // a window over the match: the same pop as every other
   const PQ = popIn(clock.now() - sceneAt); ctx.fillStyle = `rgba(59,51,64,${dimA * PQ.a})`; ctx.fillRect(0, 0, W, H);
   ctx.save(); ctx.translate(W / 2, H / 2); ctx.scale(PQ.k, PQ.k); ctx.translate(-W / 2, -H / 2); ctx.globalAlpha = PQ.a; modalSaved = true;
 }
-function drawFrame() { const f0 = clock.now(); drawFrame0(); const d = clock.now() - f0 - 1 / 60; if (d > 0.02) { sceneAt += d; if (trans) trans.at += d; } } // a frame that took long (a long list drawn for the first time): the motions wait for it instead of jumping ahead
+const RESDBG = params.get('res') === '1'; // ?res=1: the screen's numbers in a corner, to find what makes it soft on a phone
+function resInfo() { const r = canvas.getBoundingClientRect(), vv = window.visualViewport; ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = 'rgba(0,0,0,0.75)'; ctx.fillRect(0, 0, canvas.width, 26 * devicePixelRatio * 3); ctx.fillStyle = '#fff'; ctx.font = `${12 * devicePixelRatio}px monospace`;
+  [`dpr ${devicePixelRatio} · canvas ${canvas.width}x${canvas.height} · css ${r.width.toFixed(1)}x${r.height.toFixed(1)} @ ${r.left.toFixed(1)},${r.top.toFixed(1)}`, `inner ${innerWidth}x${innerHeight} · vv ${vv ? vv.width.toFixed(1) + 'x' + vv.height.toFixed(1) + ' scale ' + vv.scale.toFixed(3) + ' off ' + vv.offsetLeft.toFixed(1) + ',' + vv.offsetTop.toFixed(1) : '-'}`, `H ${H} · fitKey ${fitKey}`].forEach((t, i) => ctx.fillText(t, 6 * devicePixelRatio, (20 + i * 22) * devicePixelRatio)); ctx.restore(); }
+function drawFrame() { const f0 = clock.now(); drawFrame0(); if (RESDBG) resInfo(); const d = clock.now() - f0 - 1 / 60; if (d > 0.02) { sceneAt += d; if (trans) trans.at += d; } } // a frame that took long (a long list drawn for the first time): the motions wait for it instead of jumping ahead
 function drawFrame0() {
   if (prof.nickEdit && !(prof.open && prof.menu)) endNickInline(); // the settings closed while typing: the typing ends
   viewWatch(); FIX = [];
