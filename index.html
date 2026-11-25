@@ -3249,7 +3249,9 @@ function scrollView(S, v0, v1, key, height, draw) { // draw() paints the content
   const top = Math.round(S.scroll * r), rows = Math.min(S.cache.height - top, Math.round((v1 - v0) * r));
   if (rows > 0) ctx.drawImage(S.cache, 0, top, S.cache.width, rows, 0, v0, W, rows / r);
   for (const h of S.rects) { const a = Math.max(h.y - S.scroll + v0, v0), b = Math.min(h.y + h.h - S.scroll + v0, v1); if (b > a) hot.push({ x: h.x, y: a, w: h.w, h: b - a, fn: h.fn }); }
-  if (S.max > 0) { const th = Math.max(40, (v1 - v0) * (v1 - v0) / S.h), ty = v0 + (v1 - v0 - th) * S.scroll / S.max; rr(LY.m + LY.w + 10, ty, 6, th, 3, 'rgba(74,61,71,0.35)', null); }
+  if (S.seen === undefined || S.max === 0) S.seen = S.scroll; else if (Math.abs(S.seen - S.scroll) > 0.5) { S.seen = S.scroll; S.movedAt = clock.now(); } // the bar: only while the list moves, then it fades (0.7 s, then 0.3 s)
+  const ba = S.movedAt == null ? 0 : clamp(1 - (clock.now() - S.movedAt - 0.7) / 0.3, 0, 1);
+  if (S.max > 0 && ba > 0) { const th = Math.max(40, (v1 - v0) * (v1 - v0) / S.h), ty = v0 + (v1 - v0 - th) * S.scroll / S.max; rr(LY.m + LY.w + 10, ty, 6, th, 3, `rgba(74,61,71,${0.35 * ba})`, null); }
   if (S.scroll < S.max - 4) { const g = ctx.createLinearGradient(0, v1 - 36, 0, v1); g.addColorStop(0, 'rgba(162,227,200,0)'); g.addColorStop(1, 'rgba(162,227,200,0.9)'); ctx.fillStyle = g; ctx.fillRect(LY.m - 10, v1 - 36, LY.w + 20, 36); }
 }
 const GHOSTS = new Map();
@@ -3329,7 +3331,7 @@ function drawClosetList(gear, eh, chh, coll) { // the closet's whole list, from 
   });
   return y;
 }
-function openCloset(back, a = null) { if (!acct.user) { toast('로그인하면 옷장을 쓸 수 있어요'); return; } closetBack = back; closet.animal = a; closet.sel = null; SCR.closet.scroll = 0; SCR.closet.vel = 0; scene = 'closet'; tone(660, 0.06, 'sine', 0.15); }
+function openCloset(back, a = null) { if (!acct.user) { toast('로그인하면 옷장을 쓸 수 있어요'); return; } closetBack = back; closet.animal = a; closet.sel = null; SCR.closet.scroll = 0; SCR.closet.vel = 0; scene = 'closet'; zoomFrom = { x: mouse.x, y: mouse.y, at: clock.now() }; tone(660, 0.06, 'sine', 0.15); }
 function drawGachaTab(y0, end) {
   const G = acct.g, cx = W / 2, h = end - y0, base = y0 + h - 12, k = Math.min(1, (h - 96) / 545);
   ctx.save(); ctx.translate(cx, base); ctx.scale(k, k); ctx.lineWidth = 3.4; ctx.strokeStyle = OUT; ctx.lineJoin = 'round';
@@ -3553,7 +3555,7 @@ function button(label, x, y, w, h, fn, o = {}) { // a big rounded button, for th
   rr(x, y + 5, w, h, 18, OUT, null);
   rr(x, y + d, w, h, 18, on ? '#fff3c4' : hoverOn(over) ? '#fffdf3' : o.fill || 'rgba(255,248,231,0.96)', on ? CORAL : OUT, on ? 5 : 3); y += d;
   if (o.sub) { text(label, x + LY.pad, y + h / 2 - 18, o.size || 27, INK, 'left', null, F_T); text(o.sub, x + LY.pad, y + h / 2 + 22, 21, '#7a6872', 'left', null, F_B); }
-  else if (o.icon) { const tw = textW(label, o.size || 28, F_T), x0 = x + (w - (34 + 12 + tw)) / 2; o.icon(x0 + 17, y + h / 2); text(label, x0 + 46, y + h / 2 + 1, o.size || 28, o.ink || INK, 'left', null, F_T); } // a logo, then the words, centred together
+  else if (o.icon) { o.icon(x + 22 + 17, y + h / 2); text(label, x + 56 + (w - 56 - 16) / 2, y + h / 2 + 1, o.size || 28, o.ink || INK, 'center', null, F_T); } // the logo at the same inset on every such button, the words centred in what is left
   else text(label, x + w / 2, y + h / 2 + 1, o.size || 28, o.ink || INK, 'center', null, F_T);
 }
 const BRAND = { // the sign-in marks as their owners publish them (the G from Google's sign-in button, Kakao's speech-bubble symbol), drawn from their paths
@@ -3561,11 +3563,11 @@ const BRAND = { // the sign-in marks as their owners publish them (the G from Go
     ['#4285F4', 'M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z'],
     ['#FBBC05', 'M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z'],
     ['#34A853', 'M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z']] },
-  kakao: { v: 24, p: [['#000000', 'M12 3C6.48 3 2 6.58 2 11c0 2.85 1.86 5.35 4.66 6.77-.15.53-.97 3.41-1 3.63 0 0-.02.17.09.24.11.06.24.01.24.01.32-.04 3.7-2.42 4.29-2.83.56.08 1.13.12 1.72.12 5.52 0 10-3.58 10-8S17.52 3 12 3z']] },
+  kakao: { v: 20, c: [12, 12.3], p: [['#000000', 'M12 3C6.48 3 2 6.58 2 11c0 2.85 1.86 5.35 4.66 6.77-.15.53-.97 3.41-1 3.63 0 0-.02.17.09.24.11.06.24.01.24.01.32-.04 3.7-2.42 4.29-2.83.56.08 1.13.12 1.72.12 5.52 0 10-3.58 10-8S17.52 3 12 3z']] },
 };
 function brandLogo(id, cx, cy, size = 30) { // a sign-in mark, size across, centred on cx, cy
   const B = BRAND[id]; ctx.save();
-  if (B && typeof Path2D !== 'undefined') { const k = size / B.v; ctx.translate(cx - size / 2, cy - size / 2); ctx.scale(k, k); for (const [c, d] of B.p) { ctx.fillStyle = c; B.p2 = B.p2 || {}; ctx.fill(B.p2[d] = B.p2[d] || new Path2D(d)); } }
+  if (B && typeof Path2D !== 'undefined') { const k = size / B.v, [ox, oy] = B.c || [B.v / 2, B.v / 2]; ctx.translate(cx - ox * k, cy - oy * k); ctx.scale(k, k); for (const [c, d] of B.p) { ctx.fillStyle = c; B.p2 = B.p2 || {}; ctx.fill(B.p2[d] = B.p2[d] || new Path2D(d)); } }
   else { ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(cx - 5, cy + 3, 9, 0, 7); ctx.arc(cx + 5, cy + 3, 9, 0, 7); ctx.fill(); ctx.beginPath(); ctx.ellipse(cx + 3, cy - 12, 3, 6, 0.6, 0, 7); ctx.fill(); }
   ctx.restore();
 }
@@ -3899,7 +3901,7 @@ function noticeGrow(L) { // a note's body unrolls when it opens and rolls back u
   return { cards: L.cards, height: L.height + off };
 }
 function noticeCards(inner) { // each note as a card: kind and date, the title, and the body only when tapped open; returns the cards and the whole height
-  let y = 0; const cards = (news.list || []).map(n => { const at = news.openAt && news.openAt[n.id], open = !!news.open[n.id] || (at != null && !CALM && clock.now() - at < 0.26), title = wrapLines(n.title, 27, F_T, inner - 40), body = open ? wrapLines(n.body || '', 21, F_B, inner) : [], h = 24 + 32 + 14 + title.length * 36 + (body.length ? 10 + body.length * 32 : 0) + 22;
+  let y = 4; const cards = (news.list || []).map(n => { const at = news.openAt && news.openAt[n.id], open = !!news.open[n.id] || (at != null && !CALM && clock.now() - at < 0.26), title = wrapLines(n.title, 27, F_T, inner - 40), body = open ? wrapLines(n.body || '', 21, F_B, inner) : [], h = 24 + 32 + 14 + title.length * 36 + (body.length ? 10 + body.length * 32 : 0) + 22;
     const c = { n, title, body, y, h }; y += h + 16; return c; });
   return { cards, height: Math.max(0, y - 16) + 8 };
 }
@@ -4044,7 +4046,7 @@ const scenes = {
     draw() {
       menuBegin('로그인', true);
       const on = acct.providers || ['google', 'kakao'], PV = [['google', 'Google로 로그인', '#ffffff'], ['kakao', '카카오로 로그인', '#FEE500'], ['apple', 'Apple로 로그인', '#ffffff']].filter(q => on.includes(q[0])); // until the list arrives, show both
-      const bh = 64, bg = 14, bw = Math.max(...PV.map(q => textW(q[1], 24, F_T))) + 34 + 12 + 56, colH = PV.length * bh + (PV.length - 1) * bg;
+      const bh = 64, bg = 14, bw = Math.max(...PV.map(q => textW(q[1], 24, F_T))) + 56 + 16 + 24, colH = PV.length * bh + (PV.length - 1) * bg;
       const py = LY.top, ph = acct.user ? 340 : Math.max(130, colH) + LY.pad * 2 + 6; panel(LY.m, py, LY.w, ph); // signed in: no taller than its contents
       if (!acct.user) { // what signing in brings at the left, the ways to sign in at the right, each as wide as the widest
         const tx = LY.m + LY.pad, room = LY.w - LY.pad * 3 - bw, my = py + ph / 2;
@@ -4591,6 +4593,7 @@ function drawNotice() {
 const CALM = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 const easeOut = u => 1 - Math.pow(1 - u, 3), easeDrawer = u => { let a = 0, b = 1; for (let i = 0; i < 18; i++) { const m = (a + b) / 2, x = 3 * m * (1 - m) * (1 - m) * 0.32 + 3 * m * m * (1 - m) * 0 + m * m * m; if (x < u) a = m; else b = m; } const t = (a + b) / 2; return 3 * t * (1 - t) * (1 - t) * 0.72 + 3 * t * t * (1 - t) * 1 + t * t * t; }; // cubic-bezier(0.32, 0.72, 0, 1)
 const FLOW = ['format', 'mode', 'select', 'court'], MODALS = ['pause', 'help', 'lessons'];
+let zoomFrom = null; // where a page that zooms open was tapped
 let viewKey0 = '', viewScene0 = '', viewOv0 = 0, viewAt = 0, sceneAt = 0, trans = null, snapC = null, newC = null, FIX = [];
 // Three motions only, the same for the same kind of move:
 //  slide  a step in order (the solo flow, a tab): what changes slides 32 px and crossfades, 220 ms, the way you are going
@@ -4610,6 +4613,7 @@ function viewWatch() { // before a frame: has the view changed since the last on
   const from = viewScene0, to = scene, fi = FLOW.indexOf(from), ti = FLOW.indexOf(to); let kind = null, dir = 1, r = [0, 0, W, H], dur = 0.2;
   let win = false; if (v.key === viewKey0) { if (ov < viewOv0) { kind = 'fade'; dur = 0.16; win = true; } } // a window opened (it pops by itself) or closed (it fades away)
   else if (from && from === to && v.tab >= 0) { kind = 'slide'; dir = v.tab > (trans && trans.tabWas != null ? trans.tabWas : -1) ? 1 : -1; r = v.r; dur = 0.22; }
+  else if (to === 'closet' && zoomFrom && clock.now() - zoomFrom.at < 0.5) { kind = 'zoom'; dur = 0.26; }
   else if (fi >= 0 && ti >= 0) { kind = 'slide'; dir = ti > fi ? 1 : -1; r = [0, LY.top - 14, W, LY.bot - 6]; dur = 0.22; }
   else if (MODALS.includes(from) && !MODALS.includes(to)) { kind = 'fade'; dur = 0.16; win = true; }
   else if (from && !MODALS.includes(to) && to !== 'cover') kind = 'fade';
@@ -4623,6 +4627,8 @@ function viewMove() { // after the new frame: lay the old picture and the new on
   if (!trans) return; const u = Math.min(1, (clock.now() - trans.at) / trans.dur); if (u >= 1) { trans = null; return; }
   newC = snap(newC); const k = canvas.width / W, [x0, y0, x1, y1] = trans.r.map(v => v * k), w = x1 - x0, e = easeOut(u), a = easeOut(Math.min(1, u / 0.4));
   ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+  if (trans.kind === 'zoom') { const z = zoomFrom || { x: W / 2, y: H / 2 }, ox = z.x * k, oy = z.y * k, sc = 0.86 + 0.14 * e; // the old page stays; the new one grows out of the tapped point and fades in
+    ctx.drawImage(trans.old, 0, 0); ctx.globalAlpha = Math.min(1, u * 1.8); ctx.translate(ox, oy); ctx.scale(sc, sc); ctx.translate(-ox, -oy); ctx.drawImage(newC, 0, 0); ctx.restore(); return; }
   if (trans.kind === 'fade') { ctx.beginPath(); ctx.rect(x0, y0, w, y1 - y0); ctx.clip(); ctx.globalAlpha = 1 - e; ctx.drawImage(trans.old, 0, 0); }
   else { const d = trans.dir, D = 32 * k, fy = (trans.kind === 'slide' && FLOW.includes(scene) ? LY.sb : y0 / k) * k; // around the moving part, the rest crossfades where it stands
     ctx.save(); ctx.beginPath(); ctx.rect(0, fy, canvas.width, canvas.height - fy); ctx.rect(x0, y0, w, y1 - y0); ctx.clip('evenodd'); ctx.globalAlpha = 1 - a; ctx.drawImage(trans.old, 0, 0); ctx.restore();
