@@ -96,6 +96,8 @@ grant execute on function public.tier_of(text), public.tier_board(integer) to an
 -- (6_plays.sql), oldest first, through the same sum as a live match. A member who has already played since the tiers began keeps
 -- those changes on top. The days with a match before then count as days played. Runs only once.
 create table if not exists public.migrations (id text primary key, done_at timestamptz not null default now());
+alter table public.migrations enable row level security;
+revoke all on public.migrations from anon, authenticated;
 do $$
 declare cut timestamptz := '2026-11-25 00:00:00+09'; u record; e record; rt numeric; best numeric; n integer; hd integer; ex public.ratings;
 begin
