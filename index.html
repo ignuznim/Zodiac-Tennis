@@ -4581,10 +4581,10 @@ let notice = null; // { s, at }: a short message over any screen
 function notify(s) { notice = { s, at: clock.now() }; }
 function drawNotice() {
   if (!notice) return; const t = clock.now() - notice.at; if (t > 2.8) { notice = null; return; }
-  const a = CALM ? 1 : Math.min(1, t / 0.2, (2.8 - t) / 0.3), y = scene === 'play' || scene === 'pause' ? 138 + SB_EXTRA() : 82; // a toast: fades in where it stands (200 ms), stays, fades out (300 ms); under the scoreboard in a match
-  ctx.save(); ctx.globalAlpha = a; ctx.font = `25px ${F_T}`; const w = Math.min(W - 40, ctx.measureText(notice.s).width + 64);
-  rr(W / 2 - w / 2, y + 4, w, 56, 28, 'rgba(59,51,64,0.35)', null); rr(W / 2 - w / 2, y, w, 56, 28, '#fff3c4', OUT, 2.6);
-  text(notice.s, W / 2, y + 29, 25, INK, 'center', null, F_T); ctx.restore();
+  const a = CALM ? 1 : Math.min(1, t / 0.2, (2.8 - t) / 0.3), y = scene === 'play' || scene === 'pause' ? 138 + SB_EXTRA() : LY.bot - LY.gap - 60; // a toast: fades in where it stands (200 ms), stays, fades out (300 ms); just above the bottom row, under the scoreboard in a match
+  ctx.save(); ctx.globalAlpha = a; const w = Math.min(W - 2 * LY.m, textW(notice.s, 24, F_T) + 64);
+  rr(W / 2 - w / 2, y + 4, w, 60, 30, 'rgba(59,51,64,0.3)', null); rr(W / 2 - w / 2, y, w, 60, 30, 'rgba(59,51,64,0.94)', null);
+  fitText(notice.s, W / 2, y + 30, 24, CREAM, 'center', F_T, w - 48); ctx.restore();
 }
 // ---- 화면 모션: push for the solo flow, fade through between unrelated screens, tab switch inside a screen, modal present over a match
 const CALM = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -4635,7 +4635,7 @@ function viewMove() { // after the new frame: lay the old picture and the new on
   ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
   if (trans.kind === 'sheetUp' || trans.kind === 'sheetDown') { const up = trans.kind === 'sheetUp', ee = up ? easeDrawer(u) : easeOut(u), off = (up ? 1 - ee : ee) * canvas.height; // a sheet: the closet rises over the page and goes back down
     const under = up ? trans.old : newC, sheet = up ? newC : trans.old, sy = Math.round(LY.sb * k), cw = canvas.width, ch = canvas.height - sy; // the garden above stays; only the page below it moves
-    ctx.drawImage(under, 0, 0); ctx.fillStyle = 'rgba(59,51,64,' + 0.3 * (up ? ee : 1 - ee) + ')'; ctx.fillRect(0, sy, cw, ch);
+    ctx.drawImage(under, 0, 0); // no dim: the page under it stays as it is, only the sheet's own shadow marks its edge
     if (!trans.bare) { const c = trans.bare = document.createElement('canvas'); c.width = sheet.width; c.height = sheet.height; const g = c.getContext('2d'); g.drawImage(sheet, 0, 0); // the sheet without the keys that stay put: their place filled from the stripe beside them
       for (const [bx, by, bw, bh] of keptRects(k)) g.drawImage(sheet, bx - 2 * k, by, 1, bh, bx, by, bw, bh); }
     ctx.save(); ctx.shadowColor = 'rgba(59,51,64,0.35)'; ctx.shadowBlur = 24 * k; ctx.drawImage(trans.bare, 0, sy, cw, ch, 0, sy + off, cw, ch); ctx.restore(); }
