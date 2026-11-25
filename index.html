@@ -3641,6 +3641,13 @@ function drawLevelSwitch(x, y, w, h) { // 쉬움 · 보통 · 어려움: the 단
   const c0 = LEVELS[Math.floor(p)][1], c1 = LEVELS[Math.min(2, Math.ceil(p))][1]; rr(x + p * tw + 6, y + 6, tw - 12, h - 12, (h - 12) / 2, mixHex(c0, c1, p - Math.floor(p)), OUT, 3);
   LEVELS.forEach(([t], i) => { const on = Math.round(p) === i; btn(x + i * tw, y, tw, h, () => { if (setup.lv !== i + 1) { setup.lvFrom = p; setup.lv = i + 1; setup.lvAt = clock.now(); store('zt_lv', String(i + 1)); tone(760, 0.06, 'sine', 0.18); } }); text(t, x + i * tw + tw / 2, y + h / 2 + 1, 27, on ? '#ffffff' : '#6f6068', 'center', on ? OUT : null, F_T); });
 }
+function drawLevelChips(x, y, w, h) { // 난이도: a word, then three chips; the chosen one filled in its colour (an option among three, so not a switch)
+  const lv = (setup.lv || 2) - 1; text('난이도', x, y + h / 2, 22, '#4f6f63', 'left', null, F_T); const x0 = x + textW('난이도', 22, F_T) + 14, gap = 8, cw = (x + w - x0 - gap * 2) / 3, chh = 52, cy = y + (h - chh) / 2;
+  LEVELS.forEach(([t, c], i) => { const cx = x0 + i * (cw + gap), on = i === lv, over = btn(cx, cy, cw, chh, () => { if (setup.lv !== i + 1) { setup.lv = i + 1; store('zt_lv', String(i + 1)); tone(760, 0.06, 'sine', 0.18); } }), d = sink(cx, cy, cw, chh, 3);
+    rr(cx, cy + 3, cw, chh, chh / 2, on ? OUT : 'rgba(107,85,96,0.25)', null); rr(cx, cy + d, cw, chh, chh / 2, on ? c : hoverOn(over) ? '#fffdf3' : '#fff8e7', on ? OUT : 'rgba(107,85,96,0.45)', on ? 2.6 : 2);
+    text(t, cx + cw / 2, cy + d + chh / 2 + 1, 22, on ? '#ffffff' : '#6f6068', 'center', on ? OUT : null, F_T); });
+}
+function ballMachineIcon(cx, cy, k) { ctx.save(); ctx.translate(cx, cy); ctx.scale(k, k); ctx.lineWidth = 2.8; ctx.strokeStyle = OUT; rr(-20, -16, 40, 30, 6, SKY, OUT, 2.8); rr(-14, -26, 28, 12, 4, '#dbe9f7', OUT, 2.4); E(-8, -28, 6, 6, BALL); E(6, -29, 6, 6, BALL); E(0, 0, 8, 8, '#2b2229'); E(-12, 20, 5, 5, '#3b3340'); E(12, 20, 5, 5, '#3b3340'); E(30, -4, 7, 7, BALL); ctx.restore(); } // the ball machine, a ball flying out
 function flowDots(i) { // where in 개인전 you are: three dots under the page, the one you are on long
   const n = 3, gap = 12, dw = 10, lw = 30, tot = lw + (n - 1) * dw + (n - 1) * gap; let x = W / 2 - tot / 2;
   for (let k = 0; k < n; k++) { const w = k === i ? lw : dw; rr(x, LY.foot - 5, w, 10, 5, k === i ? INK : 'rgba(74,61,71,0.25)', null); x += w + gap; }
@@ -4445,7 +4452,7 @@ const scenes = {
       const SH = net ? 0 : 92; if (!net) drawDoublesSwitch(LY.top, SH);
       const how = { flash: '10점을 먼저 따면 승리 (2점 차)', short: '4게임 먼저 · 40-40이면 한 포인트로 결정', regular: '세트 3개를 먼저 따면 승리', practice: '샷마다 타이밍 · 속도 · 떨어진 곳을 알려 줘요' };
       const f3 = FLOW3 && !net, LH = 68, ids = net || f3 ? [...FORMAT_IDS] : [...FORMAT_IDS, 'practice'], top = net ? LY.top : LY.top + SH + LY.gap + 10, ch = Math.min(SZ().format4, (contentEnd() - (f3 ? LH + LY.gap + 10 : 0) - top - LY.gap * (ids.length - 1)) / ids.length), full = ch >= 128;
-      if (f3) { if (!setup.lv) setup.lv = +(store('zt_lv') || 2); const ly = contentEnd() - LH; drawLevelSwitch(LY.m, ly, LY.w - LH - 12, LH); iconKey(LY.m + LY.w - LH, ly, LH, 'ballmachine', () => pickFormat(3), '#eef7ff'); } // the level for every way of play, and the ball machine beside it
+      if (f3) { if (!setup.lv) setup.lv = +(store('zt_lv') || 2); const ly = contentEnd() - LH, bw = Math.ceil(textW('볼머신장', 26, F_T)) + 56 + 40; drawLevelChips(LY.m, ly, LY.w - bw - 16, LH); button('볼머신장', LY.m + LY.w - bw, ly, bw, LH, () => pickFormat(3), { size: 26, fill: '#eef7ff', icon: (cx, cy) => ballMachineIcon(cx, cy, 0.62) }); } // the level, chosen like an option (chips, not a second switch), and the ball machine as a worded key beside it
       ids.forEach((id, i) => {
         const y = top + i * (ch + LY.gap), x = LY.m + LY.pad, by = full ? y + LY.pad - 8 : y + ch / 2 - 37; // three lines from the card's padding, or two centred when the cards are short
         const name = id === 'practice' ? '볼머신장 가기' : FORMATS[id].ko, sub = id === 'practice' ? '볼머신과 레슨 9개 · 공 치는 법 익히기' : rules(id).sub;
