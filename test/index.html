@@ -131,7 +131,7 @@ function viewBox() { // the part of the screen really visible: the visual viewpo
 }
 function fit(force) { // fills the visible screen at any shape and pixel ratio, never past its edges
   if (force !== true && (document.querySelector('#nick.on, #fb.on') || (typeof prof !== 'undefined' && prof.nickEdit) || performance.now() < fitHold)) return; // the on-screen keyboard is up: keep the game and the dialog the size they were
-  const v = viewBox(), dpr = devicePixelRatio || 1, key = [v.x, v.y, v.w, v.h, dpr].join();
+  const v = viewBox(), dpr = screenDpr(), key = [v.x, v.y, v.w, v.h, dpr].join();
   if (key === fitKey && force !== true) return; fitKey = key;
   H = COVER ? 571 : Math.round(W * Math.max(1.25, Math.min(2.4, v.h / v.w))); // the page reshapes itself: 4:5 to 12:5 tall; past that, bars
   const k = Math.min(v.w / W, v.h / H);
@@ -146,6 +146,12 @@ function fit(force) { // fills the visible screen at any shape and pixel ratio, 
   ctx.setTransform(r, 0, 0, r, 0, 0); ctx.imageSmoothingEnabled = !PIXEL;
   try { if (scene) drawFrame(); } catch (e) { /* not started yet: drawn on the first frame */ }
 }
+// an iPhone can report a pixel ratio of 1 for a while (opened from the home screen, back from the background): drawn at that, the game is soft until something refits;
+// so on an iPhone never draw under 3 canvas pixels to a point, and check every second that the canvas still has as many pixels as the screen under it
+const IPHONE = /iPhone|iPod/.test(navigator.userAgent);
+const screenDpr = () => Math.max(devicePixelRatio || 1, IPHONE ? 3 : 1);
+setInterval(() => { const cw = parseFloat(canvas.style.width) || 0; if (cw && Math.abs(Math.round(cw * screenDpr()) - canvas.width) > 1 && !document.querySelector('#nick.on, #fb.on') && !(typeof prof !== 'undefined' && prof.nickEdit)) fit(true); }, 1000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { fit(true); setTimeout(() => fit(true), 300); } }); addEventListener('pageshow', () => fit(true)); // back from the background: draw at the screen's own pixels again
 const refit = () => { fit(); setTimeout(fit, 120); setTimeout(fit, 500); }; // a phone reports its new size late after turning
 addEventListener('resize', refit); addEventListener('orientationchange', refit);
 if (window.visualViewport) visualViewport.addEventListener('resize', refit);
