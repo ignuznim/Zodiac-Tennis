@@ -3471,13 +3471,14 @@ function computeLayout() { // where the garden ends, the title row, the content 
 // fixed sizes: a card is as tall as what it holds, never stretched to fill
 const SZ = () => ({ format: 150, format4: 132, mode: 116, court: 184, cell: LY.tall ? 120 : 96, info: 262, row: LY.tall ? 46 : 38, result: 448, lobby: 600 });
 
-function setDoubles(d) { if (setup.doubles === d) return; setup.doubles = d; store('zt_dbl', d ? '1' : '0'); tone(760, 0.06, 'sine', 0.18); }
+let dblAt = -9; const mixHex = (a, b, t) => '#' + [1, 3, 5].map(i => Math.round(parseInt(a.substr(i, 2), 16) * (1 - t) + parseInt(b.substr(i, 2), 16) * t).toString(16).padStart(2, '0')).join('');
+function setDoubles(d) { if (setup.doubles === d) return; setup.doubles = d; dblAt = clock.now(); store('zt_dbl', d ? '1' : '0'); tone(760, 0.06, 'sine', 0.18); }
 function drawDoublesSwitch(y, SH) { // 단식 or 복식, a big switch on top of the ways to play; the choice is remembered
-  const x = LY.m, w = LY.w, hw = w / 2;
+  const x = LY.m, w = LY.w, hw = w / 2, to = setup.doubles ? 1 : 0, e = CALM ? 1 : easeOut(Math.min(1, (clock.now() - dblAt) / 0.24)), p = 1 - to + (2 * to - 1) * e; // the thumb slides from the other half
   rr(x, y + 5, w, SH, SH / 2, OUT, null); rr(x, y, w, SH, SH / 2, '#fff8e7', OUT, 3);
-  [['단식', '1 : 1 · 혼자서', false, CORAL, '#6b2a22'], ['복식', '2 : 2 · 파트너와 함께', true, SKY, '#1d4a73']].forEach(([t, sub, d, col, dark], k) => { const on = !!setup.doubles === d, kx = x + k * hw;
+  rr(x + p * hw + 7, y + 7, hw - 14, SH - 14, (SH - 14) / 2, mixHex(CORAL, SKY, p), OUT, 3);
+  [['단식', '1 : 1 · 혼자서', false, CORAL, '#6b2a22'], ['복식', '2 : 2 · 파트너와 함께', true, SKY, '#1d4a73']].forEach(([t, sub, d, col, dark], k) => { const on = d ? p > 0.5 : p <= 0.5, kx = x + k * hw;
     btn(kx, y, hw, SH, () => setDoubles(d));
-    if (on) rr(kx + 7, y + 7, hw - 14, SH - 14, (SH - 14) / 2, col, OUT, 3);
     const fx = kx + 60, fy = y + SH / 2; ctx.save(); ctx.translate(fx, fy); ctx.scale(1.4, 1.4); ctx.translate(-fx, -fy);
     if (d) { miniFace(3, fx - 9, fy); miniFace(setup.animal, fx + 9, fy); } else miniFace(setup.animal, fx, fy); ctx.restore();
     const tx = kx + 100, room = hw - 100 - 22; ctx.font = `20px ${F_T}`; const sw = ctx.measureText(sub).width;
@@ -4559,14 +4560,14 @@ function snap(into) { const c = into || document.createElement('canvas'); if (c.
 function viewWatch() { // before a frame: has the view changed since the last one? keep a picture of the last one to move away
   const v = viewOf(), ov = overlays(); if (v.key === viewKey0 && ov === viewOv0) return;
   const from = viewScene0, to = scene, fi = FLOW.indexOf(from), ti = FLOW.indexOf(to); let kind = null, dir = 1, r = [0, 0, W, H], dur = 0.2;
-  if (v.key === viewKey0) { if (ov < viewOv0) { kind = 'fade'; dur = 0.16; } } // a window opened (it pops by itself) or closed (it fades away)
+  let win = false; if (v.key === viewKey0) { if (ov < viewOv0) { kind = 'fade'; dur = 0.16; win = true; } } // a window opened (it pops by itself) or closed (it fades away)
   else if (from && from === to && v.tab >= 0) { kind = 'slide'; dir = v.tab > (trans && trans.tabWas != null ? trans.tabWas : -1) ? 1 : -1; r = v.r; dur = 0.22; }
   else if (fi >= 0 && ti >= 0) { kind = 'slide'; dir = ti > fi ? 1 : -1; r = [0, LY.sb, W, H]; dur = 0.22; }
-  else if (MODALS.includes(from) && !MODALS.includes(to)) { kind = 'fade'; dur = 0.16; }
+  else if (MODALS.includes(from) && !MODALS.includes(to)) { kind = 'fade'; dur = 0.16; win = true; }
   else if (from && !MODALS.includes(to) && to !== 'cover') kind = 'fade';
   if (from !== to) sceneAt = clock.now();
   const tabWas = trans ? trans.tabWas : null;
-  if (kind) trans = { kind: CALM ? 'fade' : kind, dir, r, dur, at: clock.now(), old: snapC = snap(snapC), keep: FIX };
+  if (kind) trans = { kind: CALM ? 'fade' : kind, dir, r, dur, win, at: clock.now(), old: snapC = snap(snapC), keep: FIX };
   if (trans) trans.tabWas = v.tab != null ? v.tab : tabWas;
   viewAt = clock.now(); viewKey0 = v.key; viewScene0 = scene; viewOv0 = ov;
 }
@@ -4575,9 +4576,9 @@ function viewMove() { // after the new frame: lay the old picture and the new on
   newC = snap(newC); const k = canvas.width / W, [x0, y0, x1, y1] = trans.r.map(v => v * k), w = x1 - x0, e = easeOut(u);
   ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.beginPath(); ctx.rect(x0, y0, w, y1 - y0); ctx.clip();
   if (trans.kind === 'fade') { ctx.globalAlpha = 1 - e; ctx.drawImage(trans.old, 0, 0); }
-  else { const d = trans.dir, D = 32 * k; ctx.globalAlpha = 1 - e; ctx.drawImage(trans.old, -d * e * D, 0); ctx.globalAlpha = e; ctx.drawImage(newC, d * (1 - e) * D, 0); }
-  ctx.globalAlpha = 1; // the buttons that stayed put: drawn as they are now, still
-  for (const f of FIX) if (trans.keep.some(g => g[0] === f[0] && Math.abs(g[1] - f[1]) < 1 && Math.abs(g[2] - f[2]) < 1 && Math.abs(g[3] - f[3]) < 1)) {
+  else { const d = trans.dir, D = 32 * k; ctx.drawImage(trans.old, -d * e * D, 0); ctx.globalAlpha = easeOut(Math.min(1, u / 0.4)); ctx.drawImage(newC, d * (1 - e) * D, 0); }
+  ctx.globalAlpha = 1; // the buttons that stayed put: drawn as they are now, still (not when a window closes: they sit under its dim)
+  if (!trans.win) for (const f of FIX) if (trans.keep.some(g => g[0] === f[0] && Math.abs(g[1] - f[1]) < 1 && Math.abs(g[2] - f[2]) < 1 && Math.abs(g[3] - f[3]) < 1)) {
     const bx = (f[1] - 4) * k, by = (f[2] - 4) * k, bw = (f[3] + 8) * k, bh = (f[4] + 14) * k; ctx.drawImage(newC, bx, by, bw, bh, bx, by, bw, bh); }
   ctx.restore();
 }
