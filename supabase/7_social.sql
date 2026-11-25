@@ -67,3 +67,33 @@ end $$;
 revoke all on function public.record_rival(text, boolean), public.my_rivals(), public.public_profile(text) from public, anon;
 grant execute on function public.record_rival(text, boolean), public.my_rivals() to authenticated;
 grant execute on function public.public_profile(text) to anon, authenticated;
+
+-- ---- Once: each member's animals from the matches before profiles counted them ----
+-- The profile and the boards show the animal a member plays most (progress pa_*), counted only since 1.9.7. A member with none yet
+-- gets their counts from the play log (6_plays.sql) and the ranking's records; one who has never played anywhere gets one at random.
+-- Counts only add (the game keeps the larger of its own and the saved one). Runs only once.
+create table if not exists public.migrations (id text primary key, done_at timestamptz not null default now());
+alter table public.migrations enable row level security;
+revoke all on public.migrations from anon, authenticated;
+do $$
+declare ids text[] := array['rat','ox','tiger','rabbit','dragon','snake','horse','sheep','monkey','rooster','dog','pig']; p record; got jsonb;
+begin
+  if exists (select 1 from public.migrations where id = 'animals_seed') then return; end if;
+  create temp table seed_an (uid uuid, nick text, animal integer) on commit drop;
+  if to_regclass('public.plays') is not null then
+    insert into seed_an select user_id, nickname, animal from public.plays where animal between 0 and 11;
+  end if;
+  if to_regclass('public.scores') is not null then
+    execute 'insert into seed_an select null, s.nickname, s.animal from public.scores s where s.animal between 0 and 11'
+      || case when to_regclass('public.plays') is not null and exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'plays' and column_name = 'score_id')
+              then ' and not exists (select 1 from public.plays x where x.score_id = s.id)' else '' end;
+  end if;
+  for p in select pr.id, pr.nickname, pr.progress from public.profiles pr
+            where not exists (select 1 from jsonb_object_keys(pr.progress) k where k like 'pa\_%') loop
+    select jsonb_object_agg('pa_' || ids[a.animal + 1], a.n) into got
+      from (select animal, count(*) as n from seed_an where uid = p.id or (uid is null and p.nickname is not null and nick = p.nickname) group by animal) a;
+    if got is null then got := jsonb_build_object('pa_' || ids[1 + floor(random() * 12)::int], 1); end if;
+    update public.profiles set progress = progress || got where id = p.id;
+  end loop;
+  insert into public.migrations (id) values ('animals_seed');
+end $$;

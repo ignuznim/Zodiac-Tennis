@@ -2442,7 +2442,7 @@ function drawHall() {
       E(sd < 0 ? x + half - 26 : x + 26, (dTop + dBot) / 2, 12, 12, '#c8963a'); E(sd < 0 ? x + half - 26 : x + 26, (dTop + dBot) / 2, 6, 6, '#5a1f22', 0, true); } }
   // buttons, where every menu keeps them
   const gb = (label, x, w, fill, ink, fn) => { const over = btn(x, LY.bot, w, LY.btnH, fn); rr(x, LY.bot + 5, w, LY.btnH, 18, '#1a1218', null); rr(x, LY.bot, w, LY.btnH, 18, over ? (fill === '#c8963a' ? '#dcaa4c' : '#3a2428') : fill, fill === '#c8963a' ? '#3a2010' : '#c8963a', 3); text(label, x + w / 2, LY.bot + LY.btnH / 2 + 1, 28, ink, 'center', null, F_T); };
-  gb('랭킹', LY.m, LY.side, '#2a1a1c', '#f6c445', () => { scene = 'ranking'; loadTierBoard(); });
+  gb('랭킹', LY.m, textW('랭킹', 28, F_T) + 64, '#2a1a1c', '#f6c445', () => { scene = 'ranking'; loadTierBoard(); });
   refreshBtn(rank.loading, () => loadRanking(null, 'all'), true);
   text('지금까지 컴퓨터를 이긴 모든 기록 중 TOP 10', W / 2, LY.foot, 20, '#e9dcef', 'center', null, F_B);
   if (L[rank.sel] && L[rank.sel].sweet != null && (state.hallT || 0) > 1.5) drawScoreCard(L[rank.sel], rank.sel); // over the hall once the doors are open
@@ -3096,7 +3096,7 @@ function pull() { // the machine: the crank turns while the server picks
 }
 const PULLS = [1, 5, 10];
 function pullBtn() { // the 뽑기 button with − and + at its ends: how many at once, and the middle pulls
-  const G = acct.g, T = acct.prof.tickets, x = LY.m + LY.side + LY.gap, w = LY.w - LY.side - LY.gap, y = LY.bot, h = LY.btnH, sq = h - 20, zone = sq + 20;
+  const G = acct.g, T = acct.prof.tickets, w = Math.min(420, LY.w - 2 * (LY.btnH + LY.gap)), x = W / 2 - w / 2, y = LY.bot, h = LY.btnH, sq = h - 20, zone = sq + 20;
   if (!PULLS.includes(G.n)) G.n = 1; const i = PULLS.indexOf(G.n), canDown = i > 0, canUp = i < 2 && T >= PULLS[i + 1];
   const mid = btn(x + zone, y, w - zone * 2, h, pull);
   if (canDown) btn(x, y, zone, h, () => { G.n = PULLS[i - 1]; tone(660, 0.05, 'sine', 0.16); });
@@ -3493,7 +3493,7 @@ function drawDoublesSwitch(y, SH) { // 단식 or 복식, a big switch on top of 
     text(sub, tx, fy + 25, Math.max(MIN_TEXT, sw > room ? 20 * room / sw : 20), on ? dark : '#6f6068', 'left', null, F_T); });
 }
 function menuBegin(title, home) {
-  OY = 0; computeLayout();
+  OY = 0; computeLayout(); barL = 0;
   drawBackdrop('#8fd3b8', LY.sb, LY.tall);
   for (let i = 0; i * 56 < H - LY.sb; i++) { ctx.fillStyle = i % 2 ? '#a2e3c8' : '#aeead2'; ctx.fillRect(0, LY.sb + i * 56, W, 56); }
   ctx.save();
@@ -3512,8 +3512,23 @@ function sink(x, y, w, h, depth = 4) { // press feedback: how far a held button 
 }
 const hoverOn = over => over && !touchUI; // a hover tint is for a mouse; on a phone the finger only presses
 function card(x, y, w, h, fn, on, fill) { const over = btn(x, y, w, h, fn), pr = sink(x, y, w, h) > 1; rr(x, y + 5, w, h, 20, OUT, null); rr(x, y, w, h, 20, on ? '#fff3c4' : pr ? '#fffbe8' : hoverOn(over) ? '#fffdf3' : fill || 'rgba(255,248,231,0.96)', on ? CORAL : OUT, on ? 5 : 3); } // its picture is drawn by the caller, so a card lightens when pressed rather than sinking
-function sideBtn(label, fn) { button(label, LY.m, LY.bot, LY.side, LY.btnH, fn, { size: 28 }); }
-function mainBtn(label, fn) { button(label, LY.m + LY.side + LY.gap, LY.bot, LY.w - LY.side - LY.gap, LY.btnH, fn, { size: 31, fill: '#fff3c4' }); }
+// The bottom row, the same on every page: a square key at the left (back or home), the main button in the middle sized to its words,
+// another square key at the right where there is one (refresh). A worded way out (방 목록, 방 닫기) sits at the left sized to its words.
+let barL = 0; // where the left part of the bottom row ends, so the middle button keeps clear of it
+function backKey(kind, fn) { // a square key: an arrow back, or a house for home
+  const s = LY.btnH, x = LY.m, y = LY.bot; FIX.push(['k:' + kind, x, y + OY, s, s]); const over = btn(x, y, s, s, fn), d = sink(x, y, s, s);
+  rr(x, y + 5, s, s, 18, OUT, null); rr(x, y + d, s, s, 18, hoverOn(over) ? '#fffdf3' : '#fff8e7', OUT, 3);
+  const cx = x + s / 2, cy = y + d + s / 2; ctx.save(); ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; ctx.lineJoin = 'round';
+  if (kind === 'home') { poly([cx - 18, cy - 2, cx, cy - 19, cx + 18, cy - 2], CORAL); rr(cx - 13, cy - 3, 26, 19, 3, CREAM, OUT, 2.6); rr(cx - 4, cy + 4, 8, 12, 2, '#f1c9a5', OUT, 2); }
+  else { ctx.lineCap = 'round'; ctx.lineWidth = 5; ctx.strokeStyle = INK; ctx.beginPath(); ctx.moveTo(cx + 13, cy); ctx.lineTo(cx - 12, cy); ctx.moveTo(cx - 2, cy - 11); ctx.lineTo(cx - 13, cy); ctx.lineTo(cx - 2, cy + 11); ctx.stroke(); }
+  ctx.restore(); barL = x + s;
+}
+function sideBtn(label, fn) {
+  if (label === '뒤로') return backKey('back', fn); if (label === '홈으로') return backKey('home', fn);
+  const w = Math.max(LY.btnH, textW(label, 26, F_T) + 56); button(label, LY.m, LY.bot, w, LY.btnH, fn, { size: 26 }); barL = LY.m + w;
+}
+function midW(label, size = 31) { const room = 2 * (W / 2 - Math.max(barL, LY.m + LY.btnH) - LY.gap); return Math.min(room, Math.max(260, textW(label, size, F_T) + 96)); } // words plus padding, kept clear of the keys
+function mainBtn(label, fn) { const w = midW(label); button(label, W / 2 - w / 2, LY.bot, w, LY.btnH, fn, { size: 31, fill: '#fff3c4' }); }
 function refreshBtn(loading, fn, dark) { // a square key at the right of the bottom row: two arrows chasing round, turning while it loads
   const s = LY.btnH, x = LY.m + LY.w - s, y = LY.bot, over = btn(x, y, s, s, () => { if (!loading) fn(); });
   const d0 = sink(x, y, s, s); rr(x, y + 5, s, s, 18, dark ? '#1a1218' : OUT, null); rr(x, y + d0, s, s, 18, dark ? (hoverOn(over) ? '#dcaa4c' : '#c8963a') : hoverOn(over) ? '#fffdf3' : '#fff3c4', dark ? '#3a2428' : OUT, 3);
@@ -3524,7 +3539,7 @@ function refreshBtn(loading, fn, dark) { // a square key at the right of the bot
     ctx.beginPath(); ctx.moveTo(hx + tx * L * 0.9, hy + ty * L * 0.9); ctx.lineTo(hx + nx * L * 0.6 - tx * 2, hy + ny * L * 0.6 - ty * 2); ctx.lineTo(hx - nx * L * 0.6 - tx * 2, hy - ny * L * 0.6 - ty * 2); ctx.closePath(); ctx.fill(); }
   ctx.restore();
 }
-function wideBtn(label, fn) { button(label, LY.m, LY.bot, LY.w, LY.btnH, fn, { size: 31, fill: '#fff3c4' }); }
+function wideBtn(label, fn) { const w = midW(label); button(label, W / 2 - w / 2, LY.bot, w, LY.btnH, fn, { size: 31, fill: '#fff3c4' }); }
 function button(label, x, y, w, h, fn, o = {}) { // a big rounded button, for the mouse and for show
   FIX.push([label, x, y + OY, w, h]); const over = btn(x, y, w, h, fn), on = o.on, d = sink(x, y, w, h);
   rr(x, y + 5, w, h, 18, OUT, null);
@@ -3949,8 +3964,8 @@ const scenes = {
           const medal = typeof place === 'number' ? ['#ffd34d', '#cfd8e3', '#e6a46a'][place - 1] : null;
           if (medal) { ctx.lineWidth = 2.4; ctx.strokeStyle = OUT; E(x0 + 28, cy, 18, 18, medal); }
           fitText('' + place, x0 + 28, cy + 1, 23, INK, 'center', F_N, 52);
-          const fi = r.fav ? ANIMALS.findIndex(a => 'pa_' + a.id === r.fav) : favOf(progOf()), ti = tierOf(r), tc = TIERS[ti].c[1] === '#f6c445' ? '#c0392b' : TIERS[ti].c[1];
-          miniFace(fi >= 0 ? fi : 0, x0 + 84, cy, 21); drawTier(ti, x0 + 132, cy, 19);
+          const fi = r.fav ? ANIMALS.findIndex(a => 'pa_' + a.id === r.fav) : r.nick === nick ? favOf(progOf()) : -1, ti = tierOf(r), tc = TIERS[ti].c[1] === '#f6c445' ? '#c0392b' : TIERS[ti].c[1];
+          miniFace(fi >= 0 ? fi : [...r.nick].reduce((h, c) => h + c.charCodeAt(0), 0) % 12, x0 + 84, cy, 21); drawTier(ti, x0 + 132, cy, 19);
           fitText(r.nick, x0 + 162, cy - 11, 24, INK, 'left', F_T, LY.w - 340); text(TIERS[ti].n, x0 + 162, cy + 16, MIN_TEXT, tc, 'left', null, F_T);
           text(r.rating.toLocaleString(), LY.m + LY.w - LY.pad, cy, 27, INK, 'right', null, F_N); };
         const v0 = py + 54, v1 = py + ph - (pin ? rh + 22 : 12), key = JSON.stringify([nick, L.map(r => [r.nick, r.rating, r.days, r.rank, r.fav])]);
@@ -4359,8 +4374,8 @@ const scenes = {
         if (st === 'joined') { text('방장이 경기를 시작하길 기다리는 중' + dots, W / 2, gy + 172, 23, '#7a6872', 'center', null, F_B); if (!net.names) text(`지금 방에 ${net.lobbyN || 2}명`, W / 2, py + 214, 23, '#3f9a5c', 'center', null, F_T); }
         if (!(st === 'joined' && net.names)) { ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(setup.animal, W / 2, py + 440, 1.5, { front: true, t: state.t, anim: 'run', accent: CORAL }); }
       }
-      if (net && net.role === 'host' && net.status !== 'opening' && net.status !== 'error') mainBtn(!net.guests.length ? '친구를 기다리는 중…' : allIn() ? '경기 시작' : '친구가 고르는 중…', () => { if (allIn()) startRoom(); });
       sideBtn(net && net.role === 'host' ? '방 닫기' : '뒤로', () => { netClose(); scene = 'online'; }); // back to make or join, e.g. when both made a room at once
+      if (net && net.role === 'host' && net.status !== 'opening' && net.status !== 'error') mainBtn(!net.guests.length ? '친구를 기다리는 중…' : allIn() ? '경기 시작' : '친구가 고르는 중…', () => { if (allIn()) startRoom(); });
       menuEnd('Esc 를 눌러도 돌아가요');
     },
   },
@@ -4510,7 +4525,7 @@ const scenes = {
       }
       if (net) sideBtn('방 목록', leaveOnline); else sideBtn('홈으로', goHome);
       if (guest && net.ask) mainBtn('다시 하기 (방에 남기)', guestStay); // the host asked: stay for another, or leave with 방 목록
-      else if (guest) { const gx = LY.m + LY.side + LY.gap, gw = LY.m + LY.w - gx; rr(gx, LY.bot, gw, LY.btnH, 18, 'rgba(255,248,231,0.7)', '#cdbfb3', 2.4); text('방장이 다시 하자고 하면', gx + gw / 2, LY.bot + LY.btnH / 2 - 13, 21, INK, 'center', null, F_T); text('남을지 고를 수 있어요', gx + gw / 2, LY.bot + LY.btnH / 2 + 15, 21, INK, 'center', null, F_T); }
+      else if (guest) { const gw = midW('방장이 다시 하자고 하면', 21), gx = W / 2 - gw / 2; rr(gx, LY.bot, gw, LY.btnH, 18, 'rgba(255,248,231,0.7)', '#cdbfb3', 2.4); text('방장이 다시 하자고 하면', gx + gw / 2, LY.bot + LY.btnH / 2 - 13, 21, INK, 'center', null, F_T); text('남을지 고를 수 있어요', gx + gw / 2, LY.bot + LY.btnH / 2 + 15, 21, INK, 'center', null, F_T); }
       else mainBtn(net ? '다시 하기 (방으로)' : '다시 하기', () => { if (net) onlineAgain(); else { reset(); scene = 'play'; } });
       menuEnd(guest ? (net.ask ? '방장이 한 판 더 하자고 해요 · 남거나 방 목록으로 나가요' : '') : net ? '다시 하기를 누르면 방으로 돌아가요 · 친구들은 남을지 골라요' : 'Enter : 다시 하기 · Esc : 홈으로');
       drawGift();

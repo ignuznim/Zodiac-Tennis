@@ -3936,8 +3936,8 @@ const scenes = {
           const medal = typeof place === 'number' ? ['#ffd34d', '#cfd8e3', '#e6a46a'][place - 1] : null;
           if (medal) { ctx.lineWidth = 2.4; ctx.strokeStyle = OUT; E(x0 + 28, cy, 18, 18, medal); }
           fitText('' + place, x0 + 28, cy + 1, 23, INK, 'center', F_N, 52);
-          const fi = r.fav ? ANIMALS.findIndex(a => 'pa_' + a.id === r.fav) : favOf(progOf()), ti = tierOf(r), tc = TIERS[ti].c[1] === '#f6c445' ? '#c0392b' : TIERS[ti].c[1];
-          miniFace(fi >= 0 ? fi : 0, x0 + 84, cy, 21); drawTier(ti, x0 + 132, cy, 19);
+          const fi = r.fav ? ANIMALS.findIndex(a => 'pa_' + a.id === r.fav) : r.nick === nick ? favOf(progOf()) : -1, ti = tierOf(r), tc = TIERS[ti].c[1] === '#f6c445' ? '#c0392b' : TIERS[ti].c[1];
+          miniFace(fi >= 0 ? fi : [...r.nick].reduce((h, c) => h + c.charCodeAt(0), 0) % 12, x0 + 84, cy, 21); drawTier(ti, x0 + 132, cy, 19);
           fitText(r.nick, x0 + 162, cy - 11, 24, INK, 'left', F_T, LY.w - 340); text(TIERS[ti].n, x0 + 162, cy + 16, MIN_TEXT, tc, 'left', null, F_T);
           text(r.rating.toLocaleString(), LY.m + LY.w - LY.pad, cy, 27, INK, 'right', null, F_N); };
         const v0 = py + 54, v1 = py + ph - (pin ? rh + 22 : 12), key = JSON.stringify([nick, L.map(r => [r.nick, r.rating, r.days, r.rank, r.fav])]);
