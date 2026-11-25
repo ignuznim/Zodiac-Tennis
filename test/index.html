@@ -182,7 +182,7 @@ function shotButtons() { // the four shots, wide apart; a high ball played with 
 function nearestShot(p) { let best = null, bd = 1e9; for (const b of shotButtons()) { const d = Math.hypot(p.x - b[2], p.y - b[3]) - b[4]; if (d < bd) { bd = d; best = b[1]; } } return best; }
 let tapAt = null, lastTap = -1e9;
 function stickMove(p) { const c = stickC(), dx = (p.x - c.x) / STICK_R, dy = (p.y - c.y) / STICK_R, l = Math.hypot(dx, dy); stick.x = l > 1 ? dx / l : dx; stick.y = l > 1 ? dy / l : dy; }
-let ptrDown = false; // a finger or button is down: what it is over sinks
+let ptrDown = false; // a finger or button is down: the button under it sinks
 addEventListener('pointerdown', e => {
   ptrDown = true; startAudio(); if (e.pointerType === 'touch') touchUI = true;
   const p = toLogical(e); mouse = p; const h = hitTest(p);
@@ -1950,7 +1950,7 @@ function topIcon(kind, x, y) { // the little pictures on the round buttons at th
 }
 function iconBtn(x, y, kind, fn) { // the small square buttons: home and sound
   const over = btn(x, y, 56, 54, fn), d = sink(x, y, 56, 54, 3);
-  if (CLAY) clayBox(x, y, 56, 54, 14, over ? '#fff3c4' : 'rgba(255,248,231,0.95)', d); else { rr(x, y + 3, 56, 54, 14, OUT, null); rr(x, y + d, 56, 54, 14, over ? '#fff3c4' : 'rgba(255,248,231,0.95)', OUT); } y += d;
+  rr(x, y + 3, 56, 54, 14, OUT, null); rr(x, y + d, 56, 54, 14, hoverOn(over) ? '#fff3c4' : 'rgba(255,248,231,0.95)', OUT); y += d;
   ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; ctx.lineJoin = 'round';
   const cx = x + 28, cy = y + 28;
   if (kind === 'emo') { E(cx, cy, 16, 16, BALL); E(cx - 5.5, cy - 4, 2, 2.6, INK, 0, true); E(cx + 5.5, cy - 4, 2, 2.6, INK, 0, true); ctx.lineWidth = 2.4; ctx.beginPath(); ctx.arc(cx, cy + 1, 8, 0.35, Math.PI - 0.35); ctx.stroke(); }
@@ -1997,14 +1997,14 @@ function hintText() {
 }
 function drawTouch() { // phones and tablets: a joystick on the left, the four shots on the right, all flat
   const c = stickC();
-  if (CLAY) clayBall(c.x, c.y, STICK_R + 14, 'rgba(255,250,238,0.85)'); else { ctx.lineWidth = 4; ctx.strokeStyle = OUT; E(c.x, c.y, STICK_R + 14, STICK_R + 14, 'rgba(255,248,231,0.6)'); }
+  ctx.lineWidth = 4; ctx.strokeStyle = OUT; E(c.x, c.y, STICK_R + 14, STICK_R + 14, 'rgba(255,248,231,0.6)');
   ctx.fillStyle = 'rgba(107,85,96,0.45)';
   for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2; ctx.beginPath(); for (const q of [[STICK_R + 4, 0], [STICK_R - 16, 0.2], [STICK_R - 16, -0.2]]) ctx.lineTo(c.x + Math.cos(a + q[1]) * q[0], c.y + Math.sin(a + q[1]) * q[0]); ctx.fill(); }
-  if (CLAY) clayBall(c.x + stick.x * STICK_R * 0.7, c.y + stick.y * STICK_R * 0.7, 44, stick.id !== null ? '#fff3c4' : CREAM); else { ctx.lineWidth = 3.4; ctx.strokeStyle = OUT; E(c.x + stick.x * STICK_R * 0.7, c.y + stick.y * STICK_R * 0.7, 44, 44, stick.id !== null ? '#fff3c4' : CREAM); }
+  ctx.lineWidth = 3.4; ctx.strokeStyle = OUT; E(c.x + stick.x * STICK_R * 0.7, c.y + stick.y * STICK_R * 0.7, 44, 44, stick.id !== null ? '#fff3c4' : CREAM);
   const serving = serverIdx() === view && (m.phase === 'serve' || m.phase === 'toss') && !m.sc.done;
   for (const [label0, code, x, y, r, col] of shotButtons()) {
     const on = down.has(code), big = r > 80, label = big && serving ? (m.phase === 'serve' ? '토스' : '서브!') : label0;
-    if (CLAY) clayBall(x, y, r, on ? '#fff3c4' : big && serving ? '#4fc37a' : col, on ? 3 : 0); else { ctx.lineWidth = 4; ctx.strokeStyle = OUT; E(x, y + 5, r, r, OUT); E(x, y + (on ? 3 : 0), r, r, on ? '#fff3c4' : big && serving ? '#4fc37a' : col); } // green while it serves
+    ctx.lineWidth = 4; ctx.strokeStyle = OUT; E(x, y + 5, r, r, OUT); E(x, y + (on ? 3 : 0), r, r, on ? '#fff3c4' : big && serving ? '#4fc37a' : col); // green while it serves
     text(label, x, y - (big ? 10 : 0) + (on ? 3 : 0), big ? 32 : 25, INK, 'center', null, F_T);
     if (big) text(serving ? (m.phase === 'serve' ? '공 띄우기' : '꼭대기에서!') : '꾹: 파워샷', x, y + 28 + (on ? 3 : 0), 19, INK, 'center', null, F_B);
   }
@@ -2342,10 +2342,12 @@ function gearKey(cx, cy, r, fn) { // a round key with a cog on it: settings
   ctx.fillStyle = '#9a8b93'; ctx.fill(); ctx.lineWidth = 1.4; ctx.stroke(); E(cx, cy, R * 0.42, R * 0.42, over ? '#fff3c4' : '#ffffff'); ctx.restore();
 }
 function drawScoreCard(r, i) { // how a record's score was made: who played, dressed as they were, on which court, then the sum the server works out
-  ctx.fillStyle = 'rgba(59,51,64,0.55)'; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, () => { rank.sel = -1; }); // a tap anywhere closes it
+  const xu = rank.from && scene === 'hall' ? Math.min(1, (clock.now() - (rank.selAt || 0)) / 0.3) : 1, xe = CALM ? 1 : easeDrawer(xu);
+  ctx.fillStyle = `rgba(59,51,64,${0.55 * Math.min(1, xu * 2)})`; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, () => { rank.sel = -1; }); // a tap anywhere closes it
   const mul = [0, 1, 1.35, 1.8][r.level] || 1, margin = Math.max(0, r.pts_for - r.pts_against), base = 300 + margin * 30 + r.sweet * 6 + (r.combo || 0) * 6, lc = ['', '#3d9be0', '#4f9a6a', '#e2574c'][r.level] || INK;
   const rows = [['승리', '', 300], ['점수 차', `${margin} × 30`, margin * 30], ["'딱!'", `${r.sweet} × 6`, r.sweet * 6], ['콤보', `${r.combo || 0} × 6`, (r.combo || 0) * 6]];
   const w = 470, x = (W - w) / 2, top = 134, rh = 38, h = 22 + top + 18 + rows.length * rh + 10 + 44 + 8 + 54 + 22, y = Math.max(LY.top - 40, (H - h) / 2), L0 = x + 20, R0 = x + w - 20;
+  ctx.save(); if (xe < 1) { const [fx, fy0, fw, fh] = rank.from, s0 = Math.min(fw / w, fh / h, 1), sc = s0 + (1 - s0) * xe, cx0 = fx + fw / 2, cy0 = fy0 + fh / 2, cx1 = x + w / 2, cy1 = y + h / 2; ctx.translate(cx0 + (cx1 - cx0) * xe, cy0 + (cy1 - cy0) * xe); ctx.scale(sc, sc); ctx.translate(-cx1, -cy1); ctx.globalAlpha = 0.35 + 0.65 * xe; } // card expand
   rr(x, y + 6, w, h, 24, 'rgba(59,51,64,0.35)', null); rr(x, y, w, h, 24, '#fffaf0', OUT, 3); btn(x, y, w, h, () => {}); // a tap on the card itself keeps it open; only outside closes it
   { const worn = {}; for (const id of (r.gear || '').split(',')) { const it = item(id); if (it) worn[it.slot] = id; } // the player, as dressed for this record
     const bx = L0, by = y + 22, bs = top; rr(bx, by, bs, bs, 16, '#fbf6ea', null); ctx.save(); rr(bx, by, bs, bs, 16, null, null); ctx.clip(); irwol(bx, by, bs); ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(bx, by, bs, bs); ctx.restore(); rr(bx, by, bs, bs, 16, null, '#d9cbbd', 2); ctx.save(); ctx.beginPath(); ctx.rect(bx + 2, by + 2, bs - 4, bs - 4); ctx.clip(); ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(r.animal, bx + bs / 2, by + bs - 7, 0.7, { front: true, t: 0.4, accent: CORAL, gear: worn }); ctx.restore();
@@ -2360,6 +2362,7 @@ function drawScoreCard(r, i) { // how a record's score was made: who played, dre
   cy = yy + 27; rr(L0 - 10, yy, R0 - L0 + 20, 54, 16, '#fdf0d0', '#e3a46a', 2.4);
   text(`× ${mul}`, L0 + 4, cy, 24, lc, 'left', null, F_N); text(`(${LEVEL_KO[r.level] || ''})`, L0 + 4 + textW(`× ${mul}`, 24, F_N) + 10, cy, 20, lc, 'left', null, F_T);
   text(`= ${r.score.toLocaleString()}점`, R0, cy, 28, INK, 'right', null, F_N);
+  ctx.restore();
 }
 function drawHall() {
   OY = 0; computeLayout();
@@ -2401,7 +2404,7 @@ function drawHall() {
   const L = rank.list || [], col = ['#f6c445', '#cfd8e3', '#e6a46a'];
   for (const pos of [0, 2, 1]) { const ri = [1, 0, 2][pos], r = L[ri], rank1 = pos === 1, kk = k * (rank1 ? 1 : 0.86), w = 150 * kk, h = 250 * kk, cx = W / 2 + (pos - 1) * (140 * k + 36), yy = base - 40 - h + (rank1 ? 0 : 30 * k), c = col[[1, 0, 2][pos]];
     const glow = ctx.createRadialGradient(cx, yy + h / 2, 10, cx, yy + h / 2, 140 * kk); glow.addColorStop(0, rank1 ? `rgba(246,196,69,${0.28 + 0.1 * Math.sin(t * 2.2)})` : 'rgba(255,240,220,0.16)'); glow.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = glow; ctx.fillRect(cx - 160 * kk, yy - 60, 320 * kk, h + 140);
-    if (r && r.sweet != null) btn(cx - w / 2, yy, w, h, () => { rank.sel = ri; tone(660, 0.05, 'sine', 0.15); }); // a tap shows how the score was made
+    if (r && r.sweet != null) btn(cx - w / 2, yy, w, h, () => { rank.sel = ri; rank.from = [cx - w / 2, yy, w, h]; rank.selAt = clock.now(); tone(660, 0.05, 'sine', 0.15); }); // a tap shows how the score was made
     rr(cx - w / 2 - 14, yy + h - 6, w + 28, 34 * kk, 6, '#3a2f3e', '#1e1822', 3);
     ctx.beginPath(); ctx.moveTo(cx - w / 2, yy + h); ctx.lineTo(cx - w / 2, yy + 40 * kk); ctx.quadraticCurveTo(cx - w / 2, yy, cx, yy); ctx.quadraticCurveTo(cx + w / 2, yy, cx + w / 2, yy + 40 * kk); ctx.lineTo(cx + w / 2, yy + h); ctx.closePath();
     ctx.fillStyle = '#4a1d22'; ctx.fill(); ctx.lineWidth = 5; ctx.strokeStyle = c; ctx.stroke();
@@ -2422,7 +2425,7 @@ function drawHall() {
     for (let i = 3; i < 10; i++) { const r = L[i], y = listTop + 20 + (i - 3) * rowH + rowH / 2;
       text((i + 1) + '', LY.m + 60, y, 22, '#2e2733', 'center', null, F_N);
       ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(LY.m + 44, y + rowH / 2); ctx.lineTo(LY.m + LY.w - 44, y + rowH / 2); ctx.stroke();
-      if (!r) continue; if (r.sweet != null) btn(LY.m + 20, y - rowH / 2, LY.w - 40, rowH, () => { rank.sel = i; tone(660, 0.05, 'sine', 0.15); }); const worn = {}; for (const id of (r.gear || '').split(',')) { const it = item(id); if (it) worn[it.slot] = id; }
+      if (!r) continue; if (r.sweet != null) btn(LY.m + 20, y - rowH / 2, LY.w - 40, rowH, () => { rank.sel = i; rank.from = [LY.m + 20, y - rowH / 2, LY.w - 40, rowH]; rank.selAt = clock.now(); tone(660, 0.05, 'sine', 0.15); }); const worn = {}; for (const id of (r.gear || '').split(',')) { const it = item(id); if (it) worn[it.slot] = id; }
       ctx.lineWidth = 2; ctx.strokeStyle = OUT; drawAnimal(r.animal, LY.m + 110, y + 12, 0.26, { front: true, t: 0.4, accent: CORAL, gear: worn });
       text(r.nickname, LY.m + 142, y, 22, '#2a2330', 'left', null, F_T); text(LEVEL_KO[r.level] || '', LY.m + 430, y, 19, '#4a3d47', 'center', null, F_T); text(r.score.toLocaleString(), LY.m + LY.w - 44, y, 23, '#2a2330', 'right', null, F_N); } }
   // the doors: shut when you come in, then they swing open
@@ -3213,7 +3216,7 @@ function icon(kind, x, y, s) { // trophy, capsule, medal, hanger: drawn about s 
 }
 function iconButton(kind, label, x, y, w, h, fn, dot) { // a small button: a picture over a word
   const over = btn(x, y, w, h, fn), d = sink(x, y, w, h);
-  if (CLAY) clayBox(x, y, w, h, 18, over ? '#fffdf3' : 'rgba(255,248,231,0.96)', d); else { rr(x, y + 5, w, h, 18, OUT, null); rr(x, y + d, w, h, 18, over ? '#fffdf3' : 'rgba(255,248,231,0.96)', OUT, 3); } y += d;
+  rr(x, y + 5, w, h, 18, OUT, null); rr(x, y + d, w, h, 18, hoverOn(over) ? '#fffdf3' : 'rgba(255,248,231,0.96)', OUT, 3); y += d;
   icon(kind, x + w / 2, y + h / 2 - 10, Math.min(46, h * 0.56)); text(label, x + w / 2, y + h - 15, 18, INK, 'center', null, F_T);
   if (dot) E(x + w - 14, y + 14, 8, 8, '#e2574c');
 }
@@ -3446,6 +3449,7 @@ function drawAchTab(y0, end) {
     });
     return ACH.length * rh + 8;
   });
+  staggerCover(y0 + 68, end, rh, SCR.ach.scroll, 'rgb(170,232,208)', LY.m, LY.w);
 }
 
 const room = params.get('room');
@@ -3486,35 +3490,26 @@ function menuBegin(title, home) {
   drawBackdrop('#8fd3b8', LY.sb, LY.tall);
   for (let i = 0; i * 56 < H - LY.sb; i++) { ctx.fillStyle = i % 2 ? '#a2e3c8' : '#aeead2'; ctx.fillRect(0, LY.sb + i * 56, W, 56); }
   ctx.save();
-  { const u = Math.min(1, (clock.now() - sceneAt) / 0.18), e = 1 - Math.pow(1 - u, 3); if (u < 1) { if (!CALM) ctx.translate(0, 8 * (1 - e)); ctx.globalAlpha = 0.15 + 0.85 * e; } } // a new screen settles in; the sky behind stays put
   if (title) text(title, W / 2, LY.titleY, 40, INK, 'center', CREAM, F_T);
   if (home) iconBtn(LY.m, LY.titleY - 27, 'home', goHome);
 }
 function menuEnd(foot) { if (foot) { ctx.font = `20px ${F_B}`; const fw = ctx.measureText(foot).width; text(foot, W / 2, LY.foot, Math.max(MIN_TEXT, fw > LY.w ? 20 * LY.w / fw : 20), '#4f6f63', 'center', null, F_B); } ctx.restore(); OY = 0; } // the footnote shrinks to the page's margins
 const contentEnd = () => LY.bot - LY.gap * 2;
 const cardH = n => (contentEnd() - LY.top - LY.gap * (n - 1)) / n; // n cards filling the content area
-function panel(x, y, w, h) { if (CLAY) clayBox(x, y, w, h, 24, 'rgba(255,250,238,0.97)'); else rr(x, y, w, h, 24, 'rgba(255,248,231,0.96)', OUT); }
-const CLAY = params.get('clay') === '1', CALM = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+function panel(x, y, w, h) { rr(x, y, w, h, 24, 'rgba(255,248,231,0.96)', OUT); }
 const PRESS = new Map();
-function sink(x, y, w, h, depth = 4) { // how far a pressed button has gone down into its shadow: 100 ms in, 160 ms back out, eased
+function sink(x, y, w, h, depth = 4) { // press feedback: how far a held button has gone down into its shadow, 100 ms in and 160 ms back out, eased
   const k = Math.round(x) + ',' + Math.round(y) + ',' + Math.round(w), now = clock.now(), P = PRESS.get(k) || { d: 0, t: now }, dt = Math.min(0.1, now - P.t);
   const inside = ptrDown && mouse.x >= x && mouse.x <= x + w && mouse.y >= y + OY && mouse.y <= y + OY + h, tgt = inside ? depth : 0;
   P.d += (tgt - P.d) * (1 - Math.exp(-dt / ((inside ? 0.1 : 0.16) / 3))); P.t = now; PRESS.set(k, P); return P.d;
 }
-function clayBox(x, y, w, h, r, fill, d = 0) { // claymorphism: no outline, a soft lifted shadow, a light top and a shaded foot
-  r = Math.min(h / 2, r * 1.35); ctx.save(); ctx.shadowColor = 'rgba(110,80,100,' + (0.3 - d * 0.04) + ')'; ctx.shadowBlur = 18 - d * 2; ctx.shadowOffsetY = 8 - d * 1.5; rr(x, y + d, w, h, r, fill, null); ctx.restore();
-  ctx.save(); rr(x, y + d, w, h, r, null, null); ctx.clip(); const g = ctx.createLinearGradient(0, y + d, 0, y + d + h); g.addColorStop(0, 'rgba(255,255,255,0.65)'); g.addColorStop(0.42, 'rgba(255,255,255,0)'); g.addColorStop(0.75, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(90,60,80,0.14)'); ctx.fillStyle = g; ctx.fillRect(x, y + d, w, h);
-  ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,0.8)'; ctx.beginPath(); ctx.moveTo(x + r, y + d + 2.5); ctx.lineTo(x + w - r, y + d + 2.5); ctx.stroke(); ctx.restore(); ctx.lineWidth = 2.6; ctx.strokeStyle = OUT;
-}
-function clayBall(x, y, r, fill, d = 0) { ctx.save(); ctx.shadowColor = 'rgba(110,80,100,0.32)'; ctx.shadowBlur = 16; ctx.shadowOffsetY = 7 - d; E(x, y + d, r, r, fill, 0, true); ctx.restore();
-  ctx.save(); ctx.beginPath(); ctx.arc(x, y + d, r, 0, 7); ctx.clip(); const g = ctx.createRadialGradient(x - r * 0.35, y + d - r * 0.45, r * 0.1, x, y + d, r * 1.1); g.addColorStop(0, 'rgba(255,255,255,0.7)'); g.addColorStop(0.45, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(90,60,80,0.2)'); ctx.fillStyle = g; ctx.fillRect(x - r, y + d - r, 2 * r, 2 * r); ctx.restore(); ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; }
-let sceneWas = '', sceneAt = 0;
-function card(x, y, w, h, fn, on, fill) { const over = btn(x, y, w, h, fn), pr = sink(x, y, w, h) > 1, f0 = on || pr ? '#fff3c4' : over ? '#fffdf3' : fill || 'rgba(255,248,231,0.96)'; if (CLAY) { clayBox(x, y, w, h, 20, f0); if (on) rr(x, y, w, h, 26, null, CORAL, 4); return; } rr(x, y + 5, w, h, 20, OUT, null); rr(x, y, w, h, 20, f0, on ? CORAL : OUT, on ? 5 : 3); }
+const hoverOn = over => over && !touchUI; // a hover tint is for a mouse; on a phone the finger only presses
+function card(x, y, w, h, fn, on, fill) { const over = btn(x, y, w, h, fn), pr = sink(x, y, w, h) > 1; rr(x, y + 5, w, h, 20, OUT, null); rr(x, y, w, h, 20, on ? '#fff3c4' : pr ? '#fffbe8' : hoverOn(over) ? '#fffdf3' : fill || 'rgba(255,248,231,0.96)', on ? CORAL : OUT, on ? 5 : 3); } // its picture is drawn by the caller, so a card lightens when pressed rather than sinking
 function sideBtn(label, fn) { button(label, LY.m, LY.bot, LY.side, LY.btnH, fn, { size: 28 }); }
 function mainBtn(label, fn) { button(label, LY.m + LY.side + LY.gap, LY.bot, LY.w - LY.side - LY.gap, LY.btnH, fn, { size: 31, fill: '#fff3c4' }); }
 function refreshBtn(loading, fn, dark) { // a square key at the right of the bottom row: two arrows chasing round, turning while it loads
   const s = LY.btnH, x = LY.m + LY.w - s, y = LY.bot, over = btn(x, y, s, s, () => { if (!loading) fn(); });
-  const d0 = sink(x, y, s, s); if (CLAY && !dark) clayBox(x, y, s, s, 18, over ? '#fffdf3' : '#fff3c4', d0); else { rr(x, y + 5, s, s, 18, dark ? '#1a1218' : OUT, null); rr(x, y + d0, s, s, 18, dark ? (over ? '#dcaa4c' : '#c8963a') : over ? '#fffdf3' : '#fff3c4', dark ? '#3a2428' : OUT, 3); }
+  const d0 = sink(x, y, s, s); rr(x, y + 5, s, s, 18, dark ? '#1a1218' : OUT, null); rr(x, y + d0, s, s, 18, dark ? (hoverOn(over) ? '#dcaa4c' : '#c8963a') : hoverOn(over) ? '#fffdf3' : '#fff3c4', dark ? '#3a2428' : OUT, 3);
   const cx = x + s / 2, cy = y + d0 + s / 2, R = s * 0.24, a0 = loading ? clock.now() * 6 : -0.5, col = dark ? '#2a1a1c' : INK;
   ctx.save(); ctx.lineCap = 'round'; ctx.lineWidth = 4.4; ctx.strokeStyle = col; ctx.fillStyle = col;
   for (const k of [0, Math.PI]) { const a = a0 + k, b = a + 2.3; ctx.beginPath(); ctx.arc(cx, cy, R, a, b); ctx.stroke();
@@ -3524,9 +3519,9 @@ function refreshBtn(loading, fn, dark) { // a square key at the right of the bot
 }
 function wideBtn(label, fn) { button(label, LY.m, LY.bot, LY.w, LY.btnH, fn, { size: 31, fill: '#fff3c4' }); }
 function button(label, x, y, w, h, fn, o = {}) { // a big rounded button, for the mouse and for show
-  const over = btn(x, y, w, h, fn), on = o.on, d = sink(x, y, w, h), f0 = on ? '#fff3c4' : over ? '#fffdf3' : o.fill || 'rgba(255,248,231,0.96)';
-  if (CLAY) clayBox(x, y, w, h, 18, f0, d); else { rr(x, y + 5, w, h, 18, OUT, null); rr(x, y + d, w, h, 18, f0, on ? CORAL : OUT, on ? 5 : 3); }
-  y += d;
+  const over = btn(x, y, w, h, fn), on = o.on, d = sink(x, y, w, h);
+  rr(x, y + 5, w, h, 18, OUT, null);
+  rr(x, y + d, w, h, 18, on ? '#fff3c4' : hoverOn(over) ? '#fffdf3' : o.fill || 'rgba(255,248,231,0.96)', on ? CORAL : OUT, on ? 5 : 3); y += d;
   if (o.sub) { text(label, x + LY.pad, y + h / 2 - 18, o.size || 27, INK, 'left', null, F_T); text(o.sub, x + LY.pad, y + h / 2 + 22, 21, '#7a6872', 'left', null, F_B); }
   else text(label, x + w / 2, y + h / 2 + 1, o.size || 28, o.ink || INK, 'center', null, F_T);
 }
@@ -3855,6 +3850,10 @@ function wrapLines(str, size, font, maxW) { // words to lines that fit maxW; a w
   while (out.length && out[out.length - 1] === '') out.pop(); return out;
 }
 const kDate = t => { const d = new Date(new Date(t).getTime() + 9 * 3600e3); return `${d.getUTCMonth() + 1}월 ${d.getUTCDate()}일`; };
+function noticeGrow(L) { // sheet expand: an opening note's body unrolls over 260 ms; the notes below move down with it
+  let off = 0; for (const c of L.cards) { c.y += off; const at = news.openAt && news.openAt[c.n.id]; if (c.body.length && at != null && !CALM) { const u = Math.min(1, (clock.now() - at) / 0.26), full = 10 + c.body.length * 32, cut = full * (1 - easeDrawer(u)); c.h -= cut; off -= cut; } }
+  return { cards: L.cards, height: L.height + off };
+}
 function noticeCards(inner) { // each note as a card: kind and date, the title, and the body only when tapped open; returns the cards and the whole height
   let y = 0; const cards = (news.list || []).map(n => { const open = !!news.open[n.id], title = wrapLines(n.title, 27, F_T, inner - 40), body = open ? wrapLines(n.body || '', 21, F_B, inner) : [], h = 24 + 32 + 14 + title.length * 36 + (body.length ? 10 + body.length * 32 : 0) + 22;
     const c = { n, title, body, y, h }; y += h + 16; return c; });
@@ -3951,6 +3950,7 @@ const scenes = {
         scrollView(SCR.tier, v0, v1, key, L.length * rh + 4, () => {
           L.forEach((r, i) => { const y = i * rh, mine = r.nick === nick; btn(LY.m + 12, y + 3, LY.w - 24, rh - 6, () => openProfile(r.nick)); row(r, i + 1, y, mine, mine ? '#fff3c4' : i % 2 === 0 ? 'rgba(234,223,210,0.45)' : 'rgba(255,255,255,0)'); });
           return L.length * rh + 4; });
+        staggerCover(v0, v1, rh, SCR.tier.scroll, 'rgb(255,248,231)');
         if (pin) { const y = v1 + 10; ctx.fillStyle = '#e6dccd'; ctx.fillRect(LY.m + 20, y - 6, LY.w - 40, 2); btn(LY.m + 12, y + 3, LY.w - 24, rh - 6, () => openProfile(nick)); row(Object.assign({ nick, fav: null }, me), mi >= 0 ? mi + 1 : '-', y, true, '#fff3c4'); }
       }
       sideBtn('뒤로', () => { scene = 'title'; });
@@ -3969,11 +3969,11 @@ const scenes = {
       if (L && L.length) { const top = newsTop(); if (top > (parseInt(store('zt_news_at')) || 0)) store('zt_news_at', String(top)); } // seen
       if (!L) { panel(LY.m, v0, LY.w, 240); text(news.loading ? '불러오는 중…' : news.err || '불러오는 중…', W / 2, v0 + 120, 26, news.err && !news.loading ? '#e2574c' : INK, 'center', null, F_T); }
       else if (!L.length) { panel(LY.m, v0, LY.w, 240); text('아직 공지가 없어요', W / 2, v0 + 120, 26, '#7a6872', 'center', null, F_T); }
-      else { const pad = 28, inner = LY.w - pad * 2, { cards, height } = noticeCards(inner);
-        scrollView(SCR.notice, v0, v1, 'n' + news.at + ':' + L.length + ':' + Object.keys(news.open).filter(k => news.open[k]).join(','), height, () => {
+      else { const pad = 28, inner = LY.w - pad * 2, { cards, height } = noticeGrow(noticeCards(inner));
+        scrollView(SCR.notice, v0, v1, 'n' + news.at + ':' + L.length + ':' + Object.keys(news.open).filter(k => news.open[k]).join(',') + ':' + cards.map(c => c.h | 0).join(','), height, () => {
           for (const c of cards) { const x = LY.m, n = c.n, [kname, kc] = NOTICE_KIND[n.kind] || NOTICE_KIND.info; let y = c.y + 24;
-            btn(x, c.y, LY.w, c.h, () => { news.open[n.id] = !news.open[n.id]; tone(660, 0.05, 'sine', 0.15); }); // a tap opens the note, another closes it
-            rr(x, c.y, LY.w, c.h, 20, n.pinned ? '#fff8dc' : '#fffaf0', n.pinned ? '#f0a020' : '#d9cbbd', n.pinned ? 3 : 2.4);
+            btn(x, c.y, LY.w, c.h, () => { news.open[n.id] = !news.open[n.id]; (news.openAt = news.openAt || {})[n.id] = clock.now(); tone(660, 0.05, 'sine', 0.15); }); // a tap opens the note, another closes it
+            ctx.save(); rr(x, c.y, LY.w, c.h, 20, n.pinned ? '#fff8dc' : '#fffaf0', n.pinned ? '#f0a020' : '#d9cbbd', n.pinned ? 3 : 2.4); rr(x, c.y, LY.w, c.h, 20, null, null); ctx.clip();
             ctx.font = `19px ${F_T}`; const kw = ctx.measureText(kname).width + 28; rr(x + pad, y, kw, 32, 16, kc, null); text(kname, x + pad + kw / 2, y + 17, 19, '#fff', 'center', null, F_T);
             let tx = x + pad + kw + 10; if (n.pinned) { rr(tx, y, 64, 32, 16, '#fff3c4', '#f0a020', 2); text('고정', tx + 32, y + 17, 18, '#b07a10', 'center', null, F_T); tx += 74; }
             text(n.ends_at ? `${kDate(n.ends_at)}까지` : '', tx, y + 17, 19, '#c0605a', 'left', null, F_T);
@@ -3981,7 +3981,7 @@ const scenes = {
             y += 32 + 14;
             { const cx = x + LY.w - pad - 10, cy = y + 18, up = !!news.open[n.id]; ctx.lineWidth = 3; ctx.strokeStyle = '#9a8b93'; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(cx - 8, cy + (up ? 4 : -4)); ctx.lineTo(cx, cy + (up ? -4 : 4)); ctx.lineTo(cx + 8, cy + (up ? 4 : -4)); ctx.stroke(); ctx.strokeStyle = OUT; } // a chevron: down to open, up to close
             c.title.forEach(t => { text(t, x + pad, y + 18, 27, INK, 'left', null, F_T); y += 36; });
-            if (c.body.length) { y += 10; c.body.forEach(t => { text(t, x + pad, y + 16, 21, '#5d4f58', 'left', null, F_B); y += 32; }); } }
+            if (c.body.length) { y += 10; c.body.forEach(t => { text(t, x + pad, y + 16, 21, '#5d4f58', 'left', null, F_B); y += 32; }); } ctx.restore(); }
           return height; }); }
       sideBtn('뒤로', () => { scene = 'title'; });
       refreshBtn(news.loading, loadNotices);
@@ -4375,7 +4375,7 @@ const scenes = {
     },
     draw() {
       drawMatch(); hot = []; OY = 0;
-      ctx.fillStyle = 'rgba(59,51,64,0.62)'; ctx.fillRect(0, 0, W, H);
+      modalIn(0.62);
       const rh = 66, ph = 96 + LESSONS.length * rh + 108, top = Math.round(H / 2 - ph / 2);
       rr(LY.m, top, LY.w, ph, 26, 'rgba(255,248,231,0.98)', OUT, 4);
       text('레슨 고르기', W / 2, top + 48, 32, INK, 'center', null, F_T);
@@ -4398,7 +4398,7 @@ const scenes = {
     },
     draw() {
       drawMatch(); hot = []; OY = 0;
-      ctx.fillStyle = 'rgba(59,51,64,0.62)'; ctx.fillRect(0, 0, W, H);
+      modalIn(0.62);
       const top = Math.round(H / 2 - 400);
       ctx.save(); ctx.translate(0, top); OY = top;
       rr(40, 0, 640, 800, 26, 'rgba(255,248,231,0.98)', OUT, 4);
@@ -4447,7 +4447,7 @@ const scenes = {
     },
     draw() {
       drawMatch(); hot = []; OY = 0;
-      ctx.fillStyle = 'rgba(59,51,64,0.6)'; ctx.fillRect(0, 0, W, H);
+      modalIn(0.6);
       const cy = Math.round(H / 2);
       rr(110, cy - 226, 500, 458, 26, 'rgba(255,248,231,0.97)', OUT, 4);
       text(m.online ? '잠깐!' : '일시정지', W / 2, cy - 168, 52, INK, 'center', null, F_T);
@@ -4540,9 +4540,50 @@ function drawNotice() {
   rr(W / 2 - w / 2, y + 4, w, 56, 28, 'rgba(59,51,64,0.35)', null); rr(W / 2 - w / 2, y, w, 56, 28, '#fff3c4', OUT, 2.6);
   text(notice.s, W / 2, y + 29, 25, INK, 'center', null, F_T); ctx.restore();
 }
+// ---- 화면 모션 (test): push for the solo flow, fade through between unrelated screens, tab switch inside a screen, modal present over a match
+const CALM = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+const easeOut = u => 1 - Math.pow(1 - u, 3), easeDrawer = u => { let a = 0, b = 1; for (let i = 0; i < 18; i++) { const m = (a + b) / 2, x = 3 * m * (1 - m) * (1 - m) * 0.32 + 3 * m * m * (1 - m) * 0 + m * m * m; if (x < u) a = m; else b = m; } const t = (a + b) / 2; return 3 * t * (1 - t) * (1 - t) * 0.72 + 3 * t * t * (1 - t) * 1 + t * t * t; }; // cubic-bezier(0.32, 0.72, 0, 1)
+const FLOW = ['format', 'select', 'mode', 'court'], MODALS = ['pause', 'help', 'lessons'];
+let viewKey0 = '', viewScene0 = '', viewAt = 0, sceneAt = 0, trans = null, snapC = null, newC = null;
+function viewOf() { // what counts as 'a different view', and the part of the screen that moves with it
+  if (scene === 'wardrobe') return { key: 'wardrobe:' + acct.wtab, tab: ['gacha', 'ach'].indexOf(acct.wtab), r: [0, LY.top + 70, W, H] };
+  if (scene === 'hall') return { key: 'hall:' + rank.mode, tab: FORMAT_IDS.indexOf(rank.mode), r: [0, LY.top + 60, W, LY.bot - 8] };
+  if (scene === 'help') { const top = Math.round(H / 2 - 400); return { key: 'help:' + helpPage, tab: helpPage, r: [44, top + 84, W - 44, top + 796] }; }
+  return { key: scene };
+}
+function snap(into) { const c = into || document.createElement('canvas'); if (c.width !== canvas.width || c.height !== canvas.height) { c.width = canvas.width; c.height = canvas.height; } const g = c.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, c.width, c.height); g.drawImage(canvas, 0, 0); return c; }
+function viewWatch() { // before a frame: has the view changed since the last one? keep a picture of the last one to move away
+  const v = viewOf(); if (v.key === viewKey0) return;
+  const from = viewScene0, to = scene, fi = FLOW.indexOf(from), ti = FLOW.indexOf(to); let kind = null, dir = 1, r = [0, 0, W, H], dur = 0.2;
+  if (from && from === to && v.tab >= 0) { kind = 'tab'; dir = v.tab > (trans && trans.tabWas != null ? trans.tabWas : -1) ? 1 : -1; r = v.r; dur = 0.22; }
+  else if (fi >= 0 && ti >= 0) { kind = 'push'; dir = ti > fi ? 1 : -1; r = [0, LY.sb, W, H]; dur = 0.28; }
+  else if (from && !MODALS.includes(to) && !MODALS.includes(from) && to !== 'cover') { kind = 'fade'; dur = 0.2; }
+  if (from !== to) sceneAt = clock.now();
+  if (kind && !CALM || kind === 'fade' || (kind && CALM)) { if (kind) trans = { kind: CALM ? 'fade' : kind, dir, r, dur, at: clock.now(), old: snapC = snap(snapC) }; }
+  viewAt = clock.now(); viewKey0 = v.key; viewScene0 = scene; if (trans) trans.tabWas = v.tab;
+}
+function viewMove() { // after the new frame: lay the old picture and the new one over each other as they move
+  if (!trans) return; const u = Math.min(1, (clock.now() - trans.at) / trans.dur); if (u >= 1) { trans = null; return; }
+  newC = snap(newC); const k = canvas.width / W, [x0, y0, x1, y1] = trans.r.map(v => v * k), w = x1 - x0;
+  ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.beginPath(); ctx.rect(x0, y0, w, y1 - y0); ctx.clip();
+  if (trans.kind === 'fade') { ctx.globalAlpha = 1 - easeOut(Math.min(1, u * 1.6)); ctx.drawImage(trans.old, 0, 0); }
+  else if (trans.kind === 'push') { const e = easeDrawer(u), d = trans.dir; ctx.drawImage(trans.old, -d * e * w * 0.3, 0); ctx.fillStyle = 'rgba(59,51,64,' + 0.12 * e + ')'; ctx.fillRect(x0, y0, w, y1 - y0); ctx.drawImage(newC, d * (1 - e) * w, 0); ctx.shadowColor = 'rgba(59,51,64,0.25)'; }
+  else { const e = easeOut(u), d = trans.dir, D = 48 * k; ctx.globalAlpha = 1 - e; ctx.drawImage(trans.old, -d * e * D, 0); ctx.globalAlpha = e; ctx.drawImage(newC, d * (1 - e) * D, 0); }
+  ctx.restore();
+}
+let modalSaved = false;
+function modalIn(dimA) { // a sheet over the match rises 36 px as the dim comes up, 260 ms
+  const u = Math.min(1, (clock.now() - sceneAt) / 0.26), e = CALM ? 1 : easeDrawer(u); ctx.fillStyle = `rgba(59,51,64,${dimA * Math.min(1, u * 2)})`; ctx.fillRect(0, 0, W, H);
+  ctx.save(); ctx.translate(0, 36 * (1 - e)); ctx.globalAlpha = Math.min(1, 0.3 + u * 1.4); modalSaved = true;
+}
+function staggerCover(v0, v1, rh, scroll, fill, x = LY.m, w = LY.w) { // rows uncovered top to bottom, 35 ms apart, 220 ms each; the first time a list shows
+  const t = clock.now() - viewAt; if (CALM || t > 1.2) return;
+  for (let i = Math.floor(scroll / rh); ; i++) { const y = v0 + i * rh - scroll; if (y > v1) break; const u = Math.min(1, Math.max(0, (t - i * 0.035) / 0.22)); if (u >= 1) continue;
+    ctx.save(); ctx.beginPath(); ctx.rect(x - 4, Math.max(v0, y), w + 8, Math.min(v1, y + rh) - Math.max(v0, y)); ctx.clip(); ctx.fillStyle = fill; ctx.globalAlpha = 1 - easeOut(u); ctx.fillRect(x - 4, y, w + 8, rh); ctx.restore(); }
+}
 function drawFrame() {
-  if (scene !== sceneWas) { sceneWas = scene; sceneAt = clock.now(); }
-  hot = []; scenes[scene].draw(); if (prof.open) drawProfile(); drawNotice();
+  viewWatch();
+  hot = []; scenes[scene].draw(); if (modalSaved) { ctx.restore(); modalSaved = false; } viewMove(); if (prof.open) drawProfile(); drawNotice();
   if (touchUI && !COVER && innerWidth > innerHeight * 1.1) { // a phone held sideways: the game is drawn for portrait
     rr(W / 2 - 210, H - 50, 420, 38, 19, 'rgba(59,51,64,0.88)', null);
     text('휴대폰을 세로로 돌리면 화면이 더 커져요', W / 2, H - 31, 19, CREAM, 'center', null, F_B);
