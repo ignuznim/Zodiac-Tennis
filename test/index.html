@@ -3528,8 +3528,8 @@ function iconKey(x, y, s, kind, fn, fill) { // a square key with a picture: plus
   rr(x, y + (s > 50 ? 5 : 3), s, s, s * 0.26, OUT, null); rr(x, y + d, s, s, s * 0.26, hoverOn(over) ? '#fffdf3' : fill || '#fff8e7', OUT, s > 50 ? 3 : 2.4);
   const cx = x + s / 2, cy = y + d + s / 2, k = s / 68; ctx.save(); ctx.translate(cx, cy); ctx.scale(k, k); ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.strokeStyle = OUT;
   if (kind === 'plus') { ctx.lineWidth = 7; ctx.strokeStyle = INK; ctx.beginPath(); ctx.moveTo(-15, 0); ctx.lineTo(15, 0); ctx.moveTo(0, -15); ctx.lineTo(0, 15); ctx.stroke(); }
-  else if (kind === 'key') { ctx.rotate(-0.6); ctx.lineWidth = 2.6; rr(-4, -4, 26, 8, 3, BALL, OUT, 2.6); rr(12, 3, 5, 8, 1.5, BALL, OUT, 2.2); rr(18, 3, 4, 6, 1.5, BALL, OUT, 2.2); E(-12, 0, 12, 12, BALL); E(-12, 0, 4.5, 4.5, '#fff8e7'); }
-  else if (kind === 'pencil') { ctx.rotate(-0.78); ctx.lineWidth = 2.8; rr(-14, -6, 26, 12, 2, BALL, OUT, 2.8); poly([12, -6, 23, 0, 12, 6], '#f1c9a5'); poly([19.5, -2, 23, 0, 19.5, 2], INK); rr(-21, -6, 8, 12, 2.5, CORAL, OUT, 2.8); }
+  else if (kind === 'key') { ctx.rotate(-Math.PI / 4); ctx.translate(2, 0); ctx.lineWidth = 2.8; ctx.fillStyle = BALL; ctx.beginPath(); ctx.moveTo(-4, -4); ctx.lineTo(22, -4); ctx.lineTo(22, 10); ctx.lineTo(17, 10); ctx.lineTo(17, 4); ctx.lineTo(13, 4); ctx.lineTo(13, 8); ctx.lineTo(8, 8); ctx.lineTo(8, 4); ctx.lineTo(-4, 4); ctx.closePath(); ctx.fill(); ctx.stroke(); E(-12, 0, 11, 11, BALL); E(-12, 0, 4, 4, '#fff8e7'); }
+  else if (kind === 'pencil') { ctx.rotate(-0.78 + Math.PI); ctx.lineWidth = 2.8; rr(-14, -6, 26, 12, 2, BALL, OUT, 2.8); poly([12, -6, 23, 0, 12, 6], '#f1c9a5'); poly([19.5, -2, 23, 0, 19.5, 2], INK); rr(-21, -6, 8, 12, 2.5, CORAL, OUT, 2.8); }
   ctx.restore();
 }
 function sideBtn(label, fn) {
@@ -3554,7 +3554,16 @@ function button(label, x, y, w, h, fn, o = {}) { // a big rounded button, for th
   rr(x, y + 5, w, h, 18, OUT, null);
   rr(x, y + d, w, h, 18, on ? '#fff3c4' : hoverOn(over) ? '#fffdf3' : o.fill || 'rgba(255,248,231,0.96)', on ? CORAL : OUT, on ? 5 : 3); y += d;
   if (o.sub) { text(label, x + LY.pad, y + h / 2 - 18, o.size || 27, INK, 'left', null, F_T); text(o.sub, x + LY.pad, y + h / 2 + 22, 21, '#7a6872', 'left', null, F_B); }
+  else if (o.icon) { const tw = textW(label, o.size || 28, F_T), x0 = x + (w - (34 + 12 + tw)) / 2; o.icon(x0 + 17, y + h / 2); text(label, x0 + 46, y + h / 2 + 1, o.size || 28, o.ink || INK, 'left', null, F_T); } // a logo, then the words, centred together
   else text(label, x + w / 2, y + h / 2 + 1, o.size || 28, o.ink || INK, 'center', null, F_T);
+}
+function brandLogo(id, cx, cy) { // the sign-in marks, small: Google's four-colour G, Kakao's speech bubble, Apple's apple
+  ctx.save();
+  if (id === 'google') { const r = 13, cols = [['#ea4335', -2.45, -0.75], ['#fbbc05', 2.35, 3.85], ['#34a853', 0.75, 2.35], ['#4285f4', -0.75, 0.75]]; ctx.lineWidth = 5.6; ctx.lineCap = 'butt';
+    for (const [c, a, b] of cols) { ctx.strokeStyle = c; ctx.beginPath(); ctx.arc(cx, cy, r, a, b); ctx.stroke(); } ctx.fillStyle = '#4285f4'; ctx.fillRect(cx, cy - 2.8, r + 2.8, 5.6); }
+  else if (id === 'kakao') { ctx.fillStyle = '#3c1e1e'; ctx.beginPath(); ctx.ellipse(cx, cy - 2, 15, 12, 0, 0, 7); ctx.fill(); ctx.beginPath(); ctx.moveTo(cx - 8, cy + 6); ctx.lineTo(cx - 11, cy + 14); ctx.lineTo(cx - 1, cy + 8); ctx.fill(); }
+  else { ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(cx - 5, cy + 3, 9, 0, 7); ctx.arc(cx + 5, cy + 3, 9, 0, 7); ctx.fill(); ctx.beginPath(); ctx.ellipse(cx + 3, cy - 12, 3, 6, 0.6, 0, 7); ctx.fill(); }
+  ctx.restore();
 }
 const STAT_COL = [CORAL, '#ffb86b', '#c3a6e8', BALL, SKY];
 const STAT_DO = ['공이 빨라져요', '더 오래 뛰어요', '정확하고 잘 휘어요', '멀리까지 닿아요', '달리기가 빨라요'];
@@ -4027,14 +4036,15 @@ const scenes = {
     update(dt) { state.t += dt; acct.msgT += dt; if (pressed('Escape')) scene = 'title'; if (acct.user && acct.prof && acct.prof.nickname) { scene = 'title'; openProfile(); } },
     draw() {
       menuBegin('로그인', true);
-      const py = LY.top, ph = acct.user ? 340 : 420; panel(LY.m, py, LY.w, ph); // signed in: no taller than its contents
-      if (!acct.user) {
-        text('로그인하면', W / 2, py + 56, 28, INK, 'center', null, F_T);
-        text('옷장 · 뽑기 기계 · 업적을 쓸 수 있고', W / 2, py + 100, 22, '#5d4f58', 'center', null, F_B);
-        text('기기를 바꿔도 그대로 이어져요', W / 2, py + 132, 22, '#5d4f58', 'center', null, F_B);
-        const on = acct.providers || ['google', 'kakao']; // until the list arrives, show both
-        [['google', 'Google로 로그인', '#ffffff'], ['kakao', '카카오로 로그인', '#fee500'], ['apple', 'Apple로 로그인', '#f2f2f2']].filter(q => on.includes(q[0]))
-          .forEach(([id, t, f], i) => button(t, LY.m + LY.pad, py + 182 + i * 100, LY.w - LY.pad * 2, 76, () => signIn(id), { size: 28, fill: f }));
+      const on = acct.providers || ['google', 'kakao'], PV = [['google', 'Google로 로그인', '#ffffff'], ['kakao', '카카오로 로그인', '#fee500'], ['apple', 'Apple로 로그인', '#ffffff']].filter(q => on.includes(q[0])); // until the list arrives, show both
+      const bh = 64, bg = 14, bw = Math.max(...PV.map(q => textW(q[1], 24, F_T))) + 34 + 12 + 56, colH = PV.length * bh + (PV.length - 1) * bg;
+      const py = LY.top, ph = acct.user ? 340 : Math.max(130, colH) + LY.pad * 2 + 6; panel(LY.m, py, LY.w, ph); // signed in: no taller than its contents
+      if (!acct.user) { // what signing in brings at the left, the ways to sign in at the right, each as wide as the widest
+        const tx = LY.m + LY.pad, room = LY.w - LY.pad * 3 - bw, my = py + ph / 2;
+        fitText('로그인하면', tx, my - 36, 26, INK, 'left', F_T, room);
+        fitText('옷장 · 뽑기 기계 · 업적을 쓰고', tx, my + 4, 19, '#5d4f58', 'left', F_B, room);
+        fitText('기기를 바꿔도 그대로 이어져요', tx, my + 34, 19, '#5d4f58', 'left', F_B, room);
+        PV.forEach(([id, t, f], i) => button(t, LY.m + LY.w - LY.pad - bw, my - colH / 2 + i * (bh + bg), bw, bh, () => signIn(id), { size: 24, fill: f, icon: (cx, cy) => brandLogo(id, cx, cy) }));
       } else {
         const P = acct.prof;
         text('닉네임', W / 2, py + 50, 21, '#7a6872', 'center', null, F_B);
