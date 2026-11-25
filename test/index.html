@@ -4932,8 +4932,11 @@ function drawFrame0() {
   canvas.style.cursor = hitTest(mouse) ? 'pointer' : 'default'; }
 let edgeKey = ''; const themeMeta = document.querySelector('meta[name=theme-color]');
 function matchEdges() { // the page behind the game and the browser's bar take the colour at the game's top, known from the scene (the canvas is never read back: reading it, and layers kept under it, can leave a phone drawing it soft)
-  const top = scene === 'hall' ? '#2a2232' : (scene === 'play' || scene === 'pause' || scene === 'help' || scene === 'lessons') && m ? ({ hard: '#d8ecff', grass: '#eaf5fb', clay: '#e6eff8' }[m.court] || '#d8ecff') : '#fff3dc';
-  if (top === edgeKey) return; edgeKey = top; document.documentElement.style.backgroundColor = top; document.body.style.backgroundColor = top; if (themeMeta) themeMeta.content = top;
+  const match = (scene === 'play' || scene === 'pause' || scene === 'help' || scene === 'lessons') && m, C = match && COURTS[m.court];
+  const top = scene === 'hall' ? '#2a2232' : match ? ({ hard: '#d8ecff', grass: '#eaf5fb', clay: '#e6eff8' }[m.court] || '#d8ecff') : '#fff3dc';
+  const bot = scene === 'hall' ? '#33241d' : C ? C.ground : (Math.floor((H - 1 - LY.sb) / 56) % 2 ? '#a2e3c8' : '#aeead2'); // the menus' stripe that ends the page, the hall's floor, the court's ground
+  const key = top + bot; if (key === edgeKey) return; edgeKey = key; const bg = `linear-gradient(to bottom, ${top} 50%, ${bot} 50%)`; // painted on the page itself: no layer under the canvas, nothing fixed or animated
+  document.documentElement.style.background = bg; document.body.style.background = bg; if (themeMeta) themeMeta.content = top;
 }
 function frame() { tick(); matchEdges(); requestAnimationFrame(frame); }
 // A headless browser on a time budget runs timers but almost no animation frames: a timer
