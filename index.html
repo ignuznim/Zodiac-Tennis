@@ -166,7 +166,10 @@ addEventListener('keyup', e => down.delete(e.code));
 let hot = [], clicks = [], mouse = { x: -1, y: -1 }, OY = 0;
 function toLogical(e) { const r = canvas.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * H }; }
 function hitTest(p) { for (let i = hot.length - 1; i >= 0; i--) { const h = hot[i]; if (p.x >= h.x && p.x <= h.x + h.w && p.y >= h.y && p.y <= h.y + h.h) return h; } return null; }
-function btn(x, y, w, h, fn, key) { hot.push({ x, y: y + OY, w, h, fn, key }); return mouse.x >= x && mouse.x <= x + w && mouse.y >= y + OY && mouse.y <= y + OY + h; }
+let HX = null; // a window drawn larger than it is laid out: its taps scaled the same way about its centre
+const hxMap = (x, y, w, h) => HX ? [HX.cx + (x - HX.cx) * HX.s, HX.cy + (y - HX.cy) * HX.s, w * HX.s, h * HX.s] : [x, y, w, h];
+const bigWin = (w, h) => Math.min(1.3, (H - 40) / h, (W - 48) / w); // the windows read larger on a phone: up to 130%, as the screen allows
+function btn(x, y, w, h, fn, key) { [x, y, w, h] = hxMap(x, y, w, h); hot.push({ x, y: y + OY, w, h, fn, key }); return mouse.x >= x && mouse.x <= x + w && mouse.y >= y + OY && mouse.y <= y + OY + h; }
 let touchUI = (window.matchMedia && matchMedia('(pointer: coarse)').matches) || params.get('touch') === '1'; // a phone or tablet: joystick and big buttons
 const held = new Map();                    // pointer id -> the key that finger holds
 const stick = { id: null, x: 0, y: 0 };    // the on-screen joystick, -1..1 each way
@@ -1947,7 +1950,7 @@ function topIcon(kind, x, y) { // the little pictures on the round buttons at th
   ctx.restore();
 }
 function iconBtn(x, y, kind, fn) { // the small square buttons: home and sound
-  const over = btn(x, y, 56, 54, fn), d = sink(x, y, 56, 54, 3);
+  FIX.push(['i:' + kind, x, y + OY, 56, 54]); const over = btn(x, y, 56, 54, fn), d = sink(x, y, 56, 54, 3);
   rr(x, y + 3, 56, 54, 14, OUT, null); rr(x, y + d, 56, 54, 14, hoverOn(over) ? '#fff3c4' : 'rgba(255,248,231,0.95)', OUT); y += d;
   ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; ctx.lineJoin = 'round';
   const cx = x + 28, cy = y + 28;
@@ -2340,10 +2343,12 @@ function gearKey(cx, cy, r, fn) { // a round key with a cog on it: settings
   ctx.fillStyle = '#9a8b93'; ctx.fill(); ctx.lineWidth = 1.4; ctx.stroke(); E(cx, cy, R * 0.42, R * 0.42, over ? '#fff3c4' : '#ffffff'); ctx.restore();
 }
 function drawScoreCard(r, i) { // how a record's score was made: who played, dressed as they were, on which court, then the sum the server works out
-  ctx.fillStyle = 'rgba(59,51,64,0.55)'; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, () => { rank.sel = -1; }); // a tap anywhere closes it
+  const PQ = popIn(scene === 'hall' ? clock.now() - (rank.selAt || 0) : 1);
+  ctx.fillStyle = `rgba(59,51,64,${0.55 * PQ.a})`; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, () => { rank.sel = -1; }); // a tap anywhere closes it
   const mul = [0, 1, 1.35, 1.8][r.level] || 1, margin = Math.max(0, r.pts_for - r.pts_against), base = 300 + margin * 30 + r.sweet * 6 + (r.combo || 0) * 6, lc = ['', '#3d9be0', '#4f9a6a', '#e2574c'][r.level] || INK;
   const rows = [['승리', '', 300], ['점수 차', `${margin} × 30`, margin * 30], ["'딱!'", `${r.sweet} × 6`, r.sweet * 6], ['콤보', `${r.combo || 0} × 6`, (r.combo || 0) * 6]];
-  const w = 470, x = (W - w) / 2, top = 134, rh = 38, h = 22 + top + 18 + rows.length * rh + 10 + 44 + 8 + 54 + 22, y = Math.max(LY.top - 40, (H - h) / 2), L0 = x + 20, R0 = x + w - 20;
+  const w = 470, x = (W - w) / 2, top = 134, rh = 38, h = 22 + top + 18 + rows.length * rh + 10 + 44 + 8 + 54 + 22, S = bigWin(w, h), cy0 = H / 2, y = cy0 - h / 2, L0 = x + 20, R0 = x + w - 20;
+  ctx.save(); ctx.translate(W / 2, cy0); ctx.scale(PQ.k * S, PQ.k * S); ctx.translate(-W / 2, -cy0); ctx.globalAlpha = PQ.a; HX = { cx: W / 2, cy: cy0, s: S };
   rr(x, y + 6, w, h, 24, 'rgba(59,51,64,0.35)', null); rr(x, y, w, h, 24, '#fffaf0', OUT, 3); btn(x, y, w, h, () => {}); // a tap on the card itself keeps it open; only outside closes it
   { const worn = {}; for (const id of (r.gear || '').split(',')) { const it = item(id); if (it) worn[it.slot] = id; } // the player, as dressed for this record
     const bx = L0, by = y + 22, bs = top; rr(bx, by, bs, bs, 16, '#fbf6ea', null); ctx.save(); rr(bx, by, bs, bs, 16, null, null); ctx.clip(); irwol(bx, by, bs); ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(bx, by, bs, bs); ctx.restore(); rr(bx, by, bs, bs, 16, null, '#d9cbbd', 2); ctx.save(); ctx.beginPath(); ctx.rect(bx + 2, by + 2, bs - 4, bs - 4); ctx.clip(); ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(r.animal, bx + bs / 2, by + bs - 7, 0.7, { front: true, t: 0.4, accent: CORAL, gear: worn }); ctx.restore();
@@ -2358,6 +2363,7 @@ function drawScoreCard(r, i) { // how a record's score was made: who played, dre
   cy = yy + 27; rr(L0 - 10, yy, R0 - L0 + 20, 54, 16, '#fdf0d0', '#e3a46a', 2.4);
   text(`× ${mul}`, L0 + 4, cy, 24, lc, 'left', null, F_N); text(`(${LEVEL_KO[r.level] || ''})`, L0 + 4 + textW(`× ${mul}`, 24, F_N) + 10, cy, 20, lc, 'left', null, F_T);
   text(`= ${r.score.toLocaleString()}점`, R0, cy, 28, INK, 'right', null, F_N);
+  ctx.restore(); HX = null;
 }
 function drawHall() {
   OY = 0; computeLayout();
@@ -2399,7 +2405,7 @@ function drawHall() {
   const L = rank.list || [], col = ['#f6c445', '#cfd8e3', '#e6a46a'];
   for (const pos of [0, 2, 1]) { const ri = [1, 0, 2][pos], r = L[ri], rank1 = pos === 1, kk = k * (rank1 ? 1 : 0.86), w = 150 * kk, h = 250 * kk, cx = W / 2 + (pos - 1) * (140 * k + 36), yy = base - 40 - h + (rank1 ? 0 : 30 * k), c = col[[1, 0, 2][pos]];
     const glow = ctx.createRadialGradient(cx, yy + h / 2, 10, cx, yy + h / 2, 140 * kk); glow.addColorStop(0, rank1 ? `rgba(246,196,69,${0.28 + 0.1 * Math.sin(t * 2.2)})` : 'rgba(255,240,220,0.16)'); glow.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = glow; ctx.fillRect(cx - 160 * kk, yy - 60, 320 * kk, h + 140);
-    if (r && r.sweet != null) btn(cx - w / 2, yy, w, h, () => { rank.sel = ri; tone(660, 0.05, 'sine', 0.15); }); // a tap shows how the score was made
+    if (r && r.sweet != null) btn(cx - w / 2, yy, w, h, () => { rank.sel = ri; rank.from = [cx - w / 2, yy, w, h]; rank.selAt = clock.now(); tone(660, 0.05, 'sine', 0.15); }); // a tap shows how the score was made
     rr(cx - w / 2 - 14, yy + h - 6, w + 28, 34 * kk, 6, '#3a2f3e', '#1e1822', 3);
     ctx.beginPath(); ctx.moveTo(cx - w / 2, yy + h); ctx.lineTo(cx - w / 2, yy + 40 * kk); ctx.quadraticCurveTo(cx - w / 2, yy, cx, yy); ctx.quadraticCurveTo(cx + w / 2, yy, cx + w / 2, yy + 40 * kk); ctx.lineTo(cx + w / 2, yy + h); ctx.closePath();
     ctx.fillStyle = '#4a1d22'; ctx.fill(); ctx.lineWidth = 5; ctx.strokeStyle = c; ctx.stroke();
@@ -2420,7 +2426,7 @@ function drawHall() {
     for (let i = 3; i < 10; i++) { const r = L[i], y = listTop + 20 + (i - 3) * rowH + rowH / 2;
       text((i + 1) + '', LY.m + 60, y, 22, '#2e2733', 'center', null, F_N);
       ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(LY.m + 44, y + rowH / 2); ctx.lineTo(LY.m + LY.w - 44, y + rowH / 2); ctx.stroke();
-      if (!r) continue; if (r.sweet != null) btn(LY.m + 20, y - rowH / 2, LY.w - 40, rowH, () => { rank.sel = i; tone(660, 0.05, 'sine', 0.15); }); const worn = {}; for (const id of (r.gear || '').split(',')) { const it = item(id); if (it) worn[it.slot] = id; }
+      if (!r) continue; if (r.sweet != null) btn(LY.m + 20, y - rowH / 2, LY.w - 40, rowH, () => { rank.sel = i; rank.from = [LY.m + 20, y - rowH / 2, LY.w - 40, rowH]; rank.selAt = clock.now(); tone(660, 0.05, 'sine', 0.15); }); const worn = {}; for (const id of (r.gear || '').split(',')) { const it = item(id); if (it) worn[it.slot] = id; }
       ctx.lineWidth = 2; ctx.strokeStyle = OUT; drawAnimal(r.animal, LY.m + 110, y + 12, 0.26, { front: true, t: 0.4, accent: CORAL, gear: worn });
       text(r.nickname, LY.m + 142, y, 22, '#2a2330', 'left', null, F_T); text(LEVEL_KO[r.level] || '', LY.m + 430, y, 19, '#4a3d47', 'center', null, F_T); text(r.score.toLocaleString(), LY.m + LY.w - 44, y, 23, '#2a2330', 'right', null, F_N); } }
   // the doors: shut when you come in, then they swing open
@@ -2434,7 +2440,7 @@ function drawHall() {
       E(sd < 0 ? x + half - 26 : x + 26, (dTop + dBot) / 2, 12, 12, '#c8963a'); E(sd < 0 ? x + half - 26 : x + 26, (dTop + dBot) / 2, 6, 6, '#5a1f22', 0, true); } }
   // buttons, where every menu keeps them
   const gb = (label, x, w, fill, ink, fn) => { const over = btn(x, LY.bot, w, LY.btnH, fn); rr(x, LY.bot + 5, w, LY.btnH, 18, '#1a1218', null); rr(x, LY.bot, w, LY.btnH, 18, over ? (fill === '#c8963a' ? '#dcaa4c' : '#3a2428') : fill, fill === '#c8963a' ? '#3a2010' : '#c8963a', 3); text(label, x + w / 2, LY.bot + LY.btnH / 2 + 1, 28, ink, 'center', null, F_T); };
-  gb('랭킹', LY.m, LY.side, '#2a1a1c', '#f6c445', () => { scene = 'ranking'; loadTierBoard(); });
+  gb('랭킹', LY.m, textW('랭킹', 28, F_T) + 64, '#2a1a1c', '#f6c445', () => { scene = 'ranking'; loadTierBoard(); });
   refreshBtn(rank.loading, () => loadRanking(null, 'all'), true);
   text('지금까지 컴퓨터를 이긴 모든 기록 중 TOP 10', W / 2, LY.foot, 20, '#e9dcef', 'center', null, F_B);
   if (L[rank.sel] && L[rank.sel].sweet != null && (state.hallT || 0) > 1.5) drawScoreCard(L[rank.sel], rank.sel); // over the hall once the doors are open
@@ -3088,7 +3094,7 @@ function pull() { // the machine: the crank turns while the server picks
 }
 const PULLS = [1, 5, 10];
 function pullBtn() { // the 뽑기 button with − and + at its ends: how many at once, and the middle pulls
-  const G = acct.g, T = acct.prof.tickets, x = LY.m + LY.side + LY.gap, w = LY.w - LY.side - LY.gap, y = LY.bot, h = LY.btnH, sq = h - 20, zone = sq + 20;
+  const G = acct.g, T = acct.prof.tickets, w = Math.min(420, LY.w - 2 * (LY.btnH + LY.gap)), x = LY.m + LY.w - w, y = LY.bot, h = LY.btnH, sq = h - 20, zone = sq + 20;
   if (!PULLS.includes(G.n)) G.n = 1; const i = PULLS.indexOf(G.n), canDown = i > 0, canUp = i < 2 && T >= PULLS[i + 1];
   const mid = btn(x + zone, y, w - zone * 2, h, pull);
   if (canDown) btn(x, y, zone, h, () => { G.n = PULLS[i - 1]; tone(660, 0.05, 'sine', 0.16); });
@@ -3378,7 +3384,7 @@ function drawGachaTab(y0, end) {
     itemIcon(r.item, W / 2, py + ph * 0.42, 130 * Math.min(1, G.t * 4));
     text(it.name, W / 2, py + ph - 96, 34, INK, 'center', null, F_T);
     text(`${SLOTS.find(s => s[0] === it.slot)[1]} · ${STAT_NAME[it.stat]} +${it.amt}`, W / 2, py + ph - 52, 23, c, 'center', null, F_T);
-    button('전체 아이템 보기', W / 2 - 150, py + ph + 18, 300, 60, () => { G.phase = 'idle'; openCloset('wardrobe', null); }, { size: 24, fill: '#eef7ff' });
+    button('전체 아이템 보기', LY.m + LY.w - (textW('전체 아이템 보기', 24, F_T) + 56), py + ph + 18, textW('전체 아이템 보기', 24, F_T) + 56, 60, () => { G.phase = 'idle'; openCloset('wardrobe', null); }, { size: 24, fill: '#eef7ff' });
     for (let i = 0; i < 8; i++) { const a = i / 8 * 6.283 + G.t, rr2 = 150 + Math.sin(G.t * 3 + i) * 10; star(W / 2 + Math.cos(a) * rr2, py + ph * 0.42 + Math.sin(a) * rr2 * 0.7, 9, i % 2 ? '#fff' : c); }
   }
 }
@@ -3403,7 +3409,7 @@ function drawManyPrizes(G, y0, h) { // five or ten prizes: a grid, best first; t
   ctx.font = `26px ${F_T}`; const nw = ctx.measureText(it.name).width, room = inner - 40 - gw - 16;
   text(it.name, x0 + 44 + gw + 14, dy + 29, Math.max(MIN_TEXT, nw > room ? 26 * room / nw : 26), INK, 'left', null, F_T);
   text(`${SLOTS.find(s => s[0] === it.slot)[1]} · ${STAT_NAME[it.stat]} +${it.amt}`, x0 + 44, dy + 63, 21, c, 'left', null, F_T);
-  button('전체 아이템 보기', W / 2 - 150, py + ph + 14, 300, 60, () => { G.phase = 'idle'; openCloset('wardrobe', null); }, { size: 24, fill: '#eef7ff' });
+  button('전체 아이템 보기', LY.m + LY.w - (textW('전체 아이템 보기', 24, F_T) + 56), py + ph + 14, textW('전체 아이템 보기', 24, F_T) + 56, 60, () => { G.phase = 'idle'; openCloset('wardrobe', null); }, { size: 24, fill: '#eef7ff' });
 }
 function capsule(x, y, r, c, rot) { ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.lineWidth = 2.4; ctx.strokeStyle = OUT;
   ctx.beginPath(); ctx.arc(0, 0, r, Math.PI, 0); ctx.closePath(); ctx.fillStyle = c; ctx.fill(); ctx.stroke();
@@ -3470,13 +3476,14 @@ function computeLayout() { // where the garden ends, the title row, the content 
 // fixed sizes: a card is as tall as what it holds, never stretched to fill
 const SZ = () => ({ format: 150, format4: 132, mode: 116, court: 184, cell: LY.tall ? 120 : 96, info: 262, row: LY.tall ? 46 : 38, result: 448, lobby: 600 });
 
-function setDoubles(d) { if (setup.doubles === d) return; setup.doubles = d; store('zt_dbl', d ? '1' : '0'); tone(760, 0.06, 'sine', 0.18); }
+let dblAt = -9; const mixHex = (a, b, t) => '#' + [1, 3, 5].map(i => Math.round(parseInt(a.substr(i, 2), 16) * (1 - t) + parseInt(b.substr(i, 2), 16) * t).toString(16).padStart(2, '0')).join('');
+function setDoubles(d) { if (setup.doubles === d) return; setup.doubles = d; dblAt = clock.now(); store('zt_dbl', d ? '1' : '0'); tone(760, 0.06, 'sine', 0.18); }
 function drawDoublesSwitch(y, SH) { // 단식 or 복식, a big switch on top of the ways to play; the choice is remembered
-  const x = LY.m, w = LY.w, hw = w / 2;
+  const x = LY.m, w = LY.w, hw = w / 2, to = setup.doubles ? 1 : 0, e = CALM ? 1 : easeOut(Math.min(1, (clock.now() - dblAt) / 0.24)), p = 1 - to + (2 * to - 1) * e; // the thumb slides from the other half
   rr(x, y + 5, w, SH, SH / 2, OUT, null); rr(x, y, w, SH, SH / 2, '#fff8e7', OUT, 3);
-  [['단식', '1 : 1 · 혼자서', false, CORAL, '#6b2a22'], ['복식', '2 : 2 · 파트너와 함께', true, SKY, '#1d4a73']].forEach(([t, sub, d, col, dark], k) => { const on = !!setup.doubles === d, kx = x + k * hw;
+  rr(x + p * hw + 7, y + 7, hw - 14, SH - 14, (SH - 14) / 2, mixHex(CORAL, SKY, p), OUT, 3);
+  [['단식', '1 : 1 · 혼자서', false, CORAL, '#6b2a22'], ['복식', '2 : 2 · 파트너와 함께', true, SKY, '#1d4a73']].forEach(([t, sub, d, col, dark], k) => { const on = d ? p > 0.5 : p <= 0.5, kx = x + k * hw;
     btn(kx, y, hw, SH, () => setDoubles(d));
-    if (on) rr(kx + 7, y + 7, hw - 14, SH - 14, (SH - 14) / 2, col, OUT, 3);
     const fx = kx + 60, fy = y + SH / 2; ctx.save(); ctx.translate(fx, fy); ctx.scale(1.4, 1.4); ctx.translate(-fx, -fy);
     if (d) { miniFace(3, fx - 9, fy); miniFace(setup.animal, fx + 9, fy); } else miniFace(setup.animal, fx, fy); ctx.restore();
     const tx = kx + 100, room = hw - 100 - 22; ctx.font = `20px ${F_T}`; const sw = ctx.measureText(sub).width;
@@ -3484,7 +3491,7 @@ function drawDoublesSwitch(y, SH) { // 단식 or 복식, a big switch on top of 
     text(sub, tx, fy + 25, Math.max(MIN_TEXT, sw > room ? 20 * room / sw : 20), on ? dark : '#6f6068', 'left', null, F_T); });
 }
 function menuBegin(title, home) {
-  OY = 0; computeLayout();
+  OY = 0; computeLayout(); barL = 0;
   drawBackdrop('#8fd3b8', LY.sb, LY.tall);
   for (let i = 0; i * 56 < H - LY.sb; i++) { ctx.fillStyle = i % 2 ? '#a2e3c8' : '#aeead2'; ctx.fillRect(0, LY.sb + i * 56, W, 56); }
   ctx.save();
@@ -3497,14 +3504,38 @@ const cardH = n => (contentEnd() - LY.top - LY.gap * (n - 1)) / n; // n cards fi
 function panel(x, y, w, h) { rr(x, y, w, h, 24, 'rgba(255,248,231,0.96)', OUT); }
 const PRESS = new Map();
 function sink(x, y, w, h, depth = 4) { // press feedback: how far a held button has gone down into its shadow, 100 ms in and 160 ms back out, eased
-  const k = Math.round(x) + ',' + Math.round(y) + ',' + Math.round(w), now = clock.now(), P = PRESS.get(k) || { d: 0, t: now }, dt = Math.min(0.1, now - P.t);
+  [x, y, w, h] = hxMap(x, y, w, h); const k = Math.round(x) + ',' + Math.round(y) + ',' + Math.round(w), now = clock.now(), P = PRESS.get(k) || { d: 0, t: now }, dt = Math.min(0.1, now - P.t);
   const inside = ptrDown && mouse.x >= x && mouse.x <= x + w && mouse.y >= y + OY && mouse.y <= y + OY + h, tgt = inside ? depth : 0;
   P.d += (tgt - P.d) * (1 - Math.exp(-dt / ((inside ? 0.1 : 0.16) / 3))); P.t = now; PRESS.set(k, P); return P.d;
 }
 const hoverOn = over => over && !touchUI; // a hover tint is for a mouse; on a phone the finger only presses
 function card(x, y, w, h, fn, on, fill) { const over = btn(x, y, w, h, fn), pr = sink(x, y, w, h) > 1; rr(x, y + 5, w, h, 20, OUT, null); rr(x, y, w, h, 20, on ? '#fff3c4' : pr ? '#fffbe8' : hoverOn(over) ? '#fffdf3' : fill || 'rgba(255,248,231,0.96)', on ? CORAL : OUT, on ? 5 : 3); } // its picture is drawn by the caller, so a card lightens when pressed rather than sinking
-function sideBtn(label, fn) { button(label, LY.m, LY.bot, LY.side, LY.btnH, fn, { size: 28 }); }
-function mainBtn(label, fn) { button(label, LY.m + LY.side + LY.gap, LY.bot, LY.w - LY.side - LY.gap, LY.btnH, fn, { size: 31, fill: '#fff3c4' }); }
+// The bottom row, the same on every page: a square key at the left (back or home), the main button in the middle sized to its words,
+// another square key at the right where there is one (refresh). A worded way out (방 목록, 방 닫기) sits at the left sized to its words.
+let barL = 0; // where the left part of the bottom row ends, so the middle button keeps clear of it
+function backKey(kind, fn) { // a square key: an arrow back, or a house for home
+  const s = LY.btnH, x = LY.m, y = LY.bot; FIX.push(['k:' + kind, x, y + OY, s, s]); const over = btn(x, y, s, s, fn), d = sink(x, y, s, s);
+  rr(x, y + 5, s, s, 18, OUT, null); rr(x, y + d, s, s, 18, hoverOn(over) ? '#fffdf3' : '#fff8e7', OUT, 3);
+  const cx = x + s / 2, cy = y + d + s / 2; ctx.save(); ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; ctx.lineJoin = 'round';
+  if (kind === 'home') { poly([cx - 18, cy - 2, cx, cy - 19, cx + 18, cy - 2], CORAL); rr(cx - 13, cy - 3, 26, 19, 3, CREAM, OUT, 2.6); rr(cx - 4, cy + 4, 8, 12, 2, '#f1c9a5', OUT, 2); }
+  else { ctx.lineCap = 'round'; ctx.lineWidth = 5; ctx.strokeStyle = INK; ctx.beginPath(); ctx.moveTo(cx + 13, cy); ctx.lineTo(cx - 12, cy); ctx.moveTo(cx - 2, cy - 11); ctx.lineTo(cx - 13, cy); ctx.lineTo(cx - 2, cy + 11); ctx.stroke(); }
+  ctx.restore(); barL = x + s;
+}
+function iconKey(x, y, s, kind, fn, fill) { // a square key with a picture: plus (make), key (a code), pencil (edit)
+  FIX.push(['k:' + kind, x, y + OY, s, s]); const over = btn(x, y, s, s, fn), d = sink(x, y, s, s, s > 50 ? 4 : 3);
+  rr(x, y + (s > 50 ? 5 : 3), s, s, s * 0.26, OUT, null); rr(x, y + d, s, s, s * 0.26, hoverOn(over) ? '#fffdf3' : fill || '#fff8e7', OUT, s > 50 ? 3 : 2.4);
+  const cx = x + s / 2, cy = y + d + s / 2, k = s / 68; ctx.save(); ctx.translate(cx, cy); ctx.scale(k, k); ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.strokeStyle = OUT;
+  if (kind === 'plus') { ctx.lineWidth = 7; ctx.strokeStyle = INK; ctx.beginPath(); ctx.moveTo(-15, 0); ctx.lineTo(15, 0); ctx.moveTo(0, -15); ctx.lineTo(0, 15); ctx.stroke(); }
+  else if (kind === 'key') { ctx.rotate(-0.6); ctx.lineWidth = 2.6; rr(-4, -4, 26, 8, 3, BALL, OUT, 2.6); rr(12, 3, 5, 8, 1.5, BALL, OUT, 2.2); rr(18, 3, 4, 6, 1.5, BALL, OUT, 2.2); E(-12, 0, 12, 12, BALL); E(-12, 0, 4.5, 4.5, '#fff8e7'); }
+  else if (kind === 'pencil') { ctx.rotate(-0.78); ctx.lineWidth = 2.8; rr(-14, -6, 26, 12, 2, BALL, OUT, 2.8); poly([12, -6, 23, 0, 12, 6], '#f1c9a5'); poly([19.5, -2, 23, 0, 19.5, 2], INK); rr(-21, -6, 8, 12, 2.5, CORAL, OUT, 2.8); }
+  ctx.restore();
+}
+function sideBtn(label, fn) {
+  if (label === '뒤로') return backKey('back', fn); if (label === '홈으로') return backKey('home', fn);
+  const w = Math.max(LY.btnH, textW(label, 26, F_T) + 56); button(label, LY.m, LY.bot, w, LY.btnH, fn, { size: 26 }); barL = LY.m + w;
+}
+function midW(label, size = 31) { const room = LY.m + LY.w - Math.max(barL, LY.m + LY.btnH) - LY.gap; return Math.min(room, Math.max(260, textW(label, size, F_T) + 96)); } // words plus padding, kept clear of the key at the left
+function mainBtn(label, fn) { const w = midW(label); button(label, LY.m + LY.w - w, LY.bot, w, LY.btnH, fn, { size: 31, fill: '#fff3c4' }); }
 function refreshBtn(loading, fn, dark) { // a square key at the right of the bottom row: two arrows chasing round, turning while it loads
   const s = LY.btnH, x = LY.m + LY.w - s, y = LY.bot, over = btn(x, y, s, s, () => { if (!loading) fn(); });
   const d0 = sink(x, y, s, s); rr(x, y + 5, s, s, 18, dark ? '#1a1218' : OUT, null); rr(x, y + d0, s, s, 18, dark ? (hoverOn(over) ? '#dcaa4c' : '#c8963a') : hoverOn(over) ? '#fffdf3' : '#fff3c4', dark ? '#3a2428' : OUT, 3);
@@ -3515,9 +3546,9 @@ function refreshBtn(loading, fn, dark) { // a square key at the right of the bot
     ctx.beginPath(); ctx.moveTo(hx + tx * L * 0.9, hy + ty * L * 0.9); ctx.lineTo(hx + nx * L * 0.6 - tx * 2, hy + ny * L * 0.6 - ty * 2); ctx.lineTo(hx - nx * L * 0.6 - tx * 2, hy - ny * L * 0.6 - ty * 2); ctx.closePath(); ctx.fill(); }
   ctx.restore();
 }
-function wideBtn(label, fn) { button(label, LY.m, LY.bot, LY.w, LY.btnH, fn, { size: 31, fill: '#fff3c4' }); }
+function wideBtn(label, fn) { const w = midW(label); button(label, LY.m + LY.w - w, LY.bot, w, LY.btnH, fn, { size: 31, fill: '#fff3c4' }); }
 function button(label, x, y, w, h, fn, o = {}) { // a big rounded button, for the mouse and for show
-  const over = btn(x, y, w, h, fn), on = o.on, d = sink(x, y, w, h);
+  FIX.push([label, x, y + OY, w, h]); const over = btn(x, y, w, h, fn), on = o.on, d = sink(x, y, w, h);
   rr(x, y + 5, w, h, 18, OUT, null);
   rr(x, y + d, w, h, 18, on ? '#fff3c4' : hoverOn(over) ? '#fffdf3' : o.fill || 'rgba(255,248,231,0.96)', on ? CORAL : OUT, on ? 5 : 3); y += d;
   if (o.sub) { text(label, x + LY.pad, y + h / 2 - 18, o.size || 27, INK, 'left', null, F_T); text(o.sub, x + LY.pad, y + h / 2 + 22, 21, '#7a6872', 'left', null, F_B); }
@@ -3597,13 +3628,13 @@ async function tierReport() { // the match into my tier score: against the compu
 function closeGift() { if (giftHere() && matchGift.open && clock.now() - matchGift.at >= 2) { matchGift.open = false; tone(660, 0.05, 'sine', 0.15); } }
 function drawGift() { // on the results: the card first (tickets, the tier score), then a badge beside 승리!/패배
   if (!giftHere()) return; const g = matchGift, T = g.tier, ti = T ? tierOf(T) : 0;
-  if (!g.open) { const x = W / 2 + textW(m.sc.winner === view % 2 ? '승리!' : '패배', 76) / 2 + 42, y = LY.titleY + 4;
+  if (!g.open) { const x = W / 2 + textW(m.sc.winner === view % 2 ? '승리!' : '패배', 76) / 2 + 42, y = LY.titleY - 14;
     if (g.n) { ticketPic(x, y, 1.05, -0.12); rr(x + 16, y - 34, 50, 32, 16, CORAL, OUT, 2.4); text(`+${g.n}`, x + 41, y - 18, 22, '#ffffff', 'center', null, F_T); }
     else if (T) { drawTier(ti, x, y, 22); const s0 = (T.delta >= 0 ? '+' : '') + T.delta, bw = textW(s0, 20, F_T) + 22; rr(x + 14, y - 34, bw, 32, 16, T.delta >= 0 ? '#4f9a6a' : '#e2574c', OUT, 2.4); text(s0, x + 14 + bw / 2, y - 18, 20, '#ffffff', 'center', null, F_T); }
     return; }
-  const age = clock.now() - g.at, k = 0.85 + 0.15 * Math.min(1, age / 0.18), w = 470, bh1 = g.n ? 100 : 0, bh2 = T ? 120 : 0, h = 20 + bh1 + bh2 + 44, x = (W - w) / 2, y = LY.top + 90;
-  ctx.fillStyle = 'rgba(59,51,64,0.35)'; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, closeGift); btn(x, y, w, h, () => {});
-  ctx.save(); ctx.translate(W / 2, y + h / 2); ctx.scale(k, k); ctx.translate(-W / 2, -(y + h / 2));
+  const age = clock.now() - g.at, PQ = popIn(age), k = PQ.k, w = 470, bh1 = g.n ? 100 : 0, bh2 = T ? 120 : 0, h = 20 + bh1 + bh2 + 44, x = (W - w) / 2, S = bigWin(w, h), y = LY.top + 90 + (S - 1) * h / 2;
+  ctx.fillStyle = `rgba(59,51,64,${0.35 * PQ.a})`; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, closeGift); HX = { cx: W / 2, cy: y + h / 2, s: S }; btn(x, y, w, h, () => {});
+  ctx.save(); ctx.translate(W / 2, y + h / 2); ctx.scale(k * S, k * S); ctx.translate(-W / 2, -(y + h / 2)); ctx.globalAlpha = PQ.a;
   rr(x, y + 6, w, h, 26, 'rgba(59,51,64,0.35)', null); rr(x, y, w, h, 26, '#fffaf0', OUT, 3);
   let yy = y + 20;
   if (g.n) { ticketPic(x + 92, yy + 50, 1.6, -0.15); text('경기 보상!', x + 178, yy + 30, 30, CORAL, 'left', null, F_T); fitText(`뽑기권 ${g.n}장을 받았어요`, x + 178, yy + 70, 24, INK, 'left', F_T, w - 198); yy += bh1; }
@@ -3612,7 +3643,7 @@ function drawGift() { // on the results: the card first (tickets, the tier score
     drawTier(ti, x + 92, yy + 60, 38); text(up ? `${TIERS[ti].n} 승급!` : down ? '품계가 내려갔어요' : '티어 점수', x + 178, yy + 32, 26, up ? CORAL : down ? '#7f8fb5' : '#7a6872', 'left', null, F_T);
     const s1 = `${TIERS[ti].n} · ${T.rating.toLocaleString()}점 `, d1 = `${T.delta >= 0 ? '+' : ''}${T.delta}`; fitText(s1, x + 178, yy + 66, 24, col, 'left', F_T, w - 260); text(d1, x + 178 + Math.min(textW(s1, 24, F_T), w - 260) + 4, yy + 66, 24, T.delta >= 0 ? '#4f9a6a' : '#e2574c', 'left', null, F_N);
     fitText(tierNext(T), x + 178, yy + 96, MIN_TEXT, '#9a8b93', 'left', F_B, w - 198); yy += bh2; }
-  text(age >= 2 ? '바깥을 누르면 닫혀요' : ' ', W / 2, y + h - 24, MIN_TEXT, '#9a8b93', 'center', null, F_B); ctx.restore();
+  text(age >= 2 ? '바깥을 누르면 닫혀요' : ' ', W / 2, y + h - 24, MIN_TEXT, '#9a8b93', 'center', null, F_B); ctx.restore(); HX = null;
 }
 async function logPlay() { // a line in the owner's play log for every finished match (supabase/6_plays.sql); players cannot read it back
   if (setup.practice || !m || !m.sc.done) return;
@@ -3709,20 +3740,20 @@ function openProfile(nick) { // mine, or another member's (from the ranking or a
 }
 function drawSettings() { // the cog's menu, over my profile: nickname, linked sign-ins, signing out; a tap outside closes only the menu
   const U = acct.user || {}, ids = (U.identities || []).map(d => d.provider), on = acct.providers || ['google', 'kakao'], PV = [['google', 'Google'], ['kakao', '카카오'], ['apple', 'Apple']].filter(q => on.includes(q[0]));
-  const w = 400, rh = 48, h = 20 + 30 + 14 + 48 + 16 + 26 + 8 + PV.length * rh + 16 + 48 + 20, x = (W - w) / 2, y = Math.max(16, (H - h) / 2), L0 = x + 20, R0 = x + w - 20, k = 0.9 + 0.1 * Math.min(1, (prof.mt || 0) / 0.15);
-  ctx.fillStyle = 'rgba(59,51,64,0.4)'; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, () => { prof.menu = false; }); btn(x, y, w, h, () => {});
-  ctx.save(); ctx.translate(W / 2, y + h / 2); ctx.scale(k, k); ctx.translate(-W / 2, -(y + h / 2));
+  const w = 400, rh = 48, h = 20 + 30 + 14 + 48 + 16 + 26 + 8 + PV.length * rh + 16 + 48 + 20, x = (W - w) / 2, S = bigWin(w, h), y = H / 2 - h / 2, L0 = x + 20, R0 = x + w - 20, PQ = popIn(prof.mt || 0), k = PQ.k * S;
+  ctx.fillStyle = `rgba(59,51,64,${0.4 * PQ.a})`; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, () => { prof.menu = false; }); HX = { cx: W / 2, cy: H / 2, s: S }; btn(x, y, w, h, () => {});
+  ctx.save(); ctx.translate(W / 2, y + h / 2); ctx.scale(k, k); ctx.translate(-W / 2, -(y + h / 2)); ctx.globalAlpha = PQ.a;
   rr(x, y + 6, w, h, 22, 'rgba(59,51,64,0.35)', null); rr(x, y, w, h, 22, '#fffaf0', OUT, 3);
   let yy = y + 20; text('설정', W / 2, yy + 15, 24, INK, 'center', null, F_T); yy += 30 + 14;
   rr(L0, yy, R0 - L0, 48, 14, '#ffffff', '#e6dccd', 2); text('닉네임', L0 + 16, yy + 24, MIN_TEXT, '#7a6872', 'left', null, F_B); fitText((acct.prof && acct.prof.nickname) || '-', L0 + 84, yy + 24, 20, INK, 'left', F_T, R0 - L0 - 190);
-  button('변경', R0 - 86, yy + 7, 76, 34, () => { prof.menu = false; openNick('profile'); }, { size: 18 }); yy += 48 + 16;
+  iconKey(R0 - 46, yy + 6, 34, 'pencil', () => { prof.menu = false; openNick('profile'); }); yy += 48 + 16;
   text('연동 계정', L0, yy + 13, 19, INK, 'left', null, F_T); text('여러 계정으로 같은 기록에 로그인', R0, yy + 13, MIN_TEXT, '#9a8b93', 'right', null, F_B); yy += 26 + 8;
   PV.forEach(([id, nm], i) => { const cy = yy + rh / 2, linked = ids.includes(id); if (i) { ctx.fillStyle = '#efe7da'; ctx.fillRect(L0, yy, R0 - L0, 1); }
     E(L0 + 14, cy, 6, 6, linked ? '#4fc37a' : '#d9cbbd', 0, true); text(nm, L0 + 30, cy, 20, INK, 'left', null, F_T);
     if (linked) text('연동됨', R0 - 10, cy, MIN_TEXT, '#4f9a6a', 'right', null, F_T);
     else button('연동하기', R0 - 96, cy - 17, 96, 34, () => linkAccount(id), { size: 17, fill: '#fff3c4' }); yy += rh; });
-  yy += 16; { const bw = 140; button('로그아웃', W / 2 - bw / 2, yy, bw, 44, () => { prof.menu = false; prof.open = false; signOut(); }, { size: 19 }); }
-  ctx.restore();
+  yy += 16; { const bw = 140; button('로그아웃', R0 - bw, yy, bw, 44, () => { prof.menu = false; prof.open = false; signOut(); }, { size: 19 }); }
+  ctx.restore(); HX = null;
 }
 function linkAccount(provider) { // one more way to sign in to the same record; the server must allow manual linking (Supabase: Authentication -> Sign In / Providers)
   if (!acct.sb || !acct.sb.auth.linkIdentity) { toast('연동 기능을 불러오지 못했어요'); return; }
@@ -3733,10 +3764,10 @@ function drawProfile() { // a member's record, packed like the score card: who, 
   const favI = favOf(P), name = other ? other.nickname : (A.nickname || '나'), vs = other && other.vs && other.vs.w + other.vs.l > 0 ? other.vs : null, RV = !other ? (prof.rivals || []) : [];
   const h = other ? 20 + 100 + 14 + 58 + 14 + 28 + 4 * 40 + (vs ? 8 + 44 : 0) + 16
                   : 20 + 100 + 14 + 58 + 12 + 24 + 5 * 30 + 2 + 10 + 2 * 28 + 12 + 28 + (RV.length ? RV.length * 52 : 36) + 14;
-  ctx.fillStyle = 'rgba(59,51,64,0.55)'; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, () => { prof.open = false; });
-  const w = 470, x = (W - w) / 2, y = Math.max(16, (H - h) / 2), L0 = x + 20, R0 = x + w - 20, k = 0.9 + 0.1 * Math.min(1, prof.t / 0.15);
-  btn(x, y, w, h, () => {});
-  ctx.save(); ctx.translate(W / 2, y + h / 2); ctx.scale(k, k); ctx.translate(-W / 2, -(y + h / 2));
+  const PQ = popIn(prof.t); ctx.fillStyle = `rgba(59,51,64,${0.55 * PQ.a})`; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, () => { prof.open = false; });
+  const w = 470, x = (W - w) / 2, S = bigWin(w, h), y = H / 2 - h / 2, L0 = x + 20, R0 = x + w - 20, k = PQ.k * S;
+  HX = { cx: W / 2, cy: H / 2, s: S }; btn(x, y, w, h, () => {});
+  ctx.save(); ctx.translate(W / 2, y + h / 2); ctx.scale(k, k); ctx.translate(-W / 2, -(y + h / 2)); ctx.globalAlpha = PQ.a;
   rr(x, y + 6, w, h, 24, 'rgba(59,51,64,0.35)', null); rr(x, y, w, h, 24, '#fffaf0', OUT, 3);
   // who
   const bs = 100, by = y + 20, ai = favI >= 0 ? favI : (other ? 0 : (setup.animal || 0)); rr(L0, by, bs, bs, 16, '#eef7f1', '#d9cbbd', 2); ctx.save(); ctx.beginPath(); ctx.rect(L0 + 2, by + 2, bs - 4, bs - 4); ctx.clip(); ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(ai, L0 + bs / 2, by + bs - 6, 0.64, { front: true, t: prof.t, accent: other ? SKY : CORAL }); ctx.restore();
@@ -3777,7 +3808,7 @@ function drawProfile() { // a member's record, packed like the score card: who, 
       fitText(r.nick, L0 + 50, yy + 15, 19, INK, 'left', F_T, 150); text(`${g}경기${streakOf(r.recent) ? ' · ' + streakOf(r.recent) : ''}`, L0 + 50, yy + 34, MIN_TEXT, '#9a8b93', 'left', null, F_B);
       text(`${r.w}승 ${r.l}패`, R0 - 84, yy + 23, 19, INK, 'right', null, F_N); const f = g ? r.w / g : 0; rr(R0 - 74, yy + 18, 62, 11, 5.5, '#eadfce', null); if (f > 0.02) rr(R0 - 74, yy + 18, 62 * f, 11, 5.5, f >= 0.5 ? '#4f9a6a' : '#e2574c', null); yy += 52; });
   }
-  ctx.restore();
+  ctx.restore(); HX = null;
   if (!other && prof.menu) drawSettings();
 }
 const rival = { key: '', at: 0, vs: null, last: null }; // online singles against a member: our record shown at the start and after
@@ -3848,8 +3879,12 @@ function wrapLines(str, size, font, maxW) { // words to lines that fit maxW; a w
   while (out.length && out[out.length - 1] === '') out.pop(); return out;
 }
 const kDate = t => { const d = new Date(new Date(t).getTime() + 9 * 3600e3); return `${d.getUTCMonth() + 1}월 ${d.getUTCDate()}일`; };
+function noticeGrow(L) { // a note's body unrolls when it opens and rolls back up when it closes, 260 ms; the notes below move with it
+  let off = 0; for (const c of L.cards) { c.y += off; const at = news.openAt && news.openAt[c.n.id]; if (c.body.length && at != null && !CALM) { const u = Math.min(1, (clock.now() - at) / 0.26), full = 10 + c.body.length * 32, e = easeDrawer(u), cut = full * (news.open[c.n.id] ? 1 - e : e); c.h -= cut; off -= cut; } }
+  return { cards: L.cards, height: L.height + off };
+}
 function noticeCards(inner) { // each note as a card: kind and date, the title, and the body only when tapped open; returns the cards and the whole height
-  let y = 0; const cards = (news.list || []).map(n => { const open = !!news.open[n.id], title = wrapLines(n.title, 27, F_T, inner - 40), body = open ? wrapLines(n.body || '', 21, F_B, inner) : [], h = 24 + 32 + 14 + title.length * 36 + (body.length ? 10 + body.length * 32 : 0) + 22;
+  let y = 0; const cards = (news.list || []).map(n => { const at = news.openAt && news.openAt[n.id], open = !!news.open[n.id] || (at != null && !CALM && clock.now() - at < 0.26), title = wrapLines(n.title, 27, F_T, inner - 40), body = open ? wrapLines(n.body || '', 21, F_B, inner) : [], h = 24 + 32 + 14 + title.length * 36 + (body.length ? 10 + body.length * 32 : 0) + 22;
     const c = { n, title, body, y, h }; y += h + 16; return c; });
   return { cards, height: Math.max(0, y - 16) + 8 };
 }
@@ -3962,11 +3997,11 @@ const scenes = {
       if (L && L.length) { const top = newsTop(); if (top > (parseInt(store('zt_news_at')) || 0)) store('zt_news_at', String(top)); } // seen
       if (!L) { panel(LY.m, v0, LY.w, 240); text(news.loading ? '불러오는 중…' : news.err || '불러오는 중…', W / 2, v0 + 120, 26, news.err && !news.loading ? '#e2574c' : INK, 'center', null, F_T); }
       else if (!L.length) { panel(LY.m, v0, LY.w, 240); text('아직 공지가 없어요', W / 2, v0 + 120, 26, '#7a6872', 'center', null, F_T); }
-      else { const pad = 28, inner = LY.w - pad * 2, { cards, height } = noticeCards(inner);
-        scrollView(SCR.notice, v0, v1, 'n' + news.at + ':' + L.length + ':' + Object.keys(news.open).filter(k => news.open[k]).join(','), height, () => {
+      else { const pad = 28, inner = LY.w - pad * 2, { cards, height } = noticeGrow(noticeCards(inner));
+        scrollView(SCR.notice, v0, v1, 'n' + news.at + ':' + L.length + ':' + Object.keys(news.open).filter(k => news.open[k]).join(',') + ':' + cards.map(c => c.h | 0).join(','), height, () => {
           for (const c of cards) { const x = LY.m, n = c.n, [kname, kc] = NOTICE_KIND[n.kind] || NOTICE_KIND.info; let y = c.y + 24;
-            btn(x, c.y, LY.w, c.h, () => { news.open[n.id] = !news.open[n.id]; tone(660, 0.05, 'sine', 0.15); }); // a tap opens the note, another closes it
-            rr(x, c.y, LY.w, c.h, 20, n.pinned ? '#fff8dc' : '#fffaf0', n.pinned ? '#f0a020' : '#d9cbbd', n.pinned ? 3 : 2.4);
+            btn(x, c.y, LY.w, c.h, () => { news.open[n.id] = !news.open[n.id]; (news.openAt = news.openAt || {})[n.id] = clock.now(); tone(660, 0.05, 'sine', 0.15); }); // a tap opens the note, another closes it
+            ctx.save(); rr(x, c.y, LY.w, c.h, 20, n.pinned ? '#fff8dc' : '#fffaf0', n.pinned ? '#f0a020' : '#d9cbbd', n.pinned ? 3 : 2.4); rr(x, c.y, LY.w, c.h, 20, null, null); ctx.clip();
             ctx.font = `19px ${F_T}`; const kw = ctx.measureText(kname).width + 28; rr(x + pad, y, kw, 32, 16, kc, null); text(kname, x + pad + kw / 2, y + 17, 19, '#fff', 'center', null, F_T);
             let tx = x + pad + kw + 10; if (n.pinned) { rr(tx, y, 64, 32, 16, '#fff3c4', '#f0a020', 2); text('고정', tx + 32, y + 17, 18, '#b07a10', 'center', null, F_T); tx += 74; }
             text(n.ends_at ? `${kDate(n.ends_at)}까지` : '', tx, y + 17, 19, '#c0605a', 'left', null, F_T);
@@ -3974,7 +4009,7 @@ const scenes = {
             y += 32 + 14;
             { const cx = x + LY.w - pad - 10, cy = y + 18, up = !!news.open[n.id]; ctx.lineWidth = 3; ctx.strokeStyle = '#9a8b93'; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(cx - 8, cy + (up ? 4 : -4)); ctx.lineTo(cx, cy + (up ? -4 : 4)); ctx.lineTo(cx + 8, cy + (up ? 4 : -4)); ctx.stroke(); ctx.strokeStyle = OUT; } // a chevron: down to open, up to close
             c.title.forEach(t => { text(t, x + pad, y + 18, 27, INK, 'left', null, F_T); y += 36; });
-            if (c.body.length) { y += 10; c.body.forEach(t => { text(t, x + pad, y + 16, 21, '#5d4f58', 'left', null, F_B); y += 32; }); } }
+            if (c.body.length) { y += 10; c.body.forEach(t => { text(t, x + pad, y + 16, 21, '#5d4f58', 'left', null, F_B); y += 32; }); } ctx.restore(); }
           return height; }); }
       sideBtn('뒤로', () => { scene = 'title'; });
       refreshBtn(news.loading, loadNotices);
@@ -3986,10 +4021,10 @@ const scenes = {
       const d = anyHit(...K_R) ? 1 : anyHit(...K_L) ? 2 : 0; if (d && !rank.loading) { rank.list = null; loadRanking(FORMAT_IDS[(FORMAT_IDS.indexOf(rank.mode) + d) % 3], 'all'); } },
     draw() { drawHall(); },
   },
-  account: { // signing in and out; the nickname
-    update(dt) { state.t += dt; acct.msgT += dt; if (pressed('Escape')) scene = 'title'; },
+  account: { // signing in; once signed in the profile (and its cog) does the rest
+    update(dt) { state.t += dt; acct.msgT += dt; if (pressed('Escape')) scene = 'title'; if (acct.user && acct.prof && acct.prof.nickname) { scene = 'title'; openProfile(); } },
     draw() {
-      menuBegin('계정', true);
+      menuBegin('로그인', true);
       const py = LY.top, ph = acct.user ? 340 : 420; panel(LY.m, py, LY.w, ph); // signed in: no taller than its contents
       if (!acct.user) {
         text('로그인하면', W / 2, py + 56, 28, INK, 'center', null, F_T);
@@ -4004,7 +4039,7 @@ const scenes = {
         text(P && P.nickname ? P.nickname : '정하는 중…', W / 2, py + 96, 40, INK, 'center', null, F_T);
         text(`뽑기권 ${P ? P.tickets : '-'}장`, W / 2, py + 150, 26, '#3d8be0', 'center', null, F_T);
         text(acct.user.app_metadata && acct.user.app_metadata.provider === 'kakao' ? '카카오 계정으로 로그인됨' : 'Google 계정으로 로그인됨', W / 2, py + 190, 19, '#7a6872', 'center', null, F_B);
-        { const bw = 196, g = 16; button('닉네임 바꾸기', W / 2 - bw - g / 2, py + 250, bw, 60, () => openNick('profile'), { size: 23 }); button('로그아웃', W / 2 + g / 2, py + 250, bw, 60, signOut, { size: 23 }); } // side by side, each as wide as its words need
+        { const g = 12, w2 = textW('로그아웃', 23, F_T) + 56, w1 = textW('닉네임 바꾸기', 23, F_T) + 56, xr = LY.m + LY.w - LY.pad; button('로그아웃', xr - w2, py + 250, w2, 60, signOut, { size: 23 }); button('닉네임 바꾸기', xr - w2 - g - w1, py + 250, w1, 60, () => openNick('profile'), { size: 23 }); } // side by side, each as wide as its words need
       }
       if (acct.msg && acct.msgT < 3) text(acct.msg, W / 2, py + ph + 40, 22, '#c0605a', 'center', null, F_H);
       sideBtn('뒤로', () => { scene = 'title'; });
@@ -4032,7 +4067,7 @@ const scenes = {
       if (!acct.user || !acct.prof) {
         panel(LY.m, y0, LY.w, 300);
         text(acct.user ? '불러오는 중…' : '로그인이 필요해요', W / 2, y0 + 70, 30, INK, 'center', null, F_T);
-        if (!acct.user) { text('아이템과 뽑기권은 계정에 저장돼요', W / 2, y0 + 116, 22, '#5d4f58', 'center', null, F_B); button('로그인하러 가기', W / 2 - 170, y0 + 170, 340, 72, () => { scene = 'account'; }, { size: 28, fill: '#fff3c4' }); }
+        if (!acct.user) { text('아이템과 뽑기권은 계정에 저장돼요', W / 2, y0 + 116, 22, '#5d4f58', 'center', null, F_B); button('로그인하러 가기', LY.m + LY.w - LY.pad - (textW('로그인하러 가기', 28, F_T) + 64), y0 + 210, textW('로그인하러 가기', 28, F_T) + 64, 66, () => { scene = 'account'; }, { size: 28, fill: '#fff3c4' }); }
       } else if (acct.wtab === 'gacha') drawGachaTab(y0, end);
       else drawAchTab(y0, end);
       if (acct.msg && acct.msgT < 2.6) { ctx.font = `24px ${F_B}`; const w = ctx.measureText(acct.msg).width + 60; rr(W / 2 - w / 2, LY.bot - 62, w, 46, 23, 'rgba(59,51,64,0.9)', null); text(acct.msg, W / 2, LY.bot - 38, 21, CREAM, 'center', null, F_B); }
@@ -4194,9 +4229,10 @@ const scenes = {
     draw() {
       menuBegin('온라인 대결', true);
       if (signedIn() && lobbyNet.online) { ctx.lineWidth = 2; ctx.strokeStyle = OUT; E(LY.m + LY.w - 112, LY.titleY, 6, 6, '#4fc37a'); text(`${lobbyNet.online}명 접속`, LY.m + LY.w, LY.titleY, 20, '#3f9a5c', 'right', null, F_T); }
-      const bw = (LY.w - 24) / 3, bh = 64;
-      [['바로 참가', joinAny, '#fff3c4'], ['방 만들기', () => { state.pub = signedIn(); scene = 'make'; }, null], ['코드로 참가', () => openNick('code'), null]].forEach(([t, fn, fill], i) =>
-        button(t, LY.m + i * (bw + 12), LY.top, bw, bh, fn, { size: 25, fill: fill || undefined }));
+      const bh = 64, jw = textW('바로 참가', 27, F_T) + 80; // 방 만들기 (+) and 코드로 참가 (a key) as keys, 바로 참가 at the right
+      iconKey(LY.m, LY.top, bh, 'plus', () => { state.pub = signedIn(); scene = 'make'; }); iconKey(LY.m + bh + 12, LY.top, bh, 'key', () => openNick('code'));
+      text('방 만들기 · 코드로 참가', LY.m + bh * 2 + 26, LY.top + bh / 2, MIN_TEXT, '#4f6f63', 'left', null, F_B);
+      button('바로 참가', LY.m + LY.w - jw, LY.top, jw, bh, joinAny, { size: 27, fill: '#fff3c4' });
       const py = LY.top + bh + LY.gap + 6, ph = contentEnd() - py, rh = 100; panel(LY.m, py, LY.w, ph);
       text('공개된 방', LY.m + LY.pad, py + 30, 24, INK, 'left', null, F_T);
       if (signedIn()) text(lobbyNet.loading && !lobbyNet.at ? '불러오는 중…' : `${lobbyNet.rooms.length}개`, LY.m + LY.w - LY.pad, py + 30, 20, '#7a6872', 'right', null, F_T);
@@ -4204,7 +4240,7 @@ const scenes = {
       if (!signedIn()) { const cy = (v0 + v1) / 2;
         text('로그인하면 공개된 방을 볼 수 있어요', W / 2, cy - 40, 24, INK, 'center', null, F_T);
         text('친구와는 로그인 없이 방 코드로 할 수 있어요', W / 2, cy - 4, 20, '#7a6872', 'center', null, F_B);
-        button('로그인', W / 2 - 120, cy + 30, 240, 60, () => { scene = 'account'; }, { size: 25, fill: '#fff3c4' }); }
+        button('로그인', LY.m + LY.w - LY.pad - (textW('로그인', 25, F_T) + 72), cy + 30, textW('로그인', 25, F_T) + 72, 60, () => { scene = 'account'; }, { size: 25, fill: '#fff3c4' }); }
       else if (!shown.length) { const cy = (v0 + v1) / 2;
         text(!lobbyNet.at ? '방을 찾는 중…' : '지금 열린 방이 없어요', W / 2, cy - 24, 26, INK, 'center', null, F_T);
         if (lobbyNet.at) text('방을 만들어 공개해 두면 누군가 찾아와요', W / 2, cy + 14, 20, '#7a6872', 'center', null, F_B); }
@@ -4280,7 +4316,7 @@ const scenes = {
         text(`${mm}:${ss}`, W / 2, cy + 172, 34, CORAL, 'center', null, F_N);
         if (t > 30 && !joined) { // nobody yet: offer the computer instead
           text('지금은 기다리는 사람이 적어요', W / 2, cy + 224, 21, '#7a6872', 'center', null, F_B);
-          button('컴퓨터와 먼저 하기', W / 2 - 170, cy + 252, 340, 64, () => { quickStop('format'); }, { size: 25, fill: '#fff3c4' });
+          button('컴퓨터와 먼저 하기', LY.m + LY.w - LY.pad - (textW('컴퓨터와 먼저 하기', 25, F_T) + 64), cy + 252, textW('컴퓨터와 먼저 하기', 25, F_T) + 64, 64, () => { quickStop('format'); }, { size: 25, fill: '#fff3c4' });
         }
         sideBtn('그만두기', () => quickStop());
         menuEnd('이 화면을 닫으면 찾기를 멈춰요');
@@ -4346,8 +4382,8 @@ const scenes = {
         if (st === 'joined') { text('방장이 경기를 시작하길 기다리는 중' + dots, W / 2, gy + 172, 23, '#7a6872', 'center', null, F_B); if (!net.names) text(`지금 방에 ${net.lobbyN || 2}명`, W / 2, py + 214, 23, '#3f9a5c', 'center', null, F_T); }
         if (!(st === 'joined' && net.names)) { ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(setup.animal, W / 2, py + 440, 1.5, { front: true, t: state.t, anim: 'run', accent: CORAL }); }
       }
-      if (net && net.role === 'host' && net.status !== 'opening' && net.status !== 'error') mainBtn(!net.guests.length ? '친구를 기다리는 중…' : allIn() ? '경기 시작' : '친구가 고르는 중…', () => { if (allIn()) startRoom(); });
       sideBtn(net && net.role === 'host' ? '방 닫기' : '뒤로', () => { netClose(); scene = 'online'; }); // back to make or join, e.g. when both made a room at once
+      if (net && net.role === 'host' && net.status !== 'opening' && net.status !== 'error') mainBtn(!net.guests.length ? '친구를 기다리는 중…' : allIn() ? '경기 시작' : '친구가 고르는 중…', () => { if (allIn()) startRoom(); });
       menuEnd('Esc 를 눌러도 돌아가요');
     },
   },
@@ -4368,7 +4404,7 @@ const scenes = {
     },
     draw() {
       drawMatch(); hot = []; OY = 0;
-      ctx.fillStyle = 'rgba(59,51,64,0.62)'; ctx.fillRect(0, 0, W, H);
+      modalIn(0.62);
       const rh = 66, ph = 96 + LESSONS.length * rh + 108, top = Math.round(H / 2 - ph / 2);
       rr(LY.m, top, LY.w, ph, 26, 'rgba(255,248,231,0.98)', OUT, 4);
       text('레슨 고르기', W / 2, top + 48, 32, INK, 'center', null, F_T);
@@ -4380,7 +4416,7 @@ const scenes = {
         text(L.name, x + 64, y + (rh - 10) / 2, 25, INK, 'left', null, F_T);
         text(L.goal ? `목표 ${L.goal}개` : '목표 없음', x + LY.w - LY.pad * 2 - 20, y + (rh - 10) / 2, 19, '#7a6872', 'right', null, F_B);
       });
-      button('닫기', W / 2 - 150, top + ph - 88, 300, 64, () => { scene = 'play'; }, { size: 27, fill: '#fff3c4' });
+      button('닫기', LY.m + LY.w - LY.pad - 150, top + ph - 88, 150, 64, () => { scene = 'play'; }, { size: 27, fill: '#fff3c4' });
     },
   },
   help: {
@@ -4391,7 +4427,7 @@ const scenes = {
     },
     draw() {
       drawMatch(); hot = []; OY = 0;
-      ctx.fillStyle = 'rgba(59,51,64,0.62)'; ctx.fillRect(0, 0, W, H);
+      modalIn(0.62);
       const top = Math.round(H / 2 - 400);
       ctx.save(); ctx.translate(0, top); OY = top;
       rr(40, 0, 640, 800, 26, 'rgba(255,248,231,0.98)', OUT, 4);
@@ -4426,7 +4462,7 @@ const scenes = {
           text({ flash: '10점 먼저 (2점 차)', short: '4게임 먼저 · 노애드 · 4-4 타이브레이크', regular: '3세트 먼저 · 6게임 세트' }[id], 190, y, 20, '#5d4f58', 'left', null, F_B); });
         text('지금 경기는 노란 칸의 방식이에요', W / 2, 692, 21, '#c0605a', 'center', null, F_H);
       }
-      button('닫기', 210, 718, 300, 62, closeHelp, { size: 27, fill: '#fff3c4' });
+      button('닫기', W - 44 - 28 - 150, 718, 150, 62, closeHelp, { size: 27, fill: '#fff3c4' });
       ctx.restore(); OY = 0;
       text(T ? '위의 탭을 눌러 페이지를 넘겨요' : '← → 페이지 · H 또는 Esc 닫기', W / 2, top + 830, 21, CREAM, 'center', OUT, F_B);
     },
@@ -4440,7 +4476,7 @@ const scenes = {
     },
     draw() {
       drawMatch(); hot = []; OY = 0;
-      ctx.fillStyle = 'rgba(59,51,64,0.6)'; ctx.fillRect(0, 0, W, H);
+      modalIn(0.6);
       const cy = Math.round(H / 2);
       rr(110, cy - 226, 500, 458, 26, 'rgba(255,248,231,0.97)', OUT, 4);
       text(m.online ? '잠깐!' : '일시정지', W / 2, cy - 168, 52, INK, 'center', null, F_T);
@@ -4463,7 +4499,7 @@ const scenes = {
     draw() {
       menuBegin();
       const sc = m.sc, w = sc.winner, vt = view % 2, me = w === vt, guest = net && net.role === 'guest';
-      text(me ? '승리!' : '패배', W / 2, LY.titleY + 8, 76, me ? CORAL : '#7f8fb5', 'center', OUT, F_T);
+      text(me ? '승리!' : '패배', W / 2, LY.titleY - 10, 76, me ? CORAL : '#7f8fb5', 'center', OUT, F_T);
       const RR = rules(), fin = sc.sets[sc.sets.length - 1] || [0, 0];
       const reg = canRank(), py = LY.top + 36, pb = py + SZ().result;
       fitText(`${RR.ko} · ${NAME(w)} 승리 · ${RR.sets > 1 && !RR.matchTb ? `세트 ${sc.won[w]} – ${sc.won[1 - w]}` : `${fin[w]} – ${fin[1 - w]}`}`, W / 2, LY.top + 8, 28, INK, 'center', F_H, LY.w - 16, CREAM);
@@ -4497,7 +4533,7 @@ const scenes = {
       }
       if (net) sideBtn('방 목록', leaveOnline); else sideBtn('홈으로', goHome);
       if (guest && net.ask) mainBtn('다시 하기 (방에 남기)', guestStay); // the host asked: stay for another, or leave with 방 목록
-      else if (guest) { const gx = LY.m + LY.side + LY.gap, gw = LY.m + LY.w - gx; rr(gx, LY.bot, gw, LY.btnH, 18, 'rgba(255,248,231,0.7)', '#cdbfb3', 2.4); text('방장이 다시 하자고 하면', gx + gw / 2, LY.bot + LY.btnH / 2 - 13, 21, INK, 'center', null, F_T); text('남을지 고를 수 있어요', gx + gw / 2, LY.bot + LY.btnH / 2 + 15, 21, INK, 'center', null, F_T); }
+      else if (guest) { const gw = midW('방장이 다시 하자고 하면', 21), gx = LY.m + LY.w - gw; rr(gx, LY.bot, gw, LY.btnH, 18, 'rgba(255,248,231,0.7)', '#cdbfb3', 2.4); text('방장이 다시 하자고 하면', gx + gw / 2, LY.bot + LY.btnH / 2 - 13, 21, INK, 'center', null, F_T); text('남을지 고를 수 있어요', gx + gw / 2, LY.bot + LY.btnH / 2 + 15, 21, INK, 'center', null, F_T); }
       else mainBtn(net ? '다시 하기 (방으로)' : '다시 하기', () => { if (net) onlineAgain(); else { reset(); scene = 'play'; } });
       menuEnd(guest ? (net.ask ? '방장이 한 판 더 하자고 해요 · 남거나 방 목록으로 나가요' : '') : net ? '다시 하기를 누르면 방으로 돌아가요 · 친구들은 남을지 골라요' : 'Enter : 다시 하기 · Esc : 홈으로');
       drawGift();
@@ -4532,8 +4568,60 @@ function drawNotice() {
   rr(W / 2 - w / 2, y + 4, w, 56, 28, 'rgba(59,51,64,0.35)', null); rr(W / 2 - w / 2, y, w, 56, 28, '#fff3c4', OUT, 2.6);
   text(notice.s, W / 2, y + 29, 25, INK, 'center', null, F_T); ctx.restore();
 }
+// ---- 화면 모션: push for the solo flow, fade through between unrelated screens, tab switch inside a screen, modal present over a match
+const CALM = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+const easeOut = u => 1 - Math.pow(1 - u, 3), easeDrawer = u => { let a = 0, b = 1; for (let i = 0; i < 18; i++) { const m = (a + b) / 2, x = 3 * m * (1 - m) * (1 - m) * 0.32 + 3 * m * m * (1 - m) * 0 + m * m * m; if (x < u) a = m; else b = m; } const t = (a + b) / 2; return 3 * t * (1 - t) * (1 - t) * 0.72 + 3 * t * t * (1 - t) * 1 + t * t * t; }; // cubic-bezier(0.32, 0.72, 0, 1)
+const FLOW = ['format', 'mode', 'select', 'court'], MODALS = ['pause', 'help', 'lessons'];
+let viewKey0 = '', viewScene0 = '', viewOv0 = 0, viewAt = 0, sceneAt = 0, trans = null, snapC = null, newC = null, FIX = [];
+// Three motions only, the same for the same kind of move:
+//  slide  a step in order (the solo flow, a tab): what changes slides 32 px and crossfades, 220 ms, the way you are going
+//  fade   any other page, and a window closing: the old picture fades out, 200 ms (160 for a window)
+//  pop    a window opening: grows from 95% and fades in, 200 ms (popIn)
+// A button that sits at the same place with the same words before and after (뒤로, home) does not move at all.
+function viewOf() { // what counts as 'a different view', and the part of the screen that moves with it
+  if (scene === 'wardrobe') return { key: 'wardrobe:' + acct.wtab, tab: ['gacha', 'ach'].indexOf(acct.wtab), r: [0, LY.top + 70, W, LY.bot - 6] };
+  if (scene === 'hall') return { key: 'hall:' + rank.mode, tab: FORMAT_IDS.indexOf(rank.mode), r: [0, LY.top + 60, W, LY.bot - 8] };
+  if (scene === 'help') { const top = Math.round(H / 2 - 400); return { key: 'help:' + helpPage, tab: helpPage, r: [44, top + 84, W - 44, top + 796] }; }
+  return { key: scene };
+}
+const overlays = () => (prof.open ? 1 : 0) + (prof.open && prof.menu ? 1 : 0) + (scene === 'hall' && rank.sel >= 0 ? 1 : 0) + (typeof matchGift !== 'undefined' && matchGift && matchGift.open && scene === 'results' ? 1 : 0);
+function snap(into) { const c = into || document.createElement('canvas'); if (c.width !== canvas.width || c.height !== canvas.height) { c.width = canvas.width; c.height = canvas.height; } const g = c.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, c.width, c.height); g.drawImage(canvas, 0, 0); return c; }
+function viewWatch() { // before a frame: has the view changed since the last one? keep a picture of the last one to move away
+  const v = viewOf(), ov = overlays(); if (v.key === viewKey0 && ov === viewOv0) return;
+  const from = viewScene0, to = scene, fi = FLOW.indexOf(from), ti = FLOW.indexOf(to); let kind = null, dir = 1, r = [0, 0, W, H], dur = 0.2;
+  let win = false; if (v.key === viewKey0) { if (ov < viewOv0) { kind = 'fade'; dur = 0.16; win = true; } } // a window opened (it pops by itself) or closed (it fades away)
+  else if (from && from === to && v.tab >= 0) { kind = 'slide'; dir = v.tab > (trans && trans.tabWas != null ? trans.tabWas : -1) ? 1 : -1; r = v.r; dur = 0.22; }
+  else if (fi >= 0 && ti >= 0) { kind = 'slide'; dir = ti > fi ? 1 : -1; r = [0, LY.top - 14, W, LY.bot - 6]; dur = 0.22; }
+  else if (MODALS.includes(from) && !MODALS.includes(to)) { kind = 'fade'; dur = 0.16; win = true; }
+  else if (from && !MODALS.includes(to) && to !== 'cover') kind = 'fade';
+  if (from !== to) sceneAt = clock.now();
+  const tabWas = trans ? trans.tabWas : null;
+  if (kind) trans = { kind: CALM ? 'fade' : kind, dir, r, dur, win, at: clock.now(), old: snapC = snap(snapC), keep: FIX };
+  if (trans) trans.tabWas = v.tab != null ? v.tab : tabWas;
+  viewAt = clock.now(); viewKey0 = v.key; viewScene0 = scene; viewOv0 = ov;
+}
+function viewMove() { // after the new frame: lay the old picture and the new one over each other as they move
+  if (!trans) return; const u = Math.min(1, (clock.now() - trans.at) / trans.dur); if (u >= 1) { trans = null; return; }
+  newC = snap(newC); const k = canvas.width / W, [x0, y0, x1, y1] = trans.r.map(v => v * k), w = x1 - x0, e = easeOut(u), a = easeOut(Math.min(1, u / 0.4));
+  ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+  if (trans.kind === 'fade') { ctx.beginPath(); ctx.rect(x0, y0, w, y1 - y0); ctx.clip(); ctx.globalAlpha = 1 - e; ctx.drawImage(trans.old, 0, 0); }
+  else { const d = trans.dir, D = 32 * k, fy = (trans.kind === 'slide' && FLOW.includes(scene) ? LY.sb : y0 / k) * k; // around the moving part, the rest crossfades where it stands
+    ctx.save(); ctx.beginPath(); ctx.rect(0, fy, canvas.width, canvas.height - fy); ctx.rect(x0, y0, w, y1 - y0); ctx.clip('evenodd'); ctx.globalAlpha = 1 - a; ctx.drawImage(trans.old, 0, 0); ctx.restore();
+    ctx.beginPath(); ctx.rect(x0, y0, w, y1 - y0); ctx.clip(); ctx.drawImage(trans.old, -d * e * D, 0); ctx.globalAlpha = a; ctx.drawImage(newC, d * (1 - e) * D, 0); }
+  ctx.globalAlpha = 1; // the buttons that stayed put: drawn as they are now, still (not when a window closes: they sit under its dim)
+  if (!trans.win) for (const f of FIX) if (trans.keep.some(g => g[0] === f[0] && Math.abs(g[1] - f[1]) < 1 && Math.abs(g[2] - f[2]) < 1 && Math.abs(g[3] - f[3]) < 1)) {
+    const bx = (f[1] - 4) * k, by = (f[2] - 4) * k, bw = (f[3] + 8) * k, bh = (f[4] + 14) * k; ctx.drawImage(newC, bx, by, bw, bh, bx, by, bw, bh); }
+  ctx.restore();
+}
+let modalSaved = false;
+function popIn(age) { const e = CALM ? 1 : easeOut(Math.min(1, Math.max(0, age) / 0.2)); return { k: 0.95 + 0.05 * e, a: e }; } // every window: grows from 95% and fades in, 200 ms
+function modalIn(dimA) { // a window over the match: the same pop as every other window
+  const PQ = popIn(clock.now() - sceneAt); ctx.fillStyle = `rgba(59,51,64,${dimA * PQ.a})`; ctx.fillRect(0, 0, W, H);
+  ctx.save(); ctx.translate(W / 2, H / 2); ctx.scale(PQ.k, PQ.k); ctx.translate(-W / 2, -H / 2); ctx.globalAlpha = PQ.a; modalSaved = true;
+}
 function drawFrame() {
-  hot = []; scenes[scene].draw(); if (prof.open) drawProfile(); drawNotice();
+  viewWatch(); FIX = [];
+  hot = []; scenes[scene].draw(); if (modalSaved) { ctx.restore(); modalSaved = false; } viewMove(); if (prof.open) drawProfile(); drawNotice();
   if (touchUI && !COVER && innerWidth > innerHeight * 1.1) { // a phone held sideways: the game is drawn for portrait
     rr(W / 2 - 210, H - 50, 420, 38, 19, 'rgba(59,51,64,0.88)', null);
     text('휴대폰을 세로로 돌리면 화면이 더 커져요', W / 2, H - 31, 19, CREAM, 'center', null, F_B);

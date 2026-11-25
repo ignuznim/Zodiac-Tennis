@@ -3523,6 +3523,15 @@ function backKey(kind, fn) { // a square key: an arrow back, or a house for home
   else { ctx.lineCap = 'round'; ctx.lineWidth = 5; ctx.strokeStyle = INK; ctx.beginPath(); ctx.moveTo(cx + 13, cy); ctx.lineTo(cx - 12, cy); ctx.moveTo(cx - 2, cy - 11); ctx.lineTo(cx - 13, cy); ctx.lineTo(cx - 2, cy + 11); ctx.stroke(); }
   ctx.restore(); barL = x + s;
 }
+function iconKey(x, y, s, kind, fn, fill) { // a square key with a picture: plus (make), key (a code), pencil (edit)
+  FIX.push(['k:' + kind, x, y + OY, s, s]); const over = btn(x, y, s, s, fn), d = sink(x, y, s, s, s > 50 ? 4 : 3);
+  rr(x, y + (s > 50 ? 5 : 3), s, s, s * 0.26, OUT, null); rr(x, y + d, s, s, s * 0.26, hoverOn(over) ? '#fffdf3' : fill || '#fff8e7', OUT, s > 50 ? 3 : 2.4);
+  const cx = x + s / 2, cy = y + d + s / 2, k = s / 68; ctx.save(); ctx.translate(cx, cy); ctx.scale(k, k); ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.strokeStyle = OUT;
+  if (kind === 'plus') { ctx.lineWidth = 7; ctx.strokeStyle = INK; ctx.beginPath(); ctx.moveTo(-15, 0); ctx.lineTo(15, 0); ctx.moveTo(0, -15); ctx.lineTo(0, 15); ctx.stroke(); }
+  else if (kind === 'key') { ctx.rotate(-0.6); ctx.lineWidth = 2.6; rr(-4, -4, 26, 8, 3, BALL, OUT, 2.6); rr(12, 3, 5, 8, 1.5, BALL, OUT, 2.2); rr(18, 3, 4, 6, 1.5, BALL, OUT, 2.2); E(-12, 0, 12, 12, BALL); E(-12, 0, 4.5, 4.5, '#fff8e7'); }
+  else if (kind === 'pencil') { ctx.rotate(-0.78); ctx.lineWidth = 2.8; rr(-14, -6, 26, 12, 2, BALL, OUT, 2.8); poly([12, -6, 23, 0, 12, 6], '#f1c9a5'); poly([19.5, -2, 23, 0, 19.5, 2], INK); rr(-21, -6, 8, 12, 2.5, CORAL, OUT, 2.8); }
+  ctx.restore();
+}
 function sideBtn(label, fn) {
   if (label === '뒤로') return backKey('back', fn); if (label === '홈으로') return backKey('home', fn);
   const w = Math.max(LY.btnH, textW(label, 26, F_T) + 56); button(label, LY.m, LY.bot, w, LY.btnH, fn, { size: 26 }); barL = LY.m + w;
@@ -3621,7 +3630,7 @@ async function tierReport() { // the match into my tier score: against the compu
 function closeGift() { if (giftHere() && matchGift.open && clock.now() - matchGift.at >= 2) { matchGift.open = false; tone(660, 0.05, 'sine', 0.15); } }
 function drawGift() { // on the results: the card first (tickets, the tier score), then a badge beside 승리!/패배
   if (!giftHere()) return; const g = matchGift, T = g.tier, ti = T ? tierOf(T) : 0;
-  if (!g.open) { const x = W / 2 + textW(m.sc.winner === view % 2 ? '승리!' : '패배', 76) / 2 + 42, y = LY.titleY + 4;
+  if (!g.open) { const x = W / 2 + textW(m.sc.winner === view % 2 ? '승리!' : '패배', 76) / 2 + 42, y = LY.titleY - 14;
     if (g.n) { ticketPic(x, y, 1.05, -0.12); rr(x + 16, y - 34, 50, 32, 16, CORAL, OUT, 2.4); text(`+${g.n}`, x + 41, y - 18, 22, '#ffffff', 'center', null, F_T); }
     else if (T) { drawTier(ti, x, y, 22); const s0 = (T.delta >= 0 ? '+' : '') + T.delta, bw = textW(s0, 20, F_T) + 22; rr(x + 14, y - 34, bw, 32, 16, T.delta >= 0 ? '#4f9a6a' : '#e2574c', OUT, 2.4); text(s0, x + 14 + bw / 2, y - 18, 20, '#ffffff', 'center', null, F_T); }
     return; }
@@ -3739,7 +3748,7 @@ function drawSettings() { // the cog's menu, over my profile: nickname, linked s
   rr(x, y + 6, w, h, 22, 'rgba(59,51,64,0.35)', null); rr(x, y, w, h, 22, '#fffaf0', OUT, 3);
   let yy = y + 20; text('설정', W / 2, yy + 15, 24, INK, 'center', null, F_T); yy += 30 + 14;
   rr(L0, yy, R0 - L0, 48, 14, '#ffffff', '#e6dccd', 2); text('닉네임', L0 + 16, yy + 24, MIN_TEXT, '#7a6872', 'left', null, F_B); fitText((acct.prof && acct.prof.nickname) || '-', L0 + 84, yy + 24, 20, INK, 'left', F_T, R0 - L0 - 190);
-  button('변경', R0 - 86, yy + 7, 76, 34, () => { prof.menu = false; openNick('profile'); }, { size: 18 }); yy += 48 + 16;
+  iconKey(R0 - 46, yy + 6, 34, 'pencil', () => { prof.menu = false; openNick('profile'); }); yy += 48 + 16;
   text('연동 계정', L0, yy + 13, 19, INK, 'left', null, F_T); text('여러 계정으로 같은 기록에 로그인', R0, yy + 13, MIN_TEXT, '#9a8b93', 'right', null, F_B); yy += 26 + 8;
   PV.forEach(([id, nm], i) => { const cy = yy + rh / 2, linked = ids.includes(id); if (i) { ctx.fillStyle = '#efe7da'; ctx.fillRect(L0, yy, R0 - L0, 1); }
     E(L0 + 14, cy, 6, 6, linked ? '#4fc37a' : '#d9cbbd', 0, true); text(nm, L0 + 30, cy, 20, INK, 'left', null, F_T);
@@ -4014,10 +4023,10 @@ const scenes = {
       const d = anyHit(...K_R) ? 1 : anyHit(...K_L) ? 2 : 0; if (d && !rank.loading) { rank.list = null; loadRanking(FORMAT_IDS[(FORMAT_IDS.indexOf(rank.mode) + d) % 3], 'all'); } },
     draw() { drawHall(); },
   },
-  account: { // signing in and out; the nickname
-    update(dt) { state.t += dt; acct.msgT += dt; if (pressed('Escape')) scene = 'title'; },
+  account: { // signing in; once signed in the profile (and its cog) does the rest
+    update(dt) { state.t += dt; acct.msgT += dt; if (pressed('Escape')) scene = 'title'; if (acct.user && acct.prof && acct.prof.nickname) { scene = 'title'; openProfile(); } },
     draw() {
-      menuBegin('계정', true);
+      menuBegin('로그인', true);
       const py = LY.top, ph = acct.user ? 340 : 420; panel(LY.m, py, LY.w, ph); // signed in: no taller than its contents
       if (!acct.user) {
         text('로그인하면', W / 2, py + 56, 28, INK, 'center', null, F_T);
@@ -4222,9 +4231,10 @@ const scenes = {
     draw() {
       menuBegin('온라인 대결', true);
       if (signedIn() && lobbyNet.online) { ctx.lineWidth = 2; ctx.strokeStyle = OUT; E(LY.m + LY.w - 112, LY.titleY, 6, 6, '#4fc37a'); text(`${lobbyNet.online}명 접속`, LY.m + LY.w, LY.titleY, 20, '#3f9a5c', 'right', null, F_T); }
-      const bw = (LY.w - 24) / 3, bh = 64;
-      [['바로 참가', joinAny, '#fff3c4'], ['방 만들기', () => { state.pub = signedIn(); scene = 'make'; }, null], ['코드로 참가', () => openNick('code'), null]].forEach(([t, fn, fill], i) =>
-        button(t, LY.m + i * (bw + 12), LY.top, bw, bh, fn, { size: 25, fill: fill || undefined }));
+      const bh = 64, jw = textW('바로 참가', 27, F_T) + 80; // 방 만들기 (+) and 코드로 참가 (a key) as keys, 바로 참가 at the right
+      iconKey(LY.m, LY.top, bh, 'plus', () => { state.pub = signedIn(); scene = 'make'; }); iconKey(LY.m + bh + 12, LY.top, bh, 'key', () => openNick('code'));
+      text('방 만들기 · 코드로 참가', LY.m + bh * 2 + 26, LY.top + bh / 2, MIN_TEXT, '#4f6f63', 'left', null, F_B);
+      button('바로 참가', LY.m + LY.w - jw, LY.top, jw, bh, joinAny, { size: 27, fill: '#fff3c4' });
       const py = LY.top + bh + LY.gap + 6, ph = contentEnd() - py, rh = 100; panel(LY.m, py, LY.w, ph);
       text('공개된 방', LY.m + LY.pad, py + 30, 24, INK, 'left', null, F_T);
       if (signedIn()) text(lobbyNet.loading && !lobbyNet.at ? '불러오는 중…' : `${lobbyNet.rooms.length}개`, LY.m + LY.w - LY.pad, py + 30, 20, '#7a6872', 'right', null, F_T);
@@ -4491,7 +4501,7 @@ const scenes = {
     draw() {
       menuBegin();
       const sc = m.sc, w = sc.winner, vt = view % 2, me = w === vt, guest = net && net.role === 'guest';
-      text(me ? '승리!' : '패배', W / 2, LY.titleY + 8, 76, me ? CORAL : '#7f8fb5', 'center', OUT, F_T);
+      text(me ? '승리!' : '패배', W / 2, LY.titleY - 10, 76, me ? CORAL : '#7f8fb5', 'center', OUT, F_T);
       const RR = rules(), fin = sc.sets[sc.sets.length - 1] || [0, 0];
       const reg = canRank(), py = LY.top + 36, pb = py + SZ().result;
       fitText(`${RR.ko} · ${NAME(w)} 승리 · ${RR.sets > 1 && !RR.matchTb ? `세트 ${sc.won[w]} – ${sc.won[1 - w]}` : `${fin[w]} – ${fin[1 - w]}`}`, W / 2, LY.top + 8, 28, INK, 'center', F_H, LY.w - 16, CREAM);
