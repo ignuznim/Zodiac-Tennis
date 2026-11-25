@@ -11,7 +11,8 @@ The owner reviews every change on a phone. These rules come from their repeated 
 - Use the plain fonts (F_T, F_B) for anything that must read cleanly; the handwritten font (F_H) has uneven spacing, so keep it to short accents.
 
 ## Buttons and space
-- A button need not fill the width of its box or the screen: size it to its words plus comfortable padding, and centre it, unless it is one of the bottom row's main buttons. Prefer a small icon to a worded button wherever the icon reads at once (a person for a profile, a cross to close), placed beside what it acts on. Popups and cards stay compact and dense (the 명예의 전당 score card is the model): no large empty areas, no oversized boxes; leave even margins instead.
+- A button need not fill the width of its box or the screen: size it to its words plus comfortable padding.
+- A button that confirms, decides, goes on or closes (확인, 결정, 다시 하기, 닫기, 로그아웃 …) always sits at the right of its row or box, never centred. Back and home are square icon keys at the left of the bottom row; a refresh key sits at the right where there is no such button. The same row looks the same on every page. Prefer a small icon to a worded button wherever the icon reads at once (a person for a profile, a cross to close), placed beside what it acts on. Popups and cards stay compact and dense (the 명예의 전당 score card is the model): no large empty areas, no oversized boxes; leave even margins instead.
 
 - Before committing any UI change, check the whole screen, not just the part touched: nothing overlaps (text on text, text past its box, buttons on buttons, a popup's parts on the page under it), margins are even and the same from screen to screen, and things sit on a grid: rows share one left edge and one baseline, columns line up, equal items get equal sizes and gaps. Run the layout audit (overlaps and overflow at 390 x 844 and 390 x 600) and look at the screenshots.
 

@@ -3096,7 +3096,7 @@ function pull() { // the machine: the crank turns while the server picks
 }
 const PULLS = [1, 5, 10];
 function pullBtn() { // the 뽑기 button with − and + at its ends: how many at once, and the middle pulls
-  const G = acct.g, T = acct.prof.tickets, w = Math.min(420, LY.w - 2 * (LY.btnH + LY.gap)), x = W / 2 - w / 2, y = LY.bot, h = LY.btnH, sq = h - 20, zone = sq + 20;
+  const G = acct.g, T = acct.prof.tickets, w = Math.min(420, LY.w - 2 * (LY.btnH + LY.gap)), x = LY.m + LY.w - w, y = LY.bot, h = LY.btnH, sq = h - 20, zone = sq + 20;
   if (!PULLS.includes(G.n)) G.n = 1; const i = PULLS.indexOf(G.n), canDown = i > 0, canUp = i < 2 && T >= PULLS[i + 1];
   const mid = btn(x + zone, y, w - zone * 2, h, pull);
   if (canDown) btn(x, y, zone, h, () => { G.n = PULLS[i - 1]; tone(660, 0.05, 'sine', 0.16); });
@@ -3386,7 +3386,7 @@ function drawGachaTab(y0, end) {
     itemIcon(r.item, W / 2, py + ph * 0.42, 130 * Math.min(1, G.t * 4));
     text(it.name, W / 2, py + ph - 96, 34, INK, 'center', null, F_T);
     text(`${SLOTS.find(s => s[0] === it.slot)[1]} · ${STAT_NAME[it.stat]} +${it.amt}`, W / 2, py + ph - 52, 23, c, 'center', null, F_T);
-    button('전체 아이템 보기', W / 2 - 150, py + ph + 18, 300, 60, () => { G.phase = 'idle'; openCloset('wardrobe', null); }, { size: 24, fill: '#eef7ff' });
+    button('전체 아이템 보기', LY.m + LY.w - (textW('전체 아이템 보기', 24, F_T) + 56), py + ph + 18, textW('전체 아이템 보기', 24, F_T) + 56, 60, () => { G.phase = 'idle'; openCloset('wardrobe', null); }, { size: 24, fill: '#eef7ff' });
     for (let i = 0; i < 8; i++) { const a = i / 8 * 6.283 + G.t, rr2 = 150 + Math.sin(G.t * 3 + i) * 10; star(W / 2 + Math.cos(a) * rr2, py + ph * 0.42 + Math.sin(a) * rr2 * 0.7, 9, i % 2 ? '#fff' : c); }
   }
 }
@@ -3411,7 +3411,7 @@ function drawManyPrizes(G, y0, h) { // five or ten prizes: a grid, best first; t
   ctx.font = `26px ${F_T}`; const nw = ctx.measureText(it.name).width, room = inner - 40 - gw - 16;
   text(it.name, x0 + 44 + gw + 14, dy + 29, Math.max(MIN_TEXT, nw > room ? 26 * room / nw : 26), INK, 'left', null, F_T);
   text(`${SLOTS.find(s => s[0] === it.slot)[1]} · ${STAT_NAME[it.stat]} +${it.amt}`, x0 + 44, dy + 63, 21, c, 'left', null, F_T);
-  button('전체 아이템 보기', W / 2 - 150, py + ph + 14, 300, 60, () => { G.phase = 'idle'; openCloset('wardrobe', null); }, { size: 24, fill: '#eef7ff' });
+  button('전체 아이템 보기', LY.m + LY.w - (textW('전체 아이템 보기', 24, F_T) + 56), py + ph + 14, textW('전체 아이템 보기', 24, F_T) + 56, 60, () => { G.phase = 'idle'; openCloset('wardrobe', null); }, { size: 24, fill: '#eef7ff' });
 }
 function capsule(x, y, r, c, rot) { ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.lineWidth = 2.4; ctx.strokeStyle = OUT;
   ctx.beginPath(); ctx.arc(0, 0, r, Math.PI, 0); ctx.closePath(); ctx.fillStyle = c; ctx.fill(); ctx.stroke();
@@ -3527,8 +3527,8 @@ function sideBtn(label, fn) {
   if (label === '뒤로') return backKey('back', fn); if (label === '홈으로') return backKey('home', fn);
   const w = Math.max(LY.btnH, textW(label, 26, F_T) + 56); button(label, LY.m, LY.bot, w, LY.btnH, fn, { size: 26 }); barL = LY.m + w;
 }
-function midW(label, size = 31) { const room = 2 * (W / 2 - Math.max(barL, LY.m + LY.btnH) - LY.gap); return Math.min(room, Math.max(260, textW(label, size, F_T) + 96)); } // words plus padding, kept clear of the keys
-function mainBtn(label, fn) { const w = midW(label); button(label, W / 2 - w / 2, LY.bot, w, LY.btnH, fn, { size: 31, fill: '#fff3c4' }); }
+function midW(label, size = 31) { const room = LY.m + LY.w - Math.max(barL, LY.m + LY.btnH) - LY.gap; return Math.min(room, Math.max(260, textW(label, size, F_T) + 96)); } // words plus padding, kept clear of the key at the left
+function mainBtn(label, fn) { const w = midW(label); button(label, LY.m + LY.w - w, LY.bot, w, LY.btnH, fn, { size: 31, fill: '#fff3c4' }); }
 function refreshBtn(loading, fn, dark) { // a square key at the right of the bottom row: two arrows chasing round, turning while it loads
   const s = LY.btnH, x = LY.m + LY.w - s, y = LY.bot, over = btn(x, y, s, s, () => { if (!loading) fn(); });
   const d0 = sink(x, y, s, s); rr(x, y + 5, s, s, 18, dark ? '#1a1218' : OUT, null); rr(x, y + d0, s, s, 18, dark ? (hoverOn(over) ? '#dcaa4c' : '#c8963a') : hoverOn(over) ? '#fffdf3' : '#fff3c4', dark ? '#3a2428' : OUT, 3);
@@ -3539,7 +3539,7 @@ function refreshBtn(loading, fn, dark) { // a square key at the right of the bot
     ctx.beginPath(); ctx.moveTo(hx + tx * L * 0.9, hy + ty * L * 0.9); ctx.lineTo(hx + nx * L * 0.6 - tx * 2, hy + ny * L * 0.6 - ty * 2); ctx.lineTo(hx - nx * L * 0.6 - tx * 2, hy - ny * L * 0.6 - ty * 2); ctx.closePath(); ctx.fill(); }
   ctx.restore();
 }
-function wideBtn(label, fn) { const w = midW(label); button(label, W / 2 - w / 2, LY.bot, w, LY.btnH, fn, { size: 31, fill: '#fff3c4' }); }
+function wideBtn(label, fn) { const w = midW(label); button(label, LY.m + LY.w - w, LY.bot, w, LY.btnH, fn, { size: 31, fill: '#fff3c4' }); }
 function button(label, x, y, w, h, fn, o = {}) { // a big rounded button, for the mouse and for show
   FIX.push([label, x, y + OY, w, h]); const over = btn(x, y, w, h, fn), on = o.on, d = sink(x, y, w, h);
   rr(x, y + 5, w, h, 18, OUT, null);
@@ -3745,7 +3745,7 @@ function drawSettings() { // the cog's menu, over my profile: nickname, linked s
     E(L0 + 14, cy, 6, 6, linked ? '#4fc37a' : '#d9cbbd', 0, true); text(nm, L0 + 30, cy, 20, INK, 'left', null, F_T);
     if (linked) text('연동됨', R0 - 10, cy, MIN_TEXT, '#4f9a6a', 'right', null, F_T);
     else button('연동하기', R0 - 96, cy - 17, 96, 34, () => linkAccount(id), { size: 17, fill: '#fff3c4' }); yy += rh; });
-  yy += 16; { const bw = 140; button('로그아웃', W / 2 - bw / 2, yy, bw, 44, () => { prof.menu = false; prof.open = false; signOut(); }, { size: 19 }); }
+  yy += 16; { const bw = 140; button('로그아웃', R0 - bw, yy, bw, 44, () => { prof.menu = false; prof.open = false; signOut(); }, { size: 19 }); }
   ctx.restore(); HX = null;
 }
 function linkAccount(provider) { // one more way to sign in to the same record; the server must allow manual linking (Supabase: Authentication -> Sign In / Providers)
@@ -4032,7 +4032,7 @@ const scenes = {
         text(P && P.nickname ? P.nickname : '정하는 중…', W / 2, py + 96, 40, INK, 'center', null, F_T);
         text(`뽑기권 ${P ? P.tickets : '-'}장`, W / 2, py + 150, 26, '#3d8be0', 'center', null, F_T);
         text(acct.user.app_metadata && acct.user.app_metadata.provider === 'kakao' ? '카카오 계정으로 로그인됨' : 'Google 계정으로 로그인됨', W / 2, py + 190, 19, '#7a6872', 'center', null, F_B);
-        { const bw = 196, g = 16; button('닉네임 바꾸기', W / 2 - bw - g / 2, py + 250, bw, 60, () => openNick('profile'), { size: 23 }); button('로그아웃', W / 2 + g / 2, py + 250, bw, 60, signOut, { size: 23 }); } // side by side, each as wide as its words need
+        { const g = 12, w2 = textW('로그아웃', 23, F_T) + 56, w1 = textW('닉네임 바꾸기', 23, F_T) + 56, xr = LY.m + LY.w - LY.pad; button('로그아웃', xr - w2, py + 250, w2, 60, signOut, { size: 23 }); button('닉네임 바꾸기', xr - w2 - g - w1, py + 250, w1, 60, () => openNick('profile'), { size: 23 }); } // side by side, each as wide as its words need
       }
       if (acct.msg && acct.msgT < 3) text(acct.msg, W / 2, py + ph + 40, 22, '#c0605a', 'center', null, F_H);
       sideBtn('뒤로', () => { scene = 'title'; });
@@ -4060,7 +4060,7 @@ const scenes = {
       if (!acct.user || !acct.prof) {
         panel(LY.m, y0, LY.w, 300);
         text(acct.user ? '불러오는 중…' : '로그인이 필요해요', W / 2, y0 + 70, 30, INK, 'center', null, F_T);
-        if (!acct.user) { text('아이템과 뽑기권은 계정에 저장돼요', W / 2, y0 + 116, 22, '#5d4f58', 'center', null, F_B); button('로그인하러 가기', W / 2 - 170, y0 + 170, 340, 72, () => { scene = 'account'; }, { size: 28, fill: '#fff3c4' }); }
+        if (!acct.user) { text('아이템과 뽑기권은 계정에 저장돼요', W / 2, y0 + 116, 22, '#5d4f58', 'center', null, F_B); button('로그인하러 가기', LY.m + LY.w - LY.pad - (textW('로그인하러 가기', 28, F_T) + 64), y0 + 210, textW('로그인하러 가기', 28, F_T) + 64, 66, () => { scene = 'account'; }, { size: 28, fill: '#fff3c4' }); }
       } else if (acct.wtab === 'gacha') drawGachaTab(y0, end);
       else drawAchTab(y0, end);
       if (acct.msg && acct.msgT < 2.6) { ctx.font = `24px ${F_B}`; const w = ctx.measureText(acct.msg).width + 60; rr(W / 2 - w / 2, LY.bot - 62, w, 46, 23, 'rgba(59,51,64,0.9)', null); text(acct.msg, W / 2, LY.bot - 38, 21, CREAM, 'center', null, F_B); }
@@ -4232,7 +4232,7 @@ const scenes = {
       if (!signedIn()) { const cy = (v0 + v1) / 2;
         text('로그인하면 공개된 방을 볼 수 있어요', W / 2, cy - 40, 24, INK, 'center', null, F_T);
         text('친구와는 로그인 없이 방 코드로 할 수 있어요', W / 2, cy - 4, 20, '#7a6872', 'center', null, F_B);
-        button('로그인', W / 2 - 120, cy + 30, 240, 60, () => { scene = 'account'; }, { size: 25, fill: '#fff3c4' }); }
+        button('로그인', LY.m + LY.w - LY.pad - (textW('로그인', 25, F_T) + 72), cy + 30, textW('로그인', 25, F_T) + 72, 60, () => { scene = 'account'; }, { size: 25, fill: '#fff3c4' }); }
       else if (!shown.length) { const cy = (v0 + v1) / 2;
         text(!lobbyNet.at ? '방을 찾는 중…' : '지금 열린 방이 없어요', W / 2, cy - 24, 26, INK, 'center', null, F_T);
         if (lobbyNet.at) text('방을 만들어 공개해 두면 누군가 찾아와요', W / 2, cy + 14, 20, '#7a6872', 'center', null, F_B); }
@@ -4308,7 +4308,7 @@ const scenes = {
         text(`${mm}:${ss}`, W / 2, cy + 172, 34, CORAL, 'center', null, F_N);
         if (t > 30 && !joined) { // nobody yet: offer the computer instead
           text('지금은 기다리는 사람이 적어요', W / 2, cy + 224, 21, '#7a6872', 'center', null, F_B);
-          button('컴퓨터와 먼저 하기', W / 2 - 170, cy + 252, 340, 64, () => { quickStop('format'); }, { size: 25, fill: '#fff3c4' });
+          button('컴퓨터와 먼저 하기', LY.m + LY.w - LY.pad - (textW('컴퓨터와 먼저 하기', 25, F_T) + 64), cy + 252, textW('컴퓨터와 먼저 하기', 25, F_T) + 64, 64, () => { quickStop('format'); }, { size: 25, fill: '#fff3c4' });
         }
         sideBtn('그만두기', () => quickStop());
         menuEnd('이 화면을 닫으면 찾기를 멈춰요');
@@ -4408,7 +4408,7 @@ const scenes = {
         text(L.name, x + 64, y + (rh - 10) / 2, 25, INK, 'left', null, F_T);
         text(L.goal ? `목표 ${L.goal}개` : '목표 없음', x + LY.w - LY.pad * 2 - 20, y + (rh - 10) / 2, 19, '#7a6872', 'right', null, F_B);
       });
-      button('닫기', W / 2 - 150, top + ph - 88, 300, 64, () => { scene = 'play'; }, { size: 27, fill: '#fff3c4' });
+      button('닫기', LY.m + LY.w - LY.pad - 150, top + ph - 88, 150, 64, () => { scene = 'play'; }, { size: 27, fill: '#fff3c4' });
     },
   },
   help: {
@@ -4454,7 +4454,7 @@ const scenes = {
           text({ flash: '10점 먼저 (2점 차)', short: '4게임 먼저 · 노애드 · 4-4 타이브레이크', regular: '3세트 먼저 · 6게임 세트' }[id], 190, y, 20, '#5d4f58', 'left', null, F_B); });
         text('지금 경기는 노란 칸의 방식이에요', W / 2, 692, 21, '#c0605a', 'center', null, F_H);
       }
-      button('닫기', 210, 718, 300, 62, closeHelp, { size: 27, fill: '#fff3c4' });
+      button('닫기', W - 44 - 28 - 150, 718, 150, 62, closeHelp, { size: 27, fill: '#fff3c4' });
       ctx.restore(); OY = 0;
       text(T ? '위의 탭을 눌러 페이지를 넘겨요' : '← → 페이지 · H 또는 Esc 닫기', W / 2, top + 830, 21, CREAM, 'center', OUT, F_B);
     },
@@ -4525,7 +4525,7 @@ const scenes = {
       }
       if (net) sideBtn('방 목록', leaveOnline); else sideBtn('홈으로', goHome);
       if (guest && net.ask) mainBtn('다시 하기 (방에 남기)', guestStay); // the host asked: stay for another, or leave with 방 목록
-      else if (guest) { const gw = midW('방장이 다시 하자고 하면', 21), gx = W / 2 - gw / 2; rr(gx, LY.bot, gw, LY.btnH, 18, 'rgba(255,248,231,0.7)', '#cdbfb3', 2.4); text('방장이 다시 하자고 하면', gx + gw / 2, LY.bot + LY.btnH / 2 - 13, 21, INK, 'center', null, F_T); text('남을지 고를 수 있어요', gx + gw / 2, LY.bot + LY.btnH / 2 + 15, 21, INK, 'center', null, F_T); }
+      else if (guest) { const gw = midW('방장이 다시 하자고 하면', 21), gx = LY.m + LY.w - gw; rr(gx, LY.bot, gw, LY.btnH, 18, 'rgba(255,248,231,0.7)', '#cdbfb3', 2.4); text('방장이 다시 하자고 하면', gx + gw / 2, LY.bot + LY.btnH / 2 - 13, 21, INK, 'center', null, F_T); text('남을지 고를 수 있어요', gx + gw / 2, LY.bot + LY.btnH / 2 + 15, 21, INK, 'center', null, F_T); }
       else mainBtn(net ? '다시 하기 (방으로)' : '다시 하기', () => { if (net) onlineAgain(); else { reset(); scene = 'play'; } });
       menuEnd(guest ? (net.ask ? '방장이 한 판 더 하자고 해요 · 남거나 방 목록으로 나가요' : '') : net ? '다시 하기를 누르면 방으로 돌아가요 · 친구들은 남을지 골라요' : 'Enter : 다시 하기 · Esc : 홈으로');
       drawGift();
