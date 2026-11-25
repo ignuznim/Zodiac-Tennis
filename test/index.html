@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
-<meta name="theme-color" content="#5fb49a">
+<meta name="theme-color" content="#fff3dc">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="십이지 테니스">
@@ -22,7 +22,7 @@
   @font-face { font-family: 'Do Hyeon'; src: url('assets/DoHyeon-Regular.ttf'); }
   @font-face { font-family: 'Gowun Dodum'; src: url('assets/GowunDodum-Regular.ttf'); }
   @font-face { font-family: 'Gaegu'; src: url('assets/Gaegu-Bold.ttf'); font-weight: 700; }
-  html, body { margin: 0; height: 100%; background: #5fb49a; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; overscroll-behavior: none; }
+  html, body { margin: 0; height: 100%; background: #fff3dc; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; overscroll-behavior: none; }
   body { font-variant-numeric: tabular-nums; }
   html, body { position: fixed; inset: 0; width: 100%; }
   canvas { display: block; position: absolute; left: 0; top: 0; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
@@ -38,7 +38,7 @@
   #nick button.go, #fb button.go { background: #fff3c4; border-color: #ff8a7a; }
   #nick .err, #fb .err { min-height: calc(var(--u, 0.6) * 24px); margin-top: calc(var(--u, 0.6) * 10px); font: calc(var(--u, 0.6) * 20px) 'Gowun Dodum', sans-serif; color: #e2574c; }
   #nickInline { position: fixed; display: none; z-index: 4; left: 0; top: 0; width: 2px; height: 2px; margin: 0; padding: 0; border: none; outline: none; opacity: 0; font-size: 16px; -webkit-user-select: text; user-select: text; } /* the nickname's keyboard: the input sits out of sight at the very top (so the phone never scrolls to it); what is typed is drawn in the field */
-  html { transition: background-color 300ms ease-out; } body { background: transparent !important; } #edgeB { position: fixed; left: 0; right: 0; bottom: 0; height: 50%; z-index: -1; background: #5fb49a; transition: background-color 300ms ease-out; pointer-events: none; } /* above and below the game: its own top and bottom colours */
+  html { transition: background-color 300ms ease-out; } body { background: transparent !important; } #edgeB, #edgeT { position: fixed; left: 0; right: 0; bottom: 0; height: 50%; z-index: -1; background: #a2e3c8; transition: background-color 300ms ease-out; pointer-events: none; } #edgeT { top: 0; bottom: auto; background: #fff3dc; } /* above and below the game: its own top and bottom colours */
   #safe { position: fixed; visibility: hidden; pointer-events: none; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
   /* 개발자에게 한마디, drawn like the game's own windows: the same outline and drop under every key, a switch like 단식 · 복식, a cross key at the right of the title */
   #fb form, #nick form { text-align: left; padding: calc(var(--u, 0.6) * 24px) calc(var(--u, 0.6) * 26px) calc(var(--u, 0.6) * 26px); background: #fffaf0; }
@@ -67,6 +67,7 @@
 <canvas id="game"></canvas>
 <div style="position:fixed;left:6px;bottom:6px;z-index:9;font:12px sans-serif;color:#fff;background:rgba(226,87,76,0.85);padding:2px 7px;border-radius:9px;pointer-events:none">테스트 버전</div>
 <div id="safe"></div>
+<div id="edgeT"></div>
 <div id="edgeB"></div>
 <input id="nickInline" maxlength="8" enterkeyhint="done" spellcheck="false" autocomplete="off" aria-label="닉네임">
 <div id="fb"><form autocomplete="off">
@@ -188,6 +189,7 @@ addEventListener('keyup', e => down.delete(e.code));
 // shot-key chip acts as its key for as long as it is held.
 let dragEndAt = -1e9, hot = [], clicks = [], mouse = { x: -1, y: -1 }, OY = 0;
 function toLogical(e) { const r = canvas.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * H }; }
+const nowKey = () => { if (hot.length) hot[hot.length - 1].now = true; }; // the key just drawn runs inside the tap itself (it raises the keyboard)
 function hitTest(p) { for (let i = hot.length - 1; i >= 0; i--) { const h = hot[i]; if (p.x >= h.x && p.x <= h.x + h.w && p.y >= h.y && p.y <= h.y + h.h) return h; } return null; }
 let HX = null; // a window drawn larger than it is laid out: its taps scaled the same way about its centre
 const hxMap = (x, y, w, h) => HX ? [HX.cx + (x - HX.cx) * HX.s, HX.cy + (y - HX.cy) * HX.s, w * HX.s, h * HX.s] : [x, y, w, h];
@@ -229,7 +231,7 @@ for (const n of ['pointerup', 'pointercancel']) addEventListener(n, e => {
   if (k) { held.delete(e.pointerId); if (![...held.values()].includes(k)) down.delete(k); }
   if (e.pointerId === stick.id) { stick.id = null; stick.x = stick.y = 0; }
   // a tap is a press and a release in one place: it never waits for the browser's own click, which phones may not send
-  if (n === 'pointerup' && tapAt && tapAt.id === e.pointerId && performance.now() - dragEndAt > 50) { const p = toLogical(e); if (Math.hypot(p.x - tapAt.x, p.y - tapAt.y) < 40) { clicks.push(p); lastTap = performance.now(); } }
+  if (n === 'pointerup' && tapAt && tapAt.id === e.pointerId && performance.now() - dragEndAt > 50) { const p = toLogical(e); if (Math.hypot(p.x - tapAt.x, p.y - tapAt.y) < 40) { lastTap = performance.now(); const h = hitTest(p); if (h && h.now && h.fn) h.fn(); else clicks.push(p); } } // a key that opens the keyboard acts inside the tap itself: phones only raise the keyboard from a real touch
   if (tapAt && tapAt.id === e.pointerId) tapAt = null;
   ptrDown = false; if (e.pointerType === 'touch') mouse = { x: -1, y: -1 };
 });
@@ -2352,7 +2354,7 @@ function guestStep() { // the guest draws what the host sends and sends its own 
 // ---- 명예의 전당: the all-time top ten, kept like ancestral tablets in Jongmyo's long hall ----
 const HALL_TIME = 'night'; // 'night': a full moon; 'dusk': the sun going down
 const HALL_SKY = { night: ['#1d1b3a', '#3b2f5c', '#6a4a6e'], dusk: ['#3b2c58', '#b05a6a', '#f2a46a'] };
-function openHall() { scene = 'hall'; state.hallT = 0; rank.list = HALLC[rank.mode] ? HALLC[rank.mode].list : null; rank.litAt = rank.list ? clock.now() : null; loadRanking(null, 'all'); tone(392, 0.4, 'sine', 0.18); tone(587, 0.6, 'sine', 0.14, 0.25); }
+function openHall() { scene = 'hall'; state.hallT = 0; rank.seenAt = null; rank.list = HALLC[rank.mode] ? HALLC[rank.mode].list : null; rank.litAt = rank.list ? clock.now() : null; loadRanking(null, 'all'); tone(392, 0.4, 'sine', 0.18); tone(587, 0.6, 'sine', 0.14, 0.25); }
 function irwol(x, y, s) { // 일월오봉도, the sun, the moon and five peaks behind the throne, under a night-blue sky, drawn into a square
   const u = s / 100, P = (pts, fill) => { ctx.beginPath(); pts.forEach(([a, b], k) => k ? ctx.lineTo(x + a * u, y + b * u) : ctx.moveTo(x + a * u, y + b * u)); ctx.closePath(); ctx.fillStyle = fill; ctx.fill(); };
   const g = ctx.createLinearGradient(0, y, 0, y + s); g.addColorStop(0, '#1d2b55'); g.addColorStop(1, '#34497c'); ctx.fillStyle = g; ctx.fillRect(x, y, s, s);
@@ -2463,7 +2465,6 @@ function drawHall() { // 명예의 전당: a gallery in 석조전 at night, the 
   // the brass name plate, the home key, the formats
   rr(200, ty, 320, 66, 6, '#2a1f2b', '#c9a24b', 3); rr(208, ty + 8, 304, 50, 3, null, 'rgba(232,200,115,0.45)', 1.4); for (const sx of [214, 506]) E(sx, ty + 33, 3, 3, '#c9a24b', 0, true);
   text('명예의 전당', W / 2, ty + 34, 36, '#f0cf78', 'center', '#2a1a10', F_T);
-  iconBtn(LY.m, LY.titleY - 27, 'home', goHome);
   const tw = (LY.w - LY.gap * 2) / 3;
   FORMAT_IDS.forEach((id, i) => { const x = LY.m + i * (tw + LY.gap), on = id === rank.mode, over = btn(x, fy, tw, 46, () => { if (!on) { rank.list = HALLC[id] ? HALLC[id].list : null; loadRanking(id, 'all'); } });
     rr(x, fy, tw, 46, 14, on ? 'rgba(240,207,120,0.24)' : over ? 'rgba(255,248,231,0.16)' : 'rgba(255,248,231,0.07)', on ? '#f0cf78' : 'rgba(255,248,231,0.3)', on ? 2.6 : 2);
@@ -2495,7 +2496,7 @@ function drawHall() { // 명예의 전당: a gallery in 석조전 at night, the 
   else if (rank.err && !L.length) text(rank.err, W / 2, listTop + listH / 2, 19, '#c0392b', 'center', null, F_B);
   else if (!L.length) text('아직 걸린 기록이 없어요', W / 2, listTop + listH / 2, 22, '#7a6872', 'center', null, F_T);
   else {
-    if (rank.seen !== rank.list) { rank.seen = rank.list; rank.seenAt = clock.now(); } const ht = Math.min(t - 0.6, clock.now() - (rank.seenAt || 0));
+    if (rank.seenAt == null) rank.seenAt = clock.now(); const ht = Math.min(t - 0.6, clock.now() - (rank.seenAt || 0)); // the rows come in once, when the hall opens; switching the way of play swaps them in place
     for (let i = 3; i < 10; i++) { const r = L[i], y = listTop + 16 + (i - 3) * rowH + rowH / 2, he = stagE(ht, i - 3); ctx.save(); ctx.globalAlpha = he; ctx.translate(0, (1 - he) * STAG.rise);
       text((i + 1) + '', LY.m + 46, y, 21, '#9a8b93', 'center', null, F_N);
       if (i < 9) { ctx.fillStyle = '#e8dfd0'; ctx.fillRect(LY.m + 24, y + rowH / 2, LY.w - 48, 1); }
@@ -2505,8 +2506,7 @@ function drawHall() { // 명예의 전당: a gallery in 석조전 at night, the 
       ctx.restore(); } }
   ctx.restore(); OY = 0; pullMark(S, v0, '#d9c4cc');
   // the bottom row, where every menu keeps it
-  const gb = (label, x, w, fill, ink, fn) => { const over = btn(x, LY.bot, w, LY.btnH, fn), d = sink(x, LY.bot, w, LY.btnH); rr(x, LY.bot + 5, w, LY.btnH, 18, '#1a1218', null); rr(x, LY.bot + d, w, LY.btnH, 18, hoverOn(over) ? '#3a2428' : fill, '#c9a24b', 3); text(label, x + w / 2, LY.bot + d + LY.btnH / 2 + 1, 28, ink, 'center', null, F_T); };
-  gb('랭킹', LY.m, textW('랭킹', 28, F_T) + 64, '#2a1a1c', '#f0cf78', () => { scene = 'ranking'; loadTierBoard(); });
+  backKey('back', () => { scene = 'ranking'; }); // the way back to the ranking it opened from, the same key as every page's
   infoTip('컴퓨터를 이긴 모든 기록 중 TOP 10이에요\n액자나 줄을 누르면 점수 계산을 볼 수 있어요', W / 2 + 160 + 28, ty + 33, true);
   if (L[rank.sel] && L[rank.sel].sweet != null && t > 0.6) drawScoreCard(L[rank.sel], rank.sel); // over the hall once the lights are on
 }
@@ -2682,7 +2682,7 @@ function closeFeedback() { fbBox.classList.remove('on'); fbIn.blur(); down.clear
 fbBox.querySelectorAll('.kinds button').forEach(b => b.onclick = () => { fbKind = b.dataset.k; fbBox.querySelectorAll('.kinds button').forEach(x => x.classList.toggle('on', x === b)); });
 document.getElementById('fbNo').onclick = closeFeedback;
 const fbN = document.getElementById('fbN'); fbIn.addEventListener('input', () => { fbN.textContent = `${fbIn.value.length} / 1000`; });
-fbBox.addEventListener('click', e => { if (e.target === fbBox) closeFeedback(); }); // a tap outside the card closes it, as on every window
+fbBox.addEventListener('pointerdown', e => { if (e.target === fbBox) { e.preventDefault(); closeFeedback(); } }); // a tap outside the card closes it, as on every window
 fbBox.addEventListener('pointerdown', e => e.stopPropagation()); fbBox.addEventListener('click', e => e.stopPropagation());
 fbBox.addEventListener('keydown', e => { if (e.key === 'Escape') closeFeedback(); e.stopPropagation(); });
 fbBox.querySelector('form').onsubmit = async e => {
@@ -2764,23 +2764,23 @@ function openNick(mode = 'rank') {
   nickBox.querySelector('h2').textContent = mode === 'profile' ? '닉네임 정하기' : '랭킹 등록';
   nickBox.querySelector('p').textContent = mode === 'profile' ? '랭킹과 옷장에 쓰일 이름 (1~8자)' : '랭킹에 표시할 닉네임 (1~8자)';
   nickBox.querySelector('.go').textContent = mode === 'profile' ? '저장' : '등록';
-  if (mode === 'code') { nickBox.querySelector('h2').textContent = '코드로 참가'; nickBox.querySelector('p').textContent = '친구에게 받은 방 코드 6자리'; nickBox.querySelector('.go').textContent = '참가'; nickIn.maxLength = 6; nickIn.value = ''; nickErr.textContent = ''; nickBox.classList.add('on'); down.clear(); setTimeout(() => nickIn.focus(), 30); return; }
+  if (mode === 'code') { nickBox.querySelector('h2').textContent = '코드로 참가'; nickBox.querySelector('p').textContent = '친구에게 받은 방 코드 6자리'; nickBox.querySelector('.go').textContent = '참가'; nickIn.maxLength = 6; nickIn.value = ''; nickErr.textContent = ''; nickBox.classList.add('on'); down.clear(); nickIn.focus(); return; }
   nickIn.maxLength = 8;
   if (mode === 'rank') {
     if (rank.sent === m || rank.sending) return;
     if (acct.prof && acct.prof.nickname) { submitRecord(acct.prof.nickname); return; } // signed in: the account's name, no question
   }
   nickIn.value = (acct.prof && acct.prof.nickname) || store('zt_nick') || ''; nickErr.textContent = ''; nickBox.classList.add('on'); down.clear();
-  setTimeout(() => nickIn.focus(), 30);
+  nickIn.focus();
 }
 function closeNick() { nickBox.classList.remove('on'); nickIn.blur(); down.clear(); setTimeout(() => fit(true), 350); } // the keyboard has gone: fit again
-document.getElementById('nickNo').onclick = closeNick; nickBox.addEventListener('click', e => { if (e.target === nickBox) closeNick(); }); // a tap outside the card closes it, as on every window
+document.getElementById('nickNo').onclick = closeNick; nickBox.addEventListener('pointerdown', e => { if (e.target === nickBox) { e.preventDefault(); closeNick(); } }); // a tap outside the card closes it, as on every window
 nickBox.addEventListener('pointerdown', e => e.stopPropagation()); nickBox.addEventListener('click', e => e.stopPropagation());
 nickBox.addEventListener('keydown', e => { if (e.key === 'Escape') closeNick(); e.stopPropagation(); });
 nickBox.querySelector('form').onsubmit = async e => {
   e.preventDefault();
   const name = nickIn.value.trim().replace(/\s+/g, ' ');
-  if (!name) { nickErr.textContent = '닉네임을 입력해 주세요'; return; }
+  if (!name) { nickErr.textContent = nickMode === 'code' ? '방 코드 6자리를 적어 주세요' : '닉네임을 입력해 주세요'; return; }
   if (nickMode !== 'code' && [...name].length > 8) { nickErr.textContent = '8자까지 쓸 수 있어요'; return; }
   if (nickMode === 'code') { // a room code: six letters and digits
     const code = nickIn.value.trim().toUpperCase().replace(/\s/g, '');
@@ -3179,7 +3179,7 @@ function pullBtn() { // the 뽑기 button with − and + at its ends: how many a
   if (canUp) btn(x + w - zone, y, zone, h, () => { G.n = PULLS[i + 1]; tone(760, 0.05, 'sine', 0.16); });
   rr(x, y + 5, w, h, 24, OUT, null); rr(x, y, w, h, 24, mid ? '#fff7d6' : '#fff3c4', OUT, 3);
   [[-1, '−', canDown], [1, '+', canUp]].forEach(([d, t, on]) => { const bx = d < 0 ? x + 10 : x + w - 10 - sq;
-    rr(bx, y + 10, sq, sq, sq / 2, on ? '#ffffff' : '#f1e9df', on ? OUT : '#cdbfb3', 2.4); text(t, bx + sq / 2, y + h / 2 + 1, 34, on ? INK : '#c3b5bc', 'center', null, F_T); });
+    rr(bx, y + 10, sq, sq, sq / 2, on ? '#ffffff' : '#f1e9df', on ? OUT : '#cdbfb3', 2.4); const mx = bx + sq / 2, my = y + 10 + sq / 2; ctx.save(); ctx.lineCap = 'round'; ctx.lineWidth = 4.4; ctx.strokeStyle = on ? INK : '#c3b5bc'; ctx.beginPath(); ctx.moveTo(mx - 10, my); ctx.lineTo(mx + 10, my); if (d > 0) { ctx.moveTo(mx, my - 10); ctx.lineTo(mx, my + 10); } ctx.stroke(); ctx.restore(); }); // − and + drawn as strokes, dead in the middle of their circles (a font's own − sits low)
   text(`${G.n}회 뽑기`, x + w / 2, y + h / 2 - 12, 30, INK, 'center', null, F_T);
   text(`뽑기권 ${G.n}장`, x + w / 2, y + h / 2 + 20, 18, '#b0603a', 'center', null, F_T);
 }
@@ -3323,7 +3323,7 @@ const rubber = (x, d) => (1 - 1 / (x * RUBBER / d + 1)) * d, unrubber = (o, d) =
 function rawOf(S) { const d = S.v1 - S.v0 || 1; return S.over < 0 ? -unrubber(-S.over, d) : S.over > 0 ? S.max + unrubber(S.over, d) : S.scroll; } // where the finger's list would be with no edges
 function scrollTo(S, raw) { const d = S.v1 - S.v0 || 1; if (raw < 0) { S.scroll = 0; S.over = -rubber(-raw, d); } else if (raw > S.max) { S.scroll = S.max; S.over = rubber(raw - S.max, d); } else { S.scroll = raw; S.over = 0; } }
 function pullRelease(S) { if (S.pull && S.over <= -PULL_AT && !S.hold) { S.hold = clock.now(); S.pull.fn(); tone(660, 0.05, 'sine', 0.12); } }
-function activeScroll() { return scene === 'hall' ? (rank.sel >= 0 ? null : SCR.hall) : scene === 'ranking' ? SCR.tier : scene === 'notice' ? SCR.notice : scene === 'online' && signedIn() ? SCR.rooms : scene === 'closet' ? SCR.closet : scene === 'wardrobe' && acct.wtab === 'ach' && acct.prof ? SCR.ach : null; }
+function activeScroll() { return scene === 'hall' ? (rank.sel >= 0 ? null : SCR.hall) : scene === 'ranking' ? SCR.tier : scene === 'notice' ? SCR.notice : scene === 'online' && signedIn() ? SCR.rooms : scene === 'closet' ? (closetWin() && closet.animal != null && (closet.page || 0) === 0 ? null : SCR.closet) : scene === 'wardrobe' && acct.wtab === 'ach' && acct.prof ? SCR.ach : null; }
 function scrollStep(dt) { // after a flick the list glides on and slows; past an end it springs back
   const S = activeScroll(); if (!S || S.drag) return;
   if (S.hold && clock.now() - S.hold > 0.6 && !S.pull.busy()) S.hold = null; // loaded (and shown open long enough to see): close
@@ -3389,9 +3389,9 @@ function miniFace(a, cx, cy, r = 13) { // an animal's face in a little white cir
   const k = r / 13; ctx.save(); ctx.lineWidth = 2; ctx.strokeStyle = OUT; E(cx, cy, r, r, '#ffffff'); ctx.beginPath(); ctx.arc(cx, cy, r - 1, 0, 7); ctx.clip();
   ctx.lineWidth = 2.6 * k; ctx.strokeStyle = OUT; drawAnimal(a, cx, cy + 24 * k, 0.3 * k, { front: true, t: 0.4, accent: CORAL }); ctx.restore();
 }
-function drawClosetList(gear, eh, chh, coll) { // the closet's whole list, from y 0: worn gear big (for one animal), then each slot four across
+function drawClosetList(gear, eh, chh, coll, worn = !coll) { // the closet's whole list, from y 0: worn gear big (for one animal, unless its window shows that on a page of its own), then each slot four across
   let y = 0;
-  if (!coll) {
+  if (worn) {
   text('장착 중', LY.m, y + 16, 24, INK, 'left', null, F_T); y += 38;
   const ew = (LY.w - 14) / 2;
   SLOTS.forEach(([id, ko], i) => { const x = LY.m + (i % 2) * (ew + 14), yy = y + Math.floor(i / 2) * (eh + 14), it = item(gear[id]);
@@ -3431,18 +3431,48 @@ function drawClosetList(gear, eh, chh, coll) { // the closet's whole list, from 
   });
   return y;
 }
-function drawClosetWindow() { // the closet as a window over 선수 선택: it pops in, a tap outside it closes it; no home, no back
-  scenes.select.draw(); hot = []; FIX = []; const PQ = popIn(clock.now() - sceneAt);
-  ctx.fillStyle = `rgba(59,51,64,${0.55 * PQ.a})`; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, () => { scene = 'select'; });
-  const x = LY.m - 16, w = LY.w + 32, y = LY.titleY - 38, h = LY.bot - 14 - y, gear = myGear(closet.animal), own = Object.keys(ITEMS).filter(id => acct.inv[id]).length;
+const closetWin = () => scene === 'closet' && (closetBack === 'select' || closetBack === 'wardrobe'); // the closet as a window over the page it came from
+function drawClosetWindow() { // over 선수 선택 (an animal's closet: what it wears, then every item a swipe away) or over 뽑기 (내 아이템: every item); it pops in, a tap outside closes it
+  scenes[closetBack].draw(); hot = []; FIX = []; const PQ = popIn(clock.now() - sceneAt), two = closet.animal != null;
+  ctx.fillStyle = `rgba(59,51,64,${0.55 * PQ.a})`; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, () => { scene = closetBack; });
+  const x = LY.m - 16, w = LY.w + 32, y = LY.titleY - 38, h = LY.bot - 14 - y, gear = two ? myGear(closet.animal) : {}, own = Object.keys(ITEMS).filter(id => acct.inv[id]).length;
   ctx.save(); ctx.translate(W / 2, y + h / 2); ctx.scale(PQ.k, PQ.k); ctx.translate(-W / 2, -(y + h / 2)); ctx.globalAlpha = PQ.a;
   rr(x, y + 6, w, h, 26, 'rgba(59,51,64,0.35)', null); rr(x, y, w, h, 26, '#fffaf0', OUT, 3); btn(x, y, w, h, () => {});
-  text(`${ANIMALS[closet.animal].ko}의 옷장`, x + 24, y + 38, 30, INK, 'left', null, F_T); text(`보유 ${own} / ${Object.keys(ITEMS).length}`, x + w - 24, y + 38, 20, '#3d8be0', 'right', null, F_T);
-  const key = JSON.stringify([acct.inv, acct.prof && acct.prof.equip, closet.sel, closet.animal, 'w']), eh = 128, chh = 150, height = 38 + 2 * (eh + 14) + 16 + SLOTS.reduce((t, [sid]) => t + 40 + Math.ceil(Object.keys(ITEMS).filter(k => ITEMS[k][0] === sid).length / 4) * (chh + 12) + 14, 0);
-  scrollView(SCR.closet, y + 70, y + h - 16, key, height, () => drawClosetList(gear, eh, chh, false), '255,250,240');
+  text(two ? `${ANIMALS[closet.animal].ko}의 옷장` : '내 아이템', x + 24, y + 38, 30, INK, 'left', null, F_T); text(`보유 ${own} / ${Object.keys(ITEMS).length}`, x + w - 24, y + 38, 20, '#3d8be0', 'right', null, F_T);
+  const eh = 128, chh = 150, lh = SLOTS.reduce((t, [sid]) => t + 40 + Math.ceil(Object.keys(ITEMS).filter(k => ITEMS[k][0] === sid).length / 4) * (chh + 12) + 14, 0), v0 = y + 70, v1 = y + h - (two ? 44 : 16);
+  const key = JSON.stringify([acct.inv, acct.prof && acct.prof.equip, closet.sel, closet.animal, 'w']);
+  if (!two) { scrollView(SCR.closet, v0, v1, key, lh, () => drawClosetList(gear, eh, chh, true), '255,250,240'); ctx.restore(); return; }
+  // two pages side by side: what it wears, and every item; the finger drags them, a flick turns the page
+  const now = clock.now(), dt = Math.min(0.05, now - (closet.pt || now)); closet.pt = now; if (closet.px == null) closet.px = closet.page || 0;
+  if (!closet.hdrag) closet.px += ((closet.page || 0) - closet.px) * (1 - Math.exp(-dt / 0.07)); const disp = clamp(closet.hdrag ? (closet.page || 0) - closet.hdx / w : closet.px, -0.15, 1.15);
+  ctx.save(); ctx.beginPath(); ctx.rect(x + 3, v0 - 4, w - 6, v1 - v0 + 8); ctx.clip();
+  if (disp < 0.999) { ctx.save(); ctx.translate(-disp * w, 0); const n0 = hot.length; drawWornPage(x, v0, w, v1 - v0, gear, eh); if (Math.abs(disp) > 0.01) hot.length = n0; ctx.restore(); }
+  if (disp > 0.001) { ctx.save(); ctx.translate((1 - disp) * w, 0); const n0 = hot.length; scrollView(SCR.closet, v0, v1, key + 'p', lh, () => drawClosetList(gear, eh, chh, false, false), '255,250,240'); if (Math.abs(disp - 1) > 0.01) hot.length = n0; ctx.restore(); }
+  ctx.restore();
+  [0, 1].forEach(i => { const on = Math.abs(disp - i) < 0.5, dw = on ? 26 : 10; rr(W / 2 - 22 + i * 32 - (on ? 8 : 0), y + h - 26, dw, 10, 5, on ? INK : '#cdbfb3', null); btn(W / 2 - 30 + i * 32, y + h - 40, 28, 36, () => { closet.page = i; }); }); // the page dots: a tap on one turns to it
   ctx.restore();
 }
-function openCloset(back, a = null) { if (!acct.user) { toast('로그인하면 옷장을 쓸 수 있어요'); return; } closetBack = back; closet.animal = a; closet.sel = null; SCR.closet.scroll = 0; SCR.closet.vel = 0; scene = 'closet'; zoomFrom = { x: mouse.x, y: mouse.y, at: clock.now(), r: (hot.slice().reverse().find(h => mouse.x >= h.x && mouse.x <= h.x + h.w && mouse.y >= h.y && mouse.y <= h.y + h.h) || null) }; tone(660, 0.06, 'sine', 0.15); }
+function drawWornPage(x, y, w, h, gear, eh) { // an animal's closet, first page: the animal as dressed, large, and its four slots under it (a tap takes an item off)
+  const ew = (LY.w - 14) / 2, sh = 2 * eh + 14, ah = h - sh - 20, a = closet.animal;
+  rr(LY.m, y, LY.w, ah, 20, '#eef7f1', '#d9cbbd', 2); ctx.save(); rr(LY.m, y, LY.w, ah, 20, null, null); ctx.clip();
+  ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(a, W / 2, y + ah - 16, Math.min(1.9, (ah - 30) / 190), { front: true, t: clock.now(), anim: 'idle', accent: CORAL, gear }); ctx.restore();
+  const y2 = y + ah + 20;
+  SLOTS.forEach(([id, ko], i) => { const sx = LY.m + (i % 2) * (ew + 14), yy = y2 + Math.floor(i / 2) * (eh + 14), it = item(gear[id]);
+    btn(sx, yy, ew, eh, () => { if (it) { closet.sel = it.id; equip(id, null); } else closet.page = 1; });
+    rr(sx, yy + 4, ew, eh, 18, OUT, null); rr(sx, yy, ew, eh, 18, it ? '#ffffff' : 'rgba(255,248,231,0.85)', it ? GRADE[it.grade].c : '#cdbfb3', it ? 4.5 : 2.6);
+    if (it) { ctx.save(); ctx.beginPath(); ctx.rect(sx + 6, yy + 6, 104, eh - 12); ctx.clip(); itemIcon(it.id, sx + 58, yy + eh / 2 + 4, 78); ctx.restore();
+      text(ko, sx + 118, yy + 26, 17, '#7a6872', 'left', null, F_B); gradeChip(it.grade, sx + ew - 60, yy + 12, 26);
+      fitText(it.name, sx + 118, yy + 62, 22, INK, 'left', F_T, ew - 130); text(`${STAT_NAME[it.stat]} +${it.amt}`, sx + 118, yy + 96, 19, GRADE[it.grade].c, 'left', null, F_T); }
+    else { text(ko, sx + ew / 2, yy + eh / 2 - 14, 22, '#7a6872', 'center', null, F_T); text('비어 있음 · 넘겨서 고르기', sx + ew / 2, yy + eh / 2 + 18, MIN_TEXT, '#a8999f', 'center', null, F_B); } });
+}
+// the closet window's pages follow a sideways drag; an upright one scrolls the list
+addEventListener('pointerdown', e => { if (!closetWin() || closet.animal == null) return; const p = toLogical(e); closet.hd = { id: e.pointerId, x: p.x, y: p.y }; closet.hdrag = false; closet.hdx = 0; });
+addEventListener('pointermove', e => { const d = closet.hd; if (!d || d.id !== e.pointerId || !closetWin()) return; const p = toLogical(e), dx = p.x - d.x, dy = p.y - d.y;
+  if (!closet.hdrag && Math.abs(dx) > 14 && Math.abs(dx) > Math.abs(dy) * 1.2) { closet.hdrag = true; for (const k in SCR) SCR[k].drag = null; }
+  if (closet.hdrag) closet.hdx = dx; });
+for (const n of ['pointerup', 'pointercancel']) addEventListener(n, e => { const d = closet.hd; if (!d || d.id !== e.pointerId) return; closet.hd = null;
+  if (closet.hdrag) { const w = LY.w + 32, pg = closet.page || 0; closet.px = clamp(pg - closet.hdx / w, -0.15, 1.15); if (closet.hdx < -60) closet.page = 1; else if (closet.hdx > 60) closet.page = 0; closet.hdrag = false; dragEndAt = performance.now(); } });
+function openCloset(back, a = null) { if (!acct.user) { toast('로그인하면 옷장을 쓸 수 있어요'); return; } closetBack = back; closet.animal = a; closet.sel = null; closet.page = 0; closet.px = 0; closet.pt = 0; SCR.closet.scroll = 0; SCR.closet.vel = 0; scene = 'closet'; zoomFrom = { x: mouse.x, y: mouse.y, at: clock.now(), r: (hot.slice().reverse().find(h => mouse.x >= h.x && mouse.x <= h.x + h.w && mouse.y >= h.y && mouse.y <= h.y + h.h) || null) }; tone(660, 0.06, 'sine', 0.15); }
 function drawGachaTab(y0, end) { // the machine, as tall as the page allows: a lit sign, a glass globe where the capsules tumble, the body with its slot, crank and chute
   const G = acct.g, h = end - y0, MH = 740, k = Math.min((h - 8) / MH, (LY.w - 40) / 372);
   drawGachaMachine(G, W / 2, end - 4, k);
@@ -3590,7 +3620,7 @@ function drawDoublesSwitch(y, SH) { // 단식 or 복식, a big switch on top of 
   const x = LY.m, w = LY.w, hw = w / 2, to = setup.doubles ? 1 : 0, e = CALM ? 1 : easeOut(Math.min(1, (clock.now() - dblAt) / 0.24)), p = 1 - to + (2 * to - 1) * e; // the thumb slides from the other half
   rr(x, y + 5, w, SH, SH / 2, OUT, null); rr(x, y, w, SH, SH / 2, '#fff8e7', OUT, 3);
   rr(x + p * hw + 7, y + 7, hw - 14, SH - 14, (SH - 14) / 2, mixHex(CORAL, SKY, p), OUT, 3);
-  [['단식', '1 : 1 · 혼자서', false, CORAL, '#6b2a22'], ['복식', '2 : 2 · 파트너와 함께', true, SKY, '#1d4a73']].forEach(([t, sub, d, col, dark], k) => { const on = d ? p > 0.5 : p <= 0.5, kx = x + k * hw;
+  [['단식', '1 : 1 · 혼자서', false, CORAL, '#6b2a22'], ['복식', '2 : 2 · 둘이서', true, SKY, '#1d4a73']].forEach(([t, sub, d, col, dark], k) => { const on = d ? p > 0.5 : p <= 0.5, kx = x + k * hw;
     btn(kx, y, hw, SH, () => setDoubles(d));
     const fy = y + SH / 2, pw = d ? 62 : 38, room = hw - 28 - pw - 14, sz = Math.max(MIN_TEXT, Math.min(20, 20 * room / textW(sub, 20, F_T))), tw = Math.max(textW(t, 32, F_T), textW(sub, sz, F_T)), gx = kx + (hw - (pw + 14 + tw)) / 2, fx = gx + pw / 2; // the picture and the two lines as one block, in the middle of the half both ways
     ctx.save(); ctx.translate(fx, fy); ctx.scale(1.4, 1.4); ctx.translate(-fx, -fy); if (d) { miniFace(3, fx - 9, fy); miniFace(setup.animal, fx + 9, fy); } else miniFace(setup.animal, fx, fy); ctx.restore();
@@ -3634,7 +3664,7 @@ function sink(x, y, w, h, depth = 4) { // press feedback: how far a held button 
   P.d += (tgt - P.d) * (1 - Math.exp(-dt / ((inside ? 0.1 : 0.16) / 3))); P.t = now; PRESS.set(k, P); return P.d;
 }
 const hoverOn = over => over && !touchUI; // a hover tint is for a mouse; on a phone the finger only presses
-function card(x, y, w, h, fn, on, fill) { const over = btn(x, y, w, h, fn), d = sink(x, y, w, h); rr(x, y + 5, w, h, 20, OUT, null); rr(x, y + d, w, h, 20, (on && !touchUI) || hoverOn(over) ? '#fffdf3' : fill || 'rgba(255,248,231,0.96)', OUT, 3); ctx.save(); ctx.translate(0, d); } // every card the same colour; only with keys does the chosen one show, faintly // sinks like every button; the caller draws its picture and then calls ctx.restore(), so the picture goes down with it
+function card(x, y, w, h, fn, on, fill, pick) { const over = btn(x, y, w, h, fn), d = sink(x, y, w, h); rr(x, y + 5, w, h, 20, OUT, null); rr(x, y + d, w, h, 20, pick && on ? '#fff3c4' : (on && !touchUI) || hoverOn(over) ? '#fffdf3' : fill || 'rgba(255,248,231,0.96)', pick && on ? CORAL : OUT, pick && on ? 5 : 3); ctx.save(); ctx.translate(0, d); } // every card the same colour (only with keys does the chosen one show, faintly); pick: a card chosen and then confirmed (the courts) shows the choice as the player cells do // sinks like every button; the caller draws its picture and then calls ctx.restore(), so the picture goes down with it
 // The bottom row, the same on every page: a square key at the left (back or home), the main button in the middle sized to its words,
 // another square key at the right where there is one (refresh). A worded way out (방 목록, 방 닫기) sits at the left sized to its words.
 let barL = 0; // where the left part of the bottom row ends, so the middle button keeps clear of it
@@ -3897,7 +3927,7 @@ const streakOf = rc => { if (!rc) return ''; const c = rc[rc.length - 1]; let n 
 function openProfile(nick) { // mine, or another member's (from the ranking or after an online match)
   const mine = acct.prof && acct.prof.nickname;
   if (!nick || nick === mine) { if (!acct.user || !mine) { scene = 'account'; return; } prof.who = null; prof.menu = false; prof.open = true; prof.t = 0; tone(660, 0.06, 'sine', 0.15); prof.rivals = null; acct.tierAsked = false; rpc('my_rivals').then(r => { prof.rivals = r || []; }).catch(() => { prof.rivals = []; }); return; }
-  Promise.all([rpcAny('public_profile', { nick }), rpcAny('tier_of', { nick }).catch(() => null)]).then(([d, t]) => { if (!d) { toast('회원이 아닌 플레이어라 프로필이 없어요'); return; } d.tier = t; prof.who = d; prof.open = true; prof.t = 0; tone(660, 0.06, 'sine', 0.15); }).catch(() => toast('프로필을 불러오지 못했어요'));
+  Promise.all([rpcAny('public_profile', { nick }), rpcAny('tier_of', { nick }).catch(() => null)]).then(([d, t]) => { if (!d) { toast('회원이 아닌 플레이어라 프로필이 없어요'); return; } d.tier = t; prof.who = d; prof.cmp = false; prof.open = true; prof.t = 0; tone(660, 0.06, 'sine', 0.15); }).catch(() => toast('프로필을 불러오지 못했어요'));
 }
 function drawSettings() { // the cog's menu, over my profile: nickname, linked sign-ins, signing out; a tap outside closes only the menu
   const U = acct.user || {}, ids = (U.identities || []).map(d => d.provider), on = acct.providers || ['google', 'kakao'], PV = [['google', 'Google'], ['kakao', '카카오'], ['apple', 'Apple']].filter(q => on.includes(q[0]));
@@ -3909,7 +3939,7 @@ function drawSettings() { // the cog's menu, over my profile: nickname, linked s
   text('닉네임', L0, yy + 13, 19, INK, 'left', null, F_T); text('1~8자', R0, yy + 13, MIN_TEXT, '#9a8b93', 'right', null, F_B); yy += 26 + 8; // a heading like 연동 계정's, the name in its field under it
   if (prof.nickEdit) { rr(L0, yy, R0 - L0, 52, 14, '#ffffff', CORAL, 3); const v = nickInline.value, sz = fitText(v, L0 + 16, yy + 26, 21, INK, 'left', F_T, R0 - L0 - 80), cx = L0 + 16 + Math.min(textW(v, sz, F_T), R0 - L0 - 80) + 2; if (Math.floor(clock.now() * 2) % 2 === 0) rr(cx, yy + 13, 2.5, 26, 1, CORAL, null); iconKey(R0 - 44, yy + 8, 36, 'check', saveNickInline, '#fff3c4'); } // typing here: a coral field, the caret blinking after the words, ✓ saves
   else { rr(L0, yy, R0 - L0, 52, 14, '#ffffff', '#e6dccd', 2); fitText((acct.prof && acct.prof.nickname) || '-', L0 + 16, yy + 26, 21, INK, 'left', F_T, R0 - L0 - 80);
-    iconKey(R0 - 44, yy + 8, 36, 'pencil', startNickInline); } yy += 52 + 18;
+    iconKey(R0 - 44, yy + 8, 36, 'pencil', startNickInline); nowKey(); btn(L0, yy, R0 - L0 - 56, 52, startNickInline); nowKey(); } yy += 52 + 18;
   text('연동 계정', L0, yy + 13, 19, INK, 'left', null, F_T); text('여러 계정으로 같은 기록에 로그인', R0, yy + 13, MIN_TEXT, '#9a8b93', 'right', null, F_B); yy += 26 + 8;
   PV.forEach(([id, nm], i) => { const cy = yy + rh / 2, linked = ids.includes(id); if (i) { ctx.fillStyle = '#efe7da'; ctx.fillRect(L0, yy, R0 - L0, 1); }
     E(L0 + 14, cy, 6, 6, linked ? '#4fc37a' : '#d9cbbd', 0, true); text(nm, L0 + 30, cy, 20, INK, 'left', null, F_T);
@@ -3919,7 +3949,7 @@ function drawSettings() { // the cog's menu, over my profile: nickname, linked s
   ctx.restore(); HX = null;
 }
 const nickInline = document.getElementById('nickInline');
-function startNickInline() { prof.nickEdit = true; nickInline.value = (acct.prof && acct.prof.nickname) || ''; nickInline.style.display = 'block'; down.clear(); setTimeout(() => { nickInline.focus(); nickInline.setSelectionRange(nickInline.value.length, nickInline.value.length); }, 30); }
+function startNickInline() { prof.nickEdit = true; nickInline.value = (acct.prof && acct.prof.nickname) || ''; nickInline.style.display = 'block'; down.clear(); nickInline.focus(); nickInline.setSelectionRange(nickInline.value.length, nickInline.value.length); } // called inside the tap (a 'now' key), so the keyboard comes up
 function endNickInline() { prof.nickEdit = false; nickInline.style.display = 'none'; nickInline.blur(); down.clear(); setTimeout(() => fit(true), 350); } // the keyboard has gone: fit again
 async function saveNickInline() {
   const name = nickInline.value.trim(); if (name === ((acct.prof && acct.prof.nickname) || '')) { endNickInline(); return; }
@@ -3939,8 +3969,10 @@ function drawProfile() { // a member's record, packed like the score card: who; 
   const other = prof.who, P = other ? other.progress || {} : progOf(), M = progOf(), A = acct.prof || {}, n = (o, k) => o[k] || 0, pct = (w, g) => g > 0 ? Math.round(100 * w / g) + '%' : '-';
   const favI = favOf(P), name = other ? other.nickname : (A.nickname || '나'), vs = other && other.vs && other.vs.w + other.vs.l > 0 ? other.vs : null, RV = !other ? (prof.rivals || []) : [];
   const SEC = 18, HD = 26 + 8, TOP = 20 + 100 + 16 + 64; // the space between sections, a section's heading and the gap under it, the part every profile shares
-  const h = other ? TOP + SEC + HD + 4 * 40 + (vs ? 12 + 44 : 0) + 20
-                  : TOP + SEC + HD + 24 + 5 * 30 + 4 + SEC + HD + 88 + SEC + HD + (RV.length ? RV.length * 58 - 8 : 48) + 20;
+  const cmp = other && prof.cmp, REC = SEC + HD + 24 + 5 * 30 + 4 + SEC + HD + 88; // theirs reads like mine; 나와 비교 turns it to the side-by-side bars
+  const h = cmp ? TOP + SEC + HD + 4 * 40 + (vs ? 12 + 44 : 0) + 20
+                : other ? TOP + REC + (vs ? SEC + 44 : 0) + 20
+                : TOP + REC + SEC + HD + (RV.length ? RV.length * 58 - 8 : 48) + 20;
   const PQ = popIn(prof.t); ctx.fillStyle = `rgba(59,51,64,${0.55 * PQ.a})`; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, () => { prof.open = false; });
   const w = 470, x = (W - w) / 2, S = bigWin(w, h), y = H / 2 - h / 2, L0 = x + 20, R0 = x + w - 20, k = PQ.k * S;
   HX = { cx: W / 2, cy: H / 2, s: S }; btn(x, y, w, h, () => {});
@@ -3950,7 +3982,9 @@ function drawProfile() { // a member's record, packed like the score card: who; 
   // who: the picture, and beside it three lines with even gaps, the block centred on the picture
   const bs = 100, by = y + 20, ai = favI >= 0 ? favI : nickAnimal(name); rr(L0, by, bs, bs, 16, '#eef7f1', '#d9cbbd', 2); ctx.save(); ctx.beginPath(); ctx.rect(L0 + 2, by + 2, bs - 4, bs - 4); ctx.clip(); ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(ai, L0 + bs / 2, by + bs - 6, 0.64, { front: true, t: prof.t, accent: other ? SKY : CORAL }); ctx.restore();
   const tx = L0 + bs + 16, tw = R0 - tx, l1 = by + 20, l2 = by + 52, l3 = by + 80, pw = other ? 0 : ticketPillW(A.tickets || 0);
-  { const room = other ? tw : tw - 36 - pw - 10, sz = fitText(name, tx, l1, 25, INK, 'left', F_T, room); if (!other) { gearKey(tx + Math.min(textW(name, sz, F_T), room) + 22, l1, 14, () => { prof.menu = true; prof.mt = 0; tone(660, 0.05, 'sine', 0.15); }); // mine: a cog beside my name, for the settings
+  const cl = cmp ? '기록 보기' : '나와 비교', cbw = other ? textW(cl, 19, F_T) + 36 : 0;
+  if (other) button(cl, R0 - cbw, l1 - 19, cbw, 38, () => { prof.cmp = !prof.cmp; tone(760, 0.06, 'sine', 0.18); }, { size: 19, fill: cmp ? '#eef7ff' : '#fff3c4' }); // where my tickets sit on mine
+  { const room = other ? tw - cbw - 10 : tw - 36 - pw - 10, sz = fitText(name, tx, l1, 25, INK, 'left', F_T, room); if (!other) { gearKey(tx + Math.min(textW(name, sz, F_T), room) + 22, l1, 14, () => { prof.menu = true; prof.mt = 0; tone(660, 0.05, 'sine', 0.15); }); // mine: a cog beside my name, for the settings
     ticketPill(R0, l1, A.tickets || 0); } } // and my tickets at the right, on the name's line
   { const tt = other ? other.tier : myTier(); if (tt && tt.rating != null) { const ti = tierOf(tt); drawTier(ti, tx + 12, l2, 12); fitText(`${TIERS[ti].n} · ${tt.rating.toLocaleString()}점`, tx + 32, l2, 19, TIERS[ti].c[1] === '#f6c445' ? '#c0392b' : TIERS[ti].c[1], 'left', F_T, tw - 32); }
     else fitText('경기를 하면 티어가 생겨요', tx, l2, 18, '#9a8b93', 'left', F_B, tw);
@@ -3959,7 +3993,7 @@ function drawProfile() { // a member's record, packed like the score card: who; 
   let yy = by + bs + 16; const cw = (R0 - L0 - 16) / 3, games = n(P, 'matches'), wins = n(P, 'wins') + n(P, 'online_wins');
   [['경기', games.toLocaleString()], ['승리', wins.toLocaleString()], ['승률', pct(wins, games)]].forEach(([lab, v], i) => { const cx = L0 + i * (cw + 8); rr(cx, yy, cw, 64, 14, i === 2 ? '#fff3c4' : '#ffffff', '#e6dccd', 2); text(lab, cx + cw / 2, yy + 20, MIN_TEXT, '#7a6872', 'center', null, F_B); text(v, cx + cw / 2, yy + 44, 25, i === 2 ? CORAL : INK, 'center', null, F_N); });
   yy += 64 + SEC;
-  if (other) { // side by side with mine
+  if (cmp) { // side by side with mine
     const myG = n(M, 'matches'), myW = n(M, 'wins') + n(M, 'online_wins'), meIn = !!(acct.user && A.nickname);
     text('나와 비교', L0, yy + 13, 20, INK, 'left', null, F_T); if (meIn) { ctx.lineWidth = 1.4; ctx.strokeStyle = OUT; const lx = R0 - textW(name, MIN_TEXT, F_B) - 61; E(lx, yy + 13, 6, 6, CORAL); text('나', lx + 11, yy + 13, MIN_TEXT, '#7a6872', 'left', null, F_B); E(lx + 50, yy + 13, 6, 6, SKY); text(name, lx + 61, yy + 13, MIN_TEXT, '#7a6872', 'left', null, F_B); }
     yy += HD; [['승률', myG ? Math.round(100 * myW / myG) : 0, games ? Math.round(100 * wins / games) : 0, '%'], ['가장 긴 랠리', n(M, 'rally'), n(P, 'rally'), '번'], ["최고 연속 '딱!'", n(M, 'streak'), n(P, 'streak'), '번'], ['에이스', n(M, 'aces'), n(P, 'aces'), '']].forEach(([lab, a1, b1, u], i) => {
@@ -3984,12 +4018,15 @@ function drawProfile() { // a member's record, packed like the score card: who; 
       const cx = L0 + (i % 2) * (half + 8), ty = yy + Math.floor(i / 2) * 48; rr(cx, ty, half, 40, 12, '#ffffff', '#e6dccd', 2);
       fitText(lab, cx + 14, ty + 20, MIN_TEXT, '#7a6872', 'left', F_B, half - 90); text(v, cx + half - 14, ty + 20, 20, INK, 'right', null, F_N); });
     yy += 88 + SEC;
+    if (other) { if (vs) { rr(L0, yy, R0 - L0, 44, 14, '#fff3c4', '#e3a46a', 2.2); fitText(`상대 전적  나 ${vs.w}승 ${vs.l}패${streakOf(vs.recent) ? ' · ' + streakOf(vs.recent) : ''}`, W / 2, yy + 22, 20, INK, 'center', F_T, R0 - L0 - 24); } }
+    else {
     yy = heading(yy, '나의 라이벌', '온라인에서 많이 만난 상대');
     if (!RV.length) { rr(L0, yy, R0 - L0, 48, 12, '#f6efe3', null); text(prof.rivals ? '온라인에서 회원과 겨루면 전적이 쌓여요' : '불러오는 중…', W / 2, yy + 24, MIN_TEXT, '#9a8b93', 'center', null, F_B); }
     RV.forEach(r => { const g = r.w + r.l, fi = favAt(r.fav, r.nick), over = btn(L0, yy, R0 - L0, 50, () => openProfile(r.nick));
       rr(L0, yy, R0 - L0, 50, 12, over ? '#fff3c4' : '#ffffff', '#e6dccd', 2); miniFace(fi, L0 + 27, yy + 25, 17);
       fitText(r.nick, L0 + 54, yy + 15, 19, INK, 'left', F_T, 150); text(`${g}경기${streakOf(r.recent) ? ' · ' + streakOf(r.recent) : ''}`, L0 + 54, yy + 36, MIN_TEXT, '#9a8b93', 'left', null, F_B);
       text(`${r.w}승 ${r.l}패`, R0 - 88, yy + 25, 19, INK, 'right', null, F_N); const f = g ? r.w / g : 0; rr(R0 - 76, yy + 20, 62, 11, 5.5, '#eadfce', null); if (f > 0.02) rr(R0 - 76, yy + 20, 62 * f, 11, 5.5, f >= 0.5 ? '#4f9a6a' : '#e2574c', null); yy += 58; });
+    }
   }
   ctx.restore(); HX = null;
   if (!other && prof.menu) drawSettings();
@@ -4135,7 +4172,7 @@ const scenes = {
     update(dt) { state.t += dt; if (pressed('Escape')) { if (tierGuide.open) tierGuide.open = false; else scene = 'title'; } if (pressed('KeyR') && !tierBoard.loading) loadTierBoard(); if (anyHit(...K_U) || pressed('KeyH')) openHall(); },
     draw() {
       if (!tierBoard.list && !tierBoard.loading) loadTierBoard(); prefetchHall();
-      menuBegin('티어 랭킹', true);
+      menuBegin('티어 랭킹'); // no home key: 뒤로 at the bottom already goes home
       { const hs = 56, hx = LY.m + LY.w - hs, hy0 = LY.titleY - 27, over = btn(hx, hy0, hs, 54, openHall), hy = hy0 + sink(hx, hy0, hs, 54, 3); // the hall of fame: 석조전 alone on its key, square like the home key
         FIX.push(['k:hall', hx, hy0 + OY, hs, 54]); rr(hx, hy0 + 3, hs, 54, 14, OUT, null); rr(hx, hy, hs, 54, 14, hoverOn(over) ? '#fffdf3' : 'rgba(255,248,231,0.95)', OUT, 2.6); icon('shrine', hx + hs / 2, hy + 27, 40); }
 
@@ -4177,7 +4214,7 @@ const scenes = {
       const S = SCR.notice; if (anyHit(...K_D)) S.vel = 900; if (anyHit(...K_U)) S.vel = -900;
     },
     draw() {
-      menuBegin('공지사항', true);
+      menuBegin('공지사항'); // no home key: 뒤로 at the bottom already goes home
       const L = news.list, v0 = LY.top, v1 = contentEnd();
       if (L && L.length) { const top = newsTop(); if (top > (parseInt(store('zt_news_at')) || 0)) store('zt_news_at', String(top)); } // seen
       if (!L) { panel(LY.m, v0, LY.w, 240); text(news.loading ? '불러오는 중…' : news.err || '불러오는 중…', W / 2, v0 + 120, 26, news.err && !news.loading ? '#e2574c' : INK, 'center', null, F_T); }
@@ -4208,7 +4245,7 @@ const scenes = {
   account: { // signing in; once signed in the profile (and its cog) does the rest
     update(dt) { state.t += dt; acct.msgT += dt; if (pressed('Escape')) scene = 'title'; if (acct.user && acct.prof && acct.prof.nickname) { scene = 'title'; openProfile(); } },
     draw() {
-      menuBegin('로그인', true);
+      menuBegin('로그인'); // no home key: 뒤로 at the bottom already goes home
       const on = acct.providers || ['google', 'kakao'], PV = [['google', 'Google로 로그인', '#ffffff'], ['kakao', '카카오로 로그인', '#FEE500'], ['apple', 'Apple로 로그인', '#ffffff']].filter(q => on.includes(q[0])); // until the list arrives, show both
       const bh = 64, bg = 14, bw = Math.max(...PV.map(q => textW(q[1], 24, F_T))) + 56 + 16 + 24, colH = PV.length * bh + (PV.length - 1) * bg;
       const py = LY.top, ph = acct.user ? 340 : Math.max(130, colH) + LY.pad * 2 + 6; panel(LY.m, py, LY.w, ph); // signed in: no taller than its contents
@@ -4239,7 +4276,7 @@ const scenes = {
       if (acct.wtab === 'gacha' && anyHit(...K_OK)) { if (acct.g.phase === 'reveal') acct.g.phase = 'idle'; else pull(); }
     },
     draw() {
-      menuBegin('뽑기 · 업적', true);
+      menuBegin('뽑기 · 업적'); // no home key: 뒤로 at the bottom already goes home
       if (acct.prof) ticketPill(LY.m + LY.w, LY.titleY, acct.prof.tickets, 1.55); // the profile's own pill, at the size of the title row's keys
       { // 뽑기 기계 or 업적: the same switch as 단식 · 복식 (as tall, the same type), its thumb sliding to the side chosen; the page under it is pushed the same way
         const SH = WSW, x = LY.m, y = LY.top, hw = LY.w / 2, to = acct.wtab === 'ach' ? 1 : 0, e = CALM ? 1 : easeOut(Math.min(1, (clock.now() - (acct.wtabAt || -9)) / 0.24)), p = 1 - to + (2 * to - 1) * e;
@@ -4247,7 +4284,7 @@ const scenes = {
         const ready = acct.prof ? ACH.filter(a => claimable(a[0])).length : 0;
         [['gacha', '뽑기 기계', acct.prof ? `뽑기권 ${acct.prof.tickets}장` : '로그인이 필요해요', 'capsule', '#6b2a22'], ['ach', '업적', !acct.prof ? '로그인이 필요해요' : ready ? `받을 보상 ${ready}개` : '모두 받았어요', 'medal', '#1d4a73']].forEach(([id, t, sub, ic, dark], i) => { const kx = x + i * hw, on = i ? p > 0.5 : p <= 0.5, fy = y + SH / 2;
           btn(kx, y, hw, SH, () => { if ((acct.g.phase === 'idle' || acct.g.phase === 'reveal') && acct.wtab !== id) { acct.g.phase = 'idle'; acct.wtab = id; acct.wtabAt = clock.now(); tone(760, 0.06, 'sine', 0.18); } });
-          const gw = 46 + 14 + textW(t, 32, F_T), gx = kx + (hw - gw) / 2, tx = gx + 60; icon(ic, gx + 23, fy, 46); // the picture and the word as one block in the middle of the half
+          const tx = kx + (hw - textW(t, 32, F_T)) / 2; // the word alone, in the middle of the half
           text(t, tx, fy + 1, 32, on ? '#ffffff' : '#6f6068', 'left', on ? OUT : null, F_T);
           if ((id === 'ach' && ready) || (id === 'gacha' && acct.prof && acct.prof.tickets > 0)) { ctx.lineWidth = 2; ctx.strokeStyle = OUT; E(tx + textW(t, 32, F_T) + 12, fy - 14, 7, 7, '#e2574c'); } }); }
       const y0 = LY.top + WSW + LY.gap + 10, end = contentEnd();
@@ -4269,7 +4306,7 @@ const scenes = {
       const S = SCR.closet; if (anyHit(...K_D)) S.vel = 900; if (anyHit(...K_U)) S.vel = -900;
     },
     draw() {
-      if (closetBack === 'select' && closet.animal != null) return drawClosetWindow(); // from the player's hanger: a window over the select page
+      if (closetWin()) return drawClosetWindow(); // from the player's hanger or 내 아이템: a window over that page
       menuBegin(closet.animal != null ? `${ANIMALS[closet.animal].ko}의 옷장` : '내 아이템', true);
       const gear = closet.animal != null ? myGear(closet.animal) : {}, own = Object.keys(ITEMS).filter(id => acct.inv[id]).length, coll = closet.animal == null;
       text(`보유 ${own} / ${Object.keys(ITEMS).length}`, LY.m + LY.w, LY.titleY, 21, '#3d8be0', 'right', null, F_T);
@@ -4359,7 +4396,7 @@ const scenes = {
       const ch = SZ().court, af = AFFINITY[ANIMALS[setup.animal].id];
       COURT_IDS.forEach((id, i) => {
         const C = COURTS[id], y = LY.top + i * (ch + LY.gap), on = i === state.cc;
-        card(LY.m, y, LY.w, ch, () => pickCourt(i), on);
+        card(LY.m, y, LY.w, ch, () => { if (state.cc !== i) { state.cc = i; tone(660, 0.05, 'sine', 0.15); } }, on, null, true); // a tap chooses; 이 코트로 선택 goes on
         const ph = ch - LY.pad * 2, pw = Math.min(200, ph * 1.3), px = LY.m + LY.pad;
         courtPic(px, y + LY.pad, pw, ph, id);
         // the text block, centred in the card: name (with the badge on the same line), its line, then two ratings
@@ -4377,7 +4414,7 @@ const scenes = {
         });
         ctx.restore();
       });
-      sideBtn('뒤로', () => { scene = 'select'; });
+      sideBtn('뒤로', () => { scene = 'select'; }); mainBtn('이 코트로 선택', () => pickCourt(state.cc));
       menuEnd(KB('↑ ↓ 로 고르고 Enter'), `${ANIMALS[setup.animal].ko}의 강한 코트와 약한 코트가 표시돼요\n강한 코트에서는 능력치가 조금 올라요`);
     },
   },
@@ -4392,7 +4429,7 @@ const scenes = {
     },
     draw() {
       if (state.fm == null) state.fm = FORMAT_IDS.indexOf(setup.format);
-      menuBegin('경기 방식을 골라 주세요', !net);
+      menuBegin('경기 방식을 골라 주세요'); // the first step: 뒤로 already goes home (online, back to the room)
       const SH = net ? 0 : 92; if (!net) drawDoublesSwitch(LY.top, SH);
       const how = { flash: '10점을 먼저 따면 승리 (2점 차)', short: '4게임 먼저 · 40-40이면 한 포인트로 결정', regular: '세트 3개를 먼저 따면 승리', practice: '샷마다 타이밍 · 속도 · 떨어진 곳을 알려 줘요' };
       const ids = net ? [...FORMAT_IDS] : [...FORMAT_IDS, 'practice'], top = net ? LY.top : LY.top + SH + LY.gap + 10, ch = Math.min(SZ().format4, (contentEnd() - top - LY.gap * (ids.length - 1)) / ids.length), full = ch >= 128;
@@ -4418,8 +4455,7 @@ const scenes = {
       menuBegin('온라인 대결'); // no home key: 뒤로 at the bottom already goes home
       if (lobbyNet.online) onlinePill(LY.m + LY.w - onlinePillW(), LY.titleY - 25); // the title page's pill, at the right of the title row
       const bh = 64, jw = textW('바로 참가', 27, F_T) + 80; // 방 만들기 (+) and 코드로 참가 (a key) as keys, 바로 참가 at the right
-      iconKey(LY.m, LY.top, bh, 'plus', () => { state.pub = signedIn(); scene = 'make'; }); iconKey(LY.m + bh + 12, LY.top, bh, 'code', () => openNick('code'));
-      text('방 만들기 · 코드로 참가', LY.m + bh * 2 + 26, LY.top + bh / 2, MIN_TEXT, '#4f6f63', 'left', null, F_B);
+      iconKey(LY.m, LY.top, bh, 'plus', () => { state.pub = signedIn(); scene = 'make'; }); iconKey(LY.m + bh + 12, LY.top, bh, 'code', () => openNick('code')); nowKey();
       button('바로 참가', LY.m + LY.w - jw, LY.top, jw, bh, joinAny, { size: 27, fill: '#fff3c4' });
       const py = LY.top + bh + LY.gap + 6, ph = contentEnd() - py, rh = 100; panel(LY.m, py, LY.w, ph);
       text('공개된 방', LY.m + LY.pad, py + 30, 24, INK, 'left', null, F_T);
@@ -4620,7 +4656,7 @@ const scenes = {
       modalIn(0.62);
       const top = Math.round(H / 2 - 400);
       ctx.save(); ctx.translate(0, top); OY = top;
-      rr(40, 0, 640, 800, 26, 'rgba(255,248,231,0.98)', OUT, 4); btn(40, 0, 640, 800, () => {});
+      rr(40, 0, 640, 796, 26, 'rgba(255,248,231,0.98)', OUT, 4); btn(40, 0, 640, 796, () => {}); // 22 above the switch, 22 under the last line
       { const x = 70, w = 580, SH = 64, hw = w / 2, e = CALM ? 1 : easeOut(Math.min(1, (clock.now() - (helpAt || -9)) / 0.24)), p = helpPage ? e : 1 - e; // 조작법 or 경기 규칙: the same switch as 단식 · 복식, smaller
         rr(x, 22 + 5, w, SH, SH / 2, OUT, null); rr(x, 22, w, SH, SH / 2, '#fff8e7', OUT, 3); rr(x + p * hw + 6, 28, hw - 12, SH - 12, (SH - 12) / 2, mixHex(CORAL, SKY, p), OUT, 3);
         ['조작법', '경기 규칙'].forEach((t, i) => { const on = i ? p > 0.5 : p <= 0.5; btn(x + i * hw, 22, hw, SH, () => { if (helpPage !== i) { helpPage = i; helpAt = clock.now(); tone(760, 0.06, 'sine', 0.18); } }); text(t, x + i * hw + hw / 2, 22 + SH / 2 + 1, 27, on ? '#ffffff' : '#6f6068', 'center', on ? OUT : null, F_T); }); }
@@ -4636,21 +4672,21 @@ const scenes = {
           [T ? '치는 순간' : '← / →', '치는 순간 누른 쪽으로 공이 가요', '#efe3d3'],
           ['타이밍', "'딱!' 은 완벽한 타이밍", '#efe3d3', "'빨랐어!' · '늦었어!' 는 공이 흔들려요"],
         ], 150, 76, 150, 1.15);
-        text(T ? '오른쪽 위: 일시정지 · 소리 · 낙하지점 · 도움말' : 'P 일시정지 · M 소리 · G 낙하지점 · H 도움말', W / 2, 752, 22, '#3d9be0', 'center', null, F_T);
+        text(T ? '오른쪽 위: 일시정지 · 소리 · 낙하지점 · 도움말' : 'P 일시정지 · M 소리 · G 낙하지점 · H 도움말', W / 2, 763, 22, '#3d9be0', 'center', null, F_T); // apart from the rows above it, 22 from the card's foot
       } else {
         helpRows([
           ['점수', '0 → 15 → 30 → 40 → 게임', '#fff1b0', '40-40은 듀스: 2점을 연달아 따야 해요'],
           ['서브', '대각선 서비스 박스에 넣기', '#ffd0c8', '기회는 두 번 · 둘 다 실패하면 실점'],
           ['실점', '선 밖이나 네트에 걸리면 실점', '#dbe9f7', '내 코트에서 두 번 튀기 전에 쳐야 해요'],
           ['타이브레이크', '게임 동점일 때 1점씩 결정전', '#e6dbf7', '7점 먼저, 2점 차 (매치 타이브레이크는 10점)'],
-        ], 156, 88, 150, 1.15);
-        rr(70, 494, 580, 2, 1, '#e2d4c4', null);
-        text('경기 방식', W / 2, 532, 27, INK, 'center', null, F_T);
-        FORMAT_IDS.forEach((id, i) => { const y = 590 + i * 60, on = id === (m.format || 'regular');
+        ], 156, 84, 150, 1.15);
+        rr(70, 470, 580, 2, 1, '#e2d4c4', null);
+        text('경기 방식', W / 2, 506, 27, INK, 'center', null, F_T);
+        FORMAT_IDS.forEach((id, i) => { const y = 556 + i * 58, on = id === (m.format || 'regular');
           if (on) rr(70, y - 26, 580, 52, 14, '#fff3c4', '#e3a46a', 2.4);
           text(FORMATS[id].ko, 94, y, 25, INK, 'left', null, F_T);
           text({ flash: '10점 먼저 (2점 차)', short: '4게임 먼저 · 노애드 · 4-4 타이브레이크', regular: '3세트 먼저 · 6게임 세트' }[id], 196, y, 21, '#5d4f58', 'left', null, F_B); });
-        text('지금 경기는 노란 칸의 방식이에요', W / 2, 764, 22, '#c0605a', 'center', null, F_T);
+        text('지금 경기는 노란 칸의 방식이에요', W / 2, 763, 22, '#c0605a', 'center', null, F_T);
       }
       ctx.restore(); OY = 0;
       if (!touchUI) text('← → 페이지 · H 또는 Esc 닫기', W / 2, top + 830, 21, CREAM, 'center', OUT, F_B);
@@ -4659,9 +4695,9 @@ const scenes = {
   pause: {
     update(dt) {
       if (m.online) { playCore(dt); if (scene !== 'pause') return; }
-      if (pressed('KeyP') || pressed('Escape')) scene = 'play';
+      if (pressed('KeyP') || pressed('Escape')) { if (state.quit) state.quit = 0; else scene = 'play'; }
       if (pressed('KeyH')) openHelp(0);
-      if (pressed('Backspace')) goHome();
+      if (pressed('Backspace')) { if (state.quit) goHome(); else { state.quit = clock.now(); } }
     },
     draw() {
       drawMatch(); hot = []; OY = 0;
@@ -4672,8 +4708,16 @@ const scenes = {
       text(m.online ? '잠깐!' : '일시정지', W / 2, ct + 78, 52, INK, 'center', null, F_T);
       text(m.online ? '온라인 경기는 멈추지 않아요' : '숨 한번 고르고 가요', W / 2, ct + 128, 24, '#c0605a', 'center', null, F_T);
       button('계속하기', 170, ct + 170, 380, 68, () => { scene = 'play'; }, { size: 30, fill: '#fff3c4' });
-      button('홈으로', 170, ct + 256, 380, 68, goHome, { size: 28 });
+      button('홈으로', 170, ct + 256, 380, 68, () => { state.quit = clock.now(); }, { size: 28 }); // asks first
       if (!touchUI) text('P 계속하기 · Backspace 홈으로 · H 도움말', W / 2, ct + 372 + 34, 20, CREAM, 'center', OUT, F_B);
+      if (state.quit) { // 홈으로 asks before the match is lost: a small window over the pause card; a tap outside it keeps playing paused
+        const PQ = popIn(clock.now() - state.quit), w = 460, h = 22 + 34 + 12 + 26 + 26 + LY.btnH + 22, x = (W - w) / 2, y = cy - h / 2;
+        ctx.fillStyle = `rgba(59,51,64,${0.45 * PQ.a})`; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, () => { state.quit = 0; });
+        ctx.save(); ctx.translate(W / 2, cy); ctx.scale(PQ.k, PQ.k); ctx.translate(-W / 2, -cy); ctx.globalAlpha = PQ.a;
+        rr(x, y + 6, w, h, 24, 'rgba(59,51,64,0.35)', null); rr(x, y, w, h, 24, '#fffaf0', OUT, 3); btn(x, y, w, h, () => {});
+        text('홈으로 갈까요?', W / 2, y + 22 + 17, 30, INK, 'center', null, F_T); text(m.online ? '이 경기에서 나가요' : '이 경기는 기록되지 않아요', W / 2, y + 22 + 34 + 12 + 13, 20, '#7a6872', 'center', null, F_B);
+        const by = y + h - 22 - LY.btnH, bw = (w - 44 - 12) / 2; button('계속하기', x + 22, by, bw, LY.btnH, () => { state.quit = 0; }, { size: 26 }); button('홈으로', x + 22 + bw + 12, by, bw, LY.btnH, () => { state.quit = 0; goHome(); }, { size: 26, fill: '#fff3c4' }); // the decision at the right
+        ctx.restore(); }
     },
   },
   results: {
@@ -4771,7 +4815,6 @@ let viewTab0 = -1, viewKey0 = '', viewScene0 = '', viewOv0 = 0, viewAt = 0, scen
 // A button that sits at the same place with the same words before and after (뒤로, home) does not move at all.
 function viewOf() { // what counts as 'a different view', and the part of the screen that moves with it
   if (scene === 'wardrobe') return { key: 'wardrobe:' + acct.wtab, tab: ['gacha', 'ach'].indexOf(acct.wtab), r: [0, LY.top + WSW + 10, W, LY.bot - 6] };
-  if (scene === 'hall') return { key: 'hall:' + rank.mode, tab: FORMAT_IDS.indexOf(rank.mode), r: [0, LY.top + 60, W, LY.bot - 8] };
   return { key: scene };
 }
 const overlays = () => (prof.open ? 1 : 0) + (scene === 'ranking' && tierGuide.open ? 1 : 0) + (prof.open && prof.menu ? 1 : 0) + (scene === 'hall' && rank.sel >= 0 ? 1 : 0) + (typeof matchGift !== 'undefined' && matchGift && matchGift.open && scene === 'results' ? 1 : 0);
@@ -4782,7 +4825,7 @@ function viewWatch() { // before a frame: has the view changed since the last on
   let win = false; if (v.key === viewKey0) { if (ov < viewOv0) { kind = 'fade'; dur = 0.16; win = true; } } // a window opened (it pops by itself) or closed (it fades away)
   else if (from && from === to && v.tab >= 0) { kind = to === 'wardrobe' ? 'push' : 'slide'; dir = v.tab > viewTab0 ? 1 : -1; r = v.r; dur = kind === 'push' ? 0.34 : 0.22; }
   else if ((to === 'make' && from === 'online') || (from === 'make' && to === 'online')) { if (from === 'make') { kind = 'fade'; dur = 0.16; win = true; } } // 방 만들기 is a window over the online page
-  else if ((to === 'closet' && from === 'select' && closetBack === 'select') || (from === 'closet' && to === 'select')) { if (from === 'closet') { kind = 'fade'; dur = 0.16; win = true; } } // over 선수 선택 the closet is a window: it pops in by itself and fades away
+  else if ((to === 'closet' && (from === 'select' || from === 'wardrobe')) || (from === 'closet' && (to === 'select' || to === 'wardrobe'))) { if (from === 'closet') { kind = 'fade'; dur = 0.16; win = true; } } // over 선수 선택 the closet is a window: it pops in by itself and fades away
   else if (to === 'closet' || from === 'closet') { const M = CLOSET_MO, open = to === 'closet'; // test: the closet's way in and out, chosen by ?closet=
     if (M === 'sheet') { kind = open ? 'sheetUp' : 'sheetDown'; dur = open ? 0.36 : 0.28; }
     else if (M === 'push') { kind = 'slide'; dir = open ? 1 : -1; r = [0, LY.top - 14, W, LY.bot - 6]; dur = 0.22; }
@@ -4853,12 +4896,12 @@ function drawFrame0() {
     text('휴대폰을 세로로 돌리면 화면이 더 커져요', W / 2, H - 31, 19, CREAM, 'center', null, F_B);
   }
   canvas.style.cursor = hitTest(mouse) ? 'pointer' : 'default'; }
-let edgeView = '', edgeDue = 0, edgeKey = ''; const themeMeta = document.querySelector('meta[name=theme-color]'), edgeB = document.getElementById('edgeB');
+let edgeView = '', edgeDue = 0, edgeKey = ''; const themeMeta = document.querySelector('meta[name=theme-color]'), edgeB = document.getElementById('edgeB'), edgeT = document.getElementById('edgeT');
 function matchEdges() { // the screen above and below the game takes the colour of the game's top and bottom rows, so the page reads as one; read once each time the view has settled (reading the canvas stalls a frame), the colours easing over
   const now = performance.now(), v = scene + '|' + viewKey0 + '|' + canvas.width + 'x' + canvas.height + '|' + (prof.open ? 1 : 0);
   if (v !== edgeView) { edgeView = v; edgeDue = now + 450; } if (!edgeDue || now < edgeDue || trans) return; edgeDue = 0;
   try { const g = canvas.getContext('2d'), px = (y) => { const d = g.getImageData(Math.min(8, canvas.width - 1), y, 1, 1).data; return `rgb(${d[0]},${d[1]},${d[2]})`; }, top = px(1), bot = px(canvas.height - 2), key = top + bot;
-    if (key === edgeKey) return; edgeKey = key; document.documentElement.style.backgroundColor = top; if (edgeB) edgeB.style.backgroundColor = bot; if (themeMeta) themeMeta.content = top; } catch (e) { /* the canvas could not be read: the plain green stays */ }
+    if (key === edgeKey) return; edgeKey = key; document.documentElement.style.backgroundColor = top; if (edgeT) edgeT.style.backgroundColor = top; if (edgeB) edgeB.style.backgroundColor = bot; if (themeMeta) themeMeta.content = top; } catch (e) { /* the canvas could not be read: the plain green stays */ }
 }
 function frame() { tick(); matchEdges(); requestAnimationFrame(frame); }
 // A headless browser on a time budget runs timers but almost no animation frames: a timer
