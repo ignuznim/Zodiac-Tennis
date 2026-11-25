@@ -36,7 +36,7 @@
   #nick button, #fb button { flex: 1; padding: calc(var(--u, 0.6) * 16px) 0; font: calc(var(--u, 0.6) * 28px) 'Jua', sans-serif; color: #4a3d47; border: max(1.5px, calc(var(--u, 0.6) * 3px)) solid #6b5560; border-radius: calc(var(--u, 0.6) * 18px); background: #fff; cursor: pointer; }
   #nick button.go, #fb button.go { background: #fff3c4; border-color: #ff8a7a; }
   #nick .err, #fb .err { min-height: calc(var(--u, 0.6) * 24px); margin-top: calc(var(--u, 0.6) * 10px); font: calc(var(--u, 0.6) * 20px) 'Gowun Dodum', sans-serif; color: #e2574c; }
-  #nickInline { position: fixed; display: none; z-index: 4; left: 0; top: 0; width: 2px; height: 2px; margin: 0; padding: 0; border: none; outline: none; opacity: 0; font-size: 16px; -webkit-user-select: text; user-select: text; } /* the nickname's keyboard: the input sits out of sight at the very top (so the phone never scrolls to it); what is typed is drawn in the field */
+  #codeInline, #nickInline { position: fixed; display: none; z-index: 4; left: 0; top: 0; width: 2px; height: 2px; margin: 0; padding: 0; border: none; outline: none; opacity: 0; font-size: 16px; -webkit-user-select: text; user-select: text; } /* the nickname's keyboard: the input sits out of sight at the very top (so the phone never scrolls to it); what is typed is drawn in the field */
   #safe { position: fixed; visibility: hidden; pointer-events: none; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
   /* 개발자에게 한마디, drawn like the game's own windows: the same outline and drop under every key, a switch like 단식 · 복식, a cross key at the right of the title */
   #fb form, #nick form { text-align: left; padding: calc(var(--u, 0.6) * 24px) calc(var(--u, 0.6) * 26px) calc(var(--u, 0.6) * 26px); background: #fffaf0; }
@@ -64,6 +64,7 @@
 <body>
 <canvas id="game"></canvas>
 <div id="safe"></div>
+<input id="codeInline" maxlength="6" enterkeyhint="go" spellcheck="false" autocomplete="off" autocapitalize="characters" aria-label="방 코드">
 <input id="nickInline" maxlength="8" enterkeyhint="done" spellcheck="false" autocomplete="off" aria-label="닉네임">
 <div id="fb"><form autocomplete="off">
   <div class="head"><h2>개발자에게 한마디</h2><button type="button" id="fbNo" class="x" aria-label="닫기"><svg viewBox="0 0 20 20"><path d="M4 4l12 12M16 4L4 16" stroke="#6b5560" stroke-width="3" stroke-linecap="round"/></svg></button></div>
@@ -124,7 +125,7 @@ function viewBox() { // the part of the screen really visible: the visual viewpo
   return { x: il, y: it, w: Math.max(1, w - il - ir), h: Math.max(1, h - it - ib) };
 }
 function fit(force) { // fills the visible screen at any shape and pixel ratio, never past its edges
-  if (force !== true && (document.querySelector('#nick.on, #fb.on') || (typeof prof !== 'undefined' && prof.nickEdit) || performance.now() < fitHold)) return; // the on-screen keyboard is up: keep the game and the dialog the size they were
+  if (force !== true && (document.querySelector('#nick.on, #fb.on') || (typeof prof !== 'undefined' && prof.nickEdit) || (typeof codeBox !== 'undefined' && codeBox.open) || performance.now() < fitHold)) return; // the on-screen keyboard is up: keep the game and the dialog the size they were
   const v = viewBox(), dpr = screenDpr(), key = [v.x, v.y, v.w, v.h, dpr].join();
   if (key === fitKey && force !== true) return; fitKey = key;
   const asp = v.h / v.w, fills = !COVER && asp >= 1.25 && asp <= 2.4; // the page reshapes itself: 4:5 to 12:5 tall; past that, bars
@@ -145,7 +146,7 @@ function fit(force) { // fills the visible screen at any shape and pixel ratio, 
 // so on an iPhone never draw under 3 canvas pixels to a point, and check every second that the canvas still has as many pixels as the screen under it
 const IPHONE = /iPhone|iPod/.test(navigator.userAgent);
 const screenDpr = () => Math.max(devicePixelRatio || 1, IPHONE ? 3 : 1);
-setInterval(() => { const cw = parseFloat(canvas.style.width) || 0; if (cw && Math.abs(Math.round(cw * screenDpr()) - canvas.width) > 1 && !document.querySelector('#nick.on, #fb.on') && !(typeof prof !== 'undefined' && prof.nickEdit)) fit(true); }, 1000);
+setInterval(() => { const cw = parseFloat(canvas.style.width) || 0; if (cw && Math.abs(Math.round(cw * screenDpr()) - canvas.width) > 1 && !document.querySelector('#nick.on, #fb.on') && !(typeof prof !== 'undefined' && prof.nickEdit) && !(typeof codeBox !== 'undefined' && codeBox.open)) fit(true); }, 1000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { fit(true); setTimeout(() => fit(true), 300); } }); addEventListener('pageshow', () => fit(true)); // back from the background: draw at the screen's own pixels again
 const refit = () => { fit(); setTimeout(fit, 120); setTimeout(fit, 500); }; // a phone reports its new size late after turning
 addEventListener('resize', refit); addEventListener('orientationchange', refit);
@@ -2762,7 +2763,30 @@ async function sendRecord(nickname) {
 }
 const nickBox = document.getElementById('nick'), nickIn = document.getElementById('nickIn'), nickErr = document.getElementById('nickErr');
 let nickMode = 'rank';
+// 코드로 참가: a window drawn on the page like 설정's nickname; the keyboard's input sits out of sight at the top, so the page never moves up with it
+const codeBox = { open: false, at: 0, err: '' }, codeInline = document.getElementById('codeInline');
+function openCode() { codeBox.open = true; codeBox.at = clock.now(); codeBox.err = ''; codeInline.value = ''; codeInline.style.display = 'block'; down.clear(); }
+function closeCode() { codeBox.open = false; codeInline.style.display = 'none'; codeInline.blur(); down.clear(); holdFit(); }
+function focusCode() { codeInline.focus(); } // a 'now' key: inside the tap, so the keyboard comes up
+function submitCode() { const code = codeInline.value.trim().toUpperCase().replace(/\s/g, ''); if (!code) { codeBox.err = '방 코드 6자리를 적어 주세요'; return; } if (!/^[A-HJ-NP-Z2-9]{6}$/.test(code)) { codeBox.err = '코드 6자리를 확인해 주세요'; return; } closeCode(); joinRoom(code); }
+codeInline.addEventListener('input', () => { codeInline.value = codeInline.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6); codeBox.err = ''; });
+codeInline.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); submitCode(); } else if (e.key === 'Escape') closeCode(); e.stopPropagation(); });
+codeInline.addEventListener('pointerdown', e => e.stopPropagation());
+function drawCodeBox() {
+  const PQ = popIn(clock.now() - codeBox.at), w = 520, fh = 76, h = 26 + 34 + 10 + 24 + 20 + fh + (codeBox.err ? 34 : 0) + 22 + LY.btnH + 26, x = (W - w) / 2, S = bigWin(w, h), y = H / 2 - h / 2 - 120, k = PQ.k * S, L0 = x + 28, R0 = x + w - 28;
+  ctx.fillStyle = `rgba(59,51,64,${0.55 * PQ.a})`; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, closeCode); // a tap outside closes it
+  HX = { cx: W / 2, cy: y + h / 2, s: S }; ctx.save(); ctx.translate(W / 2, y + h / 2); ctx.scale(k, k); ctx.translate(-W / 2, -(y + h / 2)); ctx.globalAlpha = PQ.a;
+  rr(x, y + 6, w, h, 24, 'rgba(59,51,64,0.35)', null); rr(x, y, w, h, 24, '#fffaf0', OUT, 3); btn(x, y, w, h, () => {});
+  let yy = y + 26; text('코드로 참가', L0, yy + 17, 30, INK, 'left', null, F_T); yy += 34 + 10; text('친구에게 받은 방 코드 6자리', L0, yy + 12, 20, '#7a6872', 'left', null, F_B); yy += 24 + 20;
+  btn(L0, yy, R0 - L0, fh, focusCode); nowKey(); rr(L0, yy, R0 - L0, fh, 16, '#ffffff', CORAL, 3);
+  const v = codeInline.value, cw = (R0 - L0 - 40) / 6; for (let i = 0; i < 6; i++) { const cx = L0 + 20 + cw * (i + 0.5); if (v[i]) text(v[i], cx, yy + fh / 2 + 1, 38, INK, 'center', null, F_N); else rr(cx - 12, yy + fh / 2 + 14, 24, 3, 1.5, '#e6dccd', null); } // six places, a letter in each as it is typed
+  if (document.activeElement === codeInline && Math.floor(clock.now() * 2) % 2 === 0 && v.length < 6) rr(L0 + 20 + cw * (v.length + 0.5) - 1.5, yy + 16, 3, fh - 32, 1.5, CORAL, null); // the caret, where the next letter goes
+  yy += fh; if (codeBox.err) { text(codeBox.err, W / 2, yy + 20, 19, '#e2574c', 'center', null, F_B); yy += 34; } yy += 22;
+  const bw = Math.ceil(textW('참가', 28, F_T)) + 80; button('참가', R0 - bw, yy, bw, LY.btnH, submitCode, { size: 28, fill: '#fff3c4' }); // at the right, as every decision
+  ctx.restore(); HX = null;
+}
 function openNick(mode = 'rank') {
+  if (mode === 'code') { openCode(); return; }
   nickMode = mode;
   nickBox.querySelector('h2').textContent = mode === 'profile' ? '닉네임 정하기' : '랭킹 등록';
   nickBox.querySelector('p').textContent = mode === 'profile' ? '랭킹과 옷장에 쓰일 이름 (1~8자)' : '랭킹에 표시할 닉네임 (1~8자)';
@@ -3478,7 +3502,7 @@ for (const n of ['pointerup', 'pointercancel']) addEventListener(n, e => { const
   if (closet.hdrag) { const w = LY.w + 32, pg = closet.page || 0; closet.px = clamp(pg - closet.hdx / w, 0, 1); if (closet.hdx < -60) closet.page = 1; else if (closet.hdx > 60) closet.page = 0; closet.hdrag = false; dragEndAt = performance.now(); } });
 function openCloset(back, a = null) { if (!acct.user) { toast('로그인하면 옷장을 쓸 수 있어요'); return; } closetBack = back; closet.animal = a; closet.sel = null; closet.page = 0; closet.px = 0; closet.pt = 0; SCR.closet.scroll = 0; SCR.closet.vel = 0; scene = 'closet'; zoomFrom = { x: mouse.x, y: mouse.y, at: clock.now(), r: (hot.slice().reverse().find(h => mouse.x >= h.x && mouse.x <= h.x + h.w && mouse.y >= h.y && mouse.y <= h.y + h.h) || null) }; tone(660, 0.06, 'sine', 0.15); }
 function drawGachaTab(y0, end) { // the machine, as tall as the page allows: a lit sign, a glass globe where the capsules tumble, the body with its slot, crank and chute
-  const G = acct.g, h = end - y0, MH = 576, k = Math.min((h - 8) / MH, (LY.w - 40) / 372);
+  const G = acct.g, h = end - y0, MH = 616, k = Math.min((h - 8) / MH, (LY.w - 40) / 380);
   drawGachaMachine(G, W / 2, end - 4, k);
   if (G.phase === 'reveal' && G.list && G.list.length > 1) { drawManyPrizes(G, y0, h); return; }
   if (G.phase === 'reveal') { // the prize, opened
@@ -3495,36 +3519,31 @@ function drawGachaTab(y0, end) { // the machine, as tall as the page allows: a l
     for (let i = 0; i < 8; i++) { const a = i / 8 * 6.283 + G.t, rr2 = 150 + Math.sin(G.t * 3 + i) * 10; star(W / 2 + Math.cos(a) * rr2, py + ph * 0.42 + Math.sin(a) * rr2 * 0.7, 9, i % 2 ? '#fff' : c); }
   }
 }
-function drawGachaMachine(G, cx, base, k) { // a capsule-toy machine as in a shop front: a lid, a glass case with capsules both sides of its card, the coin works and the door, a stand on wheels; drawn from the floor (0) up to the lid (-572), k to scale; only big words on it (scaled down, small ones would fall under MIN_TEXT)
-  ctx.save(); ctx.translate(cx, base); ctx.scale(k, k); ctx.lineWidth = 3.4; ctx.strokeStyle = OUT; ctx.lineJoin = 'round';
-  const lin = (x0, y0, x1, y1, stops) => { const g = ctx.createLinearGradient(x0, y0, x1, y1); stops.forEach(([o, c]) => g.addColorStop(o, c)); return g; };
-  const chrome = (x0, x1) => lin(x0, 0, x1, 0, [[0, '#8f99a3'], [0.3, '#f4f7fa'], [0.55, '#c3ccd5'], [1, '#7d8792']]), now = clock.now(), turn = G.phase === 'turn', shell = (x0, x1) => lin(x0, 0, x1, 0, [[0, '#e8695a'], [0.35, '#ff9585'], [1, '#d9503e']]);
-  // the stand on its wheels
-  ctx.translate(0, 256); // no stand: the case stands on the floor, and the machine is drawn as large as the page allows
-  // the lower case: the coin works at the left, the price and the door at the right
-  rr(-172, -524, 344, 270, 22, lin(-172, 0, 172, 0, [[0, '#f1e6d2'], [0.4, '#fffaf0'], [1, '#e8dcc6']]), OUT, 3.4);
-  rr(-150, -500, 138, 214, 40, chrome(-150, -12), OUT, 3); // the coin plate
-  for (const x of [-118, -44]) { rr(x - 20, -488, 40, 30, 6, '#ffffff', OUT, 2); poly([x - 8, -480, x + 8, -480, x, -466], '#e2574c'); } // its two arrows: in here
-  { const ox = -81, oy = -386, a = turn ? G.t * 7 : 0; ctx.save(); ctx.translate(ox, oy); ctx.rotate(a); E(0, 0, 44, 44, chrome(-44, 44)); rr(-40, -10, 80, 20, 10, lin(0, -10, 0, 10, [[0, '#ffffff'], [1, '#b8c1ca']]), OUT, 2.6); rr(-14, -6, 28, 12, 6, '#3b3340', null); ctx.restore(); } // the handle: turns while the server picks
-  rr(-96, -318, 30, 14, 4, '#3b3340', null); // the key's lock
-  rr(16, -500, 136, 48, 12, '#ffffff', OUT, 2.6); ticketPic(54, -476, 0.62, -0.1); text(`× ${PULLS.includes(G.n) ? G.n : 1}`, 112, -475, 30, INK, 'center', null, F_T); // the price: a ticket, and how many
-  rr(16, -438, 136, 150, 30, lin(0, -438, 0, -288, [[0, '#2b2229'], [1, '#55474f']]), OUT, 3); rr(28, -428, 112, 60, 18, 'rgba(255,255,255,0.12)', null); // the door, its flap
-  rr(56, -404, 56, 28, 4, '#f6c445', OUT, 2); poly([84, -400, 76, -384, 92, -384], '#3b3340'); // a yellow sticker on the flap
-  // the glass case over it: capsules piled both sides, the card in the middle
-  rr(-178, -790, 356, 270, 34, shell(-178, 178), OUT, 3.4);
-  const gx = -164, gy = -776, gw = 328, gh = 242; rr(gx, gy, gw, gh, 26, 'rgba(214,236,255,0.6)', OUT, 3);
-  ctx.save(); rr(gx + 2, gy + 2, gw - 4, gh - 4, 24, null, null); ctx.clip();
-  for (const side of [-1, 1]) for (let row = 0; row < 2; row++) for (let q = 0; q < 6; q++) { const i = row * 12 + q + (side > 0 ? 6 : 0), x = side * (124 + (q % 2) * 22 - 11), y = gy + 50 + row * 120 + Math.floor(q / 2) * 34 - (q % 2) * 6, g = i % 11 === 0 ? 3 : i % 6 === 0 ? 2 : i % 3 === 0 ? 1 : 0, jig = turn ? Math.sin(now * 22 + i * 1.7) * 4 : 0;
-    capsule(x + jig, y - Math.abs(jig), 19, GRADE[g].c, i * 0.9 + (turn ? now * 5 : 0)); }
-  ctx.fillStyle = 'rgba(107,85,96,0.35)'; ctx.fillRect(gx, gy + gh / 2 - 2, gw, 4); // the shelf between the two piles
+function drawGachaMachine(G, cx, base, k) { // 뽑기 기계, soft clay: a round glass dome of pastel capsules on a chunky body with a big knob and a pill-shaped door; every part lit from the upper left (a pale gleam) and shaded at the lower right; from the floor (0) up to the dome's top (-596)
+  ctx.save(); ctx.translate(cx, base); ctx.scale(k, k); ctx.lineJoin = 'round'; const now = clock.now(), turn = G.phase === 'turn';
+  const rad = (x0, y0, r, stops) => { const g = ctx.createRadialGradient(x0, y0, 0, x0, y0, r); stops.forEach(([o, c]) => g.addColorStop(o, c)); return g; };
+  const clay = (x, y, w, h, r, c0, c1, c2) => { rr(x, y + 8, w, h, r, 'rgba(59,51,64,0.18)', null); rr(x, y, w, h, r, rad(x + w * 0.3, y + h * 0.25, Math.max(w, h) * 1.05, [[0, c0], [0.55, c1], [1, c2]]), OUT, 3.4); }; // a soft block: lit at the upper left, deeper at the lower right, a soft shadow under it
+  // feet, then the body
+  for (const fx of [-104, 104]) clay(fx - 34, -26, 68, 30, 15, '#f7c9d4', '#e8a6b8', '#c9839a');
+  clay(-176, -330, 352, 312, 64, '#ffd9cf', '#ffab9c', '#e67e70');
+  ctx.save(); rr(-176, -330, 352, 312, 64, null, null); ctx.clip(); ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.beginPath(); ctx.ellipse(-96, -276, 70, 22, -0.25, 0, 7); ctx.fill(); ctx.fillStyle = 'rgba(160,60,60,0.12)'; ctx.beginPath(); ctx.ellipse(40, -18, 220, 48, 0, 0, 7); ctx.fill(); ctx.restore(); // a gleam up top, a deeper band at the foot
+  // the knob: a big soft dial with a raised bar, turning while the server picks
+  { const ox = 0, oy = -214, r = 66; E(ox + 4, oy + 8, r, r, 'rgba(59,51,64,0.18)', 0, true); ctx.lineWidth = 3.4; ctx.strokeStyle = OUT; E(ox, oy, r, r, rad(ox - 24, oy - 26, r * 1.6, [[0, '#ffffff'], [0.5, '#fff4dc'], [1, '#e9cfa8']]));
+    ctx.save(); ctx.translate(ox, oy); ctx.rotate(turn ? G.t * 7 : -0.35); rr(-50, -16, 100, 32, 16, rad(-20, -10, 80, [[0, '#ffb2a4'], [1, '#e2574c']]), OUT, 3); E(-30, -4, 8, 4, 'rgba(255,255,255,0.6)', 0, true); ctx.restore(); }
+  // the door: a pill-shaped hollow, the prize rolling into it
+  rr(-70, -112, 140, 62, 31, '#4a3a46', OUT, 3.4); rr(-62, -106, 124, 22, 11, 'rgba(255,255,255,0.10)', null);
+  if (G.phase === 'drop' || G.phase === 'reveal') { const u = Math.min(1, G.t / 0.5), g = G.res.grade; capsule(-10 + (G.phase === 'drop' ? 40 * (1 - u) : 0), -80, 24, GRADE[g].c, G.t * 6); }
+  // the collar, then the dome of glass full of capsules
+  clay(-150, -362, 300, 44, 22, '#efe7ff', '#cdbff2', '#a594d8');
+  const GY = -478, GR = 120, GW = 160; ctx.save(); ctx.beginPath(); ctx.ellipse(0, GY, GW, GR, 0, Math.PI, 0); ctx.lineTo(GW, -350); ctx.lineTo(-GW, -350); ctx.closePath();
+  ctx.fillStyle = rad(-60, GY - 60, 260, [[0, 'rgba(240,250,255,0.95)'], [1, 'rgba(190,220,245,0.85)']]); ctx.fill(); ctx.clip();
+  for (let i = 0; i < 26; i++) { const row = Math.floor(i / 7), col = i % 7, hx = (col - 3) * 42 + (row % 2) * 18 - 9, hy = -378 - row * 34 - Math.abs(col - 3) * 3, jig = turn ? Math.sin(now * 20 + i * 1.7) * 6 : 0;
+    const g = i % 11 === 0 ? 3 : i % 6 === 0 ? 2 : i % 3 === 0 ? 1 : 0; capsule(hx + jig * 0.6, hy - Math.abs(jig), 20, ['#ffb7c8', '#9fd8ff', '#c9b6ff', '#ffe17a'][(i + g) % 4], i * 0.9 + (turn ? now * 6 : 0)); }
   ctx.restore();
-  rr(-96, gy + 10, 192, gh - 20, 12, '#ffffff', OUT, 2.6); // the card
-  text('뽑기', 0, gy + 92, 64, CORAL, 'center', OUT, F_T); for (let q = 0; q < 4; q++) capsule(-54 + q * 36, gy + 168, 14, GRADE[q].c, q * 0.6);
-  ctx.lineWidth = 8; ctx.lineCap = 'round'; ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.beginPath(); ctx.moveTo(gx + 16, gy + 40); ctx.lineTo(gx + 16, gy + 120); ctx.stroke(); ctx.lineCap = 'butt'; ctx.lineWidth = 3.4; ctx.strokeStyle = OUT; // a gleam on the glass
-  // the lid
-  rr(-184, -826, 368, 46, 22, shell(-184, 184), OUT, 3.4); E(0, -803, 9, 9, chrome(-9, 9)); rr(-1.5, -808, 3, 10, 1, '#3b3340', null);
-  // the prize, in the door
-  if (G.phase === 'drop' || G.phase === 'reveal') { const u = Math.min(1, G.t / 0.5), g = G.res.grade; capsule(84, G.phase === 'drop' ? -420 + u * 80 : -340, 26, GRADE[g].c, G.t * 6); }
+  ctx.lineWidth = 3.4; ctx.strokeStyle = OUT; ctx.beginPath(); ctx.ellipse(0, GY, GW, GR, 0, Math.PI, 0); ctx.lineTo(GW, -350); ctx.moveTo(-GW, -350); ctx.lineTo(-GW, GY); ctx.stroke();
+  ctx.lineCap = 'round'; ctx.lineWidth = 14; ctx.strokeStyle = 'rgba(255,255,255,0.75)'; ctx.beginPath(); ctx.ellipse(0, GY, GW - 30, GR - 30, 0, Math.PI * 1.12, Math.PI * 1.36); ctx.stroke(); ctx.lineWidth = 8; ctx.beginPath(); ctx.ellipse(0, GY, GW - 30, GR - 30, 0, Math.PI * 1.44, Math.PI * 1.5); ctx.stroke(); ctx.lineCap = 'butt'; // the glass's gleam
+  // a little cap on the dome
+  clay(-26, GY - GR - 18, 52, 26, 13, '#efe7ff', '#cdbff2', '#a594d8');
   ctx.restore();
 }
 function drawManyPrizes(G, y0, h) { // five or ten prizes: a grid, best first; tap one to read it
@@ -4478,7 +4497,7 @@ const scenes = {
     },
   },
   online: { // the open rooms, scrolling; the three other ways in fixed above them
-    update(dt) { state.t += dt; if (pressed('Escape')) scene = 'title'; if (!state.hi) { state.hi = 1; hello(); }
+    update(dt) { state.t += dt; if (pressed('Escape')) { if (codeBox.open) closeCode(); else scene = 'title'; } if (!state.hi) { state.hi = 1; hello(); }
       if (signedIn() && clock.now() - lobbyNet.at > 3 && !lobbyNet.loading) loadRooms(); },
     draw() {
       menuBegin('온라인 대결'); // no home key: 뒤로 at the bottom already goes home
@@ -4508,7 +4527,7 @@ const scenes = {
             button('참가', x + w - 116, y + 16, 104, 58, () => joinRoom(r.code), { size: 24, fill: '#fff3c4' }); });
           return L.length * rh + 4; }); }
       sideBtn('뒤로', () => { scene = 'title'; });
-      menuEnd('', '바로 참가: 빈자리가 있는 방에 바로 들어가요\n+: 방 만들기 · 코드: 친구의 방 코드로 참가');
+      menuEnd('', '바로 참가: 빈자리가 있는 방에 바로 들어가요\n+: 방 만들기 · 코드: 친구의 방 코드로 참가'); if (codeBox.open) drawCodeBox();
     },
   },
   make: { // a room, before it opens: how to play, public or private, then 방 만들기
@@ -4685,10 +4704,13 @@ const scenes = {
       modalIn(0.62);
       const top = Math.round(H / 2 - 400);
       ctx.save(); ctx.translate(0, top); OY = top;
-      rr(40, 0, 640, 796, 26, 'rgba(255,248,231,0.98)', OUT, 4); btn(40, 0, 640, 796, () => {}); // 22 above the switch, 22 under the last line
-      { const x = 70, w = 580, SH = 64, hw = w / 2, e = CALM ? 1 : easeOut(Math.min(1, (clock.now() - (helpAt || -9)) / 0.24)), p = helpPage ? e : 1 - e; // 조작법 or 경기 규칙: the same switch as 단식 · 복식, smaller
-        rr(x, 22 + 5, w, SH, SH / 2, OUT, null); rr(x, 22, w, SH, SH / 2, '#fff8e7', OUT, 3); rr(x + p * hw + 6, 28, hw - 12, SH - 12, (SH - 12) / 2, mixHex(CORAL, SKY, p), OUT, 3);
-        ['조작법', '경기 규칙'].forEach((t, i) => { const on = i ? p > 0.5 : p <= 0.5; btn(x + i * hw, 22, hw, SH, () => { if (helpPage !== i) { helpPage = i; helpAt = clock.now(); tone(760, 0.06, 'sine', 0.18); } }); text(t, x + i * hw + hw / 2, 22 + SH / 2 + 1, 27, on ? '#ffffff' : '#6f6068', 'center', on ? OUT : null, F_T); }); }
+      { // a binder of two leaves: 조작법 and 경기 규칙 as tabs on its top edge, the open one joined to the page, the other tucked behind
+        const TT = 6, TB = 72, tw = 236, tabs = [['조작법', 58], ['경기 규칙', 58 + tw - 14]];
+        const tab = (x, fill, edge) => { ctx.beginPath(); ctx.moveTo(x - 12, TB + 2); ctx.quadraticCurveTo(x, TB + 2, x, TB - 12); ctx.lineTo(x, TT + 20); ctx.quadraticCurveTo(x, TT, x + 20, TT); ctx.lineTo(x + tw - 20, TT); ctx.quadraticCurveTo(x + tw, TT, x + tw, TT + 20); ctx.lineTo(x + tw, TB - 12); ctx.quadraticCurveTo(x + tw, TB + 2, x + tw + 12, TB + 2); // rounded on top, flaring into the page at its foot, as a browser's tab
+          ctx.fillStyle = fill; ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = edge; ctx.stroke(); };
+        tabs.forEach(([t, x], i) => { if (i !== helpPage) { tab(x, '#eadfce', OUT); text(t, x + tw / 2, (TT + TB) / 2 + 2, 26, '#8a7a82', 'center', null, F_T); } btn(x, TT, tw, TB - TT, () => { if (helpPage !== i) { helpPage = i; tone(760, 0.06, 'sine', 0.18); } }); });
+        rr(40, TB, 640, 796 - TB, 26, 'rgba(255,248,231,0.98)', OUT, 4); btn(40, TB, 640, 796 - TB, () => {});
+        { const [t, x] = tabs[helpPage]; tab(x, '#fff8e7', OUT); ctx.fillStyle = '#fff8e7'; ctx.fillRect(x - 10, TB - 2, tw + 20, 8); text(t, x + tw / 2, (TT + TB) / 2 + 2, 26, INK, 'center', null, F_T); } } // the open tab: no line between it and its page
       const T = touchUI;
       if (helpPage === 0) {
         helpRows([
@@ -4846,7 +4868,7 @@ function viewOf() { // what counts as 'a different view', and the part of the sc
   if (scene === 'wardrobe') return { key: 'wardrobe:' + acct.wtab, tab: ['gacha', 'ach'].indexOf(acct.wtab), r: [0, LY.top + WSW + 10, W, LY.bot - 6] };
   return { key: scene };
 }
-const overlays = () => (prof.open ? 1 : 0) + (scene === 'ranking' && tierGuide.open ? 1 : 0) + (prof.open && prof.menu ? 1 : 0) + (scene === 'hall' && rank.sel >= 0 ? 1 : 0) + (typeof matchGift !== 'undefined' && matchGift && matchGift.open && scene === 'results' ? 1 : 0);
+const overlays = () => (prof.open ? 1 : 0) + (scene === 'online' && codeBox.open ? 1 : 0) + (scene === 'ranking' && tierGuide.open ? 1 : 0) + (prof.open && prof.menu ? 1 : 0) + (scene === 'hall' && rank.sel >= 0 ? 1 : 0) + (typeof matchGift !== 'undefined' && matchGift && matchGift.open && scene === 'results' ? 1 : 0);
 function snap(into) { const c = into || document.createElement('canvas'); if (c.width !== canvas.width || c.height !== canvas.height) { c.width = canvas.width; c.height = canvas.height; } const g = c.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, c.width, c.height); g.drawImage(canvas, 0, 0); return c; }
 function viewWatch() { // before a frame: has the view changed since the last one? keep a picture of the last one to move away
   const v = viewOf(), ov = overlays(); if (v.key === viewKey0 && ov === viewOv0) return;
@@ -4920,7 +4942,7 @@ function resInfo() { const r = canvas.getBoundingClientRect(), vv = window.visua
   [`dpr ${devicePixelRatio} · canvas ${canvas.width}x${canvas.height} · css ${r.width.toFixed(1)}x${r.height.toFixed(1)} @ ${r.left.toFixed(1)},${r.top.toFixed(1)}`, `inner ${innerWidth}x${innerHeight} · vv ${vv ? vv.width.toFixed(1) + 'x' + vv.height.toFixed(1) + ' scale ' + vv.scale.toFixed(3) + ' off ' + vv.offsetLeft.toFixed(1) + ',' + vv.offsetTop.toFixed(1) : '-'}`, `H ${H} · fitKey ${fitKey}`].forEach((t, i) => ctx.fillText(t, 6 * devicePixelRatio, (20 + i * 22) * devicePixelRatio)); ctx.restore(); }
 function drawFrame() { const f0 = clock.now(); drawFrame0(); if (RESDBG) resInfo(); const d = clock.now() - f0 - 1 / 60; if (d > 0.02) { sceneAt += d; if (trans) trans.at += d; } } // a frame that took long (a long list drawn for the first time): the motions wait for it instead of jumping ahead
 function drawFrame0() {
-  if (prof.nickEdit && !(prof.open && prof.menu)) endNickInline(); // the settings closed while typing: the typing ends
+  if (prof.nickEdit && !(prof.open && prof.menu)) endNickInline(); if (codeBox.open && scene !== 'online') closeCode(); // the settings closed while typing: the typing ends
   viewWatch(); FIX = [];
   hot = []; scenes[scene].draw(); if (modalSaved) { ctx.restore(); modalSaved = false; } viewMove(); if (prof.open) drawProfile(); drawNotice();
   if (touchUI && !COVER && innerWidth > innerHeight * 1.1) { // a phone held sideways: the game is drawn for portrait
