@@ -1949,7 +1949,7 @@ function topIcon(kind, x, y) { // the little pictures on the round buttons at th
   ctx.restore();
 }
 function iconBtn(x, y, kind, fn) { // the small square buttons: home and sound
-  const over = btn(x, y, 56, 54, fn), d = sink(x, y, 56, 54, 3);
+  FIX.push(['i:' + kind, x, y + OY, 56, 54]); const over = btn(x, y, 56, 54, fn), d = sink(x, y, 56, 54, 3);
   rr(x, y + 3, 56, 54, 14, OUT, null); rr(x, y + d, 56, 54, 14, hoverOn(over) ? '#fff3c4' : 'rgba(255,248,231,0.95)', OUT); y += d;
   ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; ctx.lineJoin = 'round';
   const cx = x + 28, cy = y + 28;
@@ -2342,12 +2342,12 @@ function gearKey(cx, cy, r, fn) { // a round key with a cog on it: settings
   ctx.fillStyle = '#9a8b93'; ctx.fill(); ctx.lineWidth = 1.4; ctx.stroke(); E(cx, cy, R * 0.42, R * 0.42, over ? '#fff3c4' : '#ffffff'); ctx.restore();
 }
 function drawScoreCard(r, i) { // how a record's score was made: who played, dressed as they were, on which court, then the sum the server works out
-  const xu = rank.from && scene === 'hall' ? Math.min(1, (clock.now() - (rank.selAt || 0)) / 0.3) : 1, xe = CALM ? 1 : easeDrawer(xu);
-  ctx.fillStyle = `rgba(59,51,64,${0.55 * Math.min(1, xu * 2)})`; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, () => { rank.sel = -1; }); // a tap anywhere closes it
+  const PQ = popIn(scene === 'hall' ? clock.now() - (rank.selAt || 0) : 1);
+  ctx.fillStyle = `rgba(59,51,64,${0.55 * PQ.a})`; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, () => { rank.sel = -1; }); // a tap anywhere closes it
   const mul = [0, 1, 1.35, 1.8][r.level] || 1, margin = Math.max(0, r.pts_for - r.pts_against), base = 300 + margin * 30 + r.sweet * 6 + (r.combo || 0) * 6, lc = ['', '#3d9be0', '#4f9a6a', '#e2574c'][r.level] || INK;
   const rows = [['승리', '', 300], ['점수 차', `${margin} × 30`, margin * 30], ["'딱!'", `${r.sweet} × 6`, r.sweet * 6], ['콤보', `${r.combo || 0} × 6`, (r.combo || 0) * 6]];
   const w = 470, x = (W - w) / 2, top = 134, rh = 38, h = 22 + top + 18 + rows.length * rh + 10 + 44 + 8 + 54 + 22, y = Math.max(LY.top - 40, (H - h) / 2), L0 = x + 20, R0 = x + w - 20;
-  ctx.save(); if (xe < 1) { const [fx, fy0, fw, fh] = rank.from, s0 = Math.min(fw / w, fh / h, 1), sc = s0 + (1 - s0) * xe, cx0 = fx + fw / 2, cy0 = fy0 + fh / 2, cx1 = x + w / 2, cy1 = y + h / 2; ctx.translate(cx0 + (cx1 - cx0) * xe, cy0 + (cy1 - cy0) * xe); ctx.scale(sc, sc); ctx.translate(-cx1, -cy1); ctx.globalAlpha = 0.35 + 0.65 * xe; } // card expand
+  ctx.save(); ctx.translate(W / 2, y + h / 2); ctx.scale(PQ.k, PQ.k); ctx.translate(-W / 2, -(y + h / 2)); ctx.globalAlpha = PQ.a;
   rr(x, y + 6, w, h, 24, 'rgba(59,51,64,0.35)', null); rr(x, y, w, h, 24, '#fffaf0', OUT, 3); btn(x, y, w, h, () => {}); // a tap on the card itself keeps it open; only outside closes it
   { const worn = {}; for (const id of (r.gear || '').split(',')) { const it = item(id); if (it) worn[it.slot] = id; } // the player, as dressed for this record
     const bx = L0, by = y + 22, bs = top; rr(bx, by, bs, bs, 16, '#fbf6ea', null); ctx.save(); rr(bx, by, bs, bs, 16, null, null); ctx.clip(); irwol(bx, by, bs); ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(bx, by, bs, bs); ctx.restore(); rr(bx, by, bs, bs, 16, null, '#d9cbbd', 2); ctx.save(); ctx.beginPath(); ctx.rect(bx + 2, by + 2, bs - 4, bs - 4); ctx.clip(); ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(r.animal, bx + bs / 2, by + bs - 7, 0.7, { front: true, t: 0.4, accent: CORAL, gear: worn }); ctx.restore();
@@ -3449,7 +3449,6 @@ function drawAchTab(y0, end) {
     });
     return ACH.length * rh + 8;
   });
-  staggerCover(y0 + 68, end, rh, SCR.ach.scroll, 'rgb(170,232,208)', LY.m, LY.w);
 }
 
 const room = params.get('room');
@@ -3519,7 +3518,7 @@ function refreshBtn(loading, fn, dark) { // a square key at the right of the bot
 }
 function wideBtn(label, fn) { button(label, LY.m, LY.bot, LY.w, LY.btnH, fn, { size: 31, fill: '#fff3c4' }); }
 function button(label, x, y, w, h, fn, o = {}) { // a big rounded button, for the mouse and for show
-  const over = btn(x, y, w, h, fn), on = o.on, d = sink(x, y, w, h);
+  FIX.push([label, x, y + OY, w, h]); const over = btn(x, y, w, h, fn), on = o.on, d = sink(x, y, w, h);
   rr(x, y + 5, w, h, 18, OUT, null);
   rr(x, y + d, w, h, 18, on ? '#fff3c4' : hoverOn(over) ? '#fffdf3' : o.fill || 'rgba(255,248,231,0.96)', on ? CORAL : OUT, on ? 5 : 3); y += d;
   if (o.sub) { text(label, x + LY.pad, y + h / 2 - 18, o.size || 27, INK, 'left', null, F_T); text(o.sub, x + LY.pad, y + h / 2 + 22, 21, '#7a6872', 'left', null, F_B); }
@@ -3603,9 +3602,9 @@ function drawGift() { // on the results: the card first (tickets, the tier score
     if (g.n) { ticketPic(x, y, 1.05, -0.12); rr(x + 16, y - 34, 50, 32, 16, CORAL, OUT, 2.4); text(`+${g.n}`, x + 41, y - 18, 22, '#ffffff', 'center', null, F_T); }
     else if (T) { drawTier(ti, x, y, 22); const s0 = (T.delta >= 0 ? '+' : '') + T.delta, bw = textW(s0, 20, F_T) + 22; rr(x + 14, y - 34, bw, 32, 16, T.delta >= 0 ? '#4f9a6a' : '#e2574c', OUT, 2.4); text(s0, x + 14 + bw / 2, y - 18, 20, '#ffffff', 'center', null, F_T); }
     return; }
-  const age = clock.now() - g.at, k = 0.85 + 0.15 * Math.min(1, age / 0.18), w = 470, bh1 = g.n ? 100 : 0, bh2 = T ? 120 : 0, h = 20 + bh1 + bh2 + 44, x = (W - w) / 2, y = LY.top + 90;
-  ctx.fillStyle = 'rgba(59,51,64,0.35)'; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, closeGift); btn(x, y, w, h, () => {});
-  ctx.save(); ctx.translate(W / 2, y + h / 2); ctx.scale(k, k); ctx.translate(-W / 2, -(y + h / 2));
+  const age = clock.now() - g.at, PQ = popIn(age), k = PQ.k, w = 470, bh1 = g.n ? 100 : 0, bh2 = T ? 120 : 0, h = 20 + bh1 + bh2 + 44, x = (W - w) / 2, y = LY.top + 90;
+  ctx.fillStyle = `rgba(59,51,64,${0.35 * PQ.a})`; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, closeGift); btn(x, y, w, h, () => {});
+  ctx.save(); ctx.translate(W / 2, y + h / 2); ctx.scale(k, k); ctx.translate(-W / 2, -(y + h / 2)); ctx.globalAlpha = PQ.a;
   rr(x, y + 6, w, h, 26, 'rgba(59,51,64,0.35)', null); rr(x, y, w, h, 26, '#fffaf0', OUT, 3);
   let yy = y + 20;
   if (g.n) { ticketPic(x + 92, yy + 50, 1.6, -0.15); text('경기 보상!', x + 178, yy + 30, 30, CORAL, 'left', null, F_T); fitText(`뽑기권 ${g.n}장을 받았어요`, x + 178, yy + 70, 24, INK, 'left', F_T, w - 198); yy += bh1; }
@@ -3711,9 +3710,9 @@ function openProfile(nick) { // mine, or another member's (from the ranking or a
 }
 function drawSettings() { // the cog's menu, over my profile: nickname, linked sign-ins, signing out; a tap outside closes only the menu
   const U = acct.user || {}, ids = (U.identities || []).map(d => d.provider), on = acct.providers || ['google', 'kakao'], PV = [['google', 'Google'], ['kakao', '카카오'], ['apple', 'Apple']].filter(q => on.includes(q[0]));
-  const w = 400, rh = 48, h = 20 + 30 + 14 + 48 + 16 + 26 + 8 + PV.length * rh + 16 + 48 + 20, x = (W - w) / 2, y = Math.max(16, (H - h) / 2), L0 = x + 20, R0 = x + w - 20, k = 0.9 + 0.1 * Math.min(1, (prof.mt || 0) / 0.15);
-  ctx.fillStyle = 'rgba(59,51,64,0.4)'; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, () => { prof.menu = false; }); btn(x, y, w, h, () => {});
-  ctx.save(); ctx.translate(W / 2, y + h / 2); ctx.scale(k, k); ctx.translate(-W / 2, -(y + h / 2));
+  const w = 400, rh = 48, h = 20 + 30 + 14 + 48 + 16 + 26 + 8 + PV.length * rh + 16 + 48 + 20, x = (W - w) / 2, y = Math.max(16, (H - h) / 2), L0 = x + 20, R0 = x + w - 20, PQ = popIn(prof.mt || 0), k = PQ.k;
+  ctx.fillStyle = `rgba(59,51,64,${0.4 * PQ.a})`; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, () => { prof.menu = false; }); btn(x, y, w, h, () => {});
+  ctx.save(); ctx.translate(W / 2, y + h / 2); ctx.scale(k, k); ctx.translate(-W / 2, -(y + h / 2)); ctx.globalAlpha = PQ.a;
   rr(x, y + 6, w, h, 22, 'rgba(59,51,64,0.35)', null); rr(x, y, w, h, 22, '#fffaf0', OUT, 3);
   let yy = y + 20; text('설정', W / 2, yy + 15, 24, INK, 'center', null, F_T); yy += 30 + 14;
   rr(L0, yy, R0 - L0, 48, 14, '#ffffff', '#e6dccd', 2); text('닉네임', L0 + 16, yy + 24, MIN_TEXT, '#7a6872', 'left', null, F_B); fitText((acct.prof && acct.prof.nickname) || '-', L0 + 84, yy + 24, 20, INK, 'left', F_T, R0 - L0 - 190);
@@ -3735,10 +3734,10 @@ function drawProfile() { // a member's record, packed like the score card: who, 
   const favI = favOf(P), name = other ? other.nickname : (A.nickname || '나'), vs = other && other.vs && other.vs.w + other.vs.l > 0 ? other.vs : null, RV = !other ? (prof.rivals || []) : [];
   const h = other ? 20 + 100 + 14 + 58 + 14 + 28 + 4 * 40 + (vs ? 8 + 44 : 0) + 16
                   : 20 + 100 + 14 + 58 + 12 + 24 + 5 * 30 + 2 + 10 + 2 * 28 + 12 + 28 + (RV.length ? RV.length * 52 : 36) + 14;
-  ctx.fillStyle = 'rgba(59,51,64,0.55)'; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, () => { prof.open = false; });
-  const w = 470, x = (W - w) / 2, y = Math.max(16, (H - h) / 2), L0 = x + 20, R0 = x + w - 20, k = 0.9 + 0.1 * Math.min(1, prof.t / 0.15);
+  const PQ = popIn(prof.t); ctx.fillStyle = `rgba(59,51,64,${0.55 * PQ.a})`; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, () => { prof.open = false; });
+  const w = 470, x = (W - w) / 2, y = Math.max(16, (H - h) / 2), L0 = x + 20, R0 = x + w - 20, k = PQ.k;
   btn(x, y, w, h, () => {});
-  ctx.save(); ctx.translate(W / 2, y + h / 2); ctx.scale(k, k); ctx.translate(-W / 2, -(y + h / 2));
+  ctx.save(); ctx.translate(W / 2, y + h / 2); ctx.scale(k, k); ctx.translate(-W / 2, -(y + h / 2)); ctx.globalAlpha = PQ.a;
   rr(x, y + 6, w, h, 24, 'rgba(59,51,64,0.35)', null); rr(x, y, w, h, 24, '#fffaf0', OUT, 3);
   // who
   const bs = 100, by = y + 20, ai = favI >= 0 ? favI : (other ? 0 : (setup.animal || 0)); rr(L0, by, bs, bs, 16, '#eef7f1', '#d9cbbd', 2); ctx.save(); ctx.beginPath(); ctx.rect(L0 + 2, by + 2, bs - 4, bs - 4); ctx.clip(); ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(ai, L0 + bs / 2, by + bs - 6, 0.64, { front: true, t: prof.t, accent: other ? SKY : CORAL }); ctx.restore();
@@ -3850,12 +3849,12 @@ function wrapLines(str, size, font, maxW) { // words to lines that fit maxW; a w
   while (out.length && out[out.length - 1] === '') out.pop(); return out;
 }
 const kDate = t => { const d = new Date(new Date(t).getTime() + 9 * 3600e3); return `${d.getUTCMonth() + 1}월 ${d.getUTCDate()}일`; };
-function noticeGrow(L) { // sheet expand: an opening note's body unrolls over 260 ms; the notes below move down with it
-  let off = 0; for (const c of L.cards) { c.y += off; const at = news.openAt && news.openAt[c.n.id]; if (c.body.length && at != null && !CALM) { const u = Math.min(1, (clock.now() - at) / 0.26), full = 10 + c.body.length * 32, cut = full * (1 - easeDrawer(u)); c.h -= cut; off -= cut; } }
+function noticeGrow(L) { // a note's body unrolls when it opens and rolls back up when it closes, 260 ms; the notes below move with it
+  let off = 0; for (const c of L.cards) { c.y += off; const at = news.openAt && news.openAt[c.n.id]; if (c.body.length && at != null && !CALM) { const u = Math.min(1, (clock.now() - at) / 0.26), full = 10 + c.body.length * 32, e = easeDrawer(u), cut = full * (news.open[c.n.id] ? 1 - e : e); c.h -= cut; off -= cut; } }
   return { cards: L.cards, height: L.height + off };
 }
 function noticeCards(inner) { // each note as a card: kind and date, the title, and the body only when tapped open; returns the cards and the whole height
-  let y = 0; const cards = (news.list || []).map(n => { const open = !!news.open[n.id], title = wrapLines(n.title, 27, F_T, inner - 40), body = open ? wrapLines(n.body || '', 21, F_B, inner) : [], h = 24 + 32 + 14 + title.length * 36 + (body.length ? 10 + body.length * 32 : 0) + 22;
+  let y = 0; const cards = (news.list || []).map(n => { const at = news.openAt && news.openAt[n.id], open = !!news.open[n.id] || (at != null && !CALM && clock.now() - at < 0.26), title = wrapLines(n.title, 27, F_T, inner - 40), body = open ? wrapLines(n.body || '', 21, F_B, inner) : [], h = 24 + 32 + 14 + title.length * 36 + (body.length ? 10 + body.length * 32 : 0) + 22;
     const c = { n, title, body, y, h }; y += h + 16; return c; });
   return { cards, height: Math.max(0, y - 16) + 8 };
 }
@@ -3950,7 +3949,6 @@ const scenes = {
         scrollView(SCR.tier, v0, v1, key, L.length * rh + 4, () => {
           L.forEach((r, i) => { const y = i * rh, mine = r.nick === nick; btn(LY.m + 12, y + 3, LY.w - 24, rh - 6, () => openProfile(r.nick)); row(r, i + 1, y, mine, mine ? '#fff3c4' : i % 2 === 0 ? 'rgba(234,223,210,0.45)' : 'rgba(255,255,255,0)'); });
           return L.length * rh + 4; });
-        staggerCover(v0, v1, rh, SCR.tier.scroll, 'rgb(255,248,231)');
         if (pin) { const y = v1 + 10; ctx.fillStyle = '#e6dccd'; ctx.fillRect(LY.m + 20, y - 6, LY.w - 40, 2); btn(LY.m + 12, y + 3, LY.w - 24, rh - 6, () => openProfile(nick)); row(Object.assign({ nick, fav: null }, me), mi >= 0 ? mi + 1 : '-', y, true, '#fff3c4'); }
       }
       sideBtn('뒤로', () => { scene = 'title'; });
@@ -4543,46 +4541,54 @@ function drawNotice() {
 // ---- 화면 모션 (test): push for the solo flow, fade through between unrelated screens, tab switch inside a screen, modal present over a match
 const CALM = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 const easeOut = u => 1 - Math.pow(1 - u, 3), easeDrawer = u => { let a = 0, b = 1; for (let i = 0; i < 18; i++) { const m = (a + b) / 2, x = 3 * m * (1 - m) * (1 - m) * 0.32 + 3 * m * m * (1 - m) * 0 + m * m * m; if (x < u) a = m; else b = m; } const t = (a + b) / 2; return 3 * t * (1 - t) * (1 - t) * 0.72 + 3 * t * t * (1 - t) * 1 + t * t * t; }; // cubic-bezier(0.32, 0.72, 0, 1)
-const FLOW = ['format', 'select', 'mode', 'court'], MODALS = ['pause', 'help', 'lessons'];
-let viewKey0 = '', viewScene0 = '', viewAt = 0, sceneAt = 0, trans = null, snapC = null, newC = null;
+const FLOW = ['format', 'mode', 'select', 'court'], MODALS = ['pause', 'help', 'lessons'];
+let viewKey0 = '', viewScene0 = '', viewOv0 = 0, viewAt = 0, sceneAt = 0, trans = null, snapC = null, newC = null, FIX = [];
+// Three motions only, the same for the same kind of move:
+//  slide  a step in order (the solo flow, a tab): what changes slides 32 px and crossfades, 220 ms, the way you are going
+//  fade   any other page, and a window closing: the old picture fades out, 200 ms (160 for a window)
+//  pop    a window opening: grows from 95% and fades in, 200 ms (popIn)
+// A button that sits at the same place with the same words before and after (뒤로, home) does not move at all.
 function viewOf() { // what counts as 'a different view', and the part of the screen that moves with it
   if (scene === 'wardrobe') return { key: 'wardrobe:' + acct.wtab, tab: ['gacha', 'ach'].indexOf(acct.wtab), r: [0, LY.top + 70, W, H] };
   if (scene === 'hall') return { key: 'hall:' + rank.mode, tab: FORMAT_IDS.indexOf(rank.mode), r: [0, LY.top + 60, W, LY.bot - 8] };
   if (scene === 'help') { const top = Math.round(H / 2 - 400); return { key: 'help:' + helpPage, tab: helpPage, r: [44, top + 84, W - 44, top + 796] }; }
   return { key: scene };
 }
+const overlays = () => (prof.open ? 1 : 0) + (prof.open && prof.menu ? 1 : 0) + (scene === 'hall' && rank.sel >= 0 ? 1 : 0) + (typeof matchGift !== 'undefined' && matchGift && matchGift.open && scene === 'results' ? 1 : 0);
 function snap(into) { const c = into || document.createElement('canvas'); if (c.width !== canvas.width || c.height !== canvas.height) { c.width = canvas.width; c.height = canvas.height; } const g = c.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, c.width, c.height); g.drawImage(canvas, 0, 0); return c; }
 function viewWatch() { // before a frame: has the view changed since the last one? keep a picture of the last one to move away
-  const v = viewOf(); if (v.key === viewKey0) return;
+  const v = viewOf(), ov = overlays(); if (v.key === viewKey0 && ov === viewOv0) return;
   const from = viewScene0, to = scene, fi = FLOW.indexOf(from), ti = FLOW.indexOf(to); let kind = null, dir = 1, r = [0, 0, W, H], dur = 0.2;
-  if (from && from === to && v.tab >= 0) { kind = 'tab'; dir = v.tab > (trans && trans.tabWas != null ? trans.tabWas : -1) ? 1 : -1; r = v.r; dur = 0.22; }
-  else if (fi >= 0 && ti >= 0) { kind = 'push'; dir = ti > fi ? 1 : -1; r = [0, LY.sb, W, H]; dur = 0.28; }
-  else if (from && !MODALS.includes(to) && !MODALS.includes(from) && to !== 'cover') { kind = 'fade'; dur = 0.2; }
+  if (v.key === viewKey0) { if (ov < viewOv0) { kind = 'fade'; dur = 0.16; } } // a window opened (it pops by itself) or closed (it fades away)
+  else if (from && from === to && v.tab >= 0) { kind = 'slide'; dir = v.tab > (trans && trans.tabWas != null ? trans.tabWas : -1) ? 1 : -1; r = v.r; dur = 0.22; }
+  else if (fi >= 0 && ti >= 0) { kind = 'slide'; dir = ti > fi ? 1 : -1; r = [0, LY.sb, W, H]; dur = 0.22; }
+  else if (MODALS.includes(from) && !MODALS.includes(to)) { kind = 'fade'; dur = 0.16; }
+  else if (from && !MODALS.includes(to) && to !== 'cover') kind = 'fade';
   if (from !== to) sceneAt = clock.now();
-  if (kind && !CALM || kind === 'fade' || (kind && CALM)) { if (kind) trans = { kind: CALM ? 'fade' : kind, dir, r, dur, at: clock.now(), old: snapC = snap(snapC) }; }
-  viewAt = clock.now(); viewKey0 = v.key; viewScene0 = scene; if (trans) trans.tabWas = v.tab;
+  const tabWas = trans ? trans.tabWas : null;
+  if (kind) trans = { kind: CALM ? 'fade' : kind, dir, r, dur, at: clock.now(), old: snapC = snap(snapC), keep: FIX };
+  if (trans) trans.tabWas = v.tab != null ? v.tab : tabWas;
+  viewAt = clock.now(); viewKey0 = v.key; viewScene0 = scene; viewOv0 = ov;
 }
 function viewMove() { // after the new frame: lay the old picture and the new one over each other as they move
   if (!trans) return; const u = Math.min(1, (clock.now() - trans.at) / trans.dur); if (u >= 1) { trans = null; return; }
-  newC = snap(newC); const k = canvas.width / W, [x0, y0, x1, y1] = trans.r.map(v => v * k), w = x1 - x0;
+  newC = snap(newC); const k = canvas.width / W, [x0, y0, x1, y1] = trans.r.map(v => v * k), w = x1 - x0, e = easeOut(u);
   ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.beginPath(); ctx.rect(x0, y0, w, y1 - y0); ctx.clip();
-  if (trans.kind === 'fade') { ctx.globalAlpha = 1 - easeOut(Math.min(1, u * 1.6)); ctx.drawImage(trans.old, 0, 0); }
-  else if (trans.kind === 'push') { const e = easeDrawer(u), d = trans.dir; ctx.drawImage(trans.old, -d * e * w * 0.3, 0); ctx.fillStyle = 'rgba(59,51,64,' + 0.12 * e + ')'; ctx.fillRect(x0, y0, w, y1 - y0); ctx.drawImage(newC, d * (1 - e) * w, 0); ctx.shadowColor = 'rgba(59,51,64,0.25)'; }
-  else { const e = easeOut(u), d = trans.dir, D = 48 * k; ctx.globalAlpha = 1 - e; ctx.drawImage(trans.old, -d * e * D, 0); ctx.globalAlpha = e; ctx.drawImage(newC, d * (1 - e) * D, 0); }
+  if (trans.kind === 'fade') { ctx.globalAlpha = 1 - e; ctx.drawImage(trans.old, 0, 0); }
+  else { const d = trans.dir, D = 32 * k; ctx.globalAlpha = 1 - e; ctx.drawImage(trans.old, -d * e * D, 0); ctx.globalAlpha = e; ctx.drawImage(newC, d * (1 - e) * D, 0); }
+  ctx.globalAlpha = 1; // the buttons that stayed put: drawn as they are now, still
+  for (const f of FIX) if (trans.keep.some(g => g[0] === f[0] && Math.abs(g[1] - f[1]) < 1 && Math.abs(g[2] - f[2]) < 1 && Math.abs(g[3] - f[3]) < 1)) {
+    const bx = (f[1] - 4) * k, by = (f[2] - 4) * k, bw = (f[3] + 8) * k, bh = (f[4] + 14) * k; ctx.drawImage(newC, bx, by, bw, bh, bx, by, bw, bh); }
   ctx.restore();
 }
 let modalSaved = false;
-function modalIn(dimA) { // a sheet over the match rises 36 px as the dim comes up, 260 ms
-  const u = Math.min(1, (clock.now() - sceneAt) / 0.26), e = CALM ? 1 : easeDrawer(u); ctx.fillStyle = `rgba(59,51,64,${dimA * Math.min(1, u * 2)})`; ctx.fillRect(0, 0, W, H);
-  ctx.save(); ctx.translate(0, 36 * (1 - e)); ctx.globalAlpha = Math.min(1, 0.3 + u * 1.4); modalSaved = true;
-}
-function staggerCover(v0, v1, rh, scroll, fill, x = LY.m, w = LY.w) { // rows uncovered top to bottom, 35 ms apart, 220 ms each; the first time a list shows
-  const t = clock.now() - viewAt; if (CALM || t > 1.2) return;
-  for (let i = Math.floor(scroll / rh); ; i++) { const y = v0 + i * rh - scroll; if (y > v1) break; const u = Math.min(1, Math.max(0, (t - i * 0.035) / 0.22)); if (u >= 1) continue;
-    ctx.save(); ctx.beginPath(); ctx.rect(x - 4, Math.max(v0, y), w + 8, Math.min(v1, y + rh) - Math.max(v0, y)); ctx.clip(); ctx.fillStyle = fill; ctx.globalAlpha = 1 - easeOut(u); ctx.fillRect(x - 4, y, w + 8, rh); ctx.restore(); }
+function popIn(age) { const e = CALM ? 1 : easeOut(Math.min(1, Math.max(0, age) / 0.2)); return { k: 0.95 + 0.05 * e, a: e }; } // every window: grows from 95% and fades in, 200 ms
+function modalIn(dimA) { // a window over the match: the same pop as every other window
+  const PQ = popIn(clock.now() - sceneAt); ctx.fillStyle = `rgba(59,51,64,${dimA * PQ.a})`; ctx.fillRect(0, 0, W, H);
+  ctx.save(); ctx.translate(W / 2, H / 2); ctx.scale(PQ.k, PQ.k); ctx.translate(-W / 2, -H / 2); ctx.globalAlpha = PQ.a; modalSaved = true;
 }
 function drawFrame() {
-  viewWatch();
+  viewWatch(); FIX = [];
   hot = []; scenes[scene].draw(); if (modalSaved) { ctx.restore(); modalSaved = false; } viewMove(); if (prof.open) drawProfile(); drawNotice();
   if (touchUI && !COVER && innerWidth > innerHeight * 1.1) { // a phone held sideways: the game is drawn for portrait
     rr(W / 2 - 210, H - 50, 420, 38, 19, 'rgba(59,51,64,0.88)', null);
