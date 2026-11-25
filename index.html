@@ -131,10 +131,11 @@ function fit(force) { // fills the visible screen at any shape and pixel ratio, 
   if (force !== true && (document.querySelector('#nick.on, #fb.on') || (typeof prof !== 'undefined' && prof.nickEdit) || performance.now() < fitHold)) return; // the on-screen keyboard is up: keep the game and the dialog the size they were
   const v = viewBox(), dpr = screenDpr(), key = [v.x, v.y, v.w, v.h, dpr].join();
   if (key === fitKey && force !== true) return; fitKey = key;
-  H = COVER ? 571 : Math.round(W * Math.max(1.25, Math.min(2.4, v.h / v.w))); // the page reshapes itself: 4:5 to 12:5 tall; past that, bars
-  const k = Math.min(v.w / W, v.h / H);
+  const asp = v.h / v.w, fills = !COVER && asp >= 1.25 && asp <= 2.4; // the page reshapes itself: 4:5 to 12:5 tall; past that, bars
+  H = COVER ? 571 : fills ? Math.ceil(W * asp) : Math.round(W * Math.max(1.25, Math.min(2.4, asp)));
+  const k = fills ? v.w / W : Math.min(v.w / W, v.h / H); // filling: the width sets the scale and the height follows, rounded down, so no sliver of the page behind shows at a side
   const s = PIXEL ? Math.max(1, Math.floor(k)) : k;
-  const cw = Math.floor(W * s), ch = Math.floor(H * s); // rounded down: never a pixel over the edge
+  const cw = fills ? Math.round(v.w) : Math.floor(W * s), ch = fills ? Math.round(v.h) : Math.floor(H * s); // filling: exactly the screen, edge to edge (the page's last row is at most a hair under it); else rounded down, never a pixel over
   canvas.width = PIXEL ? W : Math.round(cw * dpr); canvas.height = PIXEL ? H : Math.round(ch * dpr); // exactly the screen's pixels under the canvas: one canvas pixel to one screen pixel, so nothing is resampled (and blurred)
   const r = canvas.width / W;
   document.documentElement.style.setProperty('--u', String(s)); // the HTML dialog sizes itself to the same scale as the drawn UI
@@ -4930,7 +4931,7 @@ function drawFrame0() {
 let edgeView = '', edgeDue = 0, edgeKey = ''; const themeMeta = document.querySelector('meta[name=theme-color]'), edgeB = document.getElementById('edgeB'), edgeT = document.getElementById('edgeT');
 function matchEdges() { // the screen above and below the game takes the colour of the game's top and bottom rows, so the page reads as one; read once each time the view has settled (reading the canvas stalls a frame), the colours easing over
   const now = performance.now(), v = scene + '|' + viewKey0 + '|' + canvas.width + 'x' + canvas.height + '|' + (prof.open ? 1 : 0);
-  if (v !== edgeView) { edgeView = v; edgeDue = now + 450; } if (!edgeDue || now < edgeDue || trans) return; edgeDue = 0;
+  if (v !== edgeView) { edgeView = v; edgeDue = now + 450; } else if (!edgeDue && !trans) edgeDue = now + 1500; if (!edgeDue || now < edgeDue || trans) return; edgeDue = 0; // once the view settles, then every 1.5 s (a window's dim, a page's own change)
   try { const g = canvas.getContext('2d'), px = (y) => { const d = g.getImageData(Math.min(8, canvas.width - 1), y, 1, 1).data; return `rgb(${d[0]},${d[1]},${d[2]})`; }, top = px(1), bot = px(canvas.height - 2), key = top + bot;
     if (key === edgeKey) return; edgeKey = key; document.documentElement.style.backgroundColor = top; if (edgeT) edgeT.style.backgroundColor = top; if (edgeB) edgeB.style.backgroundColor = bot; if (themeMeta) themeMeta.content = top; } catch (e) { /* the canvas could not be read: the plain green stays */ }
 }
