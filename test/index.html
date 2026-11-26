@@ -4486,7 +4486,7 @@ const scenes = {
         text(A.ko, cx, y + ch - 15, 20, INK, 'center', on ? '#fff3c4' : CREAM, F_T);
       });
       // the chosen animal: its card, wearing the account's gear, with the four slots along the bottom
-      const a = state.sel, A = ANIMALS[a], gear = myGear(a), py = LY.top + 2 * (ch + LY.gap), ph = Math.min(LY.tall ? 372 : 356, contentEnd() - py); // never down into the bottom row
+      const a = state.sel, A = ANIMALS[a], gear = myGear(a), py = LY.top + 2 * (ch + LY.gap), ph = contentEnd() - py; // down to where every 개인전 step ends, just above the step dots
       panel(LY.m, py, LY.w, ph);
       ctx.font = `${Math.round(17 * 1.1)}px ${F_B}`; const dw = Math.max(...STAT_DO.map(d => ctx.measureText(d).width));
       // left: the hanger and the name at the top, the stats along the bottom; right: the animal, big, wearing its gear
@@ -4543,14 +4543,14 @@ const scenes = {
     },
     draw() {
       menuBegin('어느 코트에서 할까요?', !net);
-      const ch = SZ().court, af = AFFINITY[ANIMALS[setup.animal].id];
+      const ch = net ? SZ().court : (contentEnd() - LY.top - LY.gap * 2) / 3, af = AFFINITY[ANIMALS[setup.animal].id]; // the three cards share the page down to where every 개인전 step ends
       COURT_IDS.forEach((id, i) => {
         const C = COURTS[id], y = LY.top + i * (ch + LY.gap), on = i === state.cc;
         card(LY.m, y, LY.w, ch, () => { if (state.cc !== i) { state.cc = i; tone(660, 0.05, 'sine', 0.15); } }, on, null, true); // a tap chooses; 이 코트로 선택 goes on
-        const ph = ch - LY.pad * 2, pw = Math.min(200, ph * 1.3), px = LY.m + LY.pad;
-        courtPic(px, y + LY.pad, pw, ph, id);
+        const ph = Math.min(ch - LY.pad * 2, 154), pw = Math.min(200, ph * 1.3), px = LY.m + LY.pad;
+        courtPic(px, y + (ch - ph) / 2, pw, ph, id);
         // the text block, centred in the card: name (with the badge on the same line), its line, then two ratings
-        const tx = px + pw + LY.pad, by = y + LY.pad + 1, right = LY.m + LY.w - LY.pad;
+        const tx = px + pw + LY.pad, by = y + ch / 2 - 67, right = LY.m + LY.w - LY.pad;
         text(C.ko, tx, by + 18, 33, INK, 'left', null, F_T);
         if (af[0] === id || af[2] === id) { const good = af[0] === id, bw = Math.ceil(textW('강한 코트', 20, F_T)) + 28; // the badge as wide as its words and 14 a side
           rr(right - bw, by + 1, bw, 34, 17, good ? '#ffe1a8' : '#dbe9f7', null);
@@ -4582,7 +4582,7 @@ const scenes = {
       menuBegin('경기 방식을 골라 주세요'); // the first step: 뒤로 already goes home (online, back to the room)
       const SH = net ? 0 : 92; if (!net) drawDoublesSwitch(LY.top, SH);
       const how = { flash: '10점을 먼저 따면 승리 (2점 차)', short: '4게임 먼저 · 40-40이면 한 포인트로 결정', regular: '세트 3개를 먼저 따면 승리', practice: '샷마다 타이밍 · 속도 · 떨어진 곳을 알려 줘요' };
-      const f3 = LVUI === 'bar' && !net, LH = 68, ids = net || f3 ? [...FORMAT_IDS] : [...FORMAT_IDS, 'practice'], top = net ? LY.top : LY.top + SH + LY.gap + 10, ch = Math.min(SZ().format4, (contentEnd() - (f3 ? LH + LY.gap + 10 : 0) - top - LY.gap * (ids.length - 1)) / ids.length), full = ch >= 128;
+      const f3 = LVUI === 'bar' && !net, LH = 68, ids = net || f3 ? [...FORMAT_IDS] : [...FORMAT_IDS, 'practice'], top = net ? LY.top : LY.top + SH + LY.gap + 10, fill = (contentEnd() - (f3 ? LH + LY.gap + 10 : 0) - top - LY.gap * (ids.length - 1)) / ids.length, ch = net ? Math.min(SZ().format4, fill) : fill, full = ch >= 128;
       if (f3) { if (!setup.lv) setup.lv = +(store('zt_lv') || 2); const ly = contentEnd() - LH, bw = Math.ceil(textW('볼머신장', 26, F_T)) + 56 + 40; text('난이도', LY.m + 4, ly + LH / 2 - 8, 22, '#4f6f63', 'left', null, F_T); levelSlider('_', LY.m + textW('난이도', 22, F_T) + 40, ly + LH / 2 - 8, LY.w - bw - 16 - textW('난이도', 22, F_T) - 80, setup.lv); button('볼머신장', LY.m + LY.w - bw, ly, bw, LH, () => pickFormat(3), { size: 26, fill: '#eef7ff', icon: (cx, cy) => ballMachineIcon(cx, cy, 0.62) }); } // the level, chosen like an option (chips, not a second switch), and the ball machine as a worded key beside it
       ids.forEach((id, i) => {
         const y = top + i * (ch + LY.gap), x = LY.m + LY.pad, by = full ? y + ch / 2 - 52 : y + ch / 2 - 37; // the lines as one block on the card's middle line (three, or two when the cards are short)
