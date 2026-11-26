@@ -32,12 +32,17 @@ alter table public.scores add column if not exists streak integer check (streak 
 alter table public.scores add column if not exists gear text check (gear is null or char_length(gear) <= 40);
 -- a record kept on the month's board but left out of 명예의 전당 (set only here, by hand, for records found to be cheats)
 alter table public.scores add column if not exists no_fame boolean not null default false;
+-- why a record looks unlike a person's play (set by the check below, read by the owner in scores_suspect); such a record is kept, but out of 명예의 전당
+alter table public.scores add column if not exists suspect text;
 
 -- The score is worked out here, never taken from the browser, and a record that could not
 -- come from a real match is refused.
+-- Since 2026-11-26: only what no match can hold is refused. What a person seldom does is let in, marked
+-- (suspect) and kept out of 명예의 전당, for the owner to look at: one strong sign is enough, weak signs need two.
+-- A whole match without losing a point is possible (the owner won 16:0 on 보통), so on its own it marks nothing.
 create or replace function public.scores_check() returns trigger
 language plpgsql security definer set search_path = public as $$
-declare min_pts int;
+declare min_pts int; strong text[] := '{}'; weak text[] := '{}';
 begin
   new.nickname   := btrim(new.nickname);
   new.created_at := now();
@@ -54,12 +59,20 @@ begin
   if new.duration_s < (new.pts_for + new.pts_against) * 3 then raise exception 'too fast'; end if;
   if new.sweet > (new.pts_for + new.pts_against) * 25 then raise exception 'too many sweet hits'; end if;
   if new.combo > new.sweet * 9 then raise exception 'too many sweet hits'; end if;
-  -- play no person could: perfect on almost every ball, a run of perfect hits too long, or the hard computer beaten without a single point in a longer match
   if new.hits is null or new.streak is null then raise exception 'old client'; end if;
-  if new.sweet > new.hits or new.streak > new.sweet then raise exception 'not human'; end if;
-  if new.hits >= 20 and new.sweet > new.hits * 0.85 then raise exception 'not human'; end if;
-  if new.streak > 30 then raise exception 'not human'; end if;
-  if new.level = 3 and new.pts_against = 0 and new.pts_for >= 16 then raise exception 'not human'; end if;
+  if new.sweet > new.hits or new.streak > new.sweet then raise exception 'not a real match'; end if;
+  -- strong signs: perfect on almost every ball, or a run of perfect hits no hand keeps up
+  if new.hits >= 20 and new.sweet > new.hits * 0.85 then strong := array_append(strong, '딱! 85% 넘음'::text); end if;
+  if new.streak > 30 then strong := array_append(strong, '연속 딱! 30 넘음'::text); end if;
+  -- weak signs: each alone happens in real play
+  if new.level = 3 and new.pts_against = 0 and new.pts_for >= 16 then weak := array_append(weak, '어려움 무실점'::text); end if;
+  if new.hits >= 20 and new.sweet > new.hits * 0.65 and new.sweet <= new.hits * 0.85 then weak := array_append(weak, '딱! 65% 넘음'::text); end if;
+  if new.streak > 15 and new.streak <= 30 then weak := array_append(weak, '연속 딱! 15 넘음'::text); end if;
+  if new.duration_s < (new.pts_for + new.pts_against) * 5 then weak := array_append(weak, '포인트당 5초 미만'::text); end if;
+  new.suspect := null; new.no_fame := false;
+  if cardinality(strong) > 0 or cardinality(weak) >= 2 then
+    new.suspect := array_to_string(strong || weak, ', '); new.no_fame := true;
+  end if;
   if exists (select 1 from public.scores s where s.client_id = new.client_id and s.created_at > now() - interval '20 seconds') then
     raise exception 'slow down';
   end if;
@@ -97,6 +110,13 @@ update public.scores set score = round((300 + greatest(0, pts_for - pts_against)
     * (case level when 1 then 100 when 2 then 135 else 180 end) / 100.0)
   where score is distinct from round((300 + greatest(0, pts_for - pts_against) * 30 + sweet * 6 + combo * 6)
     * (case level when 1 then 100 when 2 then 135 else 180 end) / 100.0);
+
+-- The marked records, newest first, for the owner (Table Editor). A record found to be fair play goes back in with:
+--   update public.scores set no_fame = false, suspect = null where id = <id>;
+create or replace view public.scores_suspect as
+  select id, created_at, nickname, mode, level, sets, pts_for, pts_against, hits, sweet, streak, combo, duration_s, score, suspect, no_fame
+    from public.scores where suspect is not null order by created_at desc;
+revoke all on public.scores_suspect from anon, authenticated;
 
 -- Records checked by hand and found to be cheats (2026-11-18 and 19: 72:0 and 16:0 wins over the hard computer, '딱!' far past what a hand can do).
 -- They stay on that month's board, but never in 명예의 전당. Running this again changes nothing.

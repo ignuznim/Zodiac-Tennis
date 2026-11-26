@@ -2786,7 +2786,7 @@ async function sendRecord(nickname) {
   let r = await fetch(RANK.url, { method: 'POST', headers: H, body: JSON.stringify(rec) });
   for (const col of ['streak', 'hits', 'combo', 'gear']) if (r.status === 400) { const t0 = await r.clone().text(); if (new RegExp(col).test(t0)) { delete rec[col]; r = await fetch(RANK.url, { method: 'POST', headers: H, body: JSON.stringify(rec) }); } } // before those columns exist
   if (r.status === 409) throw new Error('이미 등록된 기록이에요');
-  if (!r.ok) { const t = await r.text(); throw new Error(/old client/.test(t) ? '게임을 새로고침한 뒤 다시 등록해 주세요' : /not human/.test(t) ? '정상적인 경기 기록이 아니에요' : /nickname taken/.test(t) ? '회원이 쓰는 닉네임이에요 · 다른 이름을 써 주세요' : /bad nickname/.test(t) ? '닉네임은 1~8자로 정해 주세요' : /slow down/.test(t) ? '잠시 후 다시 등록해 주세요' : /not a finished|too fast|too many/.test(t) ? '등록할 수 없는 기록이에요' : '등록하지 못했어요 · 인터넷 연결을 확인해 주세요'); }
+  if (!r.ok) { const t = await r.text(); throw new Error(/old client/.test(t) ? '게임을 새로고침한 뒤 다시 등록해 주세요' : /not human|not a real match/.test(t) ? '정상적인 경기 기록이 아니에요' : /nickname taken/.test(t) ? '회원이 쓰는 닉네임이에요 · 다른 이름을 써 주세요' : /bad nickname/.test(t) ? '닉네임은 1~8자로 정해 주세요' : /slow down/.test(t) ? '잠시 후 다시 등록해 주세요' : /not a finished|too fast|too many/.test(t) ? '등록할 수 없는 기록이에요' : '등록하지 못했어요 · 인터넷 연결을 확인해 주세요'); }
   const score = scoreOf(rec);
   const placeOf = async since => { // the place on a board: records that scored more, plus one
     try { const c = await fetch(RANK.url + `?select=id&mode=eq.${rec.mode}&score=gt.${score}${since}`, { method: 'HEAD', headers: rankHeaders({ Prefer: 'count=exact' }) });
@@ -2869,16 +2869,16 @@ async function submitRecord(name) {
   rank.sending = false; nickBox.querySelector('.go').disabled = false;
 }
 
-function courtPic(x, y, w, h, id) { // a court seen from above with its lines and the net, for the court cards
-  const C = COURTS[id]; rr(x, y, w, h, 12, C.apron, OUT, 2.6);
-  const ix = x + w * 0.12, iy = y + h * 0.09, iw = w * 0.76, ih = h * 0.82;
-  ctx.fillStyle = C.edge; ctx.fillRect(ix - 3, iy - 3, iw + 6, ih + 6);
-  for (let k = 0; k < 6; k++) { ctx.fillStyle = k % 2 ? C.b : C.a; ctx.fillRect(ix, iy + k * ih / 6, iw, ih / 6); }
+function courtPic(x, y, w, h, id) { // a court seen from above with its lines and the net, for the court cards; small ones keep more ground round the court and finer lines (k)
+  const C = COURTS[id], k = clamp(h / 150, 0.3, 1), mx = 0.12 + (1 - k) * 0.1, my = 0.09 + (1 - k) * 0.08; rr(x, y, w, h, 12 * Math.max(k, 0.6), C.apron, OUT, Math.max(2.2, 2.6 * k));
+  const ix = x + w * mx, iy = y + h * my, iw = w * (1 - 2 * mx), ih = h * (1 - 2 * my), e = 3 * k;
+  ctx.fillStyle = C.edge; ctx.fillRect(ix - e, iy - e, iw + 2 * e, ih + 2 * e);
+  for (let q = 0; q < 6; q++) { ctx.fillStyle = q % 2 ? C.b : C.a; ctx.fillRect(ix, iy + q * ih / 6, iw, ih / 6); }
   const sx = iw * 0.125, sv = ih * 0.23;
-  ctx.strokeStyle = CREAM; ctx.lineWidth = 2.4; ctx.strokeRect(ix, iy, iw, ih); ctx.strokeRect(ix + sx, iy, iw - sx * 2, ih);
+  ctx.strokeStyle = CREAM; ctx.lineWidth = Math.max(1.2, 2.4 * k); ctx.strokeRect(ix, iy, iw, ih); ctx.strokeRect(ix + sx, iy, iw - sx * 2, ih);
   ctx.beginPath(); ctx.moveTo(ix + sx, iy + sv); ctx.lineTo(ix + iw - sx, iy + sv); ctx.moveTo(ix + sx, iy + ih - sv); ctx.lineTo(ix + iw - sx, iy + ih - sv);
   ctx.moveTo(ix + iw / 2, iy + sv); ctx.lineTo(ix + iw / 2, iy + ih - sv); ctx.stroke();
-  ctx.strokeStyle = OUT; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(ix - 10, iy + ih / 2); ctx.lineTo(ix + iw + 10, iy + ih / 2); ctx.stroke(); ctx.strokeStyle = CREAM; ctx.lineWidth = 2.5; ctx.stroke();
+  const o = Math.min(10, w * mx - 4); ctx.strokeStyle = OUT; ctx.lineWidth = Math.max(2.6, 5 * k); ctx.beginPath(); ctx.moveTo(ix - o, iy + ih / 2); ctx.lineTo(ix + iw + o, iy + ih / 2); ctx.stroke(); ctx.strokeStyle = CREAM; ctx.lineWidth = Math.max(1.2, 2.5 * k); ctx.stroke(); // the net stops inside the ground
 }
 function miniCourt(x, y, w, h, id) { // a court seen from above, small enough for a badge
   const C = COURTS[id]; rr(x, y, w, h, 7, C.apron, OUT, 2.2);
@@ -3451,19 +3451,19 @@ function miniFace(a, cx, cy, r = 13) { // an animal's face in a little white cir
   const k = r / 13; ctx.save(); ctx.lineWidth = 2; ctx.strokeStyle = OUT; E(cx, cy, r, r, '#ffffff'); ctx.beginPath(); ctx.arc(cx, cy, r - 1, 0, 7); ctx.clip();
   ctx.lineWidth = 2.6 * k; ctx.strokeStyle = OUT; drawAnimal(a, cx, cy + 24 * k, 0.3 * k, { front: true, t: 0.4, accent: CORAL }); ctx.restore();
 }
-function itemCard(id, x, yy, cw, chh, sid, gear) { // an item's card, as the closet's lists show it (and its first page, the worn ones): the picture, the name, what it adds; worn here, who else wears it, how many
+function itemCard(id, x, yy, cw, chh, sid, gear, plain) { // an item's card, as the closet's lists show it (and its first page, the worn ones): the picture, the name, what it adds; worn here, who else wears it, how many
   const it = item(id), have = acct.inv[id] || 0, on = gear[sid] === id, others = wearers(id).filter(k => k !== closet.animal), free = have - others.length - (on ? 1 : 0);
     rr(x, yy, cw, chh, 16, have ? (on ? '#fff3c4' : closet.sel === id ? '#fffdf3' : '#ffffff') : '#e9e1d8', have ? GRADE[it.grade].c : closet.sel === id ? '#7a6872' : '#c9bdb2', on ? 5 : have ? 3.4 : 2.4);
     if (have) { ctx.save(); ctx.beginPath(); ctx.rect(x + 4, yy + 4, cw - 8, chh - 56); ctx.clip(); itemIcon(id, x + cw / 2, yy + 4 + (chh - 60) / 2, Math.min(70, chh - 66)); ctx.restore();
       text(it.name, x + cw / 2, yy + chh - 42, 17, INK, 'center', null, F_T); text(`${STAT_NAME[it.stat]} +${it.amt}`, x + cw / 2, yy + chh - 18, MIN_TEXT, GRADE[it.grade].c, 'center', null, F_T);
       const worn = others.length + (on ? 1 : 0), all = !on && others.length && free <= 0;
       if (all) rr(x, yy, cw, chh, 16, 'rgba(255,255,255,0.5)', null); // every copy is on another animal: faded, still a tap takes one back
-      let fx = x + 8;
+      let fx = x + 8; if (plain) {} else {
       if (on) { rr(fx, yy + 8, 50, 26, 13, CORAL, null); text('착용', fx + 25, yy + 21, MIN_TEXT, '#fff', 'center', null, F_T); fx += 56; }
       const shown = others.slice(0, on ? 1 : 2); shown.forEach(k => { miniFace(k, fx + 13, yy + 21); fx += 29; }); // who else wears it
       if (others.length > shown.length && !on) { rr(fx, yy + 9, 34, 24, 12, 'rgba(122,104,114,0.85)', null); text('+' + (others.length - shown.length), fx + 17, yy + 21, MIN_TEXT, '#fff', 'center', null, F_N); }
       if (all) { rr(x + 12, yy + chh - 82, cw - 24, 26, 13, 'rgba(122,104,114,0.9)', null); text('모두 착용 중', x + cw / 2, yy + chh - 69, MIN_TEXT, '#fff', 'center', null, F_T); }
-      if (have > 1 && !all) { const t2 = worn ? `${worn}/${have}` : `×${have}`; ctx.font = `${MIN_TEXT}px ${F_N}`; const tw2 = ctx.measureText(t2).width + 14; rr(x + cw - 8 - tw2, yy + 9, tw2, 24, 12, 'rgba(234,223,210,0.95)', null); text(t2, x + cw - 8 - tw2 / 2, yy + 21, MIN_TEXT, '#7a6872', 'center', null, F_N); } } // worn of owned, top right
+      if (have > 1 && !all) { const t2 = worn ? `${worn}/${have}` : `×${have}`; ctx.font = `${MIN_TEXT}px ${F_N}`; const tw2 = ctx.measureText(t2).width + 14; rr(x + cw - 8 - tw2, yy + 9, tw2, 24, 12, 'rgba(234,223,210,0.95)', null); text(t2, x + cw - 8 - tw2 / 2, yy + 21, MIN_TEXT, '#7a6872', 'center', null, F_N); } } } // worn of owned, top right (plain: the worn page, where all of that is plain already)
     else { // a silhouette: the shape in shadow, the name a mystery
       ctx.save(); ctx.beginPath(); ctx.rect(x + 4, yy + 4, cw - 8, chh - 56); ctx.clip(); ghostIcon(id, x + cw / 2, yy + 4 + (chh - 60) / 2, Math.min(70, chh - 66)); ctx.restore();
       text('???', x + cw / 2, yy + chh - 42, 17, '#9a8b93', 'center', null, F_T); text(GRADE[it.grade].ko, x + cw / 2, yy + chh - 18, MIN_TEXT, GRADE[it.grade].c, 'center', null, F_T); }
@@ -3529,7 +3529,7 @@ function drawWornPage(x, y, w, h, gear, eh) { // an animal's closet, first page:
   const a = closet.animal, bonus = gearBonus(gear), lineH = 48, gap = 12, cw = (LY.w - 12 * 3) / 4, top = y, bottom = y + h - lineH - 14, chh = Math.min(150, (bottom - top - gap * 3) / 4);
   [['hat', '모자'], ['racket', '라켓'], ['uniform', '유니폼'], ['shoes', '신발']].forEach(([sid, ko], i) => { const cx = LY.m, cy = top + i * (chh + gap), id = gear[sid], it = id && item(id);
     btn(cx, cy, cw, chh, () => closetJump(sid, it ? id : null)); // a tap: to this slot among every item, the worn one there
-    if (it) itemCard(id, cx, cy, cw, chh, sid, gear); // tappable: the item list's own card (level 2)
+    if (it) itemCard(id, cx, cy, cw, chh, sid, gear, true); // tappable: the item list's own card (level 2)
     else { rr(cx, cy, cw, chh, 16, '#f6efe3', null); ctx.save(); ctx.setLineDash([6, 5]); rr(cx + 1, cy + 1, cw - 2, chh - 2, 15, null, '#c9bdb2', 2); ctx.restore(); // an empty place: the same card, dashed, waiting to be filled
       text('+', cx + cw / 2, cy + (chh - 56) / 2 + 6, 40, '#b3a4ac', 'center', null, F_T); text(ko, cx + cw / 2, cy + chh - 42, 17, '#9a8b93', 'center', null, F_T); text('비어 있음', cx + cw / 2, cy + chh - 18, MIN_TEXT, '#b3a4ac', 'center', null, F_T); } });
   const sx = LY.m + cw + 14, sw = LY.m + LY.w - sx, sh = bottom - top;
@@ -4305,7 +4305,7 @@ const scenes = {
         rr(cx, cy, cw, 50, 25, over ? '#fff3c4' : 'rgba(255,248,231,0.95)', OUT, 2.6); if (mt) drawTier(tierOf(mt), cx + 25, cy + 25, 15); text(t, cx + (mt ? 30 : 0) + (cw - (mt ? 30 : 0)) / 2, cy + 26, 21, acct.user ? INK : '#3d8be0', 'center', null, F_T);
         const ry = cy, round = (x, kind, fn, dot) => roundKey(x, ry, kind, fn, dot); // round picture buttons under my name, edged like it
         round(cx - 12 - 50, FB_ICON, openFeedback); round(cx - 24 - 100, 'megaphone', openNotices, noticeUnread()); // beside my name, on the same row
-        if (lobbyNet.online) onlinePill(LY.m, cy, () => { scene = 'online'; }); } // who is around, top left: a tap goes online
+        if (lobbyNet.online) onlinePill(LY.m, cy); } // who is around, top left: a label in its green rim, as on the online page (온라인 below is the way in)
       text(`v${APP_VERSION} · © 2026 IGNUZNIM. All rights reserved.`, W / 2, LY.copy, 16, 'rgba(59,51,64,0.6)', 'center', null, F_B);
       menuEnd(KB('Enter 를 눌러도 시작해요'));
     },
@@ -4477,7 +4477,7 @@ const scenes = {
       const cw = (LY.w - LY.gap * 5) / 6, ch = LY.tall ? 120 : 100, k = ch / 104; // twelve animals, six to a row
       ANIMALS.forEach((A, i) => {
         const x = LY.m + (i % 6) * (cw + LY.gap), y = LY.top + Math.floor(i / 6) * (ch + LY.gap), on = i === state.sel, cx = x + cw / 2;
-        const over = btn(x, y, cw, ch, () => { if (state.sel === i) pickAnimal(); else { state.sel = i; tone(660, 0.05, 'sine', 0.15); } });
+        const over = btn(x, y, cw, ch, () => { if (state.sel !== i) { state.sel = i; tone(660, 0.05, 'sine', 0.15); } });
         rr(x, y, cw, ch, 14, on ? '#fff3c4' : over ? '#fffdf3' : 'rgba(255,248,231,0.92)', on ? CORAL : OUT, on ? 5 : 3);
         ctx.lineWidth = 2.6; ctx.strokeStyle = OUT;
         drawAnimal(i, cx, y + ch - 31 - 2 * k, 0.46 * Math.min(k, 1.2), { front: true, t: on ? state.t : 0.4, anim: on ? 'run' : 'idle', accent: on ? CORAL : '#d9cbbd' });
@@ -4500,7 +4500,7 @@ const scenes = {
       if (compact) text(A.ko, lx + hs + 14, py + LY.pad + hs / 2, 34, INK, 'left', null, F_T); else text(A.ko, lx, sy0 - 82, 34, INK, 'left', null, F_T);
       text(A.note, lx, sy0 - 42, 23, '#c0605a', 'left', null, F_H);
       statBars(a, lx, sy0, gearBonus(gear), 33);
-      sideBtn(net ? '나가기' : '뒤로', () => { if (net) goHome(); else scene = setup.practice || FLOW3 ? 'format' : 'mode'; }); if (!net && !setup.practice) flowDots(FLOW3 ? 1 : 2);
+      sideBtn(net ? '나가기' : '뒤로', () => { if (net) goHome(); else scene = setup.practice || FLOW3 ? 'format' : 'mode'; }); if (!net) flowDots(FLOW3 ? 1 : 2);
       mainBtn(net && net.myPick ? (net.myPick.animal === state.sel ? '준비 완료!' : '이 선수로 바꾸기') : '이 선수로 결정', pickAnimal);
       if (net) { const me = !!net.myPick, R = net.ready || { n: 0, need: 2 }, team = net.kind === 'single' ? '' : (net.role === 'host' ? 0 : net.seat) % 2 === 0 ? 'A팀 · ' : 'B팀 · ';
         rr(LY.m, LY.bot - 50, LY.w, 40, 20, 'rgba(59,51,64,0.85)', null);
@@ -4544,7 +4544,7 @@ const scenes = {
       const ch = net ? SZ().court : (contentEnd() - LY.top - LY.gap * 2) / 3, af = AFFINITY[ANIMALS[setup.animal].id]; // the three cards share the page down to where every 개인전 step ends
       COURT_IDS.forEach((id, i) => {
         const C = COURTS[id], y = LY.top + i * (ch + LY.gap), on = i === state.cc;
-        card(LY.m, y, LY.w, ch, () => { if (state.cc !== i) { state.cc = i; tone(660, 0.05, 'sine', 0.15); } }, on, null, true); // a tap chooses; 이 코트로 선택 goes on
+        card(LY.m, y, LY.w, ch, () => { if (state.cc !== i) { state.cc = i; tone(660, 0.05, 'sine', 0.15); } }, on, null, true); // a tap chooses; the key at the bottom goes on
         const ph = ch - LY.pad * 2, pw = 200, px = LY.m + LY.pad;
         courtPic(px, y + LY.pad, pw, ph, id); // the same margin above, below and to the left
         // the text block, centred in the card: name (with the badge on the same line), its line, then two ratings
@@ -4562,7 +4562,7 @@ const scenes = {
         });
         ctx.restore();
       });
-      sideBtn('뒤로', () => { scene = 'select'; }); mainBtn('이 코트로 선택', () => pickCourt(state.cc)); if (!net && !setup.practice) flowDots(FLOW3 ? 2 : 3);
+      sideBtn('뒤로', () => { scene = 'select'; }); mainBtn(net ? '이 코트로 선택' : '경기장 입장', () => pickCourt(state.cc)); if (!net) flowDots(FLOW3 ? 2 : 3);
       menuEnd(KB('↑ ↓ 로 고르고 Enter'), `${ANIMALS[setup.animal].ko}의 강한 코트와 약한 코트가 표시돼요\n강한 코트에서는 능력치가 조금 올라요`);
     },
   },
@@ -4666,7 +4666,7 @@ const scenes = {
     draw() {
       const Q = quick; if (!Q) return;
       menuBegin(Q.phase === 'pick' ? '빠른 대전' : '상대를 찾는 중', true);
-      if (lobbyNet.online) { ctx.lineWidth = 2; ctx.strokeStyle = OUT; E(LY.m + LY.w - 112, LY.titleY, 6, 6, '#4fc37a'); text(`${lobbyNet.online}명 접속`, LY.m + LY.w, LY.titleY, 20, '#3f9a5c', 'right', null, F_T); }
+      if (lobbyNet.online) onlinePill(LY.m + LY.w - onlinePillW(), LY.titleY - 25); // the same pill as the online page
       const py = LY.top, ph = contentEnd() - py; if (Q.phase !== 'pick') panel(LY.m, py, LY.w, ph);
       if (Q.phase === 'pick') {
         const tw = (LY.w - LY.gap) / 2; // 단식 or 복식, as on the difficulty page
@@ -4889,10 +4889,11 @@ const scenes = {
     draw() {
       menuBegin();
       const sc = m.sc, w = sc.winner, vt = view % 2, me = w === vt, guest = net && net.role === 'guest';
-      text(me ? '승리!' : '패배', W / 2, LY.titleY - 10, 76, me ? CORAL : '#7f8fb5', 'center', OUT, F_T);
+      const reg = canRank(), row = reg || (m.online && rival.last && rival.last.opp === oppOf()), dy = Math.max(0, Math.round((contentEnd() - (LY.top + 36 + SZ().result + (row ? LY.gap + 68 : 0))) / 2)); // the whole page (word, line, card, the row under it) moved down into the middle of the room it has
+      text(me ? '승리!' : '패배', W / 2, LY.titleY - 10 + dy, 76, me ? CORAL : '#7f8fb5', 'center', OUT, F_T);
       const RR = rules(), fin = sc.sets[sc.sets.length - 1] || [0, 0];
-      const reg = canRank(), py = LY.top + 36, pb = py + SZ().result;
-      fitText(`${RR.ko} · ${NAME(w)} 승리 · ${RR.sets > 1 && !RR.matchTb ? `세트 ${sc.won[w]} – ${sc.won[1 - w]}` : `${fin[w]} – ${fin[1 - w]}`}`, W / 2, LY.top + 8, 28, INK, 'center', F_H, LY.w - 16, CREAM);
+      const py = LY.top + 36 + dy, pb = py + SZ().result;
+      fitText(`${RR.ko} · ${NAME(w)} 승리 · ${RR.sets > 1 && !RR.matchTb ? `세트 ${sc.won[w]} – ${sc.won[1 - w]}` : `${fin[w]} – ${fin[1 - w]}`}`, W / 2, LY.top + 8 + dy, 28, INK, 'center', F_H, LY.w - 16, CREAM);
       panel(LY.m, py, LY.w, pb - py);
       const bh = 400, by = py + (pb - py - bh) / 2; // the block of scores and stats, centred in the panel
       for (let r = 0; r < 2; r++) {
