@@ -3740,11 +3740,11 @@ function levelSlider(key, x, y, w, lv) { // 쉬움 · 보통 · 어려움 on a t
   btn(x - 26, y - 30, w + 52, 70, () => {}); // its own: a touch here never presses the card under it
   const pi = Math.round(clamp(S.p, 0, 2)), i0 = Math.floor(clamp(S.p, 0, 1.999)), f = clamp(S.p, 0, 2) - i0, col = mixHex(LEVELS[i0][1], LEVELS[Math.min(2, i0 + 1)][1], f), kx = x + clamp(S.p, 0, 2) * step;
   ctx.save(); if (LVLOOK === 'pill') { levelPill(x, y, w, kx, col, D); ctx.restore(); text(LEVELS[pi][0], kx, y + 40, 18, LEVELS[pi][1], 'center', null, F_T); return; }
-  const way = () => { ctx.beginPath(); ctx.roundRect(x - 4, y - 4, w + 8, 8, 4); for (let i = 0; i < 3; i++) { ctx.moveTo(x + i * step + 7, y); ctx.arc(x + i * step, y, 7, 0, 7); } }; // the track and its three stops, one shape
+  const way = () => { ctx.beginPath(); ctx.roundRect(x - 4, y - 4, w + 8, 8, 4); for (let i = 0; i < 3; i++) { ctx.moveTo(x + i * step + 10, y); ctx.arc(x + i * step, y, 10, 0, 7); } }; // the track and its three stops, one shape
   way(); ctx.fillStyle = '#b3a598'; ctx.fill('nonzero'); // no outline: the way still to go darker
   ctx.save(); ctx.beginPath(); ctx.rect(x - 20, y - 20, kx - x + 20, 40); ctx.clip(); way(); ctx.fillStyle = col; ctx.fill('nonzero'); ctx.restore(); // the way come, stops and all, in the knob's colour
-  ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; E(kx, y, D ? 21 : 19, D ? 21 : 19, col); // outlined, as the 단식 · 복식 switch's thumb: a thing you take hold of
-  text(LEVELS[pi][0], kx, y + 36, 18, LEVELS[pi][1], 'center', null, F_T); ctx.restore();
+  ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; E(kx, y, D ? 17 : 15, D ? 17 : 15, col); // outlined, as the 단식 · 복식 switch's thumb: a thing you take hold of
+  text(LEVELS[pi][0], kx, y + 32, 18, LEVELS[pi][1], 'center', null, F_T); ctx.restore();
 }
 addEventListener('pointerdown', e => { const p = toLogical(e), z = LVDRAG.zones.find(z => p.x >= z.x && p.x <= z.x + z.w && p.y >= z.y && p.y <= z.y + z.h); if (!z) return;
   LVDRAG.d = { id: e.pointerId, key: z.key, x0: z.x0, step: z.step, p: clamp((p.x - z.x0) / z.step, 0, 2), moved: false }; dragEndAt = performance.now() + 1e9; for (const k in SCR) SCR[k].drag = null; }); // while sliding, no tap reaches the card
@@ -4592,8 +4592,8 @@ const scenes = {
         ctx.font = `36px ${F_T}`; const nw = ctx.measureText(name).width, tag = id === 'short' ? '추천' : id === 'practice' ? '연습모드' : '';
         if (tag) { const tw = tag.length * 21 + 26; rr(x + nw + 14, by + 3, tw, 34, 17, id === 'short' ? CORAL : SKY, null); text(tag, x + nw + 14 + tw / 2, by + 20, 20, CREAM, 'center', null, F_T); }
         text(sub, x, by + 60, 22, id === 'practice' ? '#3d7fc0' : '#c0605a', 'left', null, F_H);
-        const sl = LVUI === 'card' && !net && id !== 'practice', B = !net && drawDoublesSwitch.blk, sx = B ? B[0] + 7 : LY.m + LY.w * 0.73 - 78, sw = B ? B[1] - B[0] - 14 : 156; // the slider's column, the same on every card: under 복식's picture and words, its end stops on their edges
-        if (full) fitText(how[id], x, by + 92, 20, '#7a6872', 'left', F_B, sl ? sx - 40 - x : LY.w - 2 * LY.pad);
+        const sl = LVUI === 'card' && !net && id !== 'practice', B = !net && drawDoublesSwitch.blk, sw = 120, sx = (B ? (B[0] + B[1]) / 2 : LY.m + LY.w * 0.73) - sw / 2; // the slider's column, the same on every card: centred under 복식's picture and words
+        if (full) fitText(how[id], x, by + 92, 20, '#7a6872', 'left', F_B, sl ? sx - 22 - x : LY.w - 2 * LY.pad);
         if (sl) levelSlider(id, sx, y + ch / 2 - 8, sw, lvOf(id)); // its own level, at the card's right, remembered
         ctx.restore();
       });
