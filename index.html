@@ -2798,16 +2798,16 @@ codeInline.addEventListener('input', () => { codeInline.value = codeInline.value
 codeInline.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); submitCode(); } else if (e.key === 'Escape') closeCode(); e.stopPropagation(); });
 codeInline.addEventListener('pointerdown', e => e.stopPropagation());
 function drawCodeBox() {
-  const PQ = popIn(clock.now() - codeBox.at), w = 420, fh = 58, bh = 56, h = 22 + 28 + 8 + 20 + 16 + fh + (codeBox.err ? 30 : 0) + 18 + bh + 22, x = (W - w) / 2, S = 1, y = H / 2 - h / 2 - 120, k = PQ.k * S, L0 = x + 22, R0 = x + w - 22; // the size of 설정's window: a short form, not enlarged
+  const PQ = popIn(clock.now() - codeBox.at), w = LY.w + 32, pad = 28, fh = 96, h = 28 + 34 + 14 + fh + (codeBox.err ? 40 : 0) + 30 + LY.btnH + 28, x = (W - w) / 2, S = bigWin(w, h), y = H / 2 - h / 2 - 120, k = PQ.k * S, L0 = x + pad, R0 = x + w - pad; // drawn as 방 만들기 is: its width, its heading, its key
   ctx.fillStyle = `rgba(59,51,64,${0.55 * PQ.a})`; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, closeCode); // a tap outside closes it
   HX = { cx: W / 2, cy: y + h / 2, s: S }; ctx.save(); ctx.translate(W / 2, y + h / 2); ctx.scale(k, k); ctx.translate(-W / 2, -(y + h / 2)); ctx.globalAlpha = PQ.a;
-  rr(x, y + 6, w, h, 24, 'rgba(59,51,64,0.35)', null); rr(x, y, w, h, 24, '#fffaf0', OUT, 3); btn(x, y, w, h, () => {});
-  let yy = y + 22; text('코드로 참가', L0, yy + 14, 24, INK, 'left', null, F_T); yy += 28 + 8; text('친구에게 받은 방 코드 6자리', L0, yy + 10, MIN_TEXT, '#7a6872', 'left', null, F_B); yy += 20 + 16;
-  btn(L0, yy, R0 - L0, fh, focusCode); nowKey(); rr(L0, yy, R0 - L0, fh, 14, '#ffffff', CORAL, 3);
-  const v = codeInline.value, cw = (R0 - L0 - 40) / 6; for (let i = 0; i < 6; i++) { const cx = L0 + 20 + cw * (i + 0.5); if (v[i]) text(v[i], cx, yy + fh / 2 + 1, 30, INK, 'center', null, F_N); else rr(cx - 10, yy + fh / 2 + 12, 20, 3, 1.5, '#e6dccd', null); } // six places, a letter in each as it is typed
-  if (document.activeElement === codeInline && Math.floor(clock.now() * 2) % 2 === 0 && v.length < 6) rr(L0 + 20 + cw * (v.length + 0.5) - 1.5, yy + 14, 3, fh - 28, 1.5, CORAL, null); // the caret, where the next letter goes
-  yy += fh; if (codeBox.err) { text(codeBox.err, W / 2, yy + 18, 18, '#e2574c', 'center', null, F_B); yy += 30; } yy += 18;
-  const bw = Math.ceil(textW('참가', 23, F_T)) + 64; button('참가', R0 - bw, yy, bw, bh, submitCode, { size: 23, fill: '#fff3c4' }); // at the right, as every decision
+  rr(x, y + 6, w, h, 26, 'rgba(59,51,64,0.35)', null); rr(x, y, w, h, 26, '#fffaf0', OUT, 3); btn(x, y, w, h, () => {});
+  let yy = y + 28; text('방 코드', L0, yy + 17, 27, INK, 'left', null, F_T); text('친구에게 받은 6자리', R0, yy + 17, 19, '#7a6872', 'right', null, F_B); yy += 34 + 14;
+  btn(L0, yy, R0 - L0, fh, focusCode); nowKey(); rr(L0, yy, R0 - L0, fh, 16, '#ffffff', CORAL, 3);
+  const v = codeInline.value, cw = (R0 - L0 - 40) / 6; for (let i = 0; i < 6; i++) { const cx = L0 + 20 + cw * (i + 0.5); if (v[i]) text(v[i], cx, yy + fh / 2 + 1, 40, INK, 'center', null, F_N); else rr(cx - 14, yy + fh / 2 + 18, 28, 4, 2, '#e6dccd', null); } // six places, a letter in each as it is typed
+  if (document.activeElement === codeInline && Math.floor(clock.now() * 2) % 2 === 0 && v.length < 6) rr(L0 + 20 + cw * (v.length + 0.5) - 1.5, yy + 20, 3, fh - 40, 1.5, CORAL, null); // the caret, where the next letter goes
+  yy += fh; if (codeBox.err) { text(codeBox.err, W / 2, yy + 24, 19, '#e2574c', 'center', null, F_B); yy += 40; } yy += 30;
+  button('참가', R0 - MAIN_W, yy, MAIN_W, LY.btnH, submitCode, { size: 31, fill: '#fff3c4' }); // the window's main key, as 방 만들기's
   ctx.restore(); HX = null;
 }
 function openNick(mode = 'rank') {
