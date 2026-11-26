@@ -3518,12 +3518,11 @@ function drawWornPage(x, y, w, h, gear, eh) { // an animal's closet, first page:
   const a = closet.animal, bonus = gearBonus(gear), lineH = 48, gap = 12, cw = (LY.w - 12 * 3) / 4, top = y, bottom = y + h - lineH - 14, chh = Math.min(150, (bottom - top - gap * 3) / 4);
   [['hat', '모자'], ['racket', '라켓'], ['uniform', '유니폼'], ['shoes', '신발']].forEach(([sid, ko], i) => { const cx = LY.m, cy = top + i * (chh + gap), id = gear[sid], it = id && item(id);
     btn(cx, cy, cw, chh, () => closetJump(sid, it ? id : null)); // a tap: to this slot among every item, the worn one there
-    rr(cx, cy, cw, chh, 16, it ? '#ffffff' : '#efe8dd', null); // no outlines on this page: soft tiles, the grade a dot
-    if (it) { ctx.save(); ctx.beginPath(); ctx.rect(cx + 4, cy + 4, cw - 8, chh - 56); ctx.clip(); itemIcon(id, cx + cw / 2, cy + 4 + (chh - 60) / 2, Math.min(70, chh - 66)); ctx.restore();
-      fitText(it.name, cx + cw / 2, cy + chh - 42, 17, INK, 'center', F_T, cw - 16); text(`${STAT_NAME[it.stat]} +${it.amt}`, cx + cw / 2, cy + chh - 18, MIN_TEXT, GRADE[it.grade].c, 'center', null, F_T); E(cx + cw - 14, cy + 14, 5, 5, GRADE[it.grade].c, 0, true); }
-    else { text('+', cx + cw / 2, cy + (chh - 56) / 2 + 6, 40, '#c3b5bc', 'center', null, F_T); text(ko, cx + cw / 2, cy + chh - 42, 17, '#9a8b93', 'center', null, F_T); text('비어 있음', cx + cw / 2, cy + chh - 18, MIN_TEXT, '#b3a4ac', 'center', null, F_T); } });
+    if (it) itemCard(id, cx, cy, cw, chh, sid, gear); // tappable: the item list's own card (level 2)
+    else { rr(cx, cy, cw, chh, 16, '#f6efe3', null); ctx.save(); ctx.setLineDash([6, 5]); rr(cx + 1, cy + 1, cw - 2, chh - 2, 15, null, '#c9bdb2', 2); ctx.restore(); // an empty place: the same card, dashed, waiting to be filled
+      text('+', cx + cw / 2, cy + (chh - 56) / 2 + 6, 40, '#b3a4ac', 'center', null, F_T); text(ko, cx + cw / 2, cy + chh - 42, 17, '#9a8b93', 'center', null, F_T); text('비어 있음', cx + cw / 2, cy + chh - 18, MIN_TEXT, '#b3a4ac', 'center', null, F_T); } });
   const sx = LY.m + cw + 14, sw = LY.m + LY.w - sx, sh = bottom - top;
-  irwolSoft(sx, top, sw, sh, 20);
+  irwolSoft(sx, top, sw, sh, 20); rr(sx, top, sw, sh, 20, null, '#e6dccd', 2); // a picture, not a key: a light rim only (level 3)
   const kk = Math.min((sh - 36) / 205, (sw - 24) / 130); ctx.fillStyle = 'rgba(40,40,60,0.2)'; ctx.beginPath(); ctx.ellipse(sx + sw / 2, bottom - 18, 26 * kk, 6 * kk, 0, 0, 7); ctx.fill();
   ctx.save(); rr(sx, top, sw, sh, 20, null, null); ctx.clip(); ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; drawAnimal(a, sx + sw / 2, bottom - 20, kk, { front: true, t: clock.now(), anim: 'idle', accent: CORAL, gear }); ctx.restore();
   const ly = bottom + 14, parts = Object.keys(bonus).map(k => `${STAT_NAME[k]} +${bonus[k]}`);
