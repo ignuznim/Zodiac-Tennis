@@ -1973,8 +1973,8 @@ function drawScoreboard() { // one row a side: sets won, a cell for each of the 
 let FB_ICON = 'pencil'; // what the feedback button shows: a letter, or a face that speaks
 const onlinePillW = () => Math.ceil(textW(`${lobbyNet.online}명 접속`, 20, F_T)) + 46;
 function onlinePill(x, y, fn) { // how many are here: the same green pill on the title page and the online page
-  const s = `${lobbyNet.online}명 접속`, ow = onlinePillW(), o2 = fn ? btn(x, y, ow, 50, fn) : false;
-  rr(x, y, ow, 50, 25, hoverOn(o2) ? '#e6f7ea' : 'rgba(236,250,240,0.95)', '#3f9a5c', 2.6); ctx.lineWidth = 1.6; ctx.strokeStyle = OUT; E(x + 19, y + 25, 6, 6, '#4fc37a'); text(s, x + 32, y + 26, 20, '#2f7a48', 'left', null, F_T);
+  const s = `${lobbyNet.online}명 접속`, ow = onlinePillW(), o2 = fn ? btn(x, y, ow, 50, fn) : false, d = fn ? sink(x, y, ow, 50, 3) : 0; // a key where it leads somewhere (level 2), a label where it does not
+  if (fn) rr(x, y + 3, ow, 50, 25, OUT, null); rr(x, y + d, ow, 50, 25, hoverOn(o2) ? '#e6f7ea' : '#ecfaf0', fn ? OUT : '#bfe3cc', fn ? 2.6 : 2); ctx.lineWidth = 1.6; ctx.strokeStyle = OUT; E(x + 19, y + d + 25, 6, 6, '#4fc37a'); text(s, x + 32, y + d + 26, 20, '#2f7a48', 'left', null, F_T);
 }
 function roundKey(x, y, kind, fn, dot) { // a round picture key, 50 across (notices, feedback): the same wherever it shows
   const o = btn(x, y, 50, 50, fn); rr(x, y, 50, 50, 25, hoverOn(o) ? '#fff3c4' : 'rgba(255,248,231,0.95)', OUT, 2.6); topIcon(kind, x + 25, y + 25); if (dot) { ctx.lineWidth = 2; E(x + 43, y + 6, 7, 7, '#e2574c'); }
@@ -2185,7 +2185,7 @@ function drawMachine(p) { // a ball machine: a box on wheels with a hopper of ba
   for (let i = 0; i < 5; i++) E(s.x - 16 * k + i * 8 * k, s.y - 86 * k - (i % 2) * 5 * k, 6 * k, 6 * k, BALL);
 }
 function drawLesson() { // the lesson card where the scoreboard sits in a match
-  const P = m.prac, L = LESSONS[P.li], x0 = 12, y0 = 10, w = W - 152, h = 112;
+  const P = m.prac, L = LESSONS[P.li], x0 = 12, y0 = 10, w = 454, h = 112; // as wide as the 정규전 scoreboard (five sets)
   rr(x0, y0, w, h, 16, '#4a3d47', OUT);
   text(`볼머신장 · 레슨 ${P.li + 1} / ${LESSONS.length}`, x0 + 18, y0 + 22, 17, '#cbbcc4', 'left', null, F_B);
   ctx.font = `30px ${F_T}`; const lw = ctx.measureText(L.name).width;
@@ -2199,11 +2199,11 @@ function drawLesson() { // the lesson card where the scoreboard sits in a match
 function drawPracticeResult() { // the last shot, explained, under the net
   const r = m.prac.res; if (!r || m.prac.resT > 2.6 || m.banner) return;
   const a = Math.min(1, (2.6 - m.prac.resT) * 3), cy = Math.round(H * 0.42);
-  ctx.globalAlpha = a;
-  rr(60, cy - 70, W - 120, 140, 26, 'rgba(255,248,231,0.95)', r.in ? CORAL : OUT, r.in ? 4 : 3);
-  text(r.title + (r.count ? '  +1' : ''), W / 2, cy - 32, 42, r.in ? '#3f9a5c' : '#e2574c', 'center', null, F_T);
-  if (r.how) text(r.how, W / 2, cy + 10, 22, INK, 'center', null, F_B);
-  if (r.why) text(r.why, W / 2, cy + 44, 22, '#c0605a', 'center', null, F_H);
+  ctx.globalAlpha = a; const bw = Math.min(W - 80, Math.max(textW(r.title + (r.count ? '  +1' : ''), 42, F_T), r.how ? textW(r.how, 22, F_B) : 0, r.why ? textW(r.why, 22, F_H) : 0) + 64), bh = 56 + (r.how ? 40 : 0) + (r.why ? 34 : 0), by = cy - 70 + (140 - bh) / 2; // as wide as its words and 32 a side
+  rr(W / 2 - bw / 2, by, bw, bh, 26, 'rgba(255,248,231,0.95)', r.in ? CORAL : OUT, r.in ? 4 : 3);
+  let ly = by + 38; text(r.title + (r.count ? '  +1' : ''), W / 2, ly, 42, r.in ? '#3f9a5c' : '#e2574c', 'center', null, F_T);
+  if (r.how) { ly += 40; text(r.how, W / 2, ly, 22, INK, 'center', null, F_B); }
+  if (r.why) { ly += r.how ? 34 : 40; text(r.why, W / 2, ly, 22, '#c0605a', 'center', null, F_H); }
   ctx.globalAlpha = 1;
 }
 function openLessons() { if (scene === 'play') { scene = 'lessons'; tone(660, 0.06, 'sine', 0.15); } }
@@ -3723,9 +3723,9 @@ function drawLevelChips(x, y, w, h) { // 난이도: a word, then three chips; th
     text(t, cx + cw / 2, cy + d + chh / 2 + 1, 22, on ? '#ffffff' : '#6f6068', 'center', on ? OUT : null, F_T); });
 }
 function ballMachineIcon(cx, cy, k) { ctx.save(); ctx.translate(cx, cy); ctx.scale(k, k); ctx.lineWidth = 2.8; ctx.strokeStyle = OUT; rr(-20, -16, 40, 30, 6, SKY, OUT, 2.8); rr(-14, -26, 28, 12, 4, '#dbe9f7', OUT, 2.4); E(-8, -28, 6, 6, BALL); E(6, -29, 6, 6, BALL); E(0, 0, 8, 8, '#2b2229'); E(-12, 20, 5, 5, '#3b3340'); E(12, 20, 5, 5, '#3b3340'); E(30, -4, 7, 7, BALL); ctx.restore(); } // the ball machine, a ball flying out
-function flowDots(i) { // where in 개인전 you are: three dots under the page, the one you are on long
-  const n = 3, gap = 12, dw = 10, lw = 30, tot = lw + (n - 1) * dw + (n - 1) * gap; let x = W / 2 - tot / 2;
-  for (let k = 0; k < n; k++) { const w = k === i ? lw : dw; rr(x, LY.foot - 5, w, 10, 5, k === i ? INK : 'rgba(74,61,71,0.25)', null); x += w + gap; }
+function flowDots(i, n = FLOW3 ? 3 : 4) { // where in 개인전 you are: the closet's page dots under the page, the step you are on long
+  const gap = 6, dw = 10, lw = 26, tot = lw + (n - 1) * dw + (n - 1) * gap; let x = W / 2 - tot / 2;
+  for (let k = 0; k < n; k++) { const w = k === i ? lw : dw; rr(x, LY.foot - 5, w, 10, 5, k === i ? INK : '#cdbfb3', null); x += w + gap; }
 }
 const WSW = 92; // the 뽑기 · 업적 switch: as tall as 단식 · 복식
 const KB = s => touchUI ? '' : s; // a hint about keys: only where there is a keyboard
@@ -4450,7 +4450,7 @@ const scenes = {
       if (compact) text(A.ko, lx + hs + 14, py + LY.pad + hs / 2, 34, INK, 'left', null, F_T); else text(A.ko, lx, sy0 - 74, 34, INK, 'left', null, F_T);
       text(A.note, lx, sy0 - 38, 23, '#c0605a', 'left', null, F_H);
       statBars(a, lx, sy0, gearBonus(gear));
-      sideBtn(net ? '나가기' : '뒤로', () => { if (net) goHome(); else scene = setup.practice || FLOW3 ? 'format' : 'mode'; }); if (FLOW3 && !net && !setup.practice) flowDots(1);
+      sideBtn(net ? '나가기' : '뒤로', () => { if (net) goHome(); else scene = setup.practice || FLOW3 ? 'format' : 'mode'; }); if (!net && !setup.practice) flowDots(FLOW3 ? 1 : 2);
       mainBtn(net && net.myPick ? (net.myPick.animal === state.sel ? '준비 완료!' : '이 선수로 바꾸기') : '이 선수로 결정', pickAnimal);
       if (net) { const me = !!net.myPick, R = net.ready || { n: 0, need: 2 }, team = net.kind === 'single' ? '' : (net.role === 'host' ? 0 : net.seat) % 2 === 0 ? 'A팀 · ' : 'B팀 · ';
         rr(LY.m, LY.bot - 50, LY.w, 40, 20, 'rgba(59,51,64,0.85)', null);
@@ -4474,10 +4474,10 @@ const scenes = {
       const top = LY.top;
       rows.forEach((r, i) => { const y = top + i * (ch + LY.gap), [tg, c] = tags[i], x = LY.m + LY.pad;
         card(LY.m, y, LY.w, ch, () => pickMode(i), i === state.cur);
-        rr(x, y + ch / 2 - 30, 132, 60, 18, c, OUT, 2.6); text(tg, x + 66, y + ch / 2 + 1, 30, '#ffffff', 'center', null, F_T); // the level, big and coloured
+        rr(x, y + ch / 2 - 30, 132, 60, 18, c, null); text(tg, x + 66, y + ch / 2 + 1, 30, '#ffffff', 'center', null, F_T); // the level, big and coloured
         text(net ? (net.kind === 'coop' ? '친구와 함께 컴퓨터 2명과' : '빈 자리를 채울 컴퓨터') : setup.doubles ? '파트너와 함께 컴퓨터 2명과' : '컴퓨터와 대결', x + 152, y + ch / 2 - 16, 26, INK, 'left', null, F_T);
         text(r[1], x + 152, y + ch / 2 + 20, 19, '#7a6872', 'left', null, F_B); ctx.restore(); });
-      sideBtn('뒤로', () => { scene = 'format'; });
+      sideBtn('뒤로', () => { scene = 'format'; }); if (!net) flowDots(1);
       menuEnd('', net ? `${KINDS[net.kind].ko} · ${FORMATS[setup.format].ko}` : `${setup.doubles ? '복식 · ' : ''}${FORMATS[setup.format].ko} · ${{ flash: '10점 매치 타이브레이크', short: '4게임 짧은 세트', regular: '5세트 3선승' }[setup.format]} `);
     },
   },
@@ -4501,7 +4501,7 @@ const scenes = {
         const tx = px + pw + LY.pad, by = y + LY.pad + 1, right = LY.m + LY.w - LY.pad;
         text(C.ko, tx, by + 18, 33, INK, 'left', null, F_T);
         if (af[0] === id || af[2] === id) { const good = af[0] === id, bw = Math.ceil(textW('강한 코트', 20, F_T)) + 28; // the badge as wide as its words and 14 a side
-          rr(right - bw, by + 1, bw, 34, 17, good ? '#ffe1a8' : '#dbe9f7', OUT, 2.2);
+          rr(right - bw, by + 1, bw, 34, 17, good ? '#ffe1a8' : '#dbe9f7', null);
           text(`${good ? '강한' : '약한'} 코트`, right - bw / 2, by + 18, 20, good ? '#c0605a' : '#3d7fc0', 'center', null, F_T); }
         text(C.sub, tx, by + 58, 20, '#7a6872', 'left', null, F_B);
         [['바운드', tune[id + '_bounce']], ['공 빠르기', tune[id + '_pace']]].forEach((row, r) => {
@@ -4512,7 +4512,7 @@ const scenes = {
         });
         ctx.restore();
       });
-      sideBtn('뒤로', () => { scene = 'select'; }); mainBtn('이 코트로 선택', () => pickCourt(state.cc)); if (FLOW3 && !net && !setup.practice) flowDots(2);
+      sideBtn('뒤로', () => { scene = 'select'; }); mainBtn('이 코트로 선택', () => pickCourt(state.cc)); if (!net && !setup.practice) flowDots(FLOW3 ? 2 : 3);
       menuEnd(KB('↑ ↓ 로 고르고 Enter'), `${ANIMALS[setup.animal].ko}의 강한 코트와 약한 코트가 표시돼요\n강한 코트에서는 능력치가 조금 올라요`);
     },
   },
@@ -4538,12 +4538,12 @@ const scenes = {
         card(LY.m, y, LY.w, ch, () => pickFormat(i), i === state.fm, id === 'practice' ? '#eef7ff' : null);
         text(name, x, by + 20, 36, INK, 'left', null, F_T);
         ctx.font = `36px ${F_T}`; const nw = ctx.measureText(name).width, tag = id === 'short' ? '추천' : id === 'practice' ? '연습모드' : '';
-        if (tag) { const tw = tag.length * 21 + 26; rr(x + nw + 14, by + 3, tw, 34, 17, id === 'short' ? CORAL : SKY, OUT, 2.2); text(tag, x + nw + 14 + tw / 2, by + 20, 20, CREAM, 'center', null, F_T); }
+        if (tag) { const tw = tag.length * 21 + 26; rr(x + nw + 14, by + 3, tw, 34, 17, id === 'short' ? CORAL : SKY, null); text(tag, x + nw + 14 + tw / 2, by + 20, 20, CREAM, 'center', null, F_T); }
         text(sub, x, by + 60, 22, id === 'practice' ? '#3d7fc0' : '#c0605a', 'left', null, F_H);
         if (full) text(how[id], x, by + 92, 20, '#7a6872', 'left', null, F_B);
         ctx.restore();
       });
-      sideBtn('뒤로', formatBack); if (FLOW3 && !net) flowDots(0);
+      sideBtn('뒤로', formatBack); if (!net) flowDots(0);
       menuEnd(KB('↑ ↓ 로 고르고 Enter'), '명예의 전당은 경기 방식마다 따로 집계돼요');
     },
   },
@@ -4728,19 +4728,19 @@ const scenes = {
     },
     draw() {
       drawMatch(); hot = []; OY = 0;
+      btn(0, 0, W, H, () => { scene = 'play'; }); // a tap outside closes it
       modalIn(0.62);
-      const rh = 66, ph = 96 + LESSONS.length * rh + 108, top = Math.round(H / 2 - ph / 2);
-      rr(LY.m, top, LY.w, ph, 26, 'rgba(255,248,231,0.98)', OUT, 4);
+      const rh = 66, ph = 96 + LESSONS.length * rh + 22, top = Math.round(H / 2 - ph / 2);
+      rr(LY.m, top, LY.w, ph, 26, 'rgba(255,248,231,0.98)', OUT, 4); btn(LY.m, top, LY.w, ph, () => {});
       text('레슨 고르기', W / 2, top + 48, 32, INK, 'center', null, F_T);
       LESSONS.forEach((L, i) => {
         const y = top + 88 + i * rh, on = i === m.prac.li, x = LY.m + LY.pad;
         const over = btn(x, y, LY.w - LY.pad * 2, rh - 10, () => { practiceLesson(0, i); scene = 'play'; });
-        rr(x, y, LY.w - LY.pad * 2, rh - 10, 14, on ? '#fff3c4' : over ? '#fffdf3' : '#f3e8da', on ? CORAL : OUT, on ? 3.4 : 2);
+        rr(x, y, LY.w - LY.pad * 2, rh - 10, 14, on ? '#fff3c4' : hoverOn(over) ? '#fffdf3' : '#ffffff', on ? CORAL : '#e6dccd', on ? 3.4 : 2); // rows of a list you tap: a light rim, the chosen one coral
         text(`${i + 1}`, x + 32, y + (rh - 10) / 2, 24, CORAL, 'center', null, F_N);
         text(L.name, x + 64, y + (rh - 10) / 2, 25, INK, 'left', null, F_T);
         text(L.goal ? `목표 ${L.goal}개` : '목표 없음', x + LY.w - LY.pad * 2 - 20, y + (rh - 10) / 2, 19, '#7a6872', 'right', null, F_B);
       });
-      button('닫기', LY.m + LY.w - LY.pad - 150, top + ph - 88, 150, 64, () => { scene = 'play'; }, { size: 27, fill: '#fff3c4' });
     },
   },
   help: {
@@ -4768,12 +4768,12 @@ const scenes = {
       const T = touchUI;
       if (helpPage === 0) {
         helpRows([
-          [T ? '조이스틱' : '← → ↑ ↓', '선수를 움직여요', '#dbe9f7'],
-          [T ? '스트로크' : 'Q', '스트로크 · 공이 몸에 닿을 때', '#ffd0c8', '꾹 눌렀다 놓으면 파워샷'],
-          [T ? '슬라이스' : 'W', '슬라이스 · 낮게 깔리는 공', '#cfe8ff', '네트 앞이나 아래 방향과 함께: 드롭샷'],
-          [T ? '로브' : 'E', '로브 · 상대 머리 위로 높이', '#e6dbf7'],
-          [T ? '스매시' : 'R', '스매시 · 높은 공 내려찍기', '#fff1b0', '높은 공은 스트로크로 쳐도 스매시'],
-          ['서브', (T ? '스트로크' : 'Q') + ' 로 토스, 꼭대기에서 한 번 더', '#ffd0c8', '고리가 초록이면 좋은 타이밍'],
+          [T ? '조이스틱' : '← → ↑ ↓', '선수를 움직여요', '#e8f1df'],
+          [T ? '스트로크' : 'Q', '스트로크 · 공이 몸에 닿을 때', CORAL, '꾹 눌렀다 놓으면 파워샷'],
+          [T ? '슬라이스' : 'W', '슬라이스 · 낮게 깔리는 공', SKY, '네트 앞이나 아래 방향과 함께: 드롭샷'],
+          [T ? '로브' : 'E', '로브 · 상대 머리 위로 높이', '#c3a6e8'],
+          [T ? '스매시' : 'R', '스매시 · 높은 공 내려찍기', BALL, '높은 공은 스트로크로 쳐도 스매시'],
+          ['서브', (T ? '스트로크' : 'Q') + ' 로 토스, 꼭대기에서 한 번 더', '#4fc37a', '고리가 초록이면 좋은 타이밍'],
           [T ? '치는 순간' : '← / →', '치는 순간 누른 쪽으로 공이 가요', '#efe3d3'],
           ['타이밍', "'딱!' 은 완벽한 타이밍", '#efe3d3', "'빨랐어!' · '늦었어!' 는 공이 흔들려요"],
         ], 150, 76, 150, 1.15);
@@ -4859,7 +4859,7 @@ const scenes = {
       text(`가장 긴 랠리  ${S.longest}번`, W / 2, sy + 44 + 4 * 40 + 6, 25, '#c0605a', 'center', null, F_H);
       if (reg) {
         const ry = pb + LY.gap;
-        rr(LY.m, ry, LY.w, 68, 18, 'rgba(255,248,231,0.92)', OUT); fitText(rank.sent === m ? rank.msg : '명예의 전당에 기록하는 중…', W / 2, ry + 34, 24, rank.sent === m ? '#c0605a' : '#7a6872', 'center', F_T, LY.w - 40); // recorded by itself: only the outcome shows
+        rr(LY.m, ry, LY.w, 68, 18, 'rgba(255,248,231,0.92)', '#e6dccd', 2); fitText(rank.sent === m ? rank.msg : '명예의 전당에 기록하는 중…', W / 2, ry + 34, 24, rank.sent === m ? '#c0605a' : '#7a6872', 'center', F_T, LY.w - 40); // recorded by itself: only the outcome shows
       }
       else if (m.online && rival.last && rival.last.opp === oppOf()) { // our record after this match: a tap shows their profile
         const R = rival.last, ry = pb + LY.gap, over = btn(LY.m, ry, LY.w, 68, () => openProfile(R.opp)), st = streakOf(R.recent);
