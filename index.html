@@ -2813,10 +2813,10 @@ codeInline.addEventListener('input', () => { codeInline.value = codeInline.value
 codeInline.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); submitCode(); } else if (e.key === 'Escape') closeCode(); e.stopPropagation(); });
 codeInline.addEventListener('pointerdown', e => e.stopPropagation());
 // ---- 홈 화면에 추가: opened in a browser (not from the home screen), the title page shows once how to install it as an app ----
-const INSTALL_POP = ''; // draft on the test page only (?install=ios|android|pc)
+const INSTALL_POP = ''; // draft on the test page only (?install=ios|ios18|android); shown on each visit in a phone's browser, once a load (not again on coming back to the title)
 const installPop = { open: false, at: 0, os: 'ios' };
 function installStart() { const sa = window.matchMedia && matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; if (!INSTALL_POP || sa) return;
-  const ua = navigator.userAgent; installPop.os = INSTALL_POP === 'ios' || INSTALL_POP === 'android' ? INSTALL_POP : /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) ? 'ios' : /Android/.test(ua) ? 'android' : 'pc'; installPop.open = true; installPop.at = clock.now(); }
+  const ua = navigator.userAgent; installPop.os = INSTALL_POP === 'ios' || INSTALL_POP === 'ios18' ? 'ios' : INSTALL_POP === 'android' ? 'android' : /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) ? 'ios' : /Android/.test(ua) ? 'android' : ''; if (!installPop.os) return; installPop.open = true; installPop.at = clock.now(); }
 function appleLogo(cx, cy, s, col) { ctx.save(); ctx.translate(cx, cy); ctx.scale(s, s); ctx.fillStyle = col; ctx.beginPath(); // the apple, small: the platform's mark
   ctx.moveTo(0, -0.17); ctx.bezierCurveTo(-0.1, -0.26, -0.42, -0.28, -0.44, 0.04); ctx.bezierCurveTo(-0.46, 0.3, -0.3, 0.52, -0.18, 0.5); ctx.bezierCurveTo(-0.08, 0.49, -0.06, 0.45, 0, 0.45); ctx.bezierCurveTo(0.06, 0.45, 0.08, 0.49, 0.18, 0.5);
   ctx.bezierCurveTo(0.3, 0.52, 0.4, 0.3, 0.45, 0.16); ctx.bezierCurveTo(0.3, 0.08, 0.28, -0.12, 0.4, -0.18); ctx.bezierCurveTo(0.32, -0.28, 0.12, -0.27, 0, -0.17); ctx.closePath(); ctx.fill();
@@ -2829,25 +2829,20 @@ function shareGlyph(cx, cy, s, col) { ctx.save(); ctx.strokeStyle = col; ctx.lin
   ctx.moveTo(cx, cy + s * 0.2); ctx.lineTo(cx, cy - s * 0.5); ctx.moveTo(cx - s * 0.2, cy - s * 0.32); ctx.lineTo(cx, cy - s * 0.52); ctx.lineTo(cx + s * 0.2, cy - s * 0.32); ctx.stroke(); ctx.restore(); }
 function menuGlyph(cx, cy, s, col) { ctx.fillStyle = col; for (const d of [-0.36, 0, 0.36]) { ctx.beginPath(); ctx.arc(cx, cy + d * s, s * 0.09, 0, 7); ctx.fill(); } } // ⋮, the browser's menu
 function installLine(parts, x, y) { for (const q of parts) { if (typeof q === 'string') { text(q, x, y, 20, INK, 'left', null, F_B); x += textW(q, 20, F_B); } else { q(x + 13, y); x += 26; } } } // words with a little picture among them
-function drawInstallPop() {
-  const PQ = popIn(clock.now() - installPop.at), w = POP_M, pad = 24, sh = 40, rowH = 36, cardH = 18 + sh + 3 * rowH + 14, h = 24 + 32 + 10 + 24 + 20 + cardH * 2 + 14 + 22 + 56 + 24, x = (W - w) / 2, S = popScale(w, h, POP_M), y = H / 2 - h / 2, k = PQ.k * S, L0 = x + pad, R0 = x + w - pad;
-  const close = () => { installPop.open = false; };
-  ctx.fillStyle = `rgba(59,51,64,${0.55 * PQ.a})`; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, () => {}); // only its keys close it
+function drawInstallPop() { // only the player's own phone: its mark, the browser, the steps; a tap outside closes it
+  const ios = installPop.os === 'ios', v26 = INSTALL_POP === 'ios' || INSTALL_POP !== 'ios18' && +((navigator.userAgent.match(/Version\/(\d+)/) || [])[1] || 0) >= 26, dots = (cx, cy) => { ctx.fillStyle = INK; for (const d of [-0.36, 0, 0.36]) { ctx.beginPath(); ctx.arc(cx + d * 20, cy, 1.8, 0, 7); ctx.fill(); } };
+  const C = ios ? { name: '아이폰', app: '사파리', logo: (cx, cy) => appleLogo(cx, cy, 30, INK), steps: v26 ? [['주소창 옆 ', dots, ' 누르고 \'공유\''], ["아래로 내려 '홈 화면에 추가'"], ["'웹 앱으로 열기' 켠 채 '추가'"]] : [['아래쪽 공유 버튼 ', (cx, cy) => shareGlyph(cx, cy, 20, '#3d8be0'), ' 누르기'], ["'홈 화면에 추가' 누르기"], ["오른쪽 위 '추가' 누르면 끝"]] }
+    : { name: '안드로이드', app: '크롬', logo: (cx, cy) => androidLogo(cx, cy, 34), steps: [['오른쪽 위 메뉴 ', (cx, cy) => menuGlyph(cx, cy, 20, INK), ' 누르기'], ["'홈 화면에 추가' 또는 '앱 설치'"], ["'설치' 누르면 끝"]] };
+  const PQ = popIn(clock.now() - installPop.at), w = POP_M, pad = 24, sh = 40, rowH = 36, cardH = 16 + sh + C.steps.length * rowH + 14, h = 24 + 34 + 10 + 24 + 20 + cardH + 24, x = (W - w) / 2, S = popScale(w, h, POP_M), y = H / 2 - h / 2, k = PQ.k * S, L0 = x + pad, R0 = x + w - pad;
+  ctx.fillStyle = `rgba(59,51,64,${0.55 * PQ.a})`; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, () => { installPop.open = false; }); // a tap outside closes it
   HX = { cx: W / 2, cy: y + h / 2, s: S }; ctx.save(); ctx.translate(W / 2, y + h / 2); ctx.scale(k, k); ctx.translate(-W / 2, -(y + h / 2)); ctx.globalAlpha = PQ.a;
   rr(x, y + 6, w, h, 26, 'rgba(59,51,64,0.35)', null); rr(x, y, w, h, 26, '#fffaf0', OUT, 3); btn(x, y, w, h, () => {});
-  let yy = y + 24; text('홈 화면에 추가해 보세요', L0, yy + 16, 28, INK, 'left', null, F_T); yy += 32 + 10;
-  text('앱처럼 전체 화면으로, 아이콘 하나로 바로 열려요', L0, yy + 12, 19, '#7a6872', 'left', null, F_B); yy += 24 + 20;
-  const ios = { name: '아이폰', app: '사파리', logo: (cx, cy) => appleLogo(cx, cy, 30, INK), steps: [['아래쪽 공유 버튼 ', (cx, cy) => shareGlyph(cx, cy, 20, '#3d8be0'), ' 누르기'], ["'홈 화면에 추가' 누르기"], ["오른쪽 위 '추가' 누르면 끝"]] };
-  const and = { name: '안드로이드', app: '크롬', logo: (cx, cy) => androidLogo(cx, cy, 34), steps: [['오른쪽 위 메뉴 ', (cx, cy) => menuGlyph(cx, cy, 20, INK), ' 누르기'], ["'홈 화면에 추가' 또는 '앱 설치'"], ["'설치' 누르면 끝"]] };
-  const cards = installPop.os === 'android' ? [and, ios] : [ios, and];
-  cards.forEach((C, ci) => { const mine = ci === 0 && installPop.os !== 'pc';
-    rr(L0, yy, R0 - L0, cardH, 18, mine ? '#fff6dc' : '#ffffff', mine ? '#f0cf78' : '#e6dccd', 2); // read, not tapped: a rim only (level 3); the player's own phone first, warmer
-    const hy = yy + 18 + sh / 2; C.logo(L0 + 34, hy); text(C.name, L0 + 62, hy + 1, 24, INK, 'left', null, F_T); text(C.app + '에서', L0 + 62 + textW(C.name, 24, F_T) + 10, hy + 2, 18, '#9a8b93', 'left', null, F_B);
-    if (mine) { const t = '내 기기', tw = textW(t, MIN_TEXT, F_T) + 24; rr(R0 - 18 - tw, hy - 14, tw, 28, 14, CORAL, null); text(t, R0 - 18 - tw / 2, hy, MIN_TEXT, '#fff', 'center', null, F_T); }
-    C.steps.forEach((st, i) => { const ry = yy + 18 + sh + 6 + i * rowH + rowH / 2 - 4; E(L0 + 34, ry, 13, 13, mine ? CORAL : '#b3a598', 0, true); text(String(i + 1), L0 + 34, ry + 1, 17, '#fff', 'center', null, F_N); installLine(st, L0 + 62, ry); });
-    yy += cardH + 14; });
-  yy += 22 - 14; const bw = Math.max(textW('다음에', 25, F_T), textW('확인', 25, F_T)) + 60;
-  popKey('확인', R0, yy, close, true, bw); popKey('다음에', R0 - bw - 12, yy, close, false, bw);
+  let yy = y + 24; const tt = '홈 화면에 추가해 보세요'; text(tt, L0, yy + 17, 28, INK, 'left', null, F_T);
+  { const bx = L0 + textW(tt, 28, F_T) + 12, bw = 60; rr(bx, yy + 1, bw, 32, 16, CORAL, null); text('추천', bx + bw / 2, yy + 17, 19, CREAM, 'center', null, F_T); } // the 단판전 card's own 추천 tag
+  yy += 34 + 10; text('앱처럼 전체 화면으로, 아이콘 하나로 바로 열려요', L0, yy + 12, 19, '#7a6872', 'left', null, F_B); yy += 24 + 20;
+  rr(L0, yy, R0 - L0, cardH, 18, '#ffffff', '#e6dccd', 2); // read, not tapped: a rim only (level 3)
+  const hy = yy + 16 + sh / 2; C.logo(L0 + 34, hy); text(C.name, L0 + 62, hy + 1, 24, INK, 'left', null, F_T); text(C.app + '에서', L0 + 62 + textW(C.name, 24, F_T) + 10, hy + 2, 18, '#9a8b93', 'left', null, F_B);
+  C.steps.forEach((st, i) => { const ry = yy + 16 + sh + 4 + i * rowH + rowH / 2; E(L0 + 34, ry, 13, 13, CORAL, 0, true); text(String(i + 1), L0 + 34, ry + 1, 17, '#fff', 'center', null, F_N); installLine(st, L0 + 62, ry); });
   ctx.restore(); HX = null;
 }
 function drawCodeBox() {
