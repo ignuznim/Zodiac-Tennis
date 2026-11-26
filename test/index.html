@@ -3736,8 +3736,8 @@ const LVDRAG = { zones: [], d: null }; // the sliders drawn this frame, and the 
 function levelSlider(key, x, y, w, lv) { // 쉬움 · 보통 · 어려움 on a track: the knob follows a finger smoothly and settles on the nearest stop when let go (a tap on the track jumps there), in the level's colour, its word under it
   const st = levelSlider.st = levelSlider.st || {}, S = st[key] = st[key] || { p: lv - 1, t: 0 }, now = clock.now(), dt = Math.min(0.05, now - (S.t || now)), step = w / 2, D = LVDRAG.d && LVDRAG.d.key === key ? LVDRAG.d : null; S.t = now;
   if (D) S.p = D.p; else { S.p += (lv - 1 - S.p) * (1 - Math.exp(-dt / 0.06)); if (CALM || Math.abs(S.p - (lv - 1)) < 0.002) S.p = lv - 1; }
-  const [zx, zy, zw, zh] = hxMap(x - 26, y - 30, w + 52, 70); LVDRAG.zones.push({ key, x: zx, y: zy + OY, w: zw, h: zh, x0: hxMap(x, 0, 0, 0)[0], step: hxMap(0, 0, step, 0)[2] });
-  btn(x - 26, y - 30, w + 52, 70, () => {}); // its own: a touch here never presses the card under it
+  const [zx, zy, zw, zh] = hxMap(x - 30, y - 34, w + 60, 80); LVDRAG.zones.push({ key, x: zx, y: zy + OY, w: zw, h: zh, x0: hxMap(x, 0, 0, 0)[0], step: hxMap(0, 0, step, 0)[2] });
+  btn(x - 30, y - 34, w + 60, 80, () => {}); // its own: a touch here never presses the card under it
   const pi = Math.round(clamp(S.p, 0, 2)), i0 = Math.floor(clamp(S.p, 0, 1.999)), f = clamp(S.p, 0, 2) - i0, col = mixHex(LEVELS[i0][1], LEVELS[Math.min(2, i0 + 1)][1], f), kx = x + clamp(S.p, 0, 2) * step;
   ctx.save(); if (LVLOOK === 'pill') { levelPill(x, y, w, kx, col, D); ctx.restore(); text(LEVELS[pi][0], kx, y + 40, 18, LEVELS[pi][1], 'center', null, F_T); return; }
   const way = () => { ctx.beginPath(); ctx.roundRect(x - 4, y - 4, w + 8, 8, 4); for (let i = 0; i < 3; i++) { ctx.moveTo(x + i * step + 10, y); ctx.arc(x + i * step, y, 10, 0, 7); } }; // the track and its three stops, one shape
@@ -3765,9 +3765,9 @@ function drawLevelChips(x, y, w, h) { // 난이도: a word, then three chips; th
     text(t, cx + cw / 2, cy + d + chh / 2 + 1, 22, on ? '#ffffff' : '#6f6068', 'center', on ? OUT : null, F_T); });
 }
 function ballMachineIcon(cx, cy, k) { ctx.save(); ctx.translate(cx, cy); ctx.scale(k, k); ctx.lineWidth = 2.8; ctx.strokeStyle = OUT; rr(-20, -16, 40, 30, 6, SKY, OUT, 2.8); rr(-14, -26, 28, 12, 4, '#dbe9f7', OUT, 2.4); E(-8, -28, 6, 6, BALL); E(6, -29, 6, 6, BALL); E(0, 0, 8, 8, '#2b2229'); E(-12, 20, 5, 5, '#3b3340'); E(12, 20, 5, 5, '#3b3340'); E(30, -4, 7, 7, BALL); ctx.restore(); } // the ball machine, a ball flying out
-function flowDots(i, n = FLOW3 ? 3 : 4) { // where in 개인전 you are: the closet's page dots under the page, the step you are on long
+function flowDots(i, n = FLOW3 ? 3 : 4, end = contentEnd()) { // where in 개인전 you are: the closet's page dots under the page, the step you are on long
   const gap = 6, dw = 10, lw = 26, tot = lw + (n - 1) * dw + (n - 1) * gap; let x = W / 2 - tot / 2;
-  const y = Math.round((contentEnd() + LY.bot) / 2); // in the band between the page's content and the bottom row, where the closet keeps its dots
+  const y = Math.round((end + LY.bot) / 2); // halfway between where the page's content ends (end) and the bottom row: in the band between the page's content and the bottom row, where the closet keeps its dots
   for (let k = 0; k < n; k++) { const w = k === i ? lw : dw; rr(x, y - 5, w, 10, 5, k === i ? INK : '#cdbfb3', null); x += w + gap; }
 }
 const WSW = 92; // the 뽑기 · 업적 switch: as tall as 단식 · 복식
@@ -3795,7 +3795,7 @@ function panel(x, y, w, h) { rr(x, y, w, h, 24, 'rgba(255,248,231,0.96)', OUT); 
 const PRESS = new Map();
 function sink(x, y, w, h, depth = 4) { // press feedback: how far a held button has gone down into its shadow, 100 ms in and 160 ms back out, eased
   [x, y, w, h] = hxMap(x, y, w, h); const k = Math.round(x) + ',' + Math.round(y) + ',' + Math.round(w), now = clock.now(), P = PRESS.get(k) || { d: 0, t: now }, dt = Math.min(0.1, now - P.t);
-  const inside = ptrDown && mouse.x >= x && mouse.x <= x + w && mouse.y >= y + OY && mouse.y <= y + OY + h, tgt = inside ? depth : 0;
+  const inside = ptrDown && !LVDRAG.d && mouse.x >= x && mouse.x <= x + w && mouse.y >= y + OY && mouse.y <= y + OY + h, tgt = inside ? depth : 0;
   P.d += (tgt - P.d) * (1 - Math.exp(-dt / ((inside ? 0.1 : 0.16) / 3))); P.t = now; PRESS.set(k, P); return P.d;
 }
 const hoverOn = over => over && !touchUI; // a hover tint is for a mouse; on a phone the finger only presses
@@ -4585,7 +4585,7 @@ const scenes = {
       const f3 = LVUI === 'bar' && !net, LH = 68, ids = net || f3 ? [...FORMAT_IDS] : [...FORMAT_IDS, 'practice'], top = net ? LY.top : LY.top + SH + LY.gap + 10, ch = Math.min(SZ().format4, (contentEnd() - (f3 ? LH + LY.gap + 10 : 0) - top - LY.gap * (ids.length - 1)) / ids.length), full = ch >= 128;
       if (f3) { if (!setup.lv) setup.lv = +(store('zt_lv') || 2); const ly = contentEnd() - LH, bw = Math.ceil(textW('볼머신장', 26, F_T)) + 56 + 40; text('난이도', LY.m + 4, ly + LH / 2 - 8, 22, '#4f6f63', 'left', null, F_T); levelSlider('_', LY.m + textW('난이도', 22, F_T) + 40, ly + LH / 2 - 8, LY.w - bw - 16 - textW('난이도', 22, F_T) - 80, setup.lv); button('볼머신장', LY.m + LY.w - bw, ly, bw, LH, () => pickFormat(3), { size: 26, fill: '#eef7ff', icon: (cx, cy) => ballMachineIcon(cx, cy, 0.62) }); } // the level, chosen like an option (chips, not a second switch), and the ball machine as a worded key beside it
       ids.forEach((id, i) => {
-        const y = top + i * (ch + LY.gap), x = LY.m + LY.pad, by = full ? y + LY.pad - 8 : y + ch / 2 - 37; // three lines from the card's padding, or two centred when the cards are short
+        const y = top + i * (ch + LY.gap), x = LY.m + LY.pad, by = full ? y + ch / 2 - 52 : y + ch / 2 - 37; // the lines as one block on the card's middle line (three, or two when the cards are short)
         const name = id === 'practice' ? '볼머신장 가기' : FORMATS[id].ko, sub = id === 'practice' ? '볼머신과 레슨 9개 · 공 치는 법 익히기' : rules(id).sub;
         card(LY.m, y, LY.w, ch, () => pickFormat(i), i === state.fm, id === 'practice' ? '#eef7ff' : null);
         text(name, x, by + 20, 36, INK, 'left', null, F_T);
@@ -4594,10 +4594,10 @@ const scenes = {
         text(sub, x, by + 60, 22, id === 'practice' ? '#3d7fc0' : '#c0605a', 'left', null, F_H);
         const sl = LVUI === 'card' && !net && id !== 'practice', B = !net && drawDoublesSwitch.blk, sw = 120, sx = (B ? (B[0] + B[1]) / 2 : LY.m + LY.w * 0.73) - sw / 2; // the slider's column, the same on every card: centred under 복식's picture and words
         if (full) fitText(how[id], x, by + 92, 20, '#7a6872', 'left', F_B, sl ? sx - 22 - x : LY.w - 2 * LY.pad);
-        if (sl) levelSlider(id, sx, y + ch / 2 - 8, sw, lvOf(id)); // its own level, at the card's right, remembered
+        if (sl) levelSlider(id, sx, y + ch / 2 - 13, sw, lvOf(id)); // its own level, at the card's right, remembered
         ctx.restore();
       });
-      sideBtn('뒤로', formatBack); if (!net) flowDots(0);
+      sideBtn('뒤로', formatBack); if (!net) flowDots(0, undefined, top + ids.length * (ch + LY.gap) - LY.gap + 5);
       menuEnd(KB('↑ ↓ 로 고르고 Enter'), '카드 오른쪽 막대를 밀어 난이도를 정해요\n경기 방식마다 고른 난이도가 그대로 유지돼요');
     },
   },
