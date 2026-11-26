@@ -2800,16 +2800,16 @@ codeInline.addEventListener('input', () => { codeInline.value = codeInline.value
 codeInline.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); submitCode(); } else if (e.key === 'Escape') closeCode(); e.stopPropagation(); });
 codeInline.addEventListener('pointerdown', e => e.stopPropagation());
 function drawCodeBox() {
-  const PQ = popIn(clock.now() - codeBox.at), w = LY.w + 32, pad = 28, fh = 96, h = 28 + 34 + 14 + fh + (codeBox.err ? 40 : 0) + 30 + LY.btnH + 28, x = (W - w) / 2, S = bigWin(w, h), y = H / 2 - h / 2 - 120, k = PQ.k * S, L0 = x + pad, R0 = x + w - pad; // drawn as 방 만들기 is: its width, its heading, its key
+  const PQ = popIn(clock.now() - codeBox.at), w = 470, pad = 20, fh = 80, bh = 52, h = 22 + 30 + 12 + fh + (codeBox.err ? 36 : 0) + 18 + bh + 22, x = (W - w) / 2, S = bigWin(w, h), y = H / 2 - h / 2 - 120, k = PQ.k * S, L0 = x + pad, R0 = x + w - pad; // the profile's width (470, its 20 margins), 방 만들기's heading type, a key sized to its word
   ctx.fillStyle = `rgba(59,51,64,${0.55 * PQ.a})`; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, closeCode); // a tap outside closes it
   HX = { cx: W / 2, cy: y + h / 2, s: S }; ctx.save(); ctx.translate(W / 2, y + h / 2); ctx.scale(k, k); ctx.translate(-W / 2, -(y + h / 2)); ctx.globalAlpha = PQ.a;
   rr(x, y + 6, w, h, 26, 'rgba(59,51,64,0.35)', null); rr(x, y, w, h, 26, '#fffaf0', OUT, 3); btn(x, y, w, h, () => {});
-  let yy = y + 28; text('방 코드', L0, yy + 17, 27, INK, 'left', null, F_T); text('친구에게 받은 6자리', R0, yy + 17, 19, '#7a6872', 'right', null, F_B); yy += 34 + 14;
+  let yy = y + 22; text('방 코드', L0, yy + 15, 27, INK, 'left', null, F_T); text('친구에게 받은 6자리', R0, yy + 15, 19, '#7a6872', 'right', null, F_B); yy += 30 + 12;
   btn(L0, yy, R0 - L0, fh, focusCode); nowKey(); rr(L0, yy, R0 - L0, fh, 16, '#ffffff', CORAL, 3);
-  const v = codeInline.value, cw = (R0 - L0 - 40) / 6; for (let i = 0; i < 6; i++) { const cx = L0 + 20 + cw * (i + 0.5); if (v[i]) text(v[i], cx, yy + fh / 2 + 1, 40, INK, 'center', null, F_N); else rr(cx - 14, yy + fh / 2 + 18, 28, 4, 2, '#e6dccd', null); } // six places, a letter in each as it is typed
-  if (document.activeElement === codeInline && Math.floor(clock.now() * 2) % 2 === 0 && v.length < 6) rr(L0 + 20 + cw * (v.length + 0.5) - 1.5, yy + 20, 3, fh - 40, 1.5, CORAL, null); // the caret, where the next letter goes
-  yy += fh; if (codeBox.err) { text(codeBox.err, W / 2, yy + 24, 19, '#e2574c', 'center', null, F_B); yy += 40; } yy += 30;
-  button('참가', R0 - MAIN_W, yy, MAIN_W, LY.btnH, submitCode, { size: 31, fill: '#fff3c4' }); // the window's main key, as 방 만들기's
+  const v = codeInline.value, cw = (R0 - L0 - 40) / 6; for (let i = 0; i < 6; i++) { const cx = L0 + 20 + cw * (i + 0.5); if (v[i]) text(v[i], cx, yy + fh / 2 + 1, 36, INK, 'center', null, F_N); else rr(cx - 12, yy + fh / 2 + 15, 24, 4, 2, '#e6dccd', null); } // six places, a letter in each as it is typed
+  if (document.activeElement === codeInline && Math.floor(clock.now() * 2) % 2 === 0 && v.length < 6) rr(L0 + 20 + cw * (v.length + 0.5) - 1.5, yy + 18, 3, fh - 36, 1.5, CORAL, null); // the caret, where the next letter goes
+  yy += fh; if (codeBox.err) { text(codeBox.err, W / 2, yy + 22, 19, '#e2574c', 'center', null, F_B); yy += 36; } yy += 18;
+  { const bw = Math.ceil(textW('참가', 24, F_T)) + 64; button('참가', R0 - bw, yy, bw, bh, submitCode, { size: 24, fill: '#fff3c4' }); } // a window's small key, sized to its word, as 설정's 로그아웃
   ctx.restore(); HX = null;
 }
 function openNick(mode = 'rank') {
@@ -4319,12 +4319,17 @@ const scenes = {
       state.t += dt; if (pressed('Escape')) scene = 'title';
       const S = SCR.notice; if (anyHit(...K_D)) S.vel = 900; if (anyHit(...K_U)) S.vel = -900;
     },
-    draw() {
-      menuBegin('공지사항'); // no home key: 뒤로 at the bottom already goes home
-      const L = news.list, v0 = LY.top, v1 = contentEnd();
+    draw() { // a window over the title page, as the closet's over 선수 선택: its notes listed inside, a tap outside closes it
+      scenes.title.draw(); hot = []; FIX = []; const PQ = popIn(clock.now() - sceneAt);
+      ctx.fillStyle = `rgba(59,51,64,${0.55 * PQ.a})`; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, () => { scene = 'title'; });
+      const wx = LY.m - 16, ww = LY.w + 32, wy = LY.titleY - 38, wh = LY.bot - 14 - wy;
+      ctx.save(); ctx.translate(W / 2, wy + wh / 2); ctx.scale(PQ.k, PQ.k); ctx.translate(-W / 2, -(wy + wh / 2)); ctx.globalAlpha = PQ.a;
+      rr(wx, wy + 6, ww, wh, 26, 'rgba(59,51,64,0.35)', null); rr(wx, wy, ww, wh, 26, '#fffaf0', OUT, 3); btn(wx, wy, ww, wh, () => {});
+      text('공지사항', wx + 24, wy + 38, 30, INK, 'left', null, F_T);
+      const L = news.list, v0 = wy + 70, v1 = wy + wh - 16;
       if (L && L.length) { const top = newsTop(); if (top > (parseInt(store('zt_news_at')) || 0)) store('zt_news_at', String(top)); } // seen
-      if (!L) { panel(LY.m, v0, LY.w, 240); text(news.loading ? '불러오는 중…' : news.err || '불러오는 중…', W / 2, v0 + 120, 26, news.err && !news.loading ? '#e2574c' : INK, 'center', null, F_T); }
-      else if (!L.length) { panel(LY.m, v0, LY.w, 240); text('아직 공지가 없어요', W / 2, v0 + 120, 26, '#7a6872', 'center', null, F_T); }
+      if (!L) { text(news.loading ? '불러오는 중…' : news.err || '불러오는 중…', W / 2, v0 + 120, 26, news.err && !news.loading ? '#e2574c' : INK, 'center', null, F_T); }
+      else if (!L.length) { text('아직 공지가 없어요', W / 2, v0 + 120, 26, '#7a6872', 'center', null, F_T); }
       else { const pad = 28, inner = LY.w - pad * 2, { cards, height } = noticeGrow(noticeCards(inner));
         scrollView(SCR.notice, v0, v1, 'n' + news.at + ':' + L.length + ':' + Object.keys(news.open).filter(k => news.open[k]).join(',') + ':' + cards.map(c => (c.h | 0) + '.' + c.body.length).join(','), height, () => {
           for (const c of cards) { const x = LY.m, n = c.n, [kname, kc] = NOTICE_KIND[n.kind] || NOTICE_KIND.info; let y = c.y + 24;
@@ -4339,8 +4344,7 @@ const scenes = {
             c.title.forEach(t => { text(t, x + pad, y + 18, 27, INK, 'left', null, F_T); y += 36; });
             if (c.body.length) { y += 10; c.body.forEach(t => { text(t, x + pad, y + 16, 21, '#5d4f58', 'left', null, F_B); y += 32; }); } ctx.restore(); }
           return height; }); }
-      sideBtn('뒤로', () => { scene = 'title'; });
-      menuEnd(news.err && L ? news.err : '');
+      ctx.restore(); if (news.err && L) toast(news.err);
     },
   },
   hall: {
@@ -4938,6 +4942,7 @@ function viewWatch() { // before a frame: has the view changed since the last on
   const from = viewScene0, to = scene, fi = FLOW.indexOf(from), ti = FLOW.indexOf(to); let kind = null, dir = 1, r = [0, 0, W, H], dur = 0.2;
   let win = false; if (v.key === viewKey0) { if (ov < viewOv0) { kind = 'fade'; dur = 0.16; win = true; } } // a window opened (it pops by itself) or closed (it fades away)
   else if (from && from === to && v.tab >= 0) { kind = to === 'wardrobe' ? 'push' : 'slide'; dir = v.tab > viewTab0 ? 1 : -1; r = v.r; dur = kind === 'push' ? 0.34 : 0.22; }
+  else if ((to === 'notice' && from === 'title') || (from === 'notice' && to === 'title')) { if (from === 'notice') { kind = 'fade'; dur = 0.16; win = true; } } // 공지사항 is a window over the title page
   else if ((to === 'make' && from === 'online') || (from === 'make' && to === 'online')) { if (from === 'make') { kind = 'fade'; dur = 0.16; win = true; } } // 방 만들기 is a window over the online page
   else if ((to === 'closet' && (from === 'select' || from === 'wardrobe')) || (from === 'closet' && (to === 'select' || to === 'wardrobe'))) { if (from === 'closet') { kind = 'fade'; dur = 0.16; win = true; } } // over 선수 선택 the closet is a window: it pops in by itself and fades away
   else if (to === 'closet' || from === 'closet') { const M = CLOSET_MO, open = to === 'closet'; // test: the closet's way in and out, chosen by ?closet=
