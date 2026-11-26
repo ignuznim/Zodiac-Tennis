@@ -1984,7 +1984,7 @@ let FB_ICON = 'pencil'; // what the feedback button shows: a letter, or a face t
 const onlinePillW = () => Math.ceil(textW(`${lobbyNet.online}명 접속`, 20, F_T)) + 46;
 function onlinePill(x, y, fn) { // how many are here: the same green pill on the title page and the online page
   const s = `${lobbyNet.online}명 접속`, ow = onlinePillW(), o2 = fn ? btn(x, y, ow, 50, fn) : false, d = fn ? sink(x, y, ow, 50, 3) : 0; // a key where it leads somewhere (level 2), a label where it does not
-  if (fn) rr(x, y + 3, ow, 50, 25, OUT, null); rr(x, y + d, ow, 50, 25, hoverOn(o2) ? '#e6f7ea' : '#ecfaf0', fn ? OUT : '#bfe3cc', fn ? 2.6 : 2); ctx.lineWidth = 1.6; ctx.strokeStyle = OUT; E(x + 19, y + d + 25, 6, 6, '#4fc37a'); text(s, x + 32, y + d + 26, 20, '#2f7a48', 'left', null, F_T);
+  if (fn) rr(x, y + 3, ow, 50, 25, OUT, null); rr(x, y + d, ow, 50, 25, hoverOn(o2) ? '#e6f7ea' : '#ecfaf0', fn ? OUT : '#4fa86a', fn ? 2.6 : 2.4); ctx.lineWidth = 1.6; ctx.strokeStyle = OUT; E(x + 19, y + d + 25, 6, 6, '#4fc37a'); text(s, x + 32, y + d + 26, 20, '#2f7a48', 'left', null, F_T);
 }
 function roundKey(x, y, kind, fn, dot) { // a round picture key, 50 across (notices, feedback): the same wherever it shows
   const o = btn(x, y, 50, 50, fn); rr(x, y, 50, 50, 25, hoverOn(o) ? '#fff3c4' : 'rgba(255,248,231,0.95)', OUT, 2.6); topIcon(kind, x + 25, y + 25); if (dot) { ctx.lineWidth = 2; E(x + 43, y + 6, 7, 7, '#e2574c'); }
@@ -2412,7 +2412,7 @@ function drawScoreCard(r, i) { // how a record's score was made: who played, dre
     const tx = bx + bs + 14, tw = R0 - tx, mins = Math.floor((r.duration_s || 0) / 60), secs = (r.duration_s || 0) % 60; // beside it: who, the match, the court
     { const nm = `${i + 1}위 · ${r.nickname}`, sz = fitText(nm, tx, by + 14, 25, INK, 'left', F_T, tw - 46), ix = tx + Math.min(textW(nm, sz, F_T), tw - 46) + 24; profileKey(ix, by + 14, 17, () => openProfile(r.nickname)); } // a little round key beside the name opens their profile
     fitText(`${MODE_KO[rank.mode] || ''} · ${LEVEL_KO[r.level] || ''}`, tx, by + 42, 18, '#7a6872', 'left', F_B, tw); fitText(r.sets, tx, by + 67, 18, '#7a6872', 'left', F_B, tw); // the sets always on a line of their own, so every record looks the same
-    const C = COURTS[r.court], ch = 48, cw = Math.round(ch * 1.3); if (C) { courtPic(tx, by + bs - ch, cw, ch, r.court); fitText(`${C.ko} · ${mins}분 ${secs}초`, tx + cw + 12, by + bs - ch / 2 - 11, 18, INK, 'left', F_T, R0 - tx - cw - 12); text(r.created_at ? kDate(r.created_at) : '', tx + cw + 12, by + bs - ch / 2 + 13, MIN_TEXT, '#9a8b93', 'left', null, F_B); } }
+    const C = COURTS[r.court], ch = 48, cw = Math.round(ch * 1.05); if (C) { courtPic(tx, by + bs - ch, cw, ch, r.court); fitText(`${C.ko} · ${mins}분 ${secs}초`, tx + cw + 12, by + bs - ch / 2 - 11, 18, INK, 'left', F_T, R0 - tx - cw - 12); text(r.created_at ? kDate(r.created_at) : '', tx + cw + 12, by + bs - ch / 2 + 13, MIN_TEXT, '#9a8b93', 'left', null, F_B); } }
   let yy = y + 22 + top + 14; ctx.fillStyle = '#e6dccd'; ctx.fillRect(L0, yy, R0 - L0, 2); yy += 4;
   rows.forEach(([a, b, v]) => { const cy = yy + rh / 2; text(a, L0, cy, 21, INK, 'left', null, F_T); if (b) text(b, R0 - 84, cy, 18, '#9a8b93', 'right', null, F_B); text(v.toLocaleString(), R0, cy, 22, INK, 'right', null, F_N); yy += rh; });
   yy += 4; ctx.fillStyle = '#e6dccd'; ctx.fillRect(L0, yy, R0 - L0, 2); yy += 6;
@@ -4479,7 +4479,7 @@ const scenes = {
       const cw = (LY.w - LY.gap * 5) / 6, ch = LY.tall ? 120 : 100, k = ch / 104; // twelve animals, six to a row
       ANIMALS.forEach((A, i) => {
         const x = LY.m + (i % 6) * (cw + LY.gap), y = LY.top + Math.floor(i / 6) * (ch + LY.gap), on = i === state.sel, cx = x + cw / 2;
-        const over = btn(x, y, cw, ch, () => { if (state.sel !== i) { state.sel = i; tone(660, 0.05, 'sine', 0.15); } });
+        const over = btn(x, y, cw, ch, () => { if (state.sel === i) pickAnimal(); else { state.sel = i; tone(660, 0.05, 'sine', 0.15); } });
         rr(x, y, cw, ch, 14, on ? '#fff3c4' : over ? '#fffdf3' : 'rgba(255,248,231,0.92)', on ? CORAL : OUT, on ? 5 : 3);
         ctx.lineWidth = 2.6; ctx.strokeStyle = OUT;
         drawAnimal(i, cx, y + ch - 31 - 2 * k, 0.46 * Math.min(k, 1.2), { front: true, t: on ? state.t : 0.4, anim: on ? 'run' : 'idle', accent: on ? CORAL : '#d9cbbd' });
@@ -4503,11 +4503,11 @@ const scenes = {
       text(A.note, lx, sy0 - 42, 23, '#c0605a', 'left', null, F_H);
       statBars(a, lx, sy0, gearBonus(gear), 33);
       sideBtn(net ? '나가기' : '뒤로', () => { if (net) goHome(); else scene = setup.practice || FLOW3 ? 'format' : 'mode'; }); if (!net) flowDots(FLOW3 ? 1 : 2);
-      mainBtn(net && net.myPick ? (net.myPick.animal === state.sel ? '준비 완료!' : '이 선수로 바꾸기') : '이 선수로 결정', pickAnimal);
+      if (net) mainBtn(net.myPick ? (net.myPick.animal === state.sel ? '준비 완료!' : '이 선수로 바꾸기') : '이 선수로 결정', pickAnimal); // alone: a second tap on the chosen card goes on, no key
       if (net) { const me = !!net.myPick, R = net.ready || { n: 0, need: 2 }, team = net.kind === 'single' ? '' : (net.role === 'host' ? 0 : net.seat) % 2 === 0 ? 'A팀 · ' : 'B팀 · ';
         rr(LY.m, LY.bot - 50, LY.w, 40, 20, 'rgba(59,51,64,0.85)', null);
         text(`${KINDS[net.kind] ? KINDS[net.kind].ko + ' · ' : ''}${FORMATS[setup.format].ko} · ${COURTS[setup.court].ko}  |  ${team}나 ${me ? '준비 완료' : '고르는 중'} · 준비 ${R.n}/${R.need}`, W / 2, LY.bot - 30, 18, CREAM, 'center', null, F_B); }
-      menuEnd(net ? '' : KB('← → ↑ ↓ 로 고르고 Enter'), net ? (net.myPick ? '모두 고르면 시작해요\n다른 선수를 눌러 바꿀 수 있어요' : '선수를 고르고 결정을 눌러요') : '옷걸이를 누르면 옷장이 열려요\n입힌 아이템은 이 선수에게만 적용돼요');
+      menuEnd(net ? '' : KB('← → ↑ ↓ 로 고르고 Enter'), net ? (net.myPick ? '모두 고르면 시작해요\n다른 선수를 눌러 바꿀 수 있어요' : '선수를 고르고 결정을 눌러요') : '고른 선수를 한 번 더 누르면 결정돼요\n옷걸이를 누르면 옷장이 열려요\n입힌 아이템은 이 선수에게만 적용돼요');
     },
   },
   mode: {
