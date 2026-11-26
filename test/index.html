@@ -3949,8 +3949,8 @@ function drawTierGuide() { // every tier at a glance, highest first, in three gr
   G.forEach(([title, list], gi) => { if (gi) yy += 10; text(title, L0, yy + 13, 19, INK, 'left', null, F_T); yy += 26; ctx.fillStyle = '#e6dccd'; ctx.fillRect(L0, yy + 3, R0 - L0, 1.5); yy += 6;
     list.forEach(i => { const T = TIERS[i], cy = yy + rh / 2, mine = i === mi; if (mine) rr(L0 - 8, yy + 2, R0 - L0 + 16, rh - 4, 10, '#fff3c4', '#e3a46a', 2);
       drawTier(i, L0 + 16, cy, 13); text(T.n, L0 + 40, cy, 20, T.c[1] === '#f6c445' ? '#c0392b' : T.c[1], 'left', null, F_T); if (mine) text('나', L0 + 40 + textW(T.n, 20, F_T) + 12, cy, MIN_TEXT, CORAL, 'left', null, F_T);
-      if (T.place) text(`3품 이상 중 ${T.place}`, R0, cy, 18, '#5d4f58', 'right', null, F_B); // the top three: by their place
-      else { if (T.d) text(`출석 ${T.d}일`, R0 - 128, cy, 18, '#7a6872', 'right', null, F_B); text(T.min < 0 ? '1,000점 아래' : `${T.min.toLocaleString()}점`, R0, cy, 18, '#5d4f58', 'right', null, F_N); } // the days first, the scores in one column at the right
+      if (T.place) text(`3품 이상 중 ${T.place}`, R0, cy, 19, INK, 'right', null, F_N); // the top three: by their place
+      else { if (T.d) text(`출석 ${T.d}일`, R0 - 128, cy, MIN_TEXT, '#7a6872', 'right', null, F_B); text(T.min < 0 ? '1,000점 아래' : `${T.min.toLocaleString()}점`, R0, cy, 19, INK, 'right', null, F_N); } // the days first, the scores in one column at the right
       yy += rh; }); });
   ctx.restore(); HX = null;
 }
