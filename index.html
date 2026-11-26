@@ -3727,13 +3727,13 @@ const LVDRAG = { zones: [], d: null }; // the sliders drawn this frame, and the 
 function levelSlider(key, x, y, w, lv) { // 쉬움 · 보통 · 어려움 on a track: the knob follows a finger smoothly and settles on the nearest stop when let go (a tap on the track jumps there), in the level's colour, its word under it
   const st = levelSlider.st = levelSlider.st || {}, S = st[key] = st[key] || { p: lv - 1, t: 0 }, now = clock.now(), dt = Math.min(0.05, now - (S.t || now)), step = w / 2, D = LVDRAG.d && LVDRAG.d.key === key ? LVDRAG.d : null; S.t = now;
   if (D) S.p = D.p; else { S.p += (lv - 1 - S.p) * (1 - Math.exp(-dt / 0.06)); if (CALM || Math.abs(S.p - (lv - 1)) < 0.002) S.p = lv - 1; }
-  const [zx, zy, zw, zh] = hxMap(x - 26, y - 30, w + 52, 64); LVDRAG.zones.push({ key, x: zx, y: zy + OY, w: zw, h: zh, x0: hxMap(x, 0, 0, 0)[0], step: hxMap(0, 0, step, 0)[2] });
-  btn(x - 26, y - 30, w + 52, 64, () => {}); // its own: a touch here never presses the card under it
+  const [zx, zy, zw, zh] = hxMap(x - 26, y - 30, w + 52, 70); LVDRAG.zones.push({ key, x: zx, y: zy + OY, w: zw, h: zh, x0: hxMap(x, 0, 0, 0)[0], step: hxMap(0, 0, step, 0)[2] });
+  btn(x - 26, y - 30, w + 52, 70, () => {}); // its own: a touch here never presses the card under it
   const pi = Math.round(clamp(S.p, 0, 2)), i0 = Math.floor(clamp(S.p, 0, 1.999)), f = clamp(S.p, 0, 2) - i0, col = mixHex(LEVELS[i0][1], LEVELS[Math.min(2, i0 + 1)][1], f), kx = x + clamp(S.p, 0, 2) * step;
-  ctx.save(); rr(x - 4, y - 4, w + 8, 8, 4, '#e6dccd', null); rr(x - 4, y - 4, kx - x + 8, 8, 4, col, null);
-  for (let i = 0; i < 3; i++) E(x + i * step, y, 5, 5, i <= pi ? '#ffffff' : '#d3c7b8', 0, true);
-  ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; E(kx, y, D ? 17 : 15, D ? 17 : 15, col); E(kx - 4, y - 5, 4, 3, 'rgba(255,255,255,0.6)', 0, true);
-  text(LEVELS[pi][0], kx, y + 30, 18, LEVELS[pi][1], 'center', null, F_T); ctx.restore();
+  ctx.save(); rr(x - 6, y - 6, w + 12, 12, 6, '#b3a598', null); rr(x - 6, y - 6, kx - x + 12, 12, 6, col, null); // the way still to go darker, the way come in the knob's colour
+  for (let i = 0; i < 3; i++) E(x + i * step, y, 4, 4, 'rgba(255,255,255,0.85)', 0, true);
+  ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; E(kx, y, D ? 21 : 19, D ? 21 : 19, col); E(kx - 6, y - 7, 5, 3.5, 'rgba(255,255,255,0.6)', 0, true); // outlined, as the 단식 · 복식 switch's thumb: a thing you take hold of
+  text(LEVELS[pi][0], kx, y + 36, 18, LEVELS[pi][1], 'center', null, F_T); ctx.restore();
 }
 addEventListener('pointerdown', e => { const p = toLogical(e), z = LVDRAG.zones.find(z => p.x >= z.x && p.x <= z.x + z.w && p.y >= z.y && p.y <= z.y + z.h); if (!z) return;
   LVDRAG.d = { id: e.pointerId, key: z.key, x0: z.x0, step: z.step, p: clamp((p.x - z.x0) / z.step, 0, 2), moved: false }; dragEndAt = performance.now() + 1e9; for (const k in SCR) SCR[k].drag = null; }); // while sliding, no tap reaches the card
@@ -4587,7 +4587,7 @@ const scenes = {
         ctx.restore();
       });
       sideBtn('뒤로', formatBack); if (!net) flowDots(0);
-      menuEnd(KB('↑ ↓ 로 고르고 Enter'), '명예의 전당은 경기 방식마다 따로 집계돼요');
+      menuEnd(KB('↑ ↓ 로 고르고 Enter'), '카드 오른쪽 막대를 밀어 난이도를 정해요\n경기 방식마다 고른 난이도가 그대로 유지돼요');
     },
   },
   online: { // the open rooms, scrolling; the three other ways in fixed above them
