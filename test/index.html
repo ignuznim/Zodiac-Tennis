@@ -3721,18 +3721,27 @@ function menuBegin(title, home) {
   if (home) iconBtn(LY.m, LY.titleY - 27, 'home', goHome);
 }
 function menuEnd(foot, tip) { if (tip) infoTip(tip, LY.titleR + 30, LY.titleY); if (foot) { ctx.font = `20px ${F_B}`; const fw = ctx.measureText(foot).width; text(foot, W / 2, LY.foot, Math.max(MIN_TEXT, fw > LY.w ? 20 * LY.w / fw : 20), '#4f6f63', 'center', null, F_B); } ctx.restore(); OY = 0; } // the footnote shrinks to the page's margins
-const LVUI = new URLSearchParams(location.search).get('lv'); // draft (test page: ?lv=card or ?lv=bar): the level chosen on the format page, three steps with dots under them
+const LVUI = new URLSearchParams(location.search).get('lv') || 'card'; // the level is chosen on each format card (a slider, remembered per format), so 개인전 is three steps: format, player, court ('bar' was the other draft)
 const FLOW3 = !!LVUI;
 const lvOf = id => { setup.lvBy = setup.lvBy || {}; if (setup.lvBy[id] == null) setup.lvBy[id] = +(store('zt_lv_' + id) || store('zt_lv') || 2); return setup.lvBy[id]; }; // each way of play remembers its own level
 function setLv(id, v) { if (id) { setup.lvBy[id] = v; store('zt_lv_' + id, String(v)); } else { setup.lv = v; store('zt_lv', String(v)); } tone(760, 0.06, 'sine', 0.18); }
-function levelSlider(key, x, y, w, lv) { // 쉬움 · 보통 · 어려움 as three stops on a track; the knob jumps to a tapped stop and settles on it (180 ms), in the level's colour, its word under it
-  const S = (levelSlider.st = levelSlider.st || {})[key] = (levelSlider.st || {})[key] || { p: lv - 1, t: 0 }, now = clock.now(), dt = Math.min(0.05, now - (S.t || now)); S.t = now; S.p += (lv - 1 - S.p) * (1 - Math.exp(-dt / 0.05)); if (CALM) S.p = lv - 1;
-  const step = w / 2; ctx.save(); rr(x - 4, y - 4, w + 8, 8, 4, '#e6dccd', null);
-  for (let i = 0; i < 3; i++) { const cx = x + i * step; E(cx, y, 6, 6, i <= Math.round(S.p) ? LEVELS[Math.round(S.p)][1] : '#e6dccd', 0, true); btn(cx - step / 2, y - 30, step, 60, () => { if (lv !== i + 1) setLv(key === '_' ? null : key, i + 1); }); }
-  const i0 = Math.floor(S.p), i1 = Math.min(2, i0 + 1), f = S.p - i0, col = mixHex(LEVELS[i0][1], LEVELS[i1][1], f), kx = x + S.p * step;
-  rr(x - 2, y - 4, S.p * step + 4, 8, 4, col, null); ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; E(kx, y, 15, 15, col); E(kx - 4, y - 5, 4, 3, 'rgba(255,255,255,0.6)', 0, true);
-  text(LEVELS[lv - 1][0], kx, y + 30, 18, col, 'center', null, F_T); ctx.restore();
+const LVDRAG = { zones: [], d: null }; // the sliders drawn this frame, and the one a finger is sliding
+function levelSlider(key, x, y, w, lv) { // 쉬움 · 보통 · 어려움 on a track: the knob follows a finger smoothly and settles on the nearest stop when let go (a tap on the track jumps there), in the level's colour, its word under it
+  const st = levelSlider.st = levelSlider.st || {}, S = st[key] = st[key] || { p: lv - 1, t: 0 }, now = clock.now(), dt = Math.min(0.05, now - (S.t || now)), step = w / 2, D = LVDRAG.d && LVDRAG.d.key === key ? LVDRAG.d : null; S.t = now;
+  if (D) S.p = D.p; else { S.p += (lv - 1 - S.p) * (1 - Math.exp(-dt / 0.06)); if (CALM || Math.abs(S.p - (lv - 1)) < 0.002) S.p = lv - 1; }
+  const [zx, zy, zw, zh] = hxMap(x - 26, y - 30, w + 52, 64); LVDRAG.zones.push({ key, x: zx, y: zy + OY, w: zw, h: zh, x0: hxMap(x, 0, 0, 0)[0], step: hxMap(0, 0, step, 0)[2] });
+  btn(x - 26, y - 30, w + 52, 64, () => {}); // its own: a touch here never presses the card under it
+  const pi = Math.round(clamp(S.p, 0, 2)), i0 = Math.floor(clamp(S.p, 0, 1.999)), f = clamp(S.p, 0, 2) - i0, col = mixHex(LEVELS[i0][1], LEVELS[Math.min(2, i0 + 1)][1], f), kx = x + clamp(S.p, 0, 2) * step;
+  ctx.save(); rr(x - 4, y - 4, w + 8, 8, 4, '#e6dccd', null); rr(x - 4, y - 4, kx - x + 8, 8, 4, col, null);
+  for (let i = 0; i < 3; i++) E(x + i * step, y, 5, 5, i <= pi ? '#ffffff' : '#d3c7b8', 0, true);
+  ctx.lineWidth = 2.6; ctx.strokeStyle = OUT; E(kx, y, D ? 17 : 15, D ? 17 : 15, col); E(kx - 4, y - 5, 4, 3, 'rgba(255,255,255,0.6)', 0, true);
+  text(LEVELS[pi][0], kx, y + 30, 18, LEVELS[pi][1], 'center', null, F_T); ctx.restore();
 }
+addEventListener('pointerdown', e => { const p = toLogical(e), z = LVDRAG.zones.find(z => p.x >= z.x && p.x <= z.x + z.w && p.y >= z.y && p.y <= z.y + z.h); if (!z) return;
+  LVDRAG.d = { id: e.pointerId, key: z.key, x0: z.x0, step: z.step, p: clamp((p.x - z.x0) / z.step, 0, 2), moved: false }; dragEndAt = performance.now() + 1e9; for (const k in SCR) SCR[k].drag = null; }); // while sliding, no tap reaches the card
+addEventListener('pointermove', e => { const D = LVDRAG.d; if (!D || D.id !== e.pointerId) return; const p = toLogical(e); D.p = clamp((p.x - D.x0) / D.step, 0, 2); D.moved = true; });
+for (const n of ['pointerup', 'pointercancel']) addEventListener(n, e => { const D = LVDRAG.d; if (!D || D.id !== e.pointerId) return; LVDRAG.d = null; dragEndAt = performance.now(); // the slide is not a tap on the card
+  if (n === 'pointerup') { const v = Math.round(D.p) + 1; if (levelSlider.st && levelSlider.st[D.key]) levelSlider.st[D.key].p = D.p; if (v !== (D.key === '_' ? setup.lv : lvOf(D.key))) setLv(D.key === '_' ? null : D.key, v); } });
 const LEVELS = [['쉬움', '#4fa86a'], ['보통', '#3d8be0'], ['어려움', '#e2574c']];
 function drawLevelSwitch(x, y, w, h) { // 쉬움 · 보통 · 어려움: the 단식 · 복식 switch with three places, its thumb in the level's colour
   const lv = (setup.lv || 2) - 1, e = CALM ? 1 : easeOut(Math.min(1, (clock.now() - (setup.lvAt || -9)) / 0.24)), from = setup.lvFrom == null ? lv : setup.lvFrom, p = from + (lv - from) * e, tw = w / 3;
@@ -3863,7 +3872,7 @@ function pickFormat(i) {
   tone(880, 0.12, 'triangle', 0.25);
   if (net) { if (i < FORMAT_IDS.length) { setup.format = FORMAT_IDS[i]; scene = netCpu() ? 'mode' : 'court'; } return; } // the host sets the match up
   if (i >= FORMAT_IDS.length) { setup.practice = true; scene = 'select'; return; } // the ball machine: pick an animal and a court, then practise
-  setup.practice = false; setup.format = FORMAT_IDS[i]; rank.mode = setup.format; if (FLOW3) { setup.pending = (LVUI === 'card' ? lvOf(setup.format) : (setup.lv || 2)) - 1; scene = 'select'; } else scene = 'mode';
+  if (LVDRAG.d) return; setup.practice = false; setup.format = FORMAT_IDS[i]; rank.mode = setup.format; if (FLOW3) { setup.pending = (LVUI === 'card' ? lvOf(setup.format) : (setup.lv || 2)) - 1; scene = 'select'; } else scene = 'mode';
 }
 function pickMode(i) { tone(880, 0.12, 'triangle', 0.25); if (net) { setup.level = i + 1; scene = 'court'; return; } setup.pending = i; scene = 'select'; }
 function pickCourt(i) {
@@ -4574,8 +4583,9 @@ const scenes = {
         ctx.font = `36px ${F_T}`; const nw = ctx.measureText(name).width, tag = id === 'short' ? '추천' : id === 'practice' ? '연습모드' : '';
         if (tag) { const tw = tag.length * 21 + 26; rr(x + nw + 14, by + 3, tw, 34, 17, id === 'short' ? CORAL : SKY, null); text(tag, x + nw + 14 + tw / 2, by + 20, 20, CREAM, 'center', null, F_T); }
         text(sub, x, by + 60, 22, id === 'practice' ? '#3d7fc0' : '#c0605a', 'left', null, F_H);
-        if (full) fitText(how[id], x, by + 92, 20, '#7a6872', 'left', F_B, LVUI === 'card' && id !== 'practice' ? LY.w - 260 : LY.w - 2 * LY.pad);
-        if (LVUI === 'card' && !net && id !== 'practice') levelSlider(id, LY.m + LY.w - LY.pad - 150, y + ch / 2 - 8, 150, lvOf(id)); // its own level, at the card's right, remembered
+        const sl = LVUI === 'card' && !net && id !== 'practice', sw = 156, sx = LY.m + LY.w * 0.73 - sw / 2; // the slider's column: centred in the card's right part, the same on every card
+        if (full) fitText(how[id], x, by + 92, 20, '#7a6872', 'left', F_B, sl ? sx - 40 - x : LY.w - 2 * LY.pad);
+        if (sl) levelSlider(id, sx, y + ch / 2 - 8, sw, lvOf(id)); // its own level, at the card's right, remembered
         ctx.restore();
       });
       sideBtn('뒤로', formatBack); if (!net) flowDots(0);
@@ -5031,7 +5041,7 @@ const RESDBG = params.get('res') === '1'; // ?res=1: the screen's numbers in a c
 function resInfo() { const r = canvas.getBoundingClientRect(), vv = window.visualViewport; ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = 'rgba(0,0,0,0.75)'; ctx.fillRect(0, 0, canvas.width, 26 * devicePixelRatio * 3); ctx.fillStyle = '#fff'; ctx.font = `${12 * devicePixelRatio}px monospace`;
   [`dpr ${devicePixelRatio} · canvas ${canvas.width}x${canvas.height} · css ${r.width.toFixed(1)}x${r.height.toFixed(1)} @ ${r.left.toFixed(1)},${r.top.toFixed(1)}`, `inner ${innerWidth}x${innerHeight} · vv ${vv ? vv.width.toFixed(1) + 'x' + vv.height.toFixed(1) + ' scale ' + vv.scale.toFixed(3) + ' off ' + vv.offsetLeft.toFixed(1) + ',' + vv.offsetTop.toFixed(1) : '-'}`, `H ${H} · fitKey ${fitKey}`].forEach((t, i) => ctx.fillText(t, 6 * devicePixelRatio, (20 + i * 22) * devicePixelRatio)); ctx.restore(); }
 function drawFrame() { const f0 = clock.now(); drawFrame0(); if (RESDBG) resInfo(); const d = clock.now() - f0 - 1 / 60; if (d > 0.02) { sceneAt += d; if (trans) trans.at += d; } } // a frame that took long (a long list drawn for the first time): the motions wait for it instead of jumping ahead
-function drawFrame0() {
+function drawFrame0() { LVDRAG.zones = [];
   if (prof.nickEdit && !(prof.open && prof.menu)) endNickInline(); if (codeBox.open && scene !== 'online') closeCode(); // the settings closed while typing: the typing ends
   viewWatch(); FIX = [];
   hot = []; scenes[scene].draw(); if (modalSaved) { ctx.restore(); modalSaved = false; } viewMove(); if (prof.open) drawProfile(); drawNotice();
