@@ -4042,7 +4042,7 @@ function openProfile(nick) { // mine, or another member's (from the ranking or a
 }
 function drawSettings() { // the cog's menu, over my profile: nickname, linked sign-ins, signing out; a tap outside closes only the menu
   const U = acct.user || {}, ids = (U.identities || []).map(d => d.provider), on = acct.providers || ['google', 'kakao'], PV = [['google', 'Google'], ['kakao', '카카오'], ['apple', 'Apple']].filter(q => on.includes(q[0]));
-  const w = 470, rh = 48, h = 20 + 30 + 14 + 26 + 8 + 52 + 18 + 26 + 8 + PV.length * rh + 16 + 44 + 20, x = (W - w) / 2, S = bigWin(w, h), y = H / 2 - h / 2, L0 = x + 20, R0 = x + w - 20, PQ = popIn(prof.mt || 0), k = PQ.k * S;
+  const w = 360, rh = 48, h = 20 + 30 + 14 + 26 + 8 + 52 + 18 + 26 + 8 + PV.length * rh + 16 + 44 + 20, x = (W - w) / 2, S = popScale(w, h, POP_S), y = H / 2 - h / 2, L0 = x + 20, R0 = x + w - 20, PQ = popIn(prof.mt || 0), k = PQ.k * S;
   ctx.fillStyle = `rgba(59,51,64,${0.4 * PQ.a})`; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, () => { prof.menu = false; }); HX = { cx: W / 2, cy: H / 2, s: S }; btn(x, y, w, h, () => {});
   ctx.save(); ctx.translate(W / 2, y + h / 2); ctx.scale(k, k); ctx.translate(-W / 2, -(y + h / 2)); ctx.globalAlpha = PQ.a;
   rr(x, y + 6, w, h, 22, 'rgba(59,51,64,0.35)', null); rr(x, y, w, h, 22, '#fffaf0', OUT, 3);
@@ -4051,7 +4051,7 @@ function drawSettings() { // the cog's menu, over my profile: nickname, linked s
   if (prof.nickEdit) { rr(L0, yy, R0 - L0, 52, 14, '#ffffff', CORAL, 3); const v = nickInline.value, sz = fitText(v, L0 + 16, yy + 26, 21, INK, 'left', F_T, R0 - L0 - 80), cx = L0 + 16 + Math.min(textW(v, sz, F_T), R0 - L0 - 80) + 2; if (Math.floor(clock.now() * 2) % 2 === 0) rr(cx, yy + 13, 2.5, 26, 1, CORAL, null); btn(L0, yy, R0 - L0 - 56, 52, focusNickInline); nowKey(); iconKey(R0 - 44, yy + 8, 36, 'check', saveNickInline, '#fff3c4'); } // typing here: a coral field, the caret blinking after the words, ✓ saves
   else { rr(L0, yy, R0 - L0, 52, 14, '#ffffff', '#e6dccd', 2); fitText((acct.prof && acct.prof.nickname) || '-', L0 + 16, yy + 26, 21, INK, 'left', F_T, R0 - L0 - 80);
     iconKey(R0 - 44, yy + 8, 36, 'pencil', startNickInline); } yy += 52 + 18; // only the pencil opens the name for typing
-  text('연동 계정', L0, yy + 13, 19, INK, 'left', null, F_T); text('여러 계정으로 같은 기록에 로그인', R0, yy + 13, MIN_TEXT, '#9a8b93', 'right', null, F_B); yy += 26 + 8;
+  text('연동 계정', L0, yy + 13, 19, INK, 'left', null, F_T); fitText('같은 기록에 여러 계정으로', R0, yy + 13, MIN_TEXT, '#9a8b93', 'right', F_B, R0 - L0 - textW('연동 계정', 19, F_T) - 16); yy += 26 + 8;
   PV.forEach(([id, nm], i) => { const cy = yy + rh / 2, linked = ids.includes(id); if (i) { ctx.fillStyle = '#efe7da'; ctx.fillRect(L0, yy, R0 - L0, 1); }
     E(L0 + 14, cy, 6, 6, linked ? '#4fc37a' : '#d9cbbd', 0, true); text(nm, L0 + 30, cy, 20, INK, 'left', null, F_T);
     if (linked) text('연동됨', R0 - 10, cy, MIN_TEXT, '#4f9a6a', 'right', null, F_T);
