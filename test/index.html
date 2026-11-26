@@ -2367,13 +2367,8 @@ function guestStep() { // the guest draws what the host sends and sends its own 
 const HALL_TIME = 'night'; // 'night': a full moon; 'dusk': the sun going down
 const HALL_SKY = { night: ['#1d1b3a', '#3b2f5c', '#6a4a6e'], dusk: ['#3b2c58', '#b05a6a', '#f2a46a'] };
 function openHall() { scene = 'hall'; state.hallT = 0; rank.seenAt = null; rank.list = HALLC[rank.mode] ? HALLC[rank.mode].list : null; rank.litAt = rank.list ? clock.now() : null; loadRanking(null, 'all'); tone(392, 0.4, 'sine', 0.18); tone(587, 0.6, 'sine', 0.14, 0.25); }
-let IRWOL_SOFT = null;
-function irwolSoft(x, y, w, h, r = 16) { // 일월오봉도 softly out of focus behind a picture: drawn once small and laid on stretched (the stretch blurs it), with a pale veil, cut to the box
-  if (!IRWOL_SOFT) { const n = 160, c = document.createElement('canvas'); c.width = c.height = n; const keep = ctx; ctx = c.getContext('2d'); try { irwol(0, 0, n); } finally { ctx = keep; } // once: drawn, then blurred by three box passes (an offscreen canvas, never the screen's)
-    const g = c.getContext('2d'), im = g.getImageData(0, 0, n, n), d = im.data, t = new Float32Array(d.length), R = 4;
-    const pass = (dx, dy) => { for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { let r = 0, gg = 0, b = 0, k = 0; for (let q = -R; q <= R; q++) { const xx = Math.min(n - 1, Math.max(0, x + q * dx)), yy = Math.min(n - 1, Math.max(0, y + q * dy)), i = (yy * n + xx) * 4; r += d[i]; gg += d[i + 1]; b += d[i + 2]; k++; } const o = (y * n + x) * 4; t[o] = r / k; t[o + 1] = gg / k; t[o + 2] = b / k; t[o + 3] = 255; } for (let i = 0; i < d.length; i++) d[i] = t[i]; };
-    for (let q = 0; q < 3; q++) { pass(1, 0); pass(0, 1); } g.putImageData(im, 0, 0); IRWOL_SOFT = c; }
-  const s = Math.max(w, h); ctx.save(); rr(x, y, w, h, r, null, null); ctx.clip(); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; ctx.drawImage(IRWOL_SOFT, x + w / 2 - s / 2, y + h - s, s, s); ctx.fillStyle = 'rgba(255,250,240,0.38)'; ctx.fillRect(x, y, w, h); ctx.restore();
+function irwolSoft(x, y, w, h, r = 16) { // 일월오봉도 behind a picture, faded as the ranking's score card always had it: drawn sharp, under a pale veil, cut to the box
+  const s = Math.max(w, h); ctx.save(); rr(x, y, w, h, r, null, null); ctx.clip(); irwol(x + w / 2 - s / 2, y + h - s, s); ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(x, y, w, h); ctx.restore();
 }
 function irwol(x, y, s) { // 일월오봉도, the sun, the moon and five peaks behind the throne, under a night-blue sky, drawn into a square
   const u = s / 100, P = (pts, fill) => { ctx.beginPath(); pts.forEach(([a, b], k) => k ? ctx.lineTo(x + a * u, y + b * u) : ctx.moveTo(x + a * u, y + b * u)); ctx.closePath(); ctx.fillStyle = fill; ctx.fill(); };
