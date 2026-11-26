@@ -2204,7 +2204,7 @@ function drawPracticeResult() { // the last shot, explained, under the net
   ctx.globalAlpha = a; const t = r.title + (r.count ? '  +1' : ''), P = 26, G = 12, L = [[t, 42, F_T, r.in ? '#3f9a5c' : '#e2574c']]; // every verdict one window: the same size and the same lines (title, how, why), the lines it has as one block in its middle
   if (r.how) L.push([r.how, 22, F_B, INK]); if (r.why) L.push([r.why, 22, F_H, '#c0605a']);
   const lh = l => l[1] * (l[2] === F_H ? 1.15 : l[2] === F_B ? 1.1 : 1), bw = Math.min(W - 80, 560), bh = 2 * P + 42 + G + 22 * 1.1 + G + 22 * 1.15, by = cy - bh / 2, blk = L.reduce((n, l) => n + lh(l), 0) + G * (L.length - 1);
-  rr(W / 2 - bw / 2, by, bw, bh, 22, 'rgba(255,248,231,0.95)', r.in ? CORAL : OUT, r.in ? 4 : 3);
+  rr(W / 2 - bw / 2, by + 5, bw, bh, 22, 'rgba(59,51,64,0.3)', null); rr(W / 2 - bw / 2, by, bw, bh, 22, '#fff8e7', OUT, 3); // one window for every verdict (a window: cream, the dark outline, a soft shadow); only its title's colour tells them apart
   let ly = by + (bh - blk) / 2; L.forEach(l => { const h = lh(l); fitText(l[0], W / 2, ly + h / 2, l[1], l[3], 'center', l[2], bw - 2 * P); ly += h + G; });
   ctx.globalAlpha = 1;
 }
