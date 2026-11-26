@@ -3726,7 +3726,8 @@ function drawLevelChips(x, y, w, h) { // 난이도: a word, then three chips; th
 function ballMachineIcon(cx, cy, k) { ctx.save(); ctx.translate(cx, cy); ctx.scale(k, k); ctx.lineWidth = 2.8; ctx.strokeStyle = OUT; rr(-20, -16, 40, 30, 6, SKY, OUT, 2.8); rr(-14, -26, 28, 12, 4, '#dbe9f7', OUT, 2.4); E(-8, -28, 6, 6, BALL); E(6, -29, 6, 6, BALL); E(0, 0, 8, 8, '#2b2229'); E(-12, 20, 5, 5, '#3b3340'); E(12, 20, 5, 5, '#3b3340'); E(30, -4, 7, 7, BALL); ctx.restore(); } // the ball machine, a ball flying out
 function flowDots(i, n = FLOW3 ? 3 : 4) { // where in 개인전 you are: the closet's page dots under the page, the step you are on long
   const gap = 6, dw = 10, lw = 26, tot = lw + (n - 1) * dw + (n - 1) * gap; let x = W / 2 - tot / 2;
-  for (let k = 0; k < n; k++) { const w = k === i ? lw : dw; rr(x, LY.foot - 5, w, 10, 5, k === i ? INK : '#cdbfb3', null); x += w + gap; }
+  const y = Math.round((contentEnd() + LY.bot) / 2); // in the band between the page's content and the bottom row, where the closet keeps its dots
+  for (let k = 0; k < n; k++) { const w = k === i ? lw : dw; rr(x, y - 5, w, 10, 5, k === i ? INK : '#cdbfb3', null); x += w + gap; }
 }
 const WSW = 92; // the 뽑기 · 업적 switch: as tall as 단식 · 복식
 const KB = s => touchUI ? '' : s; // a hint about keys: only where there is a keyboard
