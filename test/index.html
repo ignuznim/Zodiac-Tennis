@@ -4498,7 +4498,7 @@ const scenes = {
       if (anyHit(...K_OK)) pickAnimal();
     },
     draw() {
-      menuBegin('선수를 골라 주세요', !net && !setup.practice); // no home key on the way into the ball machine
+      menuBegin('선수를 골라 주세요', false); // no home key: 뒤로 at the bottom leads back step by step
       const cw = (LY.w - LY.gap * 5) / 6, ch = LY.tall ? 120 : 100, k = ch / 104; // twelve animals, six to a row
       ANIMALS.forEach((A, i) => {
         const x = LY.m + (i % 6) * (cw + LY.gap), y = LY.top + Math.floor(i / 6) * (ch + LY.gap), on = i === state.sel, cx = x + cw / 2;
@@ -4565,7 +4565,7 @@ const scenes = {
       if (anyHit(...K_OK)) pickCourt(state.cc);
     },
     draw() {
-      menuBegin('어느 코트에서 할까요?', !net && !setup.practice);
+      menuBegin('어느 코트에서 할까요?', false);
       const ch = net ? SZ().court : (contentEnd() - LY.top - LY.gap * 2) / 3, af = AFFINITY[ANIMALS[setup.animal].id]; // the three cards share the page down to where every 개인전 step ends
       COURT_IDS.forEach((id, i) => {
         const C = COURTS[id], y = LY.top + i * (ch + LY.gap), on = i === state.cc;
