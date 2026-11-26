@@ -1855,7 +1855,7 @@ function localFx(dt) {
       if (kind === 'drop' || kind === 'slice') tone(520, 0.12, 'sine', 0.2, 0, 0.6);
       if (kind === 'wild') tone(200, 0.2, 'sawtooth', 0.15, 0, 0.5);
       if (kind === 'lob') tone(330, 0.25, 'sine', 0.2, 0, 1.8);
-      if (mine && kind !== 'serve') { hints.hits++; if (kind === 'power') hints.power++; if (kind === 'drop' || kind === 'lob' || kind === 'slice' || kind === 'smash') hints.shots++; }
+      if (mine && kind !== 'serve') { hints.hits++; if (kind === 'power') { hints.power++; store('zt_powdone', '1'); } powerTip(); if (kind === 'drop' || kind === 'lob' || kind === 'slice' || kind === 'smash') hints.shots++; }
     } else if (f.k === 'bounce') { tone(150, 0.07, 'sine', 0.3, 0, 0.6); const g = proj(m.ball.x, m.ball.y, 0); post.dust.push({ x: g.x, y: g.y, s: g.s, t: 0, ring: m.court !== 'clay', clay: m.court === 'clay' }); }
     else if (f.k === 'net') tone(95, 0.2, 'square', 0.2);
     else if (f.k === 'toss') tone(500, 0.12, 'sine', 0.15, 0, 1.6);
@@ -2036,6 +2036,10 @@ function drawLegend() { // the shot keys, always on screen; each is also a butto
   rr(14, H - 56, W - 28, 44, 12, 'rgba(74,61,71,0.82)', null);
   text('Q 꾹: 파워샷 · 네트 앞: 발리 · W + ↓: 드롭샷 · H: 도움말', W / 2, H - 33, 20, CREAM, 'center', null, F_B);
 }
+function powerTip() { // the power shot, told once a match as a toast, for the first three matches where a player has not yet used one
+  if (hints.hits !== 6 || hints.power || m.practice || store('zt_powdone')) return; const n = +(store('zt_powtip') || 0); if (n >= 3) return;
+  store('zt_powtip', String(n + 1)); toast((touchUI ? '스트로크를' : 'Q 를') + ' 꾹 모았다가 공이 올 때 놓으면 파워샷!');
+}
 function hintText() {
   if (m.practice) return ''; // the lesson's tip shows once as a toast when the lesson begins (drawLesson)
   const srv = serverIdx() === view;
@@ -2043,7 +2047,6 @@ function hintText() {
   if (m.phase === 'toss' && srv) return touchUI ? '초록일 때 한 번 더! 조이스틱으로 방향' : '초록일 때 Q! ← → 를 함께 누르면 방향';
   if (m.phase === 'rally' || m.phase === 'serve' || m.phase === 'toss') {
     if (hints.hits < 3) return touchUI ? '조이스틱으로 따라가, 몸에 닿는 순간 스트로크!' : '공을 따라가, 몸에 닿는 순간 Q!';
-    if (hints.power < 1) return (touchUI ? '스트로크를' : 'Q 를') + ' 꾹 모았다가 공이 올 때 놓으면 파워샷';
     if (hints.shots < 2) return touchUI ? '슬라이스와 로브, 높은 공엔 스매시!' : 'W 슬라이스 · E 로브 · 높은 공엔 R 스매시';
   }
   return '';
@@ -4564,7 +4567,7 @@ const scenes = {
         });
         ctx.restore();
       });
-      sideBtn('뒤로', () => { scene = 'select'; }); mainBtn(net ? '이 코트로 선택' : '경기장 입장', () => pickCourt(state.cc)); if (!net) flowDots(FLOW3 ? 2 : 3);
+      sideBtn('뒤로', () => { scene = 'select'; }); mainBtn(net ? '이 코트로 선택' : setup.practice ? '연습 시작' : '경기 시작', () => pickCourt(state.cc)); if (!net) flowDots(FLOW3 ? 2 : 3);
       menuEnd(KB('↑ ↓ 로 고르고 Enter'), `${ANIMALS[setup.animal].ko}의 강한 코트와 약한 코트가 표시돼요\n강한 코트에서는 능력치가 조금 올라요`);
     },
   },
