@@ -3859,8 +3859,8 @@ function brandLogo(id, cx, cy, size = 30) { // a sign-in mark, size across, cent
 }
 const STAT_COL = [CORAL, '#ffb86b', '#c3a6e8', BALL, SKY];
 const STAT_DO = ['공이 빨라져요', '더 오래 뛰어요', '정확하고 잘 휘어요', '멀리까지 닿아요', '달리기가 빨라요'];
-const BAR = { lab: 76, step: 22, cell: 18, n: 7 }; // five cells for the animal, two spare for its gear
-const barsWidth = dw => BAR.lab + BAR.step * BAR.n + 10 + dw;
+const BAR = { lab: 70, step: 23, cell: 20, n: 7, gap: 7 }; // five cells for the animal, two spare for its gear
+const barsWidth = dw => BAR.lab + BAR.step * BAR.n + BAR.gap + dw;
 function statBars(a, x, y, bonus = {}, step = 30) {
   STATS.forEach((s, i) => {
     const v = stat(a, s, null), yy = y + i * step, add = bonus[s] || 0;
@@ -3868,10 +3868,10 @@ function statBars(a, x, y, bonus = {}, step = 30) {
     for (let k = 0; k < BAR.n; k++) { const cx = x + BAR.lab + k * BAR.step, spare = k >= 5, fill = Math.max(0, Math.min(1, v + add - k));
       if (spare) { ctx.setLineDash([3, 3]); rr(cx, yy - 9, BAR.cell, 18, 5, 'rgba(234,223,210,0.45)', '#b9aaa0', 1.6); ctx.setLineDash([]); }
       else rr(cx, yy - 9, BAR.cell, 18, 5, k < v ? STAT_COL[i] : '#eadfd2', OUT, 2.2);
-      if (k >= v && fill > 0) { // what the gear adds, in blue: a straight fill clipped to the cell, then the cell's outline over it
-        ctx.save(); rr(cx, yy - 9, BAR.cell, 18, 5, null, null); ctx.clip(); ctx.fillStyle = '#3d8be0'; ctx.fillRect(cx, yy - 9, BAR.cell * fill, 18); ctx.restore();
+      if (k >= v && fill > 0) { // what the gear adds, in the stat's own colour made lighter: a straight fill clipped to the cell, then the cell's outline over it
+        ctx.save(); rr(cx, yy - 9, BAR.cell, 18, 5, null, null); ctx.clip(); ctx.fillStyle = mixHex(STAT_COL[i], '#ffffff', 0.5); ctx.fillRect(cx, yy - 9, BAR.cell * fill, 18); ctx.restore();
         if (spare) { ctx.setLineDash([3, 3]); rr(cx, yy - 9, BAR.cell, 18, 5, null, '#b9aaa0', 1.6); ctx.setLineDash([]); } else rr(cx, yy - 9, BAR.cell, 18, 5, null, OUT, 2.2); } }
-    text(STAT_DO[i], x + BAR.lab + BAR.step * BAR.n + 10, yy, 17, '#7a6872', 'left', null, F_B);
+    text(STAT_DO[i], x + BAR.lab + BAR.step * BAR.n + BAR.gap, yy, 17, '#7a6872', 'left', null, F_B);
   });
 }
 // the way in: format, then who you play, then your animal, then the court (an invited guest only picks an animal)
@@ -4473,7 +4473,7 @@ const scenes = {
       if (anyHit(...K_OK)) pickAnimal();
     },
     draw() {
-      menuBegin('선수를 골라 주세요', !net);
+      menuBegin('선수를 골라 주세요', !net && !setup.practice); // no home key on the way into the ball machine
       const cw = (LY.w - LY.gap * 5) / 6, ch = LY.tall ? 120 : 100, k = ch / 104; // twelve animals, six to a row
       ANIMALS.forEach((A, i) => {
         const x = LY.m + (i % 6) * (cw + LY.gap), y = LY.top + Math.floor(i / 6) * (ch + LY.gap), on = i === state.sel, cx = x + cw / 2;
@@ -4491,7 +4491,7 @@ const scenes = {
       const tw = barsWidth(dw), lx = LY.m + LY.pad, sy0 = py + ph - LY.pad - 4 * 33 - 12, compact = ph < 350, // the bars along the bottom; on a short card the name sits beside the hanger
         // the name (the hanger beside it), the line and the five bars as one block, centred in the card's height
         free = LY.m + LY.w - LY.pad - (lx + tw);
-      const ax = LY.m + LY.w - LY.pad - Math.max(free, 150) / 2, ay = py + Math.min(ph * 0.66, ph - 60), ks = LY.tall ? 2.0 : 1.75; selSpot = { ax, ay, ks }; // where the animal stands: its closet opens with it there
+      const ax = LY.m + LY.w - LY.pad - Math.max(free, 150) / 2, ay = py + Math.min(ph * 0.66, ph - 60), ks = LY.tall ? 2.0 : 1.58; // on a short card a little smaller and to the right: no tail ever reaches the stat lines selSpot = { ax, ay, ks }; // where the animal stands: its closet opens with it there
       ctx.fillStyle = 'rgba(70,90,140,0.2)'; ctx.beginPath(); ctx.ellipse(ax, ay, 26 * ks, 6 * ks, 0, 0, 7); ctx.fill();
       ctx.lineWidth = 2.6; ctx.strokeStyle = OUT;
       drawAnimal(a, ax, ay, ks, { front: true, t: state.t, accent: CORAL, gear });
@@ -4540,7 +4540,7 @@ const scenes = {
       if (anyHit(...K_OK)) pickCourt(state.cc);
     },
     draw() {
-      menuBegin('어느 코트에서 할까요?', !net);
+      menuBegin('어느 코트에서 할까요?', !net && !setup.practice);
       const ch = net ? SZ().court : (contentEnd() - LY.top - LY.gap * 2) / 3, af = AFFINITY[ANIMALS[setup.animal].id]; // the three cards share the page down to where every 개인전 step ends
       COURT_IDS.forEach((id, i) => {
         const C = COURTS[id], y = LY.top + i * (ch + LY.gap), on = i === state.cc;
