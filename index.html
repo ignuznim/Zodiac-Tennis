@@ -3708,9 +3708,9 @@ const SZ = () => ({ format: 150, format4: 132, mode: 116, court: 184, cell: LY.t
 let dblAt = -9; const mixHex = (a, b, t) => '#' + [1, 3, 5].map(i => Math.round(parseInt(a.substr(i, 2), 16) * (1 - t) + parseInt(b.substr(i, 2), 16) * t).toString(16).padStart(2, '0')).join('');
 function setDoubles(d) { if (setup.doubles === d) return; setup.doubles = d; dblAt = clock.now(); store('zt_dbl', d ? '1' : '0'); tone(760, 0.06, 'sine', 0.18); }
 function drawDoublesSwitch(y, SH) { // 단식 or 복식, a big switch on top of the ways to play; the choice is remembered
-  const x = LY.m, w = LY.w, hw = w / 2, to = setup.doubles ? 1 : 0, e = CALM ? 1 : easeOut(Math.min(1, (clock.now() - dblAt) / 0.24)), p = 1 - to + (2 * to - 1) * e; // the thumb slides from the other half
+  const x = LY.m, w = LY.w, hw = w / 2, to = setup.doubles ? 1 : 0, e = CALM ? 1 : easeOut(Math.min(1, (clock.now() - dblAt) / 0.24)), g = segDrag('dbl', x, y, w, SH, 2, to, i => setDoubles(!!i)), p = g != null ? g : 1 - to + (2 * to - 1) * e; // the thumb slides from the other half, or follows a finger
   rr(x, y + 5, w, SH, SH / 2, OUT, null); rr(x, y, w, SH, SH / 2, '#fff8e7', OUT, 3);
-  rr(x + p * hw + 7, y + 7, hw - 14, SH - 14, (SH - 14) / 2, mixHex(CORAL, SKY, p), OUT, 3);
+  rr(x + p * hw + 7, y + 7, hw - 14, SH - 14, (SH - 14) / 2, mixHex(CORAL, SKY, clamp((p - 0.4) / 0.2, 0, 1)), OUT, 3);
   [['단식', '1 : 1 · 혼자서', false, CORAL, '#6b2a22'], ['복식', '2 : 2 · 둘이서', true, SKY, '#1d4a73']].forEach(([t, sub, d, col, dark], k) => { const on = d ? p > 0.5 : p <= 0.5, kx = x + k * hw;
     btn(kx, y, hw, SH, () => setDoubles(d));
     const fy = y + SH / 2, pw = d ? 62 : 38, room = hw - 28 - pw - 14, sz = Math.max(MIN_TEXT, Math.min(20, 20 * room / textW(sub, 20, F_T))), tw = Math.max(textW(t, 32, F_T), textW(sub, sz, F_T)), gx = kx + (hw - (pw + 14 + tw)) / 2, fx = gx + pw / 2; if (d) drawDoublesSwitch.blk = [gx, gx + pw + 14 + tw]; // the picture and the two lines as one block, in the middle of the half both ways
@@ -3730,6 +3730,22 @@ const LVUI = 'card'; // the level is chosen on each format card (a slider, remem
 const FLOW3 = !!LVUI;
 const lvOf = id => { setup.lvBy = setup.lvBy || {}; if (setup.lvBy[id] == null) setup.lvBy[id] = +(store('zt_lv_' + id) || store('zt_lv') || 2); return setup.lvBy[id]; }; // each way of play remembers its own level
 function setLv(id, v) { if (id) { setup.lvBy[id] = v; store('zt_lv_' + id, String(v)); } else { setup.lv = v; store('zt_lv', String(v)); } tone(760, 0.06, 'sine', 0.18); }
+const SEGDRAG = { zones: [], d: null, st: {} }; // the two-sided switches (단식 · 복식, 뽑기 · 업적): the thumb taken and slid like a key, let go it snaps to the nearer side, and the page changes as it lands
+function segDrag(key, x, y, w, h, n, idx, set) { // where the thumb is while held or snapping (null: the switch draws its own), and its zone for the finger
+  const [zx, zy, zw, zh] = hxMap(x, y, w, h); SEGDRAG.zones.push({ key, x: zx, y: zy + OY, w: zw, h: zh, cw: zw / n, n, idx, set });
+  const D = SEGDRAG.d && SEGDRAG.d.key === key ? SEGDRAG.d : null; if (D && D.moved) return D.p;
+  const S = SEGDRAG.st[key]; if (!S) return null; const t = clock.now() - S.at, k = CALM ? 1 : Math.min(1, t / 0.16);
+  if (k >= 1 && !S.done) { S.done = true; S.doneAt = clock.now(); if (S.to !== idx) S.set(S.to); } // the magnet takes hold: now the page changes
+  if (S.done && clock.now() - S.doneAt > 0.3) { delete SEGDRAG.st[key]; return null; } // the switch's own slide has run its course by now
+  return S.from + (S.to - S.from) * easeOut(k);
+}
+addEventListener('pointerdown', e => { const p = toLogical(e), z = SEGDRAG.zones.find(z => p.x >= z.x && p.x <= z.x + z.w && p.y >= z.y && p.y <= z.y + z.h); if (!z || SEGDRAG.st[z.key]) return;
+  SEGDRAG.d = { id: e.pointerId, key: z.key, px: p.x, cw: z.cw, n: z.n, idx: z.idx, set: z.set, p: z.idx, moved: false }; });
+addEventListener('pointermove', e => { const D = SEGDRAG.d; if (!D || D.id !== e.pointerId) return; const p = toLogical(e), dx = p.x - D.px;
+  if (!D.moved && Math.abs(dx) > 8) { D.moved = true; dragEndAt = performance.now() + 1e9; for (const k in SCR) SCR[k].drag = null; } // a slide, not a tap
+  if (D.moved) D.p = clamp(D.idx + dx / D.cw, 0, D.n - 1); });
+for (const n of ['pointerup', 'pointercancel']) addEventListener(n, e => { const D = SEGDRAG.d; if (!D || D.id !== e.pointerId) return; SEGDRAG.d = null; if (!D.moved) return; dragEndAt = performance.now();
+  const to = Math.round(D.p); SEGDRAG.st[D.key] = { from: D.p, to, at: clock.now(), set: D.set, done: false }; });
 const LVLOOK = 'track'; // the level control's look: a track with three stops (a pill toggle was drafted on the test page)
 function levelPill(x, y, w, kx, col, D) { // test draft: a pill the knob rides in, the way come washing in behind it in the level's colour
   const h = 46, r = h / 2, px = x - r + 4, pw = w + 2 * r - 8;
@@ -4432,11 +4448,11 @@ const scenes = {
       menuBegin('뽑기 · 업적'); // no home key: 뒤로 at the bottom already goes home
       if (acct.prof) ticketPill(LY.m + LY.w, LY.titleY, acct.prof.tickets, 1.55); // the profile's own pill, at the size of the title row's keys
       { // 뽑기 기계 or 업적: the same switch as 단식 · 복식 (as tall, the same type), its thumb sliding to the side chosen; the page under it is pushed the same way
-        const SH = WSW, x = LY.m, y = LY.top, hw = LY.w / 2, to = acct.wtab === 'ach' ? 1 : 0, e = CALM ? 1 : easeOut(Math.min(1, (clock.now() - (acct.wtabAt || -9)) / 0.24)), p = 1 - to + (2 * to - 1) * e;
-        rr(x, y + 5, LY.w, SH, SH / 2, OUT, null); rr(x, y, LY.w, SH, SH / 2, '#fff8e7', OUT, 3); rr(x + p * hw + 7, y + 7, hw - 14, SH - 14, (SH - 14) / 2, mixHex(CORAL, SKY, p), OUT, 3);
+        const SH = WSW, x = LY.m, y = LY.top, hw = LY.w / 2, to = acct.wtab === 'ach' ? 1 : 0, e = CALM ? 1 : easeOut(Math.min(1, (clock.now() - (acct.wtabAt || -9)) / 0.24)), wset = id => { if ((acct.g.phase === 'idle' || acct.g.phase === 'reveal') && acct.wtab !== id) { acct.g.phase = 'idle'; acct.wtab = id; acct.wtabAt = clock.now(); tone(760, 0.06, 'sine', 0.18); } }, g = segDrag('wtab', x, y, LY.w, SH, 2, to, i => wset(i ? 'ach' : 'gacha')), p = g != null ? g : 1 - to + (2 * to - 1) * e;
+        rr(x, y + 5, LY.w, SH, SH / 2, OUT, null); rr(x, y, LY.w, SH, SH / 2, '#fff8e7', OUT, 3); rr(x + p * hw + 7, y + 7, hw - 14, SH - 14, (SH - 14) / 2, mixHex(CORAL, SKY, clamp((p - 0.4) / 0.2, 0, 1)), OUT, 3);
         const ready = acct.prof ? ACH.filter(a => claimable(a[0])).length : 0;
         [['gacha', '뽑기 기계', acct.prof ? `뽑기권 ${acct.prof.tickets}장` : '로그인이 필요해요', 'capsule', '#6b2a22'], ['ach', '업적', !acct.prof ? '로그인이 필요해요' : ready ? `받을 보상 ${ready}개` : '모두 받았어요', 'medal', '#1d4a73']].forEach(([id, t, sub, ic, dark], i) => { const kx = x + i * hw, on = i ? p > 0.5 : p <= 0.5, fy = y + SH / 2;
-          btn(kx, y, hw, SH, () => { if ((acct.g.phase === 'idle' || acct.g.phase === 'reveal') && acct.wtab !== id) { acct.g.phase = 'idle'; acct.wtab = id; acct.wtabAt = clock.now(); tone(760, 0.06, 'sine', 0.18); } });
+          btn(kx, y, hw, SH, () => wset(id));
           const tx = kx + (hw - textW(t, 32, F_T)) / 2; // the word alone, in the middle of the half
           text(t, tx, fy + 1, 32, on ? '#ffffff' : '#6f6068', 'left', on ? OUT : null, F_T);
           if ((id === 'ach' && ready) || (id === 'gacha' && acct.prof && acct.prof.tickets > 0)) { ctx.lineWidth = 2; ctx.strokeStyle = OUT; E(tx + textW(t, 32, F_T) + 12, fy - 14, 7, 7, '#e2574c'); } }); }
@@ -5056,7 +5072,7 @@ const RESDBG = params.get('res') === '1'; // ?res=1: the screen's numbers in a c
 function resInfo() { const r = canvas.getBoundingClientRect(), vv = window.visualViewport; ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = 'rgba(0,0,0,0.75)'; ctx.fillRect(0, 0, canvas.width, 26 * devicePixelRatio * 3); ctx.fillStyle = '#fff'; ctx.font = `${12 * devicePixelRatio}px monospace`;
   [`dpr ${devicePixelRatio} · canvas ${canvas.width}x${canvas.height} · css ${r.width.toFixed(1)}x${r.height.toFixed(1)} @ ${r.left.toFixed(1)},${r.top.toFixed(1)}`, `inner ${innerWidth}x${innerHeight} · vv ${vv ? vv.width.toFixed(1) + 'x' + vv.height.toFixed(1) + ' scale ' + vv.scale.toFixed(3) + ' off ' + vv.offsetLeft.toFixed(1) + ',' + vv.offsetTop.toFixed(1) : '-'}`, `H ${H} · fitKey ${fitKey}`].forEach((t, i) => ctx.fillText(t, 6 * devicePixelRatio, (20 + i * 22) * devicePixelRatio)); ctx.restore(); }
 function drawFrame() { const f0 = clock.now(); drawFrame0(); if (RESDBG) resInfo(); const d = clock.now() - f0 - 1 / 60; if (d > 0.02) { sceneAt += d; if (trans) trans.at += d; } } // a frame that took long (a long list drawn for the first time): the motions wait for it instead of jumping ahead
-function drawFrame0() { LVDRAG.zones = [];
+function drawFrame0() { LVDRAG.zones = []; SEGDRAG.zones = [];
   if (prof.nickEdit && !(prof.open && prof.menu)) endNickInline(); if (codeBox.open && scene !== 'online') closeCode(); // the settings closed while typing: the typing ends
   viewWatch(); FIX = [];
   hot = []; scenes[scene].draw(); if (modalSaved) { ctx.restore(); modalSaved = false; } viewMove(); if (prof.open) drawProfile(); drawNotice();
