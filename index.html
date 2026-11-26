@@ -2171,6 +2171,7 @@ function practiceResult(call) { // what that shot did, in words, and whether it 
   const L = LESSONS[P.li];
   if (r.in && L.ok(r)) { P.done++; r.count = true; }
   if (L.goal && P.done >= L.goal && P.li < LESSONS.length - 1) { P.next = true; m.pause = 1.9; } // the shot's result shows first; the lesson card follows
+  P.run = r.in ? (P.run || 0) + 1 : 0; if (r.in && P.run > 1) r.title = `인! ×${P.run}`; // ins in a row, counted as '딱!' is
   P.res = r; P.resT = 0; fx(r.in ? 'bounce' : 'call');
   for (const p of m.P) p.sw = null;
 }
@@ -2199,7 +2200,7 @@ function drawLesson() { // the lesson card where the scoreboard sits in a match
 function drawPracticeResult() { // the last shot, explained, under the net
   const r = m.prac.res; if (!r || m.prac.resT > 2.6 || m.banner) return;
   const a = Math.min(1, (2.6 - m.prac.resT) * 3), cy = Math.round(H * 0.42);
-  ctx.globalAlpha = a; const t = r.title + (r.count ? '  +1' : ''), P = 26, G = 12, L = [[t, 42, F_T, r.in ? '#3f9a5c' : '#e2574c']]; // every verdict one window: the same size and the same lines (title, how, why), the lines it has as one block in its middle
+  ctx.globalAlpha = a; const t = r.title, P = 26, G = 12, L = [[t, 42, F_T, r.in ? '#3f9a5c' : '#e2574c']]; // every verdict one window: the same size and the same lines (title, how, why), the lines it has as one block in its middle
   if (r.how) L.push([r.how, 22, F_B, INK]); if (r.why) L.push([r.why, 22, F_H, '#c0605a']);
   const lh = l => l[1] * (l[2] === F_H ? 1.15 : l[2] === F_B ? 1.1 : 1), bw = Math.min(W - 80, 560), bh = 2 * P + 42 + G + 22 * 1.1 + G + 22 * 1.15, by = cy - bh / 2, blk = L.reduce((n, l) => n + lh(l), 0) + G * (L.length - 1);
   rr(W / 2 - bw / 2, by + 5, bw, bh, 22, 'rgba(59,51,64,0.3)', null); rr(W / 2 - bw / 2, by, bw, bh, 22, '#fff8e7', OUT, 3); // one window for every verdict (a window: cream, the dark outline, a soft shadow); only its title's colour tells them apart
