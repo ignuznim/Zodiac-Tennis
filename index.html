@@ -793,7 +793,7 @@ function racket2(L, col) { // things swung like a racket; true when drawn
   if (k === 'sogo') { // a sogo, the little hand drum of the farmers' band: a red rim, a painted three-part swirl, a wooden handle
     rod(0, 4, 0, -17, 4.2, '#a97c50'); const cx = 0, cy = -33, R = 16;
     E(cx, cy, R, R, c); ctx.lineWidth = 1.2; for (let i = 0; i < 12; i++) { const a = i / 12 * 6.283; E(cx + Math.cos(a) * (R - 1.6), cy + Math.sin(a) * (R - 1.6), 0.9, 0.9, '#f6c445', 0, true); }
-    const r = R - 3.6; ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.clip(); const col = ['#e2574c', '#f6c445', '#3d6fb0'], t0 = NOW() * 0;
+    const r = R - 3.6; ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.clip(); const col = ['#e2574c', '#f6c445', '#3d6fb0'], t0 = 0;
     const B = (a, rev) => { const cA = a - 1.35, k2 = r * 0.62, ex = cx + Math.cos(a) * r, ey = cy + Math.sin(a) * r, qx = cx + Math.cos(cA) * k2, qy = cy + Math.sin(cA) * k2; if (rev) ctx.quadraticCurveTo(qx, qy, cx, cy); else { ctx.moveTo(cx, cy); ctx.quadraticCurveTo(qx, qy, ex, ey); } };
     for (let i = 0; i < 3; i++) { const a = -Math.PI / 2 + i * 2.094 + t0; ctx.fillStyle = col[i]; ctx.beginPath(); B(a); ctx.arc(cx, cy, r, a, a + 2.094); B(a + 2.094, true); ctx.closePath(); ctx.fill(); }
     ctx.restore(); ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.stroke(); ctx.lineWidth = 2.4; return true; }
@@ -2111,7 +2111,7 @@ function drawMatch() {
     ctx.globalAlpha = 1;
   }
   const h = emoOpen && m.online ? '' : hintText(); // the reactions bar sits where the hint would
-  if (h && !m.banner) { ctx.font = F_H.replace('1em', '29px'); const w = Math.min(W - 28, ctx.measureText(h).width + 48); const hy = touchUI ? (m.sc.tb && !rules().matchTb ? 172 : 142) + SB_EXTRA() : H - 166; rr(W / 2 - w / 2, hy, w, 46, 23, 'rgba(255,243,196,0.96)', OUT, 2.6); text(h, W / 2, hy + 24, 25, INK, 'center', null, F_H); }
+  if (h && !m.banner && !notice) toastPill(h, playMsgY(), 1); // a standing hint (the serve, the first hits): the toast's own look, staying while it applies; a passing toast takes its place
   if (touchUI) drawTouch(); else drawLegend();
   if (net && net.msg) text(net.msg, W / 2, 170 + SB_EXTRA(), 20, CREAM, 'center', OUT, F_B);
 }
@@ -5004,12 +5004,13 @@ function tick() {
 }
 let notice = null; // { s, at }: a short message over any screen
 function notify(s) { notice = { s, at: clock.now() }; }
+const playMsgY = () => 142 + (m && m.sc && m.sc.tb && !rules().matchTb ? 30 : 0) + SB_EXTRA(); // in a match: under the scoreboard (taller in a tiebreak or doubles)
+function toastPill(s, y, a) { ctx.save(); ctx.globalAlpha = a; const w = Math.min(W - 2 * LY.m, textW(s, 24, F_T) + 64); // the one look of everything that tells the player something: a dark pill, cream words
+  rr(W / 2 - w / 2, y + 4, w, 60, 30, 'rgba(59,51,64,0.3)', null); rr(W / 2 - w / 2, y, w, 60, 30, 'rgba(59,51,64,0.94)', null); fitText(s, W / 2, y + 30, 24, CREAM, 'center', F_T, w - 48); ctx.restore(); }
 function drawNotice() {
   if (!notice) return; const t = clock.now() - notice.at; if (t > 2.8) { notice = null; return; }
-  const a = CALM ? 1 : Math.min(1, t / 0.2, (2.8 - t) / 0.3), y = scene === 'play' || scene === 'pause' ? 138 + SB_EXTRA() : LY.bot - LY.gap - 60; // a toast: fades in where it stands (200 ms), stays, fades out (300 ms); just above the bottom row, under the scoreboard in a match
-  ctx.save(); ctx.globalAlpha = a; const w = Math.min(W - 2 * LY.m, textW(notice.s, 24, F_T) + 64);
-  rr(W / 2 - w / 2, y + 4, w, 60, 30, 'rgba(59,51,64,0.3)', null); rr(W / 2 - w / 2, y, w, 60, 30, 'rgba(59,51,64,0.94)', null);
-  fitText(notice.s, W / 2, y + 30, 24, CREAM, 'center', F_T, w - 48); ctx.restore();
+  const a = CALM ? 1 : Math.min(1, t / 0.2, (2.8 - t) / 0.3), y = (scene === 'play' || scene === 'pause') && m ? playMsgY() : LY.bot - LY.gap - 60; // a toast: fades in where it stands (200 ms), stays, fades out (300 ms); just above the bottom row, under the scoreboard in a match
+  toastPill(notice.s, y, a);
 }
 // ---- 화면 모션: push for the solo flow, fade through between unrelated screens, tab switch inside a screen, modal present over a match
 const CALM = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
