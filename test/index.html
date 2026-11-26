@@ -3502,7 +3502,7 @@ function drawClosetWindow() { // over 선수 선택 (an animal's closet: what it
   if (!two) { scrollView(SCR.closet, v0, v1, key, lh, () => drawClosetList(gear, eh, chh, true), '255,250,240'); ctx.restore(); return; }
   // two pages side by side: what it wears, and every item; the finger drags them, a flick turns the page
   const now = clock.now(), dt = Math.min(0.05, now - (closet.pt || now)); closet.pt = now; if (closet.px == null) closet.px = closet.page || 0;
-  if ((closet.page || 0) !== closet.lastPage) { if (closet.page === 1 && closet.lastPage === 0) { const S = SCR.closet; S.scroll = closet.jump || 0; S.vel = 0; S.over = 0; S.ov = 0; closet.jump = 0; } closet.lastPage = closet.page || 0; } // every item opens at its top
+  if ((closet.page || 0) !== closet.lastPage) { if (closet.page === 1 && closet.lastPage === 0) { const S = SCR.closet; if (closet.jump != null) S.scroll = closet.jump; S.vel = 0; S.over = 0; S.ov = 0; closet.jump = null; } closet.lastPage = closet.page || 0; } // every item opens at its top
   if (!closet.hdrag) closet.px += ((closet.page || 0) - closet.px) * (1 - Math.exp(-dt / 0.07)); const disp = clamp(closet.hdrag ? (closet.page || 0) - closet.hdx / w : closet.px, 0, 1); // two pages only: nothing past either end
   ctx.save(); ctx.beginPath(); ctx.rect(x + 3, v0 - 4, w - 6, v1 - v0 + 8); ctx.clip();
   if (disp < 0.999) { ctx.save(); ctx.translate(-disp * w, 0); const n0 = hot.length; drawWornPage(x, v0, w, v1 - v0, gear, eh); if (Math.abs(disp) > 0.01) hot.length = n0; ctx.restore(); }
