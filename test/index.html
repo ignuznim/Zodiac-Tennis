@@ -2173,7 +2173,7 @@ function practiceResult(call) { // what that shot did, in words, and whether it 
   const L = LESSONS[P.li];
   if (r.in && L.ok(r)) { P.done++; r.count = true; }
   if (L.goal && P.done >= L.goal && P.li < LESSONS.length - 1) { P.next = true; m.pause = 1.9; } // the shot's result shows first; the lesson card follows
-  P.run = r.in ? (P.run || 0) + 1 : 0; if (r.in && P.run > 1) r.title = `인! ×${P.run}`; // ins in a row, counted as '딱!' is
+  if (r.count && P.done > 1) r.title = `인! ×${P.done}`; // the lesson's count so far, as '딱!' is counted; a miss never takes it back
   P.res = r; P.resT = 0; fx(r.in ? 'bounce' : 'call');
   for (const p of m.P) p.sw = null;
 }
