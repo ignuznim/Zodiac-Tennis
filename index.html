@@ -2832,7 +2832,7 @@ function installLine(parts, x, y) { for (const q of parts) { if (typeof q === 's
 function drawInstallPop() { // only the player's own phone: its mark, the browser, the steps; a tap outside closes it
   const ios = installPop.os === 'ios', v26 = INSTALL_POP === 'ios' || INSTALL_POP !== 'ios18' && +((navigator.userAgent.match(/Version\/(\d+)/) || [])[1] || 0) >= 26, lines = (cx, cy) => { ctx.save(); ctx.strokeStyle = INK; ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.beginPath(); for (const [d, l] of [[-6, 9], [0, 9], [6, 5]]) { ctx.moveTo(cx - 9, cy + d); ctx.lineTo(cx - 9 + l * 2, cy + d); } ctx.stroke(); ctx.restore(); }; // the page menu left of Safari's address bar (iOS 26): three lines, the last short
   const C = ios ? { name: '아이폰', app: '사파리', logo: (cx, cy) => appleLogo(cx, cy, 30, INK), steps: v26 ? [['주소창 왼쪽 ', lines, ' 누르고 \'공유\''], ["아래로 내려 '홈 화면에 추가'"], ["'웹 앱으로 열기' 켠 채 '추가'"]] : [['아래쪽 공유 버튼 ', (cx, cy) => shareGlyph(cx, cy, 20, '#3d8be0'), ' 누르기'], ["'홈 화면에 추가' 누르기"], ["오른쪽 위 '추가' 누르면 끝"]] }
-    : { name: '안드로이드', app: '크롬', logo: (cx, cy) => androidLogo(cx, cy, 34), steps: [['오른쪽 위 메뉴 ', (cx, cy) => menuGlyph(cx, cy, 20, INK), ' 누르기'], ["'홈 화면에 추가' 또는 '앱 설치'"], ["'설치' 누르면 끝"]] };
+    : { name: '안드로이드', app: '크롬', logo: (cx, cy) => androidLogo(cx, cy - 2, 34), steps: [['오른쪽 위 메뉴 ', (cx, cy) => menuGlyph(cx, cy, 20, INK), ' 누르기'], ["'홈 화면에 추가' 또는 '앱 설치'"], ["'설치' 누르면 끝"]] };
   const PQ = popIn(clock.now() - installPop.at), w = POP_M, pad = 24, sh = 40, rowH = 36, sg = 12, cardH = 16 + sh + sg + C.steps.length * rowH + 14, h = 24 + 34 + 10 + 24 + 20 + cardH + 24, x = (W - w) / 2, S = popScale(w, h, POP_M), y = H / 2 - h / 2, k = PQ.k * S, L0 = x + pad, R0 = x + w - pad;
   ctx.fillStyle = `rgba(59,51,64,${0.55 * PQ.a})`; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, () => { installPop.open = false; }); // a tap outside closes it
   HX = { cx: W / 2, cy: y + h / 2, s: S }; ctx.save(); ctx.translate(W / 2, y + h / 2); ctx.scale(k, k); ctx.translate(-W / 2, -(y + h / 2)); ctx.globalAlpha = PQ.a;
@@ -2841,8 +2841,8 @@ function drawInstallPop() { // only the player's own phone: its mark, the browse
   { const bx = L0 + textW(tt, 28, F_T) + 12, bw = 60; rr(bx, yy + 1, bw, 32, 16, CORAL, null); text('추천', bx + bw / 2, yy + 17, 19, CREAM, 'center', null, F_T); } // the 단판전 card's own 추천 tag
   yy += 34 + 10; text('앱처럼 전체 화면으로, 아이콘 하나로 바로 열려요', L0, yy + 12, 19, '#7a6872', 'left', null, F_B); yy += 24 + 20;
   rr(L0, yy, R0 - L0, cardH, 18, '#ffffff', '#e6dccd', 2); // read, not tapped: a rim only (level 3)
-  const hy = yy + 16 + sh / 2; C.logo(L0 + 34, hy); text(C.name, L0 + 62, hy + 1, 24, INK, 'left', null, F_T); text(C.app + '에서', L0 + 62 + textW(C.name, 24, F_T) + 10, hy + 2, 18, '#9a8b93', 'left', null, F_B);
-  C.steps.forEach((st, i) => { const ry = yy + 16 + sh + sg + 4 + i * rowH + rowH / 2; E(L0 + 34, ry, 13, 13, CORAL, 0, true); text(String(i + 1), L0 + 34, ry + 1, 17, '#fff', 'center', null, F_N); installLine(st, L0 + 62, ry); });
+  const hy = yy + 14 + sh / 2; C.logo(L0 + 34, hy); text(C.name, L0 + 62, hy + 1, 24, INK, 'left', null, F_T); text(C.app + '에서', L0 + 62 + textW(C.name, 24, F_T) + 10, hy + 2, 18, '#9a8b93', 'left', null, F_B);
+  C.steps.forEach((st, i) => { const ry = yy + 14 + sh + sg + 4 + i * rowH + rowH / 2; E(L0 + 34, ry, 13, 13, CORAL, 0, true); text(String(i + 1), L0 + 34, ry + 1, 17, '#fff', 'center', null, F_N); installLine(st, L0 + 62, ry); });
   ctx.restore(); HX = null;
 }
 function drawCodeBox() {
@@ -4417,7 +4417,7 @@ const scenes = {
       const wx = LY.m - 16, ww = LY.w + 32, wy = LY.titleY - 38, wh = LY.bot - 14 - wy, ns = POP_M / ww; // an M window: its drawing shown at the M width
       ctx.save(); ctx.translate(W / 2, wy + wh / 2); ctx.scale(PQ.k * ns, PQ.k * ns); ctx.translate(-W / 2, -(wy + wh / 2)); ctx.globalAlpha = PQ.a; HX = { cx: W / 2, cy: wy + wh / 2, s: ns };
       rr(wx, wy + 6, ww, wh, 26, 'rgba(59,51,64,0.35)', null); rr(wx, wy, ww, wh, 26, '#fffaf0', OUT, 3); btn(wx, wy, ww, wh, () => {});
-      text('공지사항', wx + 24, wy + 38, 30, INK, 'left', null, F_T);
+      text('공지사항', wx + 24, wy + 38, 35, INK, 'left', null, F_T); // shown at 0.91 (the M width): 32 on the screen, as 개발자에게 한마디's title and the profile's name
       const L = news.list, v0 = wy + 70, v1 = wy + wh - 16;
       if (L && L.length) { const top = newsTop(); if (top > (parseInt(store('zt_news_at')) || 0)) store('zt_news_at', String(top)); } // seen
       if (!L) { text(news.loading ? '불러오는 중…' : news.err || '불러오는 중…', W / 2, v0 + 120, 26, news.err && !news.loading ? '#e2574c' : INK, 'center', null, F_T); }
