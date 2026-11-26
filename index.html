@@ -3925,9 +3925,10 @@ function statBars(a, x, y, bonus = {}, step = 30) {
       if (spare) { ctx.setLineDash([3, 3]); rr(cx, yy - 9, BAR.cell, 18, 5, 'rgba(234,223,210,0.45)', '#b9aaa0', 1.6); ctx.setLineDash([]); }
       else rr(cx, yy - 9, BAR.cell, 18, 5, k < v ? STAT_COL[i] : '#eadfd2', OUT, 2.2);
       if (k >= v && fill > 0) { // what the gear adds, in the stat's own colour made lighter: a straight fill clipped to the cell, then the cell's outline over it
-        ctx.save(); rr(cx, yy - 9, BAR.cell, 18, 5, null, null); ctx.clip(); ctx.fillStyle = mixHex(STAT_COL[i], '#ffffff', 0.5); ctx.fillRect(cx, yy - 9, BAR.cell * fill, 18); ctx.restore();
+        ctx.save(); rr(cx, yy - 9, BAR.cell, 18, 5, null, null); ctx.clip(); ctx.fillStyle = mixHex(STAT_COL[i], '#ffffff', 0.4); ctx.fillRect(cx, yy - 9, BAR.cell * fill, 18); ctx.restore();
         if (spare) { ctx.setLineDash([3, 3]); rr(cx, yy - 9, BAR.cell, 18, 5, null, '#b9aaa0', 1.6); ctx.setLineDash([]); } else rr(cx, yy - 9, BAR.cell, 18, 5, null, OUT, 2.2); } }
-    text(STAT_DO[i], x + BAR.lab + BAR.step * BAR.n + BAR.gap, yy, 17, '#7a6872', 'left', null, F_B);
+    if (add > 0) text(`+${+add.toFixed(2)}`, x + BAR.lab + BAR.step * BAR.n + BAR.gap, yy, 18, mixHex(STAT_COL[i], INK, 0.45), 'left', null, F_T); // what the gear adds, in place of the line about the stat
+    else text(STAT_DO[i], x + BAR.lab + BAR.step * BAR.n + BAR.gap, yy, 17, '#7a6872', 'left', null, F_B);
   });
 }
 // the way in: format, then who you play, then your animal, then the court (an invited guest only picks an animal)
