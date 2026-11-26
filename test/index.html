@@ -1855,7 +1855,7 @@ function localFx(dt) {
       if (kind === 'drop' || kind === 'slice') tone(520, 0.12, 'sine', 0.2, 0, 0.6);
       if (kind === 'wild') tone(200, 0.2, 'sawtooth', 0.15, 0, 0.5);
       if (kind === 'lob') tone(330, 0.25, 'sine', 0.2, 0, 1.8);
-      if (mine && kind !== 'serve') { hints.hits++; if (kind === 'power') { hints.power++; store('zt_powdone', '1'); } powerTip(); if (kind === 'drop' || kind === 'lob' || kind === 'slice' || kind === 'smash') hints.shots++; }
+      if (mine && kind !== 'serve') { hints.hits++; if (kind === 'power') { hints.power++; store('zt_tip_power_done', '1'); } if (kind === 'drop' || kind === 'lob' || kind === 'slice' || kind === 'smash') { hints.shots++; if (hints.shots >= 2) store('zt_tip_shots_done', '1'); } shotTips(); }
     } else if (f.k === 'bounce') { tone(150, 0.07, 'sine', 0.3, 0, 0.6); const g = proj(m.ball.x, m.ball.y, 0); post.dust.push({ x: g.x, y: g.y, s: g.s, t: 0, ring: m.court !== 'clay', clay: m.court === 'clay' }); }
     else if (f.k === 'net') tone(95, 0.2, 'square', 0.2);
     else if (f.k === 'toss') tone(500, 0.12, 'sine', 0.15, 0, 1.6);
@@ -2036,9 +2036,14 @@ function drawLegend() { // the shot keys, always on screen; each is also a butto
   rr(14, H - 56, W - 28, 44, 12, 'rgba(74,61,71,0.82)', null);
   text('Q 꾹: 파워샷 · 네트 앞: 발리 · W + ↓: 드롭샷 · H: 도움말', W / 2, H - 33, 20, CREAM, 'center', null, F_B);
 }
-function powerTip() { // the power shot, told once a match as a toast, for the first three matches where a player has not yet used one
-  if (hints.hits !== 6 || hints.power || m.practice || store('zt_powdone')) return; const n = +(store('zt_powtip') || 0); if (n >= 3) return;
-  store('zt_powtip', String(n + 1)); toast((touchUI ? '스트로크를' : 'Q 를') + ' 꾹 모았다가 공이 올 때 놓으면 파워샷!');
+const SHOT_TIPS = [ // told as toasts, one at a time, at least 20 s apart, each once a match, for the first three matches until the player has used it
+  { id: 'power', at: 6, ok: () => hints.power > 0, s: () => (touchUI ? '스트로크를' : 'Q 를') + ' 꾹 모았다가 공이 올 때 놓으면 파워샷!' },
+  { id: 'shots', at: 12, ok: () => hints.shots >= 2, s: () => touchUI ? '슬라이스와 로브, 높은 공엔 스매시!' : 'W 슬라이스 · E 로브 · 높은 공엔 R 스매시!' },
+];
+function shotTips() {
+  if (m.practice) return; const now = clock.now(); hints.told = hints.told || {}; if (now - (hints.tipAt || -99) < 20) return;
+  for (const T of SHOT_TIPS) { if (hints.told[T.id] || hints.hits < T.at || T.ok() || store('zt_tip_' + T.id + '_done')) continue; const n = +(store('zt_tip_' + T.id) || 0); if (n >= 3) continue;
+    hints.told[T.id] = true; hints.tipAt = now; store('zt_tip_' + T.id, String(n + 1)); toast(T.s()); return; }
 }
 function hintText() {
   if (m.practice) return ''; // the lesson's tip shows once as a toast when the lesson begins (drawLesson)
@@ -2047,7 +2052,6 @@ function hintText() {
   if (m.phase === 'toss' && srv) return touchUI ? '초록일 때 한 번 더! 조이스틱으로 방향' : '초록일 때 Q! ← → 를 함께 누르면 방향';
   if (m.phase === 'rally' || m.phase === 'serve' || m.phase === 'toss') {
     if (hints.hits < 3) return touchUI ? '조이스틱으로 따라가, 몸에 닿는 순간 스트로크!' : '공을 따라가, 몸에 닿는 순간 Q!';
-    if (hints.shots < 2) return touchUI ? '슬라이스와 로브, 높은 공엔 스매시!' : 'W 슬라이스 · E 로브 · 높은 공엔 R 스매시';
   }
   return '';
 }
