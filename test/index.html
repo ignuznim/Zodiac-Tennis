@@ -2814,6 +2814,44 @@ function submitCode() { const code = codeInline.value.trim().toUpperCase().repla
 codeInline.addEventListener('input', () => { codeInline.value = codeInline.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6); codeBox.err = ''; });
 codeInline.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); submitCode(); } else if (e.key === 'Escape') closeCode(); e.stopPropagation(); });
 codeInline.addEventListener('pointerdown', e => e.stopPropagation());
+// ---- 홈 화면에 추가: opened in a browser (not from the home screen), the title page shows once how to install it as an app ----
+const INSTALL_POP = new URLSearchParams(location.search).get('install') || ''; // draft on the test page only (?install=ios|android|pc)
+const installPop = { open: false, at: 0, os: 'ios' };
+function installStart() { const sa = window.matchMedia && matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; if (!INSTALL_POP || sa) return;
+  const ua = navigator.userAgent; installPop.os = INSTALL_POP === 'ios' || INSTALL_POP === 'android' ? INSTALL_POP : /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) ? 'ios' : /Android/.test(ua) ? 'android' : 'pc'; installPop.open = true; installPop.at = clock.now(); }
+function appleLogo(cx, cy, s, col) { ctx.save(); ctx.translate(cx, cy); ctx.scale(s, s); ctx.fillStyle = col; ctx.beginPath(); // the apple, small: the platform's mark
+  ctx.moveTo(0, -0.17); ctx.bezierCurveTo(-0.1, -0.26, -0.42, -0.28, -0.44, 0.04); ctx.bezierCurveTo(-0.46, 0.3, -0.3, 0.52, -0.18, 0.5); ctx.bezierCurveTo(-0.08, 0.49, -0.06, 0.45, 0, 0.45); ctx.bezierCurveTo(0.06, 0.45, 0.08, 0.49, 0.18, 0.5);
+  ctx.bezierCurveTo(0.3, 0.52, 0.4, 0.3, 0.45, 0.16); ctx.bezierCurveTo(0.3, 0.08, 0.28, -0.12, 0.4, -0.18); ctx.bezierCurveTo(0.32, -0.28, 0.12, -0.27, 0, -0.17); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(0.07, -0.36, 0.07, 0.15, 0.75, 0, 7); ctx.fill(); ctx.restore(); }
+function androidLogo(cx, cy, s) { ctx.save(); ctx.translate(cx, cy); ctx.scale(s, s); const g = '#3ddc84'; ctx.fillStyle = g; ctx.strokeStyle = g; ctx.lineCap = 'round'; ctx.lineWidth = 0.07; // the robot's head, small
+  ctx.beginPath(); ctx.arc(0, 0.3, 0.5, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.beginPath(); ctx.moveTo(-0.24, -0.1); ctx.lineTo(-0.36, -0.32); ctx.moveTo(0.24, -0.1); ctx.lineTo(0.36, -0.32); ctx.stroke();
+  ctx.fillStyle = '#fffaf0'; ctx.beginPath(); ctx.arc(-0.2, 0.1, 0.055, 0, 7); ctx.arc(0.2, 0.1, 0.055, 0, 7); ctx.fill(); ctx.restore(); }
+function shareGlyph(cx, cy, s, col) { ctx.save(); ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath(); // the share key: a box with an arrow up out of it
+  ctx.moveTo(cx - s * 0.3, cy - s * 0.1); ctx.lineTo(cx - s * 0.42, cy - s * 0.1); ctx.lineTo(cx - s * 0.42, cy + s * 0.5); ctx.lineTo(cx + s * 0.42, cy + s * 0.5); ctx.lineTo(cx + s * 0.42, cy - s * 0.1); ctx.lineTo(cx + s * 0.3, cy - s * 0.1);
+  ctx.moveTo(cx, cy + s * 0.2); ctx.lineTo(cx, cy - s * 0.5); ctx.moveTo(cx - s * 0.2, cy - s * 0.32); ctx.lineTo(cx, cy - s * 0.52); ctx.lineTo(cx + s * 0.2, cy - s * 0.32); ctx.stroke(); ctx.restore(); }
+function menuGlyph(cx, cy, s, col) { ctx.fillStyle = col; for (const d of [-0.36, 0, 0.36]) { ctx.beginPath(); ctx.arc(cx, cy + d * s, s * 0.09, 0, 7); ctx.fill(); } } // ⋮, the browser's menu
+function installLine(parts, x, y) { for (const q of parts) { if (typeof q === 'string') { text(q, x, y, 20, INK, 'left', null, F_B); x += textW(q, 20, F_B); } else { q(x + 13, y); x += 26; } } } // words with a little picture among them
+function drawInstallPop() {
+  const PQ = popIn(clock.now() - installPop.at), w = POP_M, pad = 24, sh = 40, rowH = 36, cardH = 18 + sh + 3 * rowH + 14, h = 24 + 32 + 10 + 24 + 20 + cardH * 2 + 14 + 22 + 56 + 24, x = (W - w) / 2, S = popScale(w, h, POP_M), y = H / 2 - h / 2, k = PQ.k * S, L0 = x + pad, R0 = x + w - pad;
+  const close = () => { installPop.open = false; };
+  ctx.fillStyle = `rgba(59,51,64,${0.55 * PQ.a})`; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, () => {}); // only its keys close it
+  HX = { cx: W / 2, cy: y + h / 2, s: S }; ctx.save(); ctx.translate(W / 2, y + h / 2); ctx.scale(k, k); ctx.translate(-W / 2, -(y + h / 2)); ctx.globalAlpha = PQ.a;
+  rr(x, y + 6, w, h, 26, 'rgba(59,51,64,0.35)', null); rr(x, y, w, h, 26, '#fffaf0', OUT, 3); btn(x, y, w, h, () => {});
+  let yy = y + 24; text('홈 화면에 추가해 보세요', L0, yy + 16, 28, INK, 'left', null, F_T); yy += 32 + 10;
+  text('앱처럼 전체 화면으로, 아이콘 하나로 바로 열려요', L0, yy + 12, 19, '#7a6872', 'left', null, F_B); yy += 24 + 20;
+  const ios = { name: '아이폰', app: '사파리', logo: (cx, cy) => appleLogo(cx, cy, 30, INK), steps: [['아래쪽 공유 버튼 ', (cx, cy) => shareGlyph(cx, cy, 20, '#3d8be0'), ' 누르기'], ["'홈 화면에 추가' 누르기"], ["오른쪽 위 '추가' 누르면 끝"]] };
+  const and = { name: '안드로이드', app: '크롬', logo: (cx, cy) => androidLogo(cx, cy, 34), steps: [['오른쪽 위 메뉴 ', (cx, cy) => menuGlyph(cx, cy, 20, INK), ' 누르기'], ["'홈 화면에 추가' 또는 '앱 설치'"], ["'설치' 누르면 끝"]] };
+  const cards = installPop.os === 'android' ? [and, ios] : [ios, and];
+  cards.forEach((C, ci) => { const mine = ci === 0 && installPop.os !== 'pc';
+    rr(L0, yy, R0 - L0, cardH, 18, mine ? '#fff6dc' : '#ffffff', mine ? '#f0cf78' : '#e6dccd', 2); // read, not tapped: a rim only (level 3); the player's own phone first, warmer
+    const hy = yy + 18 + sh / 2; C.logo(L0 + 34, hy); text(C.name, L0 + 62, hy + 1, 24, INK, 'left', null, F_T); text(C.app + '에서', L0 + 62 + textW(C.name, 24, F_T) + 10, hy + 2, 18, '#9a8b93', 'left', null, F_B);
+    if (mine) { const t = '내 기기', tw = textW(t, MIN_TEXT, F_T) + 24; rr(R0 - 18 - tw, hy - 14, tw, 28, 14, CORAL, null); text(t, R0 - 18 - tw / 2, hy, MIN_TEXT, '#fff', 'center', null, F_T); }
+    C.steps.forEach((st, i) => { const ry = yy + 18 + sh + 6 + i * rowH + rowH / 2 - 4; E(L0 + 34, ry, 13, 13, mine ? CORAL : '#b3a598', 0, true); text(String(i + 1), L0 + 34, ry + 1, 17, '#fff', 'center', null, F_N); installLine(st, L0 + 62, ry); });
+    yy += cardH + 14; });
+  yy += 22 - 14; const bw = Math.max(textW('다음에', 25, F_T), textW('확인', 25, F_T)) + 60;
+  popKey('확인', R0, yy, close, true, bw); popKey('다음에', R0 - bw - 12, yy, close, false, bw);
+  ctx.restore(); HX = null;
+}
 function drawCodeBox() {
   const PQ = popIn(clock.now() - codeBox.at), w = POP_S, pad = 20, fh = 80, bh = 56, h = 22 + 30 + 12 + fh + (codeBox.err ? 36 : 0) + 18 + bh + 22, x = (W - w) / 2, S = popScale(w, h, POP_S), y = H / 2 - h / 2 - 120, k = PQ.k * S, L0 = x + pad, R0 = x + w - pad; // the profile's width (470, its 20 margins), 방 만들기's heading type, a key sized to its word
   ctx.fillStyle = `rgba(59,51,64,${0.55 * PQ.a})`; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, closeCode); // a tap outside closes it
@@ -4332,7 +4370,7 @@ const scenes = {
         round(cx - 12 - 50, FB_ICON, openFeedback); round(cx - 24 - 100, 'megaphone', openNotices, noticeUnread()); // beside my name, on the same row
         if (lobbyNet.online) onlinePill(LY.m, cy); } // who is around, top left: a label in its green rim, as on the online page (온라인 below is the way in)
       text(`v${APP_VERSION} · © 2026 IGNUZNIM. All rights reserved.`, W / 2, LY.copy, 16, 'rgba(59,51,64,0.6)', 'center', null, F_B);
-      menuEnd(KB('Enter 를 눌러도 시작해요'));
+      menuEnd(KB('Enter 를 눌러도 시작해요')); if (!installPop.seen) { installPop.seen = true; installStart(); } if (installPop.open) drawInstallPop();
     },
   },
   ranking: { // 티어 랭킹: members by their score, the tier beside each name; the one-match records live in 명예의 전당
