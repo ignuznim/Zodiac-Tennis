@@ -3861,9 +3861,9 @@ const STAT_COL = [CORAL, '#ffb86b', '#c3a6e8', BALL, SKY];
 const STAT_DO = ['공이 빨라져요', '더 오래 뛰어요', '정확하고 잘 휘어요', '멀리까지 닿아요', '달리기가 빨라요'];
 const BAR = { lab: 76, step: 22, cell: 18, n: 7 }; // five cells for the animal, two spare for its gear
 const barsWidth = dw => BAR.lab + BAR.step * BAR.n + 10 + dw;
-function statBars(a, x, y, bonus = {}) {
+function statBars(a, x, y, bonus = {}, step = 30) {
   STATS.forEach((s, i) => {
-    const v = stat(a, s, null), yy = y + i * 30, add = bonus[s] || 0;
+    const v = stat(a, s, null), yy = y + i * step, add = bonus[s] || 0;
     text(STAT_KO[i], x, yy, 21, INK, 'left', null, F_T);
     for (let k = 0; k < BAR.n; k++) { const cx = x + BAR.lab + k * BAR.step, spare = k >= 5, fill = Math.max(0, Math.min(1, v + add - k));
       if (spare) { ctx.setLineDash([3, 3]); rr(cx, yy - 9, BAR.cell, 18, 5, 'rgba(234,223,210,0.45)', '#b9aaa0', 1.6); ctx.setLineDash([]); }
@@ -4488,7 +4488,7 @@ const scenes = {
       panel(LY.m, py, LY.w, ph);
       ctx.font = `${Math.round(17 * 1.1)}px ${F_B}`; const dw = Math.max(...STAT_DO.map(d => ctx.measureText(d).width));
       // left: the hanger and the name at the top, the stats along the bottom; right: the animal, big, wearing its gear
-      const tw = barsWidth(dw), lx = LY.m + LY.pad, sy0 = py + ph - LY.pad - 4 * 30 - 12, compact = ph < 350, // the bars along the bottom; on a short card the name sits beside the hanger
+      const tw = barsWidth(dw), lx = LY.m + LY.pad, sy0 = py + ph - LY.pad - 4 * 33 - 12, compact = ph < 350, // the bars along the bottom; on a short card the name sits beside the hanger
         // the name (the hanger beside it), the line and the five bars as one block, centred in the card's height
         free = LY.m + LY.w - LY.pad - (lx + tw);
       const ax = LY.m + LY.w - LY.pad - Math.max(free, 150) / 2, ay = py + Math.min(ph * 0.66, ph - 60), ks = LY.tall ? 2.0 : 1.75; selSpot = { ax, ay, ks }; // where the animal stands: its closet opens with it there
@@ -4497,9 +4497,9 @@ const scenes = {
       drawAnimal(a, ax, ay, ks, { front: true, t: state.t, accent: CORAL, gear });
       const hs = compact ? 52 : 64; { const hx = lx, hy = py + LY.pad, over = btn(hx, hy, hs, hs, () => openCloset('select', state.sel)), d = sink(hx, hy, hs, hs, 3); // the hanger: this animal's closet, at the card's top left
         rr(hx, hy + 3, hs, hs, 16, OUT, null); rr(hx, hy + d, hs, hs, 16, hoverOn(over) ? '#fffdf3' : '#ffffff', OUT, 2.8); icon('hanger', hx + hs / 2, hy + d + hs / 2, hs * 0.72); }
-      if (compact) text(A.ko, lx + hs + 14, py + LY.pad + hs / 2, 34, INK, 'left', null, F_T); else text(A.ko, lx, sy0 - 74, 34, INK, 'left', null, F_T);
-      text(A.note, lx, sy0 - 38, 23, '#c0605a', 'left', null, F_H);
-      statBars(a, lx, sy0, gearBonus(gear));
+      if (compact) text(A.ko, lx + hs + 14, py + LY.pad + hs / 2, 34, INK, 'left', null, F_T); else text(A.ko, lx, sy0 - 82, 34, INK, 'left', null, F_T);
+      text(A.note, lx, sy0 - 42, 23, '#c0605a', 'left', null, F_H);
+      statBars(a, lx, sy0, gearBonus(gear), 33);
       sideBtn(net ? '나가기' : '뒤로', () => { if (net) goHome(); else scene = setup.practice || FLOW3 ? 'format' : 'mode'; }); if (!net && !setup.practice) flowDots(FLOW3 ? 1 : 2);
       mainBtn(net && net.myPick ? (net.myPick.animal === state.sel ? '준비 완료!' : '이 선수로 바꾸기') : '이 선수로 결정', pickAnimal);
       if (net) { const me = !!net.myPick, R = net.ready || { n: 0, need: 2 }, team = net.kind === 'single' ? '' : (net.role === 'host' ? 0 : net.seat) % 2 === 0 ? 'A팀 · ' : 'B팀 · ';
@@ -4545,10 +4545,10 @@ const scenes = {
       COURT_IDS.forEach((id, i) => {
         const C = COURTS[id], y = LY.top + i * (ch + LY.gap), on = i === state.cc;
         card(LY.m, y, LY.w, ch, () => { if (state.cc !== i) { state.cc = i; tone(660, 0.05, 'sine', 0.15); } }, on, null, true); // a tap chooses; 이 코트로 선택 goes on
-        const ph = Math.min(ch - LY.pad * 2, 154), pw = Math.min(200, ph * 1.3), px = LY.m + LY.pad;
-        courtPic(px, y + (ch - ph) / 2, pw, ph, id);
+        const ph = ch - LY.pad * 2, pw = 200, px = LY.m + LY.pad;
+        courtPic(px, y + LY.pad, pw, ph, id); // the same margin above, below and to the left
         // the text block, centred in the card: name (with the badge on the same line), its line, then two ratings
-        const tx = px + pw + LY.pad, by = y + ch / 2 - 67, right = LY.m + LY.w - LY.pad;
+        const tx = px + pw + LY.pad, by = y + ch / 2 - 76, right = LY.m + LY.w - LY.pad;
         text(C.ko, tx, by + 18, 33, INK, 'left', null, F_T);
         if (af[0] === id || af[2] === id) { const good = af[0] === id, bw = Math.ceil(textW('강한 코트', 20, F_T)) + 28; // the badge as wide as its words and 14 a side
           rr(right - bw, by + 1, bw, 34, 17, good ? '#ffe1a8' : '#dbe9f7', null);
@@ -4592,7 +4592,7 @@ const scenes = {
         text(sub, x, by + 60, 22, id === 'practice' ? '#3d7fc0' : '#c0605a', 'left', null, F_H);
         const sl = LVUI === 'card' && !net && id !== 'practice', B = !net && drawDoublesSwitch.blk, sw = 120, sx = (B ? (B[0] + B[1]) / 2 : LY.m + LY.w * 0.73) - sw / 2; // the slider's column, the same on every card: centred under 복식's picture and words
         if (full) fitText(how[id], x, by + 92, 20, '#7a6872', 'left', F_B, sl ? sx - 22 - x : LY.w - 2 * LY.pad);
-        if (sl) levelSlider(id, sx, y + ch / 2 - 13, sw, lvOf(id)); // its own level, at the card's right, remembered
+        if (sl) levelSlider(id, sx, y + ch / 2, sw, lvOf(id)); // its own level, at the card's right, remembered: the bar itself on the card's middle line (its word hangs under)
         ctx.restore();
       });
       sideBtn('뒤로', formatBack); if (!net) flowDots(0);
