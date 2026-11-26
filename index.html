@@ -3892,14 +3892,14 @@ async function tierReport() { // the match into my tier score: against the compu
   try { const r = await rpc('tier_match', { fmt: m.format || 'regular', level: m.online ? null : m.level, won, opp }); if (!r) return;
     const before = tierOf(acct.tier || { rating: r.rating - r.delta, days: r.days, rank: null }); acct.tier = r; if (m === mm) { const g = giftFor(mm); g.tier = r; g.before = before; } } catch (e) { /* too soon, or the server not ready: no change this time */ }
 }
-function closeGift() { if (giftHere() && matchGift.open && clock.now() - matchGift.at >= 2) { matchGift.open = false; tone(660, 0.05, 'sine', 0.15); } }
+function closeGift() { if (giftHere() && matchGift.open && clock.now() - matchGift.at >= 0.4) { matchGift.open = false; tone(660, 0.05, 'sine', 0.15); } }
 function drawGift() { // on the results: the card first (tickets, the tier score), then a badge beside 승리!/패배
   if (!giftHere()) return; const g = matchGift, T = g.tier, ti = T ? tierOf(T) : 0;
   if (!g.open) { const x = W / 2 + textW(m.sc.winner === view % 2 ? '승리!' : '패배', 76) / 2 + 42, y = LY.titleY - 14;
     if (g.n) { ticketPic(x, y, 1.05, -0.12); rr(x + 16, y - 34, 50, 32, 16, CORAL, OUT, 2.4); text(`+${g.n}`, x + 41, y - 18, 22, '#ffffff', 'center', null, F_T); }
     else if (T) { drawTier(ti, x, y, 22); const s0 = (T.delta >= 0 ? '+' : '') + T.delta, bw = textW(s0, 20, F_T) + 22; rr(x + 14, y - 34, bw, 32, 16, T.delta >= 0 ? '#4f9a6a' : '#e2574c', OUT, 2.4); text(s0, x + 14 + bw / 2, y - 18, 20, '#ffffff', 'center', null, F_T); }
     return; }
-  const age = clock.now() - g.at, PQ = popIn(age), k = PQ.k, w = 470, bh1 = g.n ? 100 : 0, bh2 = T ? 120 : 0, h = 20 + bh1 + bh2 + 44, x = (W - w) / 2, S = bigWin(w, h), y = LY.top + 90 + (S - 1) * h / 2;
+  const age = clock.now() - g.at, PQ = popIn(age), k = PQ.k, w = 470, bh1 = g.n ? 100 : 0, bh2 = T ? 120 : 0, h = 20 + bh1 + bh2 + 20, x = (W - w) / 2, S = bigWin(w, h), y = LY.top + 90 + (S - 1) * h / 2;
   ctx.fillStyle = `rgba(59,51,64,${0.35 * PQ.a})`; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, closeGift); HX = { cx: W / 2, cy: y + h / 2, s: S }; btn(x, y, w, h, () => {});
   ctx.save(); ctx.translate(W / 2, y + h / 2); ctx.scale(k * S, k * S); ctx.translate(-W / 2, -(y + h / 2)); ctx.globalAlpha = PQ.a;
   rr(x, y + 6, w, h, 26, 'rgba(59,51,64,0.35)', null); rr(x, y, w, h, 26, '#fffaf0', OUT, 3);
@@ -3910,7 +3910,7 @@ function drawGift() { // on the results: the card first (tickets, the tier score
     drawTier(ti, x + 92, yy + 60, 38); text(up ? `${TIERS[ti].n} 승급!` : down ? '품계가 내려갔어요' : '티어 점수', x + 178, yy + 32, 26, up ? CORAL : down ? '#7f8fb5' : '#7a6872', 'left', null, F_T);
     const s1 = `${TIERS[ti].n} · ${T.rating.toLocaleString()}점 `, d1 = `${T.delta >= 0 ? '+' : ''}${T.delta}`; fitText(s1, x + 178, yy + 66, 24, col, 'left', F_T, w - 260); text(d1, x + 178 + Math.min(textW(s1, 24, F_T), w - 260) + 4, yy + 66, 24, T.delta >= 0 ? '#4f9a6a' : '#e2574c', 'left', null, F_N);
     fitText(tierNext(T), x + 178, yy + 96, MIN_TEXT, '#9a8b93', 'left', F_B, w - 198); yy += bh2; }
-  text(age >= 2 ? '바깥을 누르면 닫혀요' : ' ', W / 2, y + h - 24, MIN_TEXT, '#9a8b93', 'center', null, F_B); ctx.restore(); HX = null;
+  ctx.restore(); HX = null; if (age > 4) { matchGift.open = false; } // it closes by itself after four seconds, or at a tap outside it
 }
 async function logPlay() { // a line in the owner's play log for every finished match (supabase/6_plays.sql); players cannot read it back
   if (setup.practice || !m || !m.sc.done) return;
@@ -3997,11 +3997,16 @@ function royalBadge(x, y, r) {
   ctx.lineWidth = 1.6; for (const sd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(sd * 7, -8); ctx.bezierCurveTo(sd * 16, -12, sd * 18, -2, sd * 26, -5); ctx.strokeStyle = OUT; ctx.stroke(); ctx.lineWidth = 0.7; ctx.strokeStyle = GOLD; ctx.stroke(); ctx.lineWidth = 1.6; }
   ctx.restore(); ctx.restore();
 }
+function inkCentre(s, x, y, size, c, edge, font) { // a glyph's own ink (not its em box) centred on x, y: measured, so a numeral sits dead in the middle of a ring
+  ctx.font = font.startsWith('700') ? font.replace('1em', size + 'px') : `${size}px ${font}`; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  const mt = ctx.measureText(s), gx = x - (mt.actualBoundingBoxRight - mt.actualBoundingBoxLeft) / 2 + mt.actualBoundingBoxLeft, gy = y + (mt.actualBoundingBoxAscent - mt.actualBoundingBoxDescent) / 2;
+  if (edge) { ctx.lineWidth = Math.max(3, size / 6); ctx.strokeStyle = edge; ctx.lineJoin = 'round'; ctx.strokeText(s, gx, gy); } ctx.fillStyle = c; ctx.fillText(s, gx, gy);
+}
 function drawTier(i, x, y, r) { // a tier's mark: a numbered medal in the colour of its robes, a head for the commoners, sandals for the lowest, the dragon badge for the king
   const T = TIERS[i]; if (!T) return; if (T.k === 'king') { royalBadge(x, y, r * 1.1); return; }
   const [bg, rim] = T.c; ctx.save(); ctx.lineJoin = 'round'; E(x, y + Math.max(2, r * 0.09), r, r, 'rgba(59,51,64,0.25)', 0, true); ctx.lineWidth = Math.max(1.6, r * 0.07); ctx.strokeStyle = OUT; E(x, y, r, r, bg);
   ctx.lineWidth = Math.max(1.4, r * 0.08); ctx.strokeStyle = rim; ctx.beginPath(); ctx.arc(x, y, r * 0.84, 0, 7); ctx.stroke(); ctx.strokeStyle = OUT;
-  if (/^\d$/.test(T.k)) { if (r < 40) text(T.k, x, y + 1, r * 1.1, rim, 'center', OUT, F_N); else { text(T.k, x, y - r * 0.1, r * 0.95, rim, 'center', OUT, F_N); text('품', x, y + r * 0.5, Math.max(MIN_TEXT, r * 0.3), rim, 'center', null, F_T); } ctx.restore(); return; }
+  if (/^\d$/.test(T.k)) { if (r < 40) inkCentre(T.k, x, y, r * 1.1, rim, OUT, F_N); else { inkCentre(T.k, x, y - r * 0.14, r * 0.95, rim, OUT, F_N); text('품', x, y + r * 0.5, Math.max(MIN_TEXT, r * 0.3), rim, 'center', null, F_T); } ctx.restore(); return; }
   ctx.beginPath(); ctx.arc(x, y, r * 0.8, 0, 7); ctx.clip(); ctx.lineWidth = 2.4; ctx.strokeStyle = OUT;
   if (T.k === 'cheon') { ctx.translate(x, y + r * 0.08); ctx.scale(r / 36, r / 36); ctx.rotate(-0.3); shoeIcon(item('s18').look); }
   else { ctx.translate(x, y); ctx.scale(r / 38, r / 38); ctx.translate(0, 92); E(0, -70, 26, 24, '#f6dcc2'); E(-9, -70, 2.6, 3.2, INK, 0, true); E(9, -70, 2.6, 3.2, INK, 0, true); ctx.beginPath(); ctx.arc(0, -64, 6, 0.3, Math.PI - 0.3); ctx.stroke();
