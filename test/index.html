@@ -2168,7 +2168,7 @@ function practiceResult(call) { // what that shot did, in words, and whether it 
       else if (mk && Math.abs(mk.y) > CL) why = sh.kind === 'power' ? '길게 나갔어요 · 놓는 타이밍을 맞춰 보세요' : '길게 나갔어요';
       else why = sh.late > 0.45 ? '옆으로 나갔어요 · 늦게 치면 공이 바깥으로 끌려요' : '옆으로 나갔어요';
     }
-    r = { in: good, title: good ? '인!' : call === '폴트' ? '폴트' : call === '네트' ? '네트' : '아웃', how, why: good ? where : why, kind: sh.kind, perfect: sh.perfect, dir: sh.dir };
+    r = { in: good, title: good ? '인!' : call === '폴트' ? '폴트!' : call === '네트' ? '네트!' : '아웃!', how, why: good ? where : why, kind: sh.kind, perfect: sh.perfect, dir: sh.dir };
   }
   const L = LESSONS[P.li];
   if (r.in && L.ok(r)) { P.done++; r.count = true; }
