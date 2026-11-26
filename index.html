@@ -400,7 +400,7 @@ function drawHead(A, front, t) {
 }
 // ---- 1.9.5 hats: in the animal's own coordinates, the head's centre at 0, -70, its top near -96 ----
 let HAHOE_Y = 88; // how low the Hahoe mask hangs: its pivot, above the head's centre
-const NOW = () => (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000; // for the few things that turn
+let NOW_USED = false, LIVE = null; const NOW = () => { NOW_USED = true; return (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000; }; // for the few things that turn; NOW_USED tells a cached list which pictures move
 function glossBox(x, y, w, h, a = 0.4) { const g = ctx.createLinearGradient(x, y, x, y + h); g.addColorStop(0, `rgba(255,255,255,${a})`); g.addColorStop(1, 'rgba(0,0,0,0.12)'); ctx.fillStyle = g; ctx.fillRect(x, y, w, h); }
 function knotTails(x, y, c, s = 1) { poly([x, y, x + s * 12, y + 6, x + s * 8, y + 12], c); poly([x, y, x + s * 10, y - 6, x + s * 13, y], c); E(x + s * 1, y, 4, 4, c); }
 function hat2(L, front) {
@@ -3445,12 +3445,14 @@ function scrollView(S, v0, v1, key, height, draw, fade = '162,227,200') { // fad
     const c = S.cache && S.r === r && S.cache.height >= Math.ceil(height * r) ? S.cache : document.createElement('canvas');
     c.width = Math.ceil(W * r); c.height = Math.ceil(height * r);
     const keep = [ctx, hot, OY, mouse]; ctx = c.getContext('2d'); ctx.setTransform(r, 0, 0, r, 0, 0); hot = []; OY = 0; mouse = { x: -1, y: -1 };
-    try { S.h = draw(); } finally { S.rects = hot; [ctx, hot, OY, mouse] = keep; }
+    S.live = []; LIVE = S.live; try { S.h = draw(); } finally { S.rects = hot; [ctx, hot, OY, mouse] = keep; LIVE = null; }
     S.cache = c; S.key = key; S.r = r;
   }
   S.max = Math.max(0, S.h - (v1 - v0)); S.scroll = clamp(S.scroll, 0, S.max);
   const eff = S.scroll + S.over, top = Math.max(0, Math.round(eff * r)), dy = Math.round((v0 + Math.max(0, -eff)) * r) / r, rows = Math.min(S.cache.height - top, Math.round((v1 - dy) * r)); // pulled past the top it comes down, past the end it goes up
   if (rows > 0) ctx.drawImage(S.cache, 0, top, S.cache.width, rows, 0, dy, W, rows / r);
+  if (S.live && S.live.length) for (const L of S.live) { const sy = L.y + v0 - eff; if (sy + L.chh < v0 || sy > v1) continue; // the moving pictures, live over the cached list
+    ctx.save(); ctx.beginPath(); ctx.rect(0, v0, W, v1 - v0); ctx.clip(); ctx.beginPath(); ctx.rect(L.x + 4, sy + 4, L.cw - 8, L.chh - 56); ctx.clip(); ctx.fillStyle = L.bg; ctx.fillRect(L.x + 4, sy + 4, L.cw - 8, L.chh - 56); itemIcon(L.id, L.x + L.cw / 2, sy + 4 + (L.chh - 60) / 2, Math.min(70, L.chh - 66)); ctx.restore(); }
   pullMark(S, v0);
   for (const h of S.rects) { const a = Math.max(h.y - eff + v0, v0), b = Math.min(h.y + h.h - eff + v0, v1); if (b > a) { const [mx, my, mw, mh] = hxMap(h.x, a, h.w, b - a); hot.push({ x: mx, y: my, w: mw, h: mh, fn: h.fn }); } }
   if (HX) { const q = hxMap(0, v0, 1, v1 - v0); S.v0 = q[1]; S.v1 = q[1] + q[3]; } // a scaled window: the drag band where it shows
@@ -3494,7 +3496,7 @@ function miniFace(a, cx, cy, r = 13) { // an animal's face in a little white cir
 function itemCard(id, x, yy, cw, chh, sid, gear, plain) { // an item's card, as the closet's lists show it (and its first page, the worn ones): the picture, the name, what it adds; worn here, who else wears it, how many
   const it = item(id), have = acct.inv[id] || 0, on = gear[sid] === id, others = wearers(id).filter(k => k !== closet.animal), free = have - others.length - (on ? 1 : 0);
     rr(x, yy, cw, chh, 16, have ? (on ? '#fff3c4' : closet.sel === id ? '#fffdf3' : '#ffffff') : '#e9e1d8', have ? GRADE[it.grade].c : closet.sel === id ? '#7a6872' : '#c9bdb2', on ? 5 : have ? 3.4 : 2.4);
-    if (have) { ctx.save(); ctx.beginPath(); ctx.rect(x + 4, yy + 4, cw - 8, chh - 56); ctx.clip(); itemIcon(id, x + cw / 2, yy + 4 + (chh - 60) / 2, Math.min(70, chh - 66)); ctx.restore();
+    if (have) { ctx.save(); ctx.beginPath(); ctx.rect(x + 4, yy + 4, cw - 8, chh - 56); ctx.clip(); NOW_USED = false; itemIcon(id, x + cw / 2, yy + 4 + (chh - 60) / 2, Math.min(70, chh - 66)); ctx.restore(); if (NOW_USED && LIVE) LIVE.push({ id, x, y: yy, cw, chh, bg: on ? '#fff3c4' : closet.sel === id ? '#fffdf3' : '#ffffff' }); // a moving picture: the list draws it again each frame over its cached copy
       text(it.name, x + cw / 2, yy + chh - 42, 17, INK, 'center', null, F_T); text(`${STAT_NAME[it.stat]} +${it.amt}`, x + cw / 2, yy + chh - 18, MIN_TEXT, GRADE[it.grade].c, 'center', null, F_T);
       const worn = others.length + (on ? 1 : 0), all = !on && others.length && free <= 0;
       if (all) rr(x, yy, cw, chh, 16, 'rgba(255,255,255,0.5)', null); // every copy is on another animal: faded, still a tap takes one back
@@ -3923,8 +3925,8 @@ function statBars(a, x, y, bonus = {}, step = 30) {
     for (let k = 0; k < BAR.n; k++) { const cx = x + BAR.lab + k * BAR.step, spare = k >= 5, fill = Math.max(0, Math.min(1, v + add - k));
       if (spare) { ctx.setLineDash([3, 3]); rr(cx, yy - 9, BAR.cell, 18, 5, 'rgba(234,223,210,0.45)', '#b9aaa0', 1.6); ctx.setLineDash([]); }
       else rr(cx, yy - 9, BAR.cell, 18, 5, k < v ? STAT_COL[i] : '#eadfd2', OUT, 2.2);
-      if (k >= v && fill > 0) { // what the gear adds, in the stat's own colour made lighter, breathing slowly (2.4 s): a straight fill clipped to the cell, then the cell's outline over it
-        ctx.save(); rr(cx, yy - 9, BAR.cell, 18, 5, null, null); ctx.clip(); ctx.fillStyle = mixHex(STAT_COL[i], '#ffffff', 0.4); ctx.fillRect(cx, yy - 9, BAR.cell * fill, 18); if (!CALM) { ctx.fillStyle = `rgba(255,255,255,${0.42 * (0.5 - 0.5 * Math.cos(clock.now() * Math.PI * 2 / 2.4))})`; ctx.fillRect(cx, yy - 9, BAR.cell * fill, 18); } ctx.restore();
+      if (k >= v && fill > 0) { // what the gear adds, in the stat's own colour, told apart by its breathing (1.5 s): a straight fill clipped to the cell, then the cell's outline over it
+        ctx.save(); rr(cx, yy - 9, BAR.cell, 18, 5, null, null); ctx.clip(); ctx.fillStyle = STAT_COL[i]; ctx.fillRect(cx, yy - 9, BAR.cell * fill, 18); if (!CALM) { ctx.fillStyle = `rgba(255,255,255,${0.5 * (0.5 - 0.5 * Math.cos(clock.now() * Math.PI * 2 / 1.5))})`; ctx.fillRect(cx, yy - 9, BAR.cell * fill, 18); } ctx.restore();
         if (spare) { ctx.setLineDash([3, 3]); rr(cx, yy - 9, BAR.cell, 18, 5, null, '#b9aaa0', 1.6); ctx.setLineDash([]); } else rr(cx, yy - 9, BAR.cell, 18, 5, null, OUT, 2.2); } }
     text(STAT_DO[i], x + BAR.lab + BAR.step * BAR.n + BAR.gap, yy, 17, '#7a6872', 'left', null, F_B);
   });
@@ -4002,7 +4004,7 @@ function drawGift() { // on the results: the card first (tickets, the tier score
   if (g.n) { ticketPic(x + 62, yy + 50, 1.25, -0.15); text('경기 보상!', x + 122, yy + 30, 26, CORAL, 'left', null, F_T); fitText(`뽑기권 ${g.n}장을 받았어요`, x + 122, yy + 66, 20, INK, 'left', F_T, w - 140); yy += bh1; }
   if (T) { if (g.n) { ctx.fillStyle = '#e6dccd'; ctx.fillRect(x + 24, yy, w - 48, 2); }
     const up = ti > g.before, down = ti < g.before, col = TIERS[ti].c[1] === '#f6c445' ? '#c0392b' : TIERS[ti].c[1];
-    drawTier(ti, x + 62, yy + 60, 32); text(up ? `${TIERS[ti].n} 승급!` : down ? '품계가 내려갔어요' : '티어 점수', x + 122, yy + 32, 24, up ? CORAL : down ? '#7f8fb5' : '#7a6872', 'left', null, F_T);
+    drawTier(ti, x + 62, yy + 60, 32); text(up ? `${TIERS[ti].n} 승급!` : down ? '티어가 내려갔어요' : '티어 점수', x + 122, yy + 32, 24, up ? CORAL : down ? '#7f8fb5' : '#7a6872', 'left', null, F_T);
     const s1 = `${TIERS[ti].n} · ${T.rating.toLocaleString()}점 `, d1 = `${T.delta >= 0 ? '+' : ''}${T.delta}`; fitText(s1, x + 122, yy + 64, 20, col, 'left', F_T, w - 190); text(d1, x + 122 + Math.min(textW(s1, 20, F_T), w - 190) + 4, yy + 64, 20, T.delta >= 0 ? '#4f9a6a' : '#e2574c', 'left', null, F_N);
     fitText(tierNext(T), x + 122, yy + 94, MIN_TEXT, '#9a8b93', 'left', F_B, w - 140); yy += bh2; }
   ctx.restore(); HX = null; if (age > 4) { matchGift.open = false; } // it closes by itself after four seconds, or at a tap outside it
@@ -4035,8 +4037,8 @@ function drawTierGuide() { // every tier at a glance, highest first, in three gr
   ctx.fillStyle = `rgba(59,51,64,${0.55 * PQ.a})`; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, () => { tierGuide.open = false; }); HX = { cx: W / 2, cy: H / 2, s: S }; btn(x, y, w, h, () => {});
   ctx.save(); ctx.translate(W / 2, y + h / 2); ctx.scale(k, k); ctx.translate(-W / 2, -(y + h / 2)); ctx.globalAlpha = PQ.a;
   rr(x, y + 6, w, h, 24, 'rgba(59,51,64,0.35)', null); rr(x, y, w, h, 24, '#fffaf0', OUT, 3);
-  let yy = y + 20; text('조선 품계', W / 2, yy + 15, 24, INK, 'center', null, F_T); yy += 30 + 8;
-  text('이기면 실력 점수가 오르고 지면 내려가요', W / 2, yy + 12, MIN_TEXT, '#7a6872', 'center', null, F_B); text(acct.user ? '품계는 점수와 출석한 날, 맨 위는 순위로 정해져요' : '로그인하면 경기마다 점수가 쌓여요', W / 2, yy + 36, MIN_TEXT, '#7a6872', 'center', null, F_B); yy += 48 + 14;
+  let yy = y + 20; text('티어 · 조선 품계', W / 2, yy + 15, 24, INK, 'center', null, F_T); yy += 30 + 8;
+  text('이기면 실력 점수가 오르고 지면 내려가요', W / 2, yy + 12, MIN_TEXT, '#7a6872', 'center', null, F_B); text(acct.user ? '티어는 점수와 출석한 날, 맨 위는 순위로 정해져요' : '로그인하면 경기마다 점수가 쌓여요', W / 2, yy + 36, MIN_TEXT, '#7a6872', 'center', null, F_B); yy += 48 + 14;
   G.forEach(([title, list], gi) => { if (gi) yy += 10; text(title, L0, yy + 13, 19, INK, 'left', null, F_T); yy += 26; ctx.fillStyle = '#e6dccd'; ctx.fillRect(L0, yy + 3, R0 - L0, 1.5); yy += 6;
     list.forEach(i => { const T = TIERS[i], cy = yy + rh / 2, mine = i === mi; if (mine) rr(L0 - 8, yy + 2, R0 - L0 + 16, rh - 4, 10, '#fff3c4', '#e3a46a', 2);
       drawTier(i, L0 + 16, cy, 13); text(T.n, L0 + 40, cy, 20, T.c[1] === '#f6c445' ? '#c0392b' : T.c[1], 'left', null, F_T); if (mine) text('나', L0 + 40 + textW(T.n, 20, F_T) + 12, cy, MIN_TEXT, CORAL, 'left', null, F_T);
@@ -4378,7 +4380,7 @@ const scenes = {
       const L = tierBoard.list, mid = py + ph / 2, nick = realNick(), me = myTier();
       if (tierBoard.loading && !L) text('불러오는 중…', W / 2, mid, 30, '#7a6872', 'center', null, F_H);
       else if (tierBoard.err && !(L && L.length)) text(tierBoard.err, W / 2, mid, 22, '#e2574c', 'center', null, F_B);
-      else if (!L || !L.length) { text('아직 아무도 없어요', W / 2, mid - 22, 32, INK, 'center', null, F_T); text('경기를 하면 첫 번째 품계를 받아요!', W / 2, mid + 24, 26, '#c0605a', 'center', null, F_H); }
+      else if (!L || !L.length) { text('아직 아무도 없어요', W / 2, mid - 22, 32, INK, 'center', null, F_T); text('경기를 하면 첫 티어를 받아요!', W / 2, mid + 24, 26, '#c0605a', 'center', null, F_H); }
       else { // every member, a scrolling list; my own line stays pinned under it
         const mi = nick ? L.findIndex(r => r.nick === nick) : -1, pin = nick && me && me.games > 0, rh = 66, x0 = LY.m + LY.pad, hy = py + 32;
         text('순위', x0 + 28, hy, 19, '#7a6872', 'center', null, F_B); text('선수', x0 + 70, hy, 19, '#7a6872', 'left', null, F_B); text('점수', LY.m + LY.w - LY.pad, hy, 19, '#7a6872', 'right', null, F_B);
