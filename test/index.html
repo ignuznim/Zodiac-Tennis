@@ -3454,7 +3454,7 @@ function scrollView(S, v0, v1, key, height, draw, fade = '162,227,200') { // fad
   const eff = S.scroll + S.over, top = Math.max(0, Math.round(eff * r)), dy = Math.round((v0 + Math.max(0, -eff)) * r) / r, rows = Math.min(S.cache.height - top, Math.round((v1 - dy) * r)); // pulled past the top it comes down, past the end it goes up
   if (rows > 0) ctx.drawImage(S.cache, 0, top, S.cache.width, rows, 0, dy, W, rows / r);
   if (S.live && S.live.length) for (const L of S.live) { const sy = L.y + v0 - eff; if (sy + L.chh < v0 || sy > v1) continue; // the moving pictures, live over the cached list
-    ctx.save(); ctx.beginPath(); ctx.rect(0, v0, W, v1 - v0); ctx.clip(); ctx.beginPath(); ctx.rect(L.x + 4, sy + 4, L.cw - 8, L.chh - 56); ctx.clip(); ctx.fillStyle = L.bg; ctx.fillRect(L.x + 4, sy + 4, L.cw - 8, L.chh - 56); itemIcon(L.id, L.x + L.cw / 2, sy + 4 + (L.chh - 60) / 2, Math.min(70, L.chh - 66)); ctx.restore(); }
+    const e = L.lw / 2 + 0.6; ctx.save(); ctx.beginPath(); ctx.rect(0, v0, W, v1 - v0); ctx.clip(); ctx.beginPath(); ctx.roundRect(L.x + e, sy + e, L.cw - 2 * e, L.chh - 2 * e, 16 - e); ctx.clip(); ctx.beginPath(); ctx.rect(L.x + 4, sy + 4, L.cw - 8, L.chh - 56); ctx.clip(); ctx.fillStyle = L.bg; ctx.fillRect(L.x + 4, sy + 4, L.cw - 8, L.chh - 56); itemIcon(L.id, L.x + L.cw / 2, sy + 4 + (L.chh - 60) / 2, Math.min(70, L.chh - 66)); ctx.restore(); }
   pullMark(S, v0);
   for (const h of S.rects) { const a = Math.max(h.y - eff + v0, v0), b = Math.min(h.y + h.h - eff + v0, v1); if (b > a) { const [mx, my, mw, mh] = hxMap(h.x, a, h.w, b - a); hot.push({ x: mx, y: my, w: mw, h: mh, fn: h.fn }); } }
   if (HX) { const q = hxMap(0, v0, 1, v1 - v0); S.v0 = q[1]; S.v1 = q[1] + q[3]; } // a scaled window: the drag band where it shows
@@ -3498,7 +3498,7 @@ function miniFace(a, cx, cy, r = 13) { // an animal's face in a little white cir
 function itemCard(id, x, yy, cw, chh, sid, gear, plain) { // an item's card, as the closet's lists show it (and its first page, the worn ones): the picture, the name, what it adds; worn here, who else wears it, how many
   const it = item(id), have = acct.inv[id] || 0, on = gear[sid] === id, others = wearers(id).filter(k => k !== closet.animal), free = have - others.length - (on ? 1 : 0);
     rr(x, yy, cw, chh, 16, have ? (on ? '#fff3c4' : closet.sel === id ? '#fffdf3' : '#ffffff') : '#e9e1d8', have ? GRADE[it.grade].c : closet.sel === id ? '#7a6872' : '#c9bdb2', on ? 5 : have ? 3.4 : 2.4);
-    if (have) { ctx.save(); ctx.beginPath(); ctx.rect(x + 4, yy + 4, cw - 8, chh - 56); ctx.clip(); NOW_USED = false; itemIcon(id, x + cw / 2, yy + 4 + (chh - 60) / 2, Math.min(70, chh - 66)); ctx.restore(); if (NOW_USED && LIVE) LIVE.push({ id, x, y: yy, cw, chh, bg: on ? '#fff3c4' : closet.sel === id ? '#fffdf3' : '#ffffff' }); // a moving picture: the list draws it again each frame over its cached copy
+    if (have) { ctx.save(); ctx.beginPath(); ctx.rect(x + 4, yy + 4, cw - 8, chh - 56); ctx.clip(); NOW_USED = false; itemIcon(id, x + cw / 2, yy + 4 + (chh - 60) / 2, Math.min(70, chh - 66)); ctx.restore(); if (NOW_USED && LIVE) LIVE.push({ id, x, y: yy, cw, chh, lw: on ? 5 : 3.4, bg: on ? '#fff3c4' : closet.sel === id ? '#fffdf3' : '#ffffff' }); // a moving picture: the list draws it again each frame over its cached copy
       text(it.name, x + cw / 2, yy + chh - 42, 17, INK, 'center', null, F_T); text(`${STAT_NAME[it.stat]} +${it.amt}`, x + cw / 2, yy + chh - 18, MIN_TEXT, GRADE[it.grade].c, 'center', null, F_T);
       const worn = others.length + (on ? 1 : 0), all = !on && others.length && free <= 0;
       if (all) rr(x, yy, cw, chh, 16, 'rgba(255,255,255,0.5)', null); // every copy is on another animal: faded, still a tap takes one back
@@ -3534,7 +3534,7 @@ function drawClosetList(gear, eh, chh, coll, worn = !coll) { // the closet's who
     text(ko, LY.m, y + 18, 24, INK, 'left', null, F_T); text(`${got} / ${ids.length}`, LY.m + LY.w, y + 18, 19, '#7a6872', 'right', null, F_N); y += 40;
     ids.forEach((id, n) => { const it = item(id), have = acct.inv[id] || 0, on = gear[sid] === id, x = LY.m + (n % 4) * (cw + 12), yy = y + Math.floor(n / 4) * (chh + 12);
       const others = wearers(id).filter(k => k !== closet.animal), free = have - others.length - (on ? 1 : 0);
-      btn(x, yy, cw, chh, () => { closet.sel = id; if (!have) toast('뽑기 기계에서 얻을 수 있어요'); else if (coll) toast(others.length ? `${others.map(k => ANIMALS[k].ko).join(', ')} 착용 중 · 선수 선택에서 바꿔요` : '선수 선택 화면의 옷걸이에서 입혀요'); else equip(sid, on ? null : id); });
+      btn(x, yy, cw, chh, () => { closet.sel = id; if (!have) toast('뽑기 기계에서 얻을 수 있어요'); else if (coll) toast(others.length ? `${others.map(k => ANIMALS[k].ko).join(', ')} 착용 중 · 선수 선택에서 바꿔요` : '선수 선택 화면의 옷장에서 입혀요'); else equip(sid, on ? null : id); });
       itemCard(id, x, yy, cw, chh, sid, gear);
     });
     y += Math.ceil(ids.length / 4) * (chh + 12) + 14;
@@ -4497,7 +4497,7 @@ const scenes = {
       sideBtn('뒤로', () => { acct.g.phase = 'idle'; scene = 'title'; });
       if (acct.prof && acct.wtab === 'gacha' && acct.g.phase === 'idle') { const kx = LY.m + LY.btnH + 12; iconKey(kx, LY.bot, LY.btnH, 'hanger', () => openCloset('wardrobe', null)); barL = kx + LY.btnH; } // 내 아이템: a key like the back key, beside it
       if (acct.prof && acct.wtab === 'gacha') { if (acct.g.phase === 'idle') pullBtn(); else mainBtn(acct.g.phase === 'reveal' ? '확인' : '뽑는 중…', () => { if (acct.g.phase === 'reveal') acct.g.phase = 'idle'; }); }
-      menuEnd('', acct.wtab === 'gacha' ? `나올 확률: 일반 ${ODDS[0]}% · 희귀 ${ODDS[1]}% · 영웅 ${ODDS[2]}% · 전설 ${ODDS[3]}%\n뽑기권은 경기를 마치거나 업적을 달성하면 받아요` : '아이템은 선수 선택 화면의 옷걸이에서 입혀요\n모든 경기(랭킹 포함)에 적용돼요');
+      menuEnd('', acct.wtab === 'gacha' ? `나올 확률: 일반 ${ODDS[0]}% · 희귀 ${ODDS[1]}% · 영웅 ${ODDS[2]}% · 전설 ${ODDS[3]}%\n뽑기권은 경기를 마치거나 업적을 달성하면 받아요` : '아이템은 선수 선택 화면의 옷장에서 입혀요\n모든 경기(랭킹 포함)에 적용돼요');
     },
   },
   closet: {
@@ -4514,7 +4514,7 @@ const scenes = {
       scrollView(SCR.closet, LY.top, contentEnd(), key, height, () => drawClosetList(gear, eh, chh, coll));
       const sel = item(closet.sel);
       sideBtn('뒤로', () => { scene = closetBack; });
-      menuEnd(sel ? `${acct.inv[sel.id] ? sel.name : '???'} · ${GRADE[sel.grade].ko} · ${STAT_NAME[sel.stat]} +${sel.amt}` : '', coll ? '입히기는 선수 선택 화면의 옷걸이에서 해요' : '같은 아이템은 가진 개수만큼 여러 선수가 입을 수 있어요');
+      menuEnd(sel ? `${acct.inv[sel.id] ? sel.name : '???'} · ${GRADE[sel.grade].ko} · ${STAT_NAME[sel.stat]} +${sel.amt}` : '', coll ? '입히기는 선수 선택 화면의 옷장에서 해요' : '같은 아이템은 가진 개수만큼 여러 선수가 입을 수 있어요');
     },
   },
   select: {
@@ -4559,7 +4559,7 @@ const scenes = {
       if (net) { const me = !!net.myPick, R = net.ready || { n: 0, need: 2 }, team = net.kind === 'single' ? '' : (net.role === 'host' ? 0 : net.seat) % 2 === 0 ? 'A팀 · ' : 'B팀 · ';
         rr(LY.m, LY.bot - 50, LY.w, 40, 20, 'rgba(59,51,64,0.85)', null);
         text(`${KINDS[net.kind] ? KINDS[net.kind].ko + ' · ' : ''}${FORMATS[setup.format].ko} · ${COURTS[setup.court].ko}  |  ${team}나 ${me ? '준비 완료' : '고르는 중'} · 준비 ${R.n}/${R.need}`, W / 2, LY.bot - 30, 18, CREAM, 'center', null, F_B); }
-      menuEnd(net ? '' : KB('← → ↑ ↓ 로 고르고 Enter'), net ? (net.myPick ? '모두 고르면 시작해요\n다른 선수를 눌러 바꿀 수 있어요' : '선수를 고르고 결정을 눌러요') : '고른 선수를 한 번 더 누르면 결정돼요\n옷걸이를 누르면 옷장이 열려요\n입힌 아이템은 이 선수에게만 적용돼요');
+      menuEnd(net ? '' : KB('← → ↑ ↓ 로 고르고 Enter'), net ? (net.myPick ? '모두 고르면 시작해요\n다른 선수를 눌러 바꿀 수 있어요' : '선수를 고르고 결정을 눌러요') : '고른 선수를 한 번 더 누르면 결정돼요\n옷장 버튼으로 아이템을 입혀요\n입힌 아이템은 이 선수에게만 적용돼요');
     },
   },
   mode: {
