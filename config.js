@@ -19,7 +19,7 @@ window.CONFIG = {
   net_height: { value: 0.95, min: 0.7, max: 1.2, step: 0.05 },
   bounce: { value: 0.72, min: 0.4, max: 0.9, step: 0.02 },   // height kept on a bounce
   bounce_pace: { value: 0.6, min: 0.3, max: 0.9, step: 0.02 },      // pace kept on a bounce
-  bounce_kick_spin: { value: 0.06, min: 0, max: 0.15, step: 0.01 }, // a bounce this much higher per spin point above 3 (a slice this much lower)
+  bounce_kick_spin: { value: 0.03, min: 0, max: 0.15, step: 0.01 }, // a bounce this much higher per spin point above 3 (a slice this much lower)
   bounce_pace_spin: { value: 0.045, min: 0, max: 0.1, step: 0.005 }, // more pace kept per spin point
   drop_bounce: { value: 0.46, min: 0.2, max: 0.7, step: 0.02 },     // a drop shot's bounce height
   drop_pace: { value: 0.36, min: 0.1, max: 0.6, step: 0.02 },       // a drop shot's pace after the bounce
