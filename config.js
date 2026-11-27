@@ -96,7 +96,7 @@ window.CONFIG = {
   tired_at: { value: 0.3, min: 0.1, max: 0.6, step: 0.05 },   // 지친 상태 starts below this share of a player's stamina
   tired_charge: { value: 0.5, min: 0, max: 0.9, step: 0.05 }, // share of a power shot's gathering lost at zero stamina
   tired_timing: { value: 0.4, min: 0, max: 0.8, step: 0.05 }, // share of the '딱!' window lost at zero stamina
-  stam_smash: { value: 0.8, min: 0, max: 5, step: 0.1 },     // stamina a smash costs (a short swing)
+  stam_smash: { value: 2.4, min: 0, max: 5, step: 0.1 },     // stamina a smash costs: a little more than a stroke (1.9), far less than it was (3.6)
 
   // ---- The computer, three levels: 1 easy, 2 normal, 3 hard ----
   ai1_react: { value: 0.46, min: 0, max: 0.8, step: 0.02 },  // s before it starts to move
