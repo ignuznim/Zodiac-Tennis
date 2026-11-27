@@ -1494,11 +1494,11 @@ function award(w) { // real tennis: points, games (two clear, or one deciding po
       const gs = R.matchTb ? tbp : sc.games.slice(); sc.sets.push(gs); sc.won[w]++; sc.games = [0, 0]; m.stats.setPts = [0, 0]; sc.tb = false;
       serveTo(wasTb ? 1 - sc.tbFirst : 1 - sc.server);
       if (sc.won[w] >= R.sets) { sc.done = true; sc.winner = w; return { s: `경기 종료 · ${NAME(w)} 승리`, big: 2 }; }
-      return { s: `세트 ${NAME(w)} · ${gs[0]}–${gs[1]}`, big: 1 };
+      return { s: `세트 ${NAME(w)} · ${gs[0]}–${gs[1]}`, big: 1, game: 1 };
     }
     serveTo(1 - sc.server);
-    if (sc.games[0] === g && sc.games[1] === g) { sc.tb = true; sc.tbFirst = sc.server; return { s: '타이브레이크', big: 1 }; }
-    return { s: `게임 ${NAME(w)}`, big: 0 };
+    if (sc.games[0] === g && sc.games[1] === g) { sc.tb = true; sc.tbFirst = sc.server; return { s: '타이브레이크', big: 1, game: 1 }; }
+    return { s: `게임 ${NAME(w)}`, big: 0, game: 1 };
   }
   if (sc.tb) { const n = sc.pts[0] + sc.pts[1], ns = (sc.tbFirst + Math.floor((n + 1) / 2)) % 2; if (ns !== sc.server) serveTo(ns); }
   return { s: ptsText(), big: 0 };
@@ -1511,7 +1511,7 @@ function endPoint(w, call) {
   const ev = award(w);
   m.banner = { text: call, sub: ev.s, t: 0, big: ev.big };
   m.pause = tune.point_pause + (ev.big ? 1.3 : 0);
-  for (const p of m.P) { p.sw = null; p.stam = Math.min(p.max, p.stam + tune.stam_point + (ev.big ? tune.stam_set : 0)); setAnim(p, p.team === w ? 'cheer' : 'sad'); }
+  for (const p of m.P) { p.sw = null; p.stam = Math.min(p.max, p.stam + tune.stam_point + (ev.big ? tune.stam_set : 0) + (ev.game && m.format === 'regular' ? tune.stam_game : 0)); setAnim(p, p.team === w ? 'cheer' : 'sad'); } // 정규전: a breather at every change of games too
   fx('point', w, ev.big); events.push({ t: m.t, point: w, call });
 }
 function fault(call) {
@@ -1763,7 +1763,7 @@ function updatePlayer(p, inp, dt) {
   if (serving) { const sg = -m.boxX; p.x = sg * clamp(sg * p.x, 0.25, courtW()); } // never past the centre mark or the singles sideline
   const sp = Math.hypot(p.vx, p.vy);
   if (m.phase === 'rally') { const u = sp / vfull; p.stam -= (u <= tune.sprint_at ? tune.jog_cost * u / tune.sprint_at : tune.jog_cost + (1 - tune.jog_cost) * (u - tune.sprint_at) / (1 - tune.sprint_at)) * (p.ctrl === 'ai' ? tune.stam_run : tune.stam_run_user) * dt; } // a jog costs little, a sprint (past 70% of top speed) a lot; players run less dearly than the computer
-  if (sp < 0.4) p.stam += tune.stam_rest * dt;
+  if (sp < 0.4) p.stam += tune.stam_rest * dt; else if (m.phase === 'rally') p.stam += tune.stam_breathe * dt; // on the move a player still gets a little breath back
   p.at += dt;
   if (p.anim === 'idle' && sp > 1) p.anim = 'run'; else if (p.anim === 'run' && sp <= 1) p.anim = 'idle';
   if ((p.anim === 'hit' || p.anim === 'volley' || p.anim === 'drop' || p.anim === 'lob' || p.anim === 'smash') && p.at > 0.34) setAnim(p, 'idle');
@@ -3450,8 +3450,8 @@ function scrollView(S, v0, v1, key, height, draw, fade = '162,227,200') { // fad
   if (!S.cache || S.key !== key || S.r !== r) {
     const c = S.cache && S.r === r && S.cache.height >= Math.ceil(height * r) ? S.cache : document.createElement('canvas');
     c.width = Math.ceil(W * r); c.height = Math.ceil(height * r);
-    const keep = [ctx, hot, OY, mouse]; ctx = c.getContext('2d'); ctx.setTransform(r, 0, 0, r, 0, 0); hot = []; OY = 0; mouse = { x: -1, y: -1 };
-    S.live = []; LIVE = S.live; try { S.h = draw(); } finally { S.rects = hot; [ctx, hot, OY, mouse] = keep; LIVE = null; }
+    const keep = [ctx, hot, OY, mouse, HX]; ctx = c.getContext('2d'); ctx.setTransform(r, 0, 0, r, 0, 0); hot = []; OY = 0; mouse = { x: -1, y: -1 }; HX = null; // the list's own keys, in its own units: a scaled window maps them once, below, where they are copied out
+    S.live = []; LIVE = S.live; try { S.h = draw(); } finally { S.rects = hot; [ctx, hot, OY, mouse, HX] = keep; LIVE = null; }
     S.cache = c; S.key = key; S.r = r;
   }
   S.max = Math.max(0, S.h - (v1 - v0)); S.scroll = clamp(S.scroll, 0, S.max);
