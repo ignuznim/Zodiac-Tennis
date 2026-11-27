@@ -19,6 +19,7 @@ window.CONFIG = {
   net_height: { value: 0.95, min: 0.7, max: 1.2, step: 0.05 },
   bounce: { value: 0.72, min: 0.4, max: 0.9, step: 0.02 },   // height kept on a bounce
   bounce_pace: { value: 0.6, min: 0.3, max: 0.9, step: 0.02 },      // pace kept on a bounce
+  bounce_kick_spin: { value: 0.06, min: 0, max: 0.15, step: 0.01 }, // a bounce this much higher per spin point above 3 (a slice this much lower)
   bounce_pace_spin: { value: 0.045, min: 0, max: 0.1, step: 0.005 }, // more pace kept per spin point
   drop_bounce: { value: 0.46, min: 0.2, max: 0.7, step: 0.02 },     // a drop shot's bounce height
   drop_pace: { value: 0.36, min: 0.1, max: 0.6, step: 0.02 },       // a drop shot's pace after the bounce
@@ -40,8 +41,8 @@ window.CONFIG = {
   err_serve: { value: 0.6, min: 0.2, max: 1.5, step: 0.02 }, // metres of scatter on a first serve
   err_spin: { value: 0.1, min: 0, max: 0.2, step: 0.01 },    // scatter removed per spin point
   err_power: { value: 1.3, min: 1, max: 2, step: 0.05 },     // scatter factor of a power shot
-  fatigue_err: { value: 0.8, min: 0, max: 2, step: 0.1 },    // extra scatter when out of stamina
-  fatigue_pace: { value: 0.15, min: 0, max: 0.4, step: 0.01 },// shot speed lost when out of stamina
+  fatigue_err: { value: 1.6, min: 0, max: 2, step: 0.1 },    // extra scatter when out of stamina
+  fatigue_pace: { value: 0.2, min: 0, max: 0.4, step: 0.01 },// shot speed lost when out of stamina
 
   // ---- The three courts: a factor on the bounce height and on the pace kept ----
   hard_bounce: { value: 1, min: 0.7, max: 1.3, step: 0.02 }, hard_pace: { value: 1, min: 0.7, max: 1.3, step: 0.02 },
@@ -54,6 +55,7 @@ window.CONFIG = {
   slice_pace: { value: 0.74, min: 0.4, max: 0.95, step: 0.02 },  // and skids on
   backhand_pace: { value: 0.94, min: 0.7, max: 1, step: 0.01 },  // a backhand's speed against a forehand's
   smash_min_z: { value: 1.7, min: 1.2, max: 2.4, step: 0.05 },   // metres: a ball this high can be smashed
+  smash_auto_z: { value: 2.3, min: 1.6, max: 3, step: 0.05 },   // metres: at the net, the stroke key volleys anything lower and smashes only above this
   wild_err: { value: 2.2, min: 1, max: 4, step: 0.1 },           // scatter of a smash swung at a low ball
   serve_fault_q: { value: 0.4, min: 0.1, max: 0.8, step: 0.02 }, // first serve: timing under this is a fault
   serve_fault_q2: { value: 0.2, min: 0, max: 0.6, step: 0.02 },  // second serve: a wider window
@@ -84,13 +86,17 @@ window.CONFIG = {
   charge_slow: { value: 0.45, min: 0.2, max: 1, step: 0.05 },// run speed kept while charging
   stam_base: { value: 55, min: 30, max: 100, step: 5 },      // stamina at stamina 0
   stam_per: { value: 15, min: 5, max: 30, step: 1 },         // stamina more per stamina point
-  stam_run: { value: 2.6, min: 0, max: 6, step: 0.1 },       // stamina a second of sprinting costs
-  stam_shot: { value: 1.6, min: 0, max: 5, step: 0.1 },      // stamina a shot costs
-  stam_power: { value: 7, min: 0, max: 15, step: 0.5 },      // stamina a full power shot costs
-  stam_rest: { value: 1.2, min: 0, max: 5, step: 0.1 },      // stamina a second of standing gives back
-  stam_point: { value: 5, min: 0, max: 20, step: 1 },        // stamina back between points
+  stam_run: { value: 3.0, min: 0, max: 6, step: 0.1 },       // stamina a second of sprinting costs
+  stam_shot: { value: 1.9, min: 0, max: 5, step: 0.1 },      // stamina a shot costs
+  stam_power: { value: 9, min: 0, max: 15, step: 0.5 },      // stamina a full power shot costs
+  stam_rest: { value: 1.1, min: 0, max: 5, step: 0.1 },      // stamina a second of standing gives back
+  stam_point: { value: 4, min: 0, max: 20, step: 1 },        // stamina back between points
   stam_set: { value: 22, min: 0, max: 60, step: 2 },         // stamina back between sets
-  tired_run: { value: 0.3, min: 0, max: 0.6, step: 0.02 },   // run speed lost at zero stamina
+  tired_run: { value: 0.3, min: 0, max: 0.6, step: 0.02 },   // run speed lost at zero stamina (지친 상태 only: below tired_at)
+  tired_at: { value: 0.3, min: 0.1, max: 0.6, step: 0.05 },   // 지친 상태 starts below this share of a player's stamina
+  tired_charge: { value: 0.5, min: 0, max: 0.9, step: 0.05 }, // share of a power shot's gathering lost at zero stamina
+  tired_timing: { value: 0.4, min: 0, max: 0.8, step: 0.05 }, // share of the '딱!' window lost at zero stamina
+  stam_smash: { value: 0.8, min: 0, max: 5, step: 0.1 },     // stamina a smash costs (a short swing)
 
   // ---- The computer, three levels: 1 easy, 2 normal, 3 hard ----
   ai1_react: { value: 0.46, min: 0, max: 0.8, step: 0.02 },  // s before it starts to move

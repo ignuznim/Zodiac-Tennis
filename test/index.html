@@ -1522,13 +1522,13 @@ function fault(call) {
 }
 function bounceOf(b) { // what a bounce keeps: the shot's spin, then the court's surface
   const sp = b.last >= 0 ? pstat(m.P[b.by], 'spin') : 3;
-  let rest = tune.bounce, pace = Math.min(0.92, tune.bounce_pace + sp * tune.bounce_pace_spin);
+  let rest = tune.bounce * (1 + (sp - 3) * tune.bounce_kick_spin), pace = Math.min(0.92, tune.bounce_pace + sp * tune.bounce_pace_spin); // topspin kicks up higher off the court
   if (b.kind === 'drop') { rest = tune.drop_bounce; pace = Math.max(0.1, tune.drop_pace - sp * tune.drop_pace_spin); }
-  else if (b.kind === 'slice') { rest = tune.slice_bounce; pace = tune.slice_pace; }
+  else if (b.kind === 'slice') { rest = tune.slice_bounce * (1 - (sp - 3) * tune.bounce_kick_spin); pace = tune.slice_pace; } // backspin skids lower
   return { rest: rest * tune[m.court + '_bounce'], pace: Math.min(0.95, pace * tune[m.court + '_pace']) };
 }
 function launch(p, kind, q, charge, aimX, aimD, late = 0) {
-  const b = m.ball, opp = -p.side, spin = pstat(p, 'spin'), pow = pstat(p, 'power'), fat = 1 - p.stam / p.max, g = tune.gravity;
+  const b = m.ball, opp = -p.side, spin = pstat(p, 'spin'), pow = pstat(p, 'power'), fat = tiredOf(p), g = tune.gravity;
   if (m.stats.hits) m.stats.hits[p.i]++; // every ball this player struck: the ranking checks the perfect ones against it
   const fh = (b.x - p.x) * p.side >= 0; // right-handed: the ball on the racket side is a forehand
   let v = tune.stroke_v + pow * tune.stroke_v_pow, depth = [7.4, 9.3, 10.7][aimD + 1], err = tune.err_stroke, T = 0;
@@ -1563,7 +1563,7 @@ function launch(p, kind, q, charge, aimX, aimD, late = 0) {
   b.vx = (tx - b.x) / T; b.vy = (ty - b.y) / T; b.vz = (0.5 * g * T * T - b.z) / T;
   if (slip >= 0.75) { const t0 = tn(T); b.vz = (tune.net_height * 0.6 - b.z + 0.5 * g * t0 * t0) / t0; } // into the tape
   b.last = p.team; b.by = p.i; b.bounces = 0; b.kind = kind; b.live = true; b.fly = true; b.power = kind === 'power' ? 0.6 + 0.4 * charge : kind === 'smash' ? 0.8 : 0;
-  p.stam = Math.max(0, p.stam - tune.stam_shot - (kind === 'power' ? tune.stam_power * charge : kind === 'smash' || kind === 'wild' ? 2 : 0));
+  p.stam = Math.max(0, p.stam - (kind === 'smash' || kind === 'wild' ? tune.stam_smash : tune.stam_shot + (kind === 'power' ? tune.stam_power * charge : 0))); // a smash is a short, easy swing: it costs little
   m.rally++; m.hitId++; m.mark = null; m.land = { x: tx, y: ty };
   if (m.practice && p.i === 0) m.prac.shot = { kind, hand: fh ? '포핸드' : '백핸드', q, perfect, late, dir: aimX, speed: Math.round(Math.hypot(b.vx, b.vy, b.vz) * 3.6) };
   if (perfect && m.stats.best) { m.stats.best[p.i] = Math.max(m.stats.best[p.i], p.streak); if (p.streak >= 5 && p.gearIds && p.gearIds.racket === 'r42') m.stats.rain[p.i] = 1; }
@@ -1581,6 +1581,7 @@ function launch(p, kind, q, charge, aimX, aimD, late = 0) {
   else pop(hand, p.x, p.y, 3, CREAM);
   fx('hit', p.i, { kind, q });
 }
+function tiredOf(p) { return clamp((tune.tired_at - p.stam / p.max) / tune.tired_at, 0, 1); } // 지친 상태: nothing above 30% of a player's stamina, then more and more to the full effect at 0
 function canHit(p) {
   const b = m.ball;
   if (m.phase !== 'rally' || !b.live || b.last === p.team || b.bounces > 1) return false;
@@ -1595,7 +1596,7 @@ function tryHit(p, kind, qGiven, charge, aimX, aimDy) {
   let q = qGiven;
   if (q == null) {
     const tap = p.sw.mode === 'tap', t = p.sw.t; // three grades: perfect, good, and pressed too early
-    q = t <= (tap ? tune.perfect_window : tune.release_window * 0.35) ? 1 : t <= (tap ? tune.sweet_window : tune.release_window * 0.6) ? 0.85 : 0.6;
+    const tw = 1 - tune.tired_timing * tiredOf(p); q = t <= (tap ? tune.perfect_window : tune.release_window * 0.35) * tw ? 1 : t <= (tap ? tune.sweet_window : tune.release_window * 0.6) * tw ? 0.85 : 0.6; // tired, '딱!' asks for a finer touch
     if (d > 0.15) q -= Math.min(0.65, (d - 0.15) * 0.6);  // late: the ball is past the body
     if (Math.abs(b.x - p.x) > 0.82 * reach(p)) q -= 0.15; // at full stretch
   } else if (d > 0.3) q -= 0.25;
@@ -1605,8 +1606,8 @@ function tryHit(p, kind, qGiven, charge, aimX, aimDy) {
   let k2 = kind;
   if (kind === 'stroke') {
     if (charge >= 0.4) k2 = 'power';
-    else if (b.z >= tune.smash_min_z + 0.1) k2 = 'smash'; // a high ball: the stroke button smashes it, no fourth button to find
-    else if (b.bounces === 0 && Math.abs(p.y) < 6.5) k2 = 'volley';
+    else if (b.bounces === 0 && Math.abs(p.y) < 6.5 && b.z < tune.smash_auto_z) k2 = 'volley'; // at the net, a ball up to above the head is volleyed
+    else if (b.z >= (b.bounces === 0 && Math.abs(p.y) < 6.5 ? tune.smash_auto_z : tune.smash_min_z + 0.1)) k2 = 'smash'; // a high ball: the stroke button smashes it, no fourth button to find
   } else if (kind === 'slice') { if (aimD < 0 || Math.abs(p.y) < 6.5) k2 = 'drop'; }
   else if (kind === 'smash') { if (b.z < tune.smash_min_z) k2 = 'wild'; }
   p.hand = b.x >= p.x ? 1 : -1;
@@ -1621,7 +1622,7 @@ function toss(p) {
   setAnim(p, 'toss'); fx('toss');
 }
 function doServe(p, q, aimX) {
-  const b = m.ball, second = m.fault === 1, pow = pstat(p, 'power'), spin = pstat(p, 'spin'), fat = 1 - p.stam / p.max, g = tune.gravity;
+  const b = m.ball, second = m.fault === 1, pow = pstat(p, 'power'), spin = pstat(p, 'spin'), fat = tiredOf(p), g = tune.gravity;
   const early = b.vz > 0;                                              // struck while the toss still rises
   const bad = q < (second ? tune.serve_fault_q2 : tune.serve_fault_q); // mistimed: this serve is a fault
   q = clamp(q, 0.1, 1);
@@ -1749,7 +1750,7 @@ function aiThink(p, dt) {
 function updatePlayer(p, inp, dt) {
   const f = p.stam / p.max, serving = (m.phase === 'serve' || m.phase === 'toss') && serverIdx() === p.i;
   const vfull = tune.run_v + pstat(p, 'speed') * tune.run_v_speed;
-  let vmax = vfull * (1 - tune.tired_run * (1 - f));
+  let vmax = vfull * (1 - tune.tired_run * tiredOf(p));
   if (p.ctrl === 'ai') vmax *= tune['ai' + m.level + '_run'];
   if (p.sw && p.sw.mode === 'charge') vmax *= tune.charge_slow;
   if (p.cool > 0) { p.cool -= dt; vmax *= 0.55; }
@@ -1781,7 +1782,7 @@ function updatePlayer(p, inp, dt) {
             else { p.sw = null; p.cool = 0.2; setAnim(p, 'hit'); fx('whiff'); }
           }
         } else if (sw.mode === 'charge') {
-          sw.charge = Math.min(1, sw.charge + dt / tune.charge_time); p.stam -= 2.5 * dt;
+          sw.charge = Math.min(1 - tune.tired_charge * tiredOf(p), sw.charge + dt / tune.charge_time); p.stam -= 2.5 * dt; // tired, a power shot gathers only so far
           sw.tick += dt; if (sw.tick > 0.12) { sw.tick = 0; fx('charge', sw.charge); }
           p.hand = m.ball.x >= p.x ? 1 : -1;
           if (!inp.a) { sw.mode = 'release'; sw.t = 0; setAnim(p, 'swing'); }
@@ -1872,7 +1873,7 @@ function localFx(dt) {
   for (const L of [post.bursts, post.dust, post.smears]) { for (const e of L) e.t += dt; }
   post.bursts = post.bursts.filter(e => e.t < 0.18); post.dust = post.dust.filter(e => e.t < (e.ring ? 0.4 : e.skid ? 0.45 : 0.32)); post.smears = post.smears.filter(e => e.t < 0.16);
   m.P.forEach((p, i) => { if (p.ctrl === 'machine') return; const sp = Math.hypot(p.vx || 0, p.vy || 0), vf = tune.run_v + pstat(p, 'speed') * tune.run_v_speed; // dust only when a sprint at full speed (0.3 s or more) slows down: the feet skid
-    const top = vf * (1 - tune.tired_run * (1 - p.stam / p.max)) * (p.ctrl === 'ai' ? tune['ai' + m.level + '_run'] : 1); // this player's top speed just now, tired or not
+    const top = vf * (1 - tune.tired_run * tiredOf(p)) * (p.ctrl === 'ai' ? tune['ai' + m.level + '_run'] : 1); // this player's top speed just now, tired or not
     if (sp > top * 0.85) { post.hold[i] += dt; post.dir[i] = Math.sign((view % 2 ? -1 : 1) * (p.vx || 0)) || post.dir[i]; }
     else if (sp < top * 0.6) { if (post.hold[i] >= 0.3) { const g = proj(p.x, p.y, 0); post.dust.push({ x: g.x + post.dir[i] * 8 * g.s, y: g.y, s: g.s, t: 0, skid: post.dir[i] || 1 }); } post.hold[i] = 0; } });
   for (const t of trail) t.t += dt; while (trail.length && trail[0].t > 0.45) trail.shift();
@@ -1945,6 +1946,9 @@ function scoreRoom() { // extra width for the names, as far as the corner button
   const R = rules(), n = R.matchTb ? 0 : 2 * R.sets - 1, base = 44 + (m.doubles ? 196 : 150) + (R.matchTb ? 10 : 44 + n * 30 + 6) + 60 + (R.matchTb ? 6 : 0), slack = Math.max(0, (m.online ? W - 188 : W - 128) - 12 - 12 - base);
   const need = Math.max(...(m.doubles ? m.P.map(pName) : [0, 1].map(NAME)).map(t => textW(t, 20, F_T) + 50)) - (m.doubles ? 196 : 150) + 22; return clamp(need, 0, slack);
 }
+const STAM_CAP = 180; // every stamina bar holds 180 (the most any player can have, 167.5, rounded up): each shows what is left, so the two can be compared
+function stamBar(x, y, bw, P, col) { const k = bw / STAM_CAP, t = tiredOf(P); rr(x, y, bw, 6, 3, '#2f262d', null); rr(x, y, Math.max(6, P.max * k), 6, 3, '#4d4048', null); // the whole bar, then this player's own room in it
+  if (P.stam > 1) { ctx.save(); if (t > 0 && !CALM) ctx.globalAlpha = 0.55 + 0.45 * Math.abs(Math.cos(clock.now() * 5)); rr(x, y, Math.max(6, P.stam * k), 6, 3, t > 0 ? '#f25f5c' : col, null); ctx.restore(); } } // tired: red, pulsing
 function drawScoreboard() { // one row a side: sets won, a cell for each of the five sets, then the point
   const R = rules(), sc = m.sc, tbOnly = R.matchTb, n = tbOnly ? 0 : 2 * R.sets - 1, x0 = 12, y0 = 10, nx = x0 + 44, nameW = (m.doubles ? 196 : 150) + scoreRoom(), wx = nx + nameW, sx = wx + (tbOnly ? 0 : 44), px = tbOnly ? wx + 10 : sx + n * 30 + 6, w = px + 60 - x0 + (tbOnly ? 6 : 0);
   const ex = SB_EXTRA(), rowH = ex ? 60 : 40; rr(x0, y0, w, 112 + ex, 16, '#4a3d47', OUT);
@@ -1960,14 +1964,14 @@ function drawScoreboard() { // one row a side: sets won, a cell for each of the 
       [P, Q].forEach((q, k) => { const ly = y + (k ? 7 : -17), lab = q.ctrl === 'ai' ? '컴퓨터' : q.i === view ? '나' : '', room = nameW - 22 - (lab ? textW(lab, MIN_TEXT, F_B) + 6 : 0);
         miniFace(q.a, x0 + 24, ly, 11);
         const nsz = fitText(pName(q), nx, ly, 18, k ? '#e9dcd0' : CREAM, 'left', F_T, room); if (lab) text(lab, nx + Math.min(textW(pName(q), nsz, F_T), room) + 6, ly + 1, MIN_TEXT, '#b9a8b1', 'left', null, F_B); });
-      const bw = nameW - 34; rr(nx, y + 20, bw, 6, 3, '#2f262d', null); if (f > 0.03) rr(nx, y + 20, bw * f, 6, 3, f < 0.25 ? '#f25f5c' : col, null);
+      const bw = nameW - 34; stamBar(nx, y + 20, bw, P, col);
     } else {
     drawAnimal(P.a, x0 + 22, y + 15, 0.3, { front: true, accent: col });
     const lab0 = P.ctrl === 'ai' ? '컴퓨터' : r === 0 ? '나' : '상대', all = nameW - 22, roomFor = l => l ? all - textW(l, MIN_TEXT, F_B) - 6 : all;
     const tries = [[NAME(i), lab0], [NAME(i), '']], pick = tries.find(c => textW(c[0], MIN_TEXT, F_T) <= roomFor(c[1])) || tries[1]; // the label goes first, before a word is cut
     const [nm, lab] = pick, room = roomFor(lab), nsz = fitText(nm, nx, y - 5, 20, CREAM, 'left', F_T, room), nw = Math.min(textW(nm, nsz, F_T), room); // the name shrinks to fit beside its label, never into the score
     if (lab) text(lab, nx + nw + 6, y - 4, MIN_TEXT, '#b9a8b1', 'left', null, F_B);
-    const bw = nameW - 34; rr(nx, y + 9, bw, 6, 3, '#2f262d', null); if (f > 0.03) rr(nx, y + 9, bw * f, 6, 3, f < 0.25 ? '#f25f5c' : col, null);
+    const bw = nameW - 34; stamBar(nx, y + 9, bw, P, col);
     }
     if (sc.server === i && !sc.done) { ctx.lineWidth = 1.6; ctx.strokeStyle = OUT; E(tbOnly ? px - 12 : wx - 12, y - 4, 6, 6, BALL); }
     if (!tbOnly) { rr(wx, y - 16, 34, 32, 8, col, OUT, 2.2); text('' + sc.won[i], wx + 17, y + 1, 24, '#3b2f38', 'center', null, F_N); }
@@ -2989,107 +2993,107 @@ const GRADE = [{ ko: '일반', c: '#8f99a3' }, { ko: '희귀', c: '#3d8be0' }, {
 const ODDS = [56, 28, 12, 4]; // the machine's odds by grade, in per cent (worked out on the server, shown here)
 const SLOTS = [['hat', '모자', 'reflex'], ['uniform', '유니폼', 'stamina'], ['shoes', '신발', 'speed'], ['racket', '라켓', 'power']];
 const ITEMS = { // the same catalogue as the server's items table; look is how it is drawn
-  h1: ['hat', 0, 'reflex', 0.1, '흰 머리띠', { k: 'band', c: '#ffffff' }], h2: ['hat', 0, 'reflex', 0.1, '빨간 머리띠', { k: 'band', c: '#e2574c' }],
-  h7: ['hat', 0, 'speed', 0.1, '노란 머리띠', { k: 'band', c: '#ffe45c' }], h8: ['hat', 0, 'stamina', 0.1, '초록 머리띠', { k: 'band', c: '#4fc37a' }],
-  h3: ['hat', 1, 'reflex', 0.2, '파란 썬캡', { k: 'cap', c: '#3d8be0' }], h4: ['hat', 0, 'spin', 0.1, '보라 머리띠', { k: 'band', c: '#b48be8' }],
-  h9: ['hat', 1, 'power', 0.2, '빨간 야구모자', { k: 'cap', c: '#e2574c' }], h10: ['hat', 1, 'speed', 0.2, '하얀 테니스캡', { k: 'cap', c: '#ffffff' }],
-  h5: ['hat', 2, 'reflex', 0.3, '갓', { k: 'gat', c: '#3b3340' }], h11: ['hat', 2, 'stamina', 0.3, '족두리', { k: 'jok', c: '#3b3340' }],
+  h1: ['hat', 0, 'reflex', 0.15, '흰 머리띠', { k: 'band', c: '#ffffff' }], h2: ['hat', 0, 'reflex', 0.15, '빨간 머리띠', { k: 'band', c: '#e2574c' }],
+  h7: ['hat', 0, 'speed', 0.15, '노란 머리띠', { k: 'band', c: '#ffe45c' }], h8: ['hat', 0, 'stamina', 0.15, '초록 머리띠', { k: 'band', c: '#4fc37a' }],
+  h3: ['hat', 1, 'reflex', 0.25, '파란 썬캡', { k: 'cap', c: '#3d8be0' }], h4: ['hat', 0, 'spin', 0.15, '보라 머리띠', { k: 'band', c: '#b48be8' }],
+  h9: ['hat', 1, 'power', 0.25, '빨간 야구모자', { k: 'cap', c: '#e2574c' }], h10: ['hat', 1, 'speed', 0.25, '하얀 테니스캡', { k: 'cap', c: '#ffffff' }],
+  h5: ['hat', 2, 'reflex', 0.35, '갓', { k: 'gat', c: '#3b3340' }], h11: ['hat', 2, 'stamina', 0.35, '족두리', { k: 'jok', c: '#3b3340' }],
   h6: ['hat', 3, 'reflex', 0.5, '황금 왕관', { k: 'crown', c: '#f6c445' }], h12: ['hat', 3, 'power', 0.5, '은하수 왕관', { k: 'crown', c: '#b9d4ff' }],
-  u1: ['uniform', 0, 'stamina', 0.1, '흰 티셔츠', { c: ['#ffffff'] }], u2: ['uniform', 0, 'stamina', 0.1, '하늘 티셔츠', { c: ['#9ad0ff'] }],
-  u7: ['uniform', 0, 'reflex', 0.1, '분홍 티셔츠', { c: ['#f9b7c4'] }], u8: ['uniform', 0, 'speed', 0.1, '민트 티셔츠', { c: ['#9fe0c8'] }],
-  u3: ['uniform', 1, 'stamina', 0.2, '줄무늬 셔츠', { k: 'shirt', c: ['#ffffff'], stripe: '#3d8be0' }], u4: ['uniform', 1, 'power', 0.2, '국가대표 축구 저지', { k: 'kfoot', c: ['#e0213f'] }],
-  u9: ['uniform', 1, 'spin', 0.2, '체크 셔츠', { k: 'shirt', c: ['#ffffff'], check: '#e2574c' }], u10: ['uniform', 1, 'reflex', 0.2, '해군 셔츠', { k: 'sailor', c: ['#ffffff'], trim: '#3d6fb0' }],
-  u5: ['uniform', 2, 'stamina', 0.3, '색동 한복', { k: 'hanbok', c: ['#ffe08a'], rb: ['#e2574c', '#f6c445', '#4fc37a', '#3d8be0', '#b48be8'] }], u11: ['uniform', 2, 'power', 0.3, '태권도 도복', { k: 'dobok', c: ['#ffffff'] }],
+  u1: ['uniform', 0, 'stamina', 0.15, '흰 티셔츠', { c: ['#ffffff'] }], u2: ['uniform', 0, 'stamina', 0.15, '하늘 티셔츠', { c: ['#9ad0ff'] }],
+  u7: ['uniform', 0, 'reflex', 0.15, '분홍 티셔츠', { c: ['#f9b7c4'] }], u8: ['uniform', 0, 'speed', 0.15, '민트 티셔츠', { c: ['#9fe0c8'] }],
+  u3: ['uniform', 1, 'stamina', 0.25, '줄무늬 셔츠', { k: 'shirt', c: ['#ffffff'], stripe: '#3d8be0' }], u4: ['uniform', 1, 'power', 0.25, '국가대표 축구 저지', { k: 'kfoot', c: ['#e0213f'] }],
+  u9: ['uniform', 1, 'spin', 0.25, '체크 셔츠', { k: 'shirt', c: ['#ffffff'], check: '#e2574c' }], u10: ['uniform', 1, 'reflex', 0.25, '해군 셔츠', { k: 'sailor', c: ['#ffffff'], trim: '#3d6fb0' }],
+  u5: ['uniform', 2, 'stamina', 0.35, '색동 한복', { k: 'hanbok', c: ['#ffe08a'], rb: ['#e2574c', '#f6c445', '#4fc37a', '#3d8be0', '#b48be8'] }], u11: ['uniform', 2, 'power', 0.35, '태권도 도복', { k: 'dobok', c: ['#ffffff'] }],
   u6: ['uniform', 3, 'stamina', 0.5, '황금 유니폼', { k: 'pro', c: ['#f6c445'] }], u12: ['uniform', 3, 'power', 0.5, '불꽃 유니폼', { k: 'flame', c: ['#e2574c'] }],
-  s1: ['shoes', 0, 'speed', 0.1, '흰 테니스화', { st: 'court', c: '#ffffff' }], s2: ['shoes', 0, 'speed', 0.1, '빨간 러닝화', { st: 'runner', c: '#e2574c' }],
-  s7: ['shoes', 0, 'stamina', 0.1, '검정 슬립온', { st: 'slipon', c: '#3b3340' }], s8: ['shoes', 0, 'reflex', 0.1, '노란 찍찍이 운동화', { st: 'velcro', c: '#ffe45c' }],
-  s3: ['shoes', 1, 'speed', 0.2, '클레이화', { k: 'clay', c: '#d36a3a' }], s4: ['shoes', 1, 'speed', 0.2, '잔디화', { k: 'grass', c: '#4a9d5c' }],
-  s9: ['shoes', 1, 'stamina', 0.2, '하드코트화', { k: 'high', c: '#3471c4' }], s10: ['shoes', 1, 'reflex', 0.2, '고무신', { k: 'gomu', c: '#3b3340' }],
-  s5: ['shoes', 2, 'speed', 0.3, '번개 신발', { k: 'high', c: '#ffe45c', bolt: true }], s11: ['shoes', 2, 'stamina', 0.3, '꽃신', { k: 'gomu', c: '#f9b7c4', flower: true }],
+  s1: ['shoes', 0, 'speed', 0.15, '흰 테니스화', { st: 'court', c: '#ffffff' }], s2: ['shoes', 0, 'speed', 0.15, '빨간 러닝화', { st: 'runner', c: '#e2574c' }],
+  s7: ['shoes', 0, 'stamina', 0.15, '검정 슬립온', { st: 'slipon', c: '#3b3340' }], s8: ['shoes', 0, 'reflex', 0.15, '노란 찍찍이 운동화', { st: 'velcro', c: '#ffe45c' }],
+  s3: ['shoes', 1, 'speed', 0.25, '클레이화', { k: 'clay', c: '#d36a3a' }], s4: ['shoes', 1, 'speed', 0.25, '잔디화', { k: 'grass', c: '#4a9d5c' }],
+  s9: ['shoes', 1, 'stamina', 0.25, '하드코트화', { k: 'high', c: '#3471c4' }], s10: ['shoes', 1, 'reflex', 0.25, '고무신', { k: 'gomu', c: '#3b3340' }],
+  s5: ['shoes', 2, 'speed', 0.35, '번개 신발', { k: 'high', c: '#ffe45c', bolt: true }], s11: ['shoes', 2, 'stamina', 0.35, '꽃신', { k: 'gomu', c: '#f9b7c4', flower: true }],
   s6: ['shoes', 3, 'speed', 0.5, '날개 신발', { k: 'hermes', c: '#b07a52', wing: true }], s12: ['shoes', 3, 'power', 0.5, '로켓 신발', { k: 'boot', c: '#b8c2cc', flame: true }],
-  r1: ['racket', 0, 'power', 0.1, '나무 라켓', { k: 'wood', c: '#b07a52' }], r2: ['racket', 0, 'spin', 0.1, '종이 라켓', { k: 'paperr', c: '#f3ead6' }],
-  r7: ['racket', 0, 'reflex', 0.1, '하늘 라켓', { c: '#9ad0ff' }], r8: ['racket', 0, 'speed', 0.1, '분홍 라켓', { c: '#f9b7c4' }],
-  r3: ['racket', 1, 'power', 0.2, '묵직한 라켓', { k: 'heavy', c: '#3b3340' }], r4: ['racket', 1, 'spin', 0.2, '가벼운 라켓', { k: 'light', c: '#6ec1ff' }],
-  r9: ['racket', 1, 'stamina', 0.2, '대나무 라켓', { k: 'bamboo', c: '#9fcf6e' }], r10: ['racket', 1, 'reflex', 0.2, '얼음 라켓', { k: 'ice', c: '#bfe3ff' }],
-  r5: ['racket', 2, 'spin', 0.3, '용비늘 라켓', { k: 'dragon', c: '#4fc37a' }], r11: ['racket', 2, 'power', 0.3, '태극 라켓', { k: 'taeguk', c: '#e2574c' }],
+  r1: ['racket', 0, 'power', 0.15, '나무 라켓', { k: 'wood', c: '#b07a52' }], r2: ['racket', 0, 'spin', 0.15, '종이 라켓', { k: 'paperr', c: '#f3ead6' }],
+  r7: ['racket', 0, 'reflex', 0.15, '하늘 라켓', { c: '#9ad0ff' }], r8: ['racket', 0, 'speed', 0.15, '분홍 라켓', { c: '#f9b7c4' }],
+  r3: ['racket', 1, 'power', 0.25, '묵직한 라켓', { k: 'heavy', c: '#3b3340' }], r4: ['racket', 1, 'spin', 0.25, '가벼운 라켓', { k: 'light', c: '#6ec1ff' }],
+  r9: ['racket', 1, 'stamina', 0.25, '대나무 라켓', { k: 'bamboo', c: '#9fcf6e' }], r10: ['racket', 1, 'reflex', 0.25, '얼음 라켓', { k: 'ice', c: '#bfe3ff' }],
+  r5: ['racket', 2, 'spin', 0.35, '용비늘 라켓', { k: 'dragon', c: '#4fc37a' }], r11: ['racket', 2, 'power', 0.35, '태극 라켓', { k: 'taeguk', c: '#e2574c' }],
   r6: ['racket', 3, 'power', 0.5, '황금 라켓', { k: 'gold', c: '#f6c445' }], r12: ['racket', 3, 'spin', 0.5, '무지개 라켓', { k: 'rainbow', c: '#b48be8' }],
-  h13: ['hat', 0, 'speed', 0.1, '하늘 머리띠', { k: 'band', c: '#9ad0ff' }], h14: ['hat', 0, 'stamina', 0.1, '분홍 머리띠', { k: 'band', c: '#f9b7c4' }],
-  h15: ['hat', 0, 'power', 0.1, '검정 머리띠', { k: 'band', c: '#3b3340' }], h16: ['hat', 0, 'stamina', 0.1, '초록 야구모자', { k: 'cap', c: '#4fc37a' }],
-  h17: ['hat', 1, 'reflex', 0.2, '노란 썬바이저', { k: 'visor', c: '#ffe45c' }], h18: ['hat', 1, 'speed', 0.2, '하늘 썬바이저', { k: 'visor', c: '#9ad0ff' }],
-  h19: ['hat', 1, 'stamina', 0.2, '베이지 벙거지', { k: 'bucket', c: '#e8d3a8' }], h20: ['hat', 1, 'spin', 0.2, '줄무늬 비니', { k: 'beanie', c: '#e2574c', s: '#ffffff' }],
-  h21: ['hat', 3, 'spin', 0.5, '익선관', { k: 'ikseon', c: '#6b3d60' }], h22: ['hat', 2, 'reflex', 0.3, '꽃 화관', { k: 'wreath', c: '#56b05a' }],
-  h23: ['hat', 2, 'spin', 0.3, '마법사 모자', { k: 'wizard', c: '#6b4bb3' }], h24: ['hat', 2, 'power', 0.3, '해적 모자', { k: 'pirate', c: '#3b3340' }],
+  h13: ['hat', 0, 'speed', 0.15, '하늘 머리띠', { k: 'band', c: '#9ad0ff' }], h14: ['hat', 0, 'stamina', 0.15, '분홍 머리띠', { k: 'band', c: '#f9b7c4' }],
+  h15: ['hat', 0, 'power', 0.15, '검정 머리띠', { k: 'band', c: '#3b3340' }], h16: ['hat', 0, 'stamina', 0.15, '초록 야구모자', { k: 'cap', c: '#4fc37a' }],
+  h17: ['hat', 1, 'reflex', 0.25, '노란 썬바이저', { k: 'visor', c: '#ffe45c' }], h18: ['hat', 1, 'speed', 0.25, '하늘 썬바이저', { k: 'visor', c: '#9ad0ff' }],
+  h19: ['hat', 1, 'stamina', 0.25, '베이지 벙거지', { k: 'bucket', c: '#e8d3a8' }], h20: ['hat', 1, 'spin', 0.25, '줄무늬 비니', { k: 'beanie', c: '#e2574c', s: '#ffffff' }],
+  h21: ['hat', 3, 'spin', 0.5, '익선관', { k: 'ikseon', c: '#6b3d60' }], h22: ['hat', 2, 'reflex', 0.35, '꽃 화관', { k: 'wreath', c: '#56b05a' }],
+  h23: ['hat', 2, 'spin', 0.35, '마법사 모자', { k: 'wizard', c: '#6b4bb3' }], h24: ['hat', 2, 'power', 0.35, '해적 모자', { k: 'pirate', c: '#3b3340' }],
   h25: ['hat', 3, 'speed', 0.5, '황금 캡', { k: 'cap', c: '#f6c445', gold: true }], h26: ['hat', 3, 'reflex', 0.5, '천사 고리', { k: 'halo', c: '#ffe45c' }],
   h27: ['hat', 3, 'stamina', 0.5, '불꽃 왕관', { k: 'crown', c: '#ff8a3d' }],
-  u13: ['uniform', 0, 'power', 0.1, '노란 티셔츠', { c: ['#ffe45c'] }], u14: ['uniform', 0, 'spin', 0.1, '회색 티셔츠', { c: ['#b3b7c2'] }],
-  u15: ['uniform', 0, 'stamina', 0.1, '검정 티셔츠', { c: ['#3b3340'] }], u16: ['uniform', 1, 'speed', 0.2, '초록 폴로 셔츠', { k: 'polo', c: ['#4fc37a'] }],
-  u17: ['uniform', 1, 'power', 0.2, '농구 민소매', { k: 'tank', c: ['#f6a23c'], sl: '#3d6fb0', num: '23' }], u18: ['uniform', 1, 'stamina', 0.2, '보라 후드티', { k: 'hoodie', c: ['#b48be8'] }],
-  u19: ['uniform', 1, 'spin', 0.2, '노랑 저지', { k: 'jersey', c: ['#ffe45c'], sl: '#4fc37a', num: '7' }], u20: ['uniform', 1, 'reflex', 0.2, '하늘 줄무늬 셔츠', { k: 'shirt', c: ['#ffffff'], stripe: '#9ad0ff' }],
-  u21: ['uniform', 2, 'reflex', 0.3, '하늘 한복', { k: 'hanbok', c: ['#bfe3ff'], collar: '#3d6fb0', ribbon: '#f48aa4', rb: ['#ffffff', '#f9b7c4', '#ffe08a', '#9fe0c8', '#b48be8'] }],
-  u22: ['uniform', 3, 'power', 0.5, '곤룡포', { k: 'royal', c: ['#d8443c'] }], u23: ['uniform', 2, 'speed', 0.3, '턱시도', { k: 'tux', c: ['#3b3340'] }],
+  u13: ['uniform', 0, 'power', 0.15, '노란 티셔츠', { c: ['#ffe45c'] }], u14: ['uniform', 0, 'spin', 0.15, '회색 티셔츠', { c: ['#b3b7c2'] }],
+  u15: ['uniform', 0, 'stamina', 0.15, '검정 티셔츠', { c: ['#3b3340'] }], u16: ['uniform', 1, 'speed', 0.25, '초록 폴로 셔츠', { k: 'polo', c: ['#4fc37a'] }],
+  u17: ['uniform', 1, 'power', 0.25, '농구 민소매', { k: 'tank', c: ['#f6a23c'], sl: '#3d6fb0', num: '23' }], u18: ['uniform', 1, 'stamina', 0.25, '보라 후드티', { k: 'hoodie', c: ['#b48be8'] }],
+  u19: ['uniform', 1, 'spin', 0.25, '노랑 저지', { k: 'jersey', c: ['#ffe45c'], sl: '#4fc37a', num: '7' }], u20: ['uniform', 1, 'reflex', 0.25, '하늘 줄무늬 셔츠', { k: 'shirt', c: ['#ffffff'], stripe: '#9ad0ff' }],
+  u21: ['uniform', 2, 'reflex', 0.35, '하늘 한복', { k: 'hanbok', c: ['#bfe3ff'], collar: '#3d6fb0', ribbon: '#f48aa4', rb: ['#ffffff', '#f9b7c4', '#ffe08a', '#9fe0c8', '#b48be8'] }],
+  u22: ['uniform', 3, 'power', 0.5, '곤룡포', { k: 'royal', c: ['#d8443c'] }], u23: ['uniform', 2, 'speed', 0.35, '턱시도', { k: 'tux', c: ['#3b3340'] }],
   u24: ['uniform', 3, 'spin', 0.5, '무지개 유니폼', { k: 'rainbow', c: ['#ffffff'], rb: ['#e2574c', '#f6a23c', '#f6d445', '#4fc37a', '#3d8be0', '#9b5de5'] }], u25: ['uniform', 3, 'reflex', 0.5, '은하수 유니폼', { k: 'galaxy', c: ['#2b2d5c'] }],
-  s13: ['shoes', 0, 'speed', 0.1, '하늘 캔버스화', { st: 'canvas', c: '#9ad0ff' }], s14: ['shoes', 0, 'reflex', 0.1, '분홍 캔버스화', { st: 'canvas', c: '#f9b7c4' }],
-  s15: ['shoes', 0, 'stamina', 0.1, '초록 러닝화', { st: 'runner', c: '#4fc37a' }], s16: ['shoes', 1, 'speed', 0.2, '샌들', { k: 'sandal', c: '#3d8be0' }],
-  s17: ['shoes', 1, 'stamina', 0.2, '노란 장화', { k: 'rainboot', c: '#ffe45c' }], s18: ['shoes', 1, 'reflex', 0.2, '짚신', { k: 'straw', c: '#c9a25e' }],
-  s19: ['shoes', 2, 'power', 0.3, '나막신', { k: 'clog', c: '#b07a52' }], s20: ['shoes', 2, 'speed', 0.3, '롤러스케이트', { k: 'roller', c: '#ff8a7a' }],
-  s21: ['shoes', 2, 'spin', 0.3, '스케이트화', { k: 'skate', c: '#ffffff' }], s22: ['shoes', 3, 'speed', 0.5, '황금 운동화', { k: 'gold', c: '#f6c445' }],
+  s13: ['shoes', 0, 'speed', 0.15, '하늘 캔버스화', { st: 'canvas', c: '#9ad0ff' }], s14: ['shoes', 0, 'reflex', 0.15, '분홍 캔버스화', { st: 'canvas', c: '#f9b7c4' }],
+  s15: ['shoes', 0, 'stamina', 0.15, '초록 러닝화', { st: 'runner', c: '#4fc37a' }], s16: ['shoes', 1, 'speed', 0.25, '샌들', { k: 'sandal', c: '#3d8be0' }],
+  s17: ['shoes', 1, 'stamina', 0.25, '노란 장화', { k: 'rainboot', c: '#ffe45c' }], s18: ['shoes', 1, 'reflex', 0.25, '짚신', { k: 'straw', c: '#c9a25e' }],
+  s19: ['shoes', 2, 'power', 0.35, '나막신', { k: 'clog', c: '#b07a52' }], s20: ['shoes', 2, 'speed', 0.35, '롤러스케이트', { k: 'roller', c: '#ff8a7a' }],
+  s21: ['shoes', 2, 'spin', 0.35, '스케이트화', { k: 'skate', c: '#ffffff' }], s22: ['shoes', 3, 'speed', 0.5, '황금 운동화', { k: 'gold', c: '#f6c445' }],
   s23: ['shoes', 3, 'stamina', 0.5, '근두운', { k: 'cloud', c: '#ffffff' }], s24: ['shoes', 3, 'spin', 0.5, '무지개 운동화', { k: 'rainbow', c: '#ffffff' }],
-  r13: ['racket', 0, 'power', 0.1, '노란 라켓', { c: '#ffe45c' }], r14: ['racket', 0, 'stamina', 0.1, '초록 라켓', { c: '#4fc37a' }],
-  r15: ['racket', 0, 'spin', 0.1, '보라 라켓', { c: '#b48be8' }], r16: ['racket', 1, 'power', 0.2, '카본 라켓', { k: 'carbon', c: '#3b3340' }],
-  r17: ['racket', 1, 'stamina', 0.2, '프라이팬', { k: 'pan', c: '#3b3340' }], r18: ['racket', 1, 'reflex', 0.2, '하트 라켓', { k: 'heart', c: '#f48aa4' }],
-  r19: ['racket', 2, 'spin', 0.3, '태극 부채', { k: 'fan', c: '#e2574c' }], r20: ['racket', 2, 'reflex', 0.3, '별 라켓', { k: 'star', c: '#ffe45c' }],
-  r21: ['racket', 2, 'speed', 0.3, '번개 라켓', { k: 'bolt', c: '#ffe45c' }], r22: ['racket', 2, 'stamina', 0.3, '꽃 라켓', { k: 'flower', c: '#f9b7c4' }],
+  r13: ['racket', 0, 'power', 0.15, '노란 라켓', { c: '#ffe45c' }], r14: ['racket', 0, 'stamina', 0.15, '초록 라켓', { c: '#4fc37a' }],
+  r15: ['racket', 0, 'spin', 0.15, '보라 라켓', { c: '#b48be8' }], r16: ['racket', 1, 'power', 0.25, '카본 라켓', { k: 'carbon', c: '#3b3340' }],
+  r17: ['racket', 1, 'stamina', 0.25, '프라이팬', { k: 'pan', c: '#3b3340' }], r18: ['racket', 1, 'reflex', 0.25, '하트 라켓', { k: 'heart', c: '#f48aa4' }],
+  r19: ['racket', 2, 'spin', 0.35, '태극 부채', { k: 'fan', c: '#e2574c' }], r20: ['racket', 2, 'reflex', 0.35, '별 라켓', { k: 'star', c: '#ffe45c' }],
+  r21: ['racket', 2, 'speed', 0.35, '번개 라켓', { k: 'bolt', c: '#ffe45c' }], r22: ['racket', 2, 'stamina', 0.35, '꽃 라켓', { k: 'flower', c: '#f9b7c4' }],
   r23: ['racket', 3, 'spin', 0.5, '은하수 라켓', { k: 'galaxy', c: '#2b2d5c' }], r24: ['racket', 3, 'power', 0.5, '불꽃 라켓', { k: 'fire', c: '#e2574c' }],
   // 1.9.5: a hundred more, Korean, cartoon, silly and tennis
-  h28: ['hat', 0, 'power', 0.1, '주황 머리띠', { k: 'band', c: '#f6a23c' }], h29: ['hat', 0, 'spin', 0.1, '민트 머리띠', { k: 'band', c: '#9fe0c8' }],
-  h30: ['hat', 0, 'stamina', 0.1, '남색 머리띠', { k: 'band', c: '#3d4f9a' }], h31: ['hat', 0, 'reflex', 0.1, '땡땡이 두건', { k: 'bandana', c: '#3d8be0' }],
-  h32: ['hat', 1, 'stamina', 0.2, '이태리타월 머리띠', { k: 'towel', c: '#56b05a' }], h33: ['hat', 0, 'speed', 0.1, '볼보이 캡', { k: 'cap', c: '#3d4f9a' }],
-  h34: ['hat', 1, 'spin', 0.2, '신문지 고깔', { k: 'paper', c: '#f3ead6' }], h35: ['hat', 1, 'reflex', 0.2, '고무장갑 모자', { k: 'glove', c: '#e2574c' }],
-  h36: ['hat', 1, 'stamina', 0.2, '냄비 모자', { k: 'pot', c: '#c9ccd6' }], h37: ['hat', 1, 'spin', 0.2, '양머리 수건', { k: 'sheep', c: '#f1f3f7' }],
-  h38: ['hat', 1, 'speed', 0.2, '해녀 물안경', { k: 'diver', c: '#3b3340' }], h39: ['hat', 1, 'reflex', 0.2, '흰 테 고글', { k: 'goggle', c: '#ffffff' }],
-  h40: ['hat', 1, 'power', 0.2, '유건', { k: 'yugeon', c: '#3b3340' }], h41: ['hat', 1, 'speed', 0.2, '70년대 굵은 머리띠', { k: 'band70', c: '#ffffff' }],
-  h42: ['hat', 1, 'power', 0.2, '황제 헤어밴드', { k: 'tieband', c: '#ffffff' }], h43: ['hat', 2, 'spin', 0.3, '상모', { k: 'sangmo', c: '#3b3340' }],
-  h44: ['hat', 2, 'reflex', 0.3, '하회탈', { k: 'hahoe', c: '#d9822b' }], h45: ['hat', 2, 'speed', 0.3, '대나무 프로펠러', { k: 'copter', c: '#ffe45c' }],
-  h46: ['hat', 2, 'stamina', 0.3, '비행 고글 모자', { k: 'aviator', c: '#f5c96a' }], h47: ['hat', 1, 'spin', 0.2, '커다란 빨간 리본', { k: 'bow', c: '#e2574c' }],
-  h48: ['hat', 2, 'power', 0.3, '국가대표 야구모자', { k: 'kcap', c: '#1f2a52' }], h49: ['hat', 3, 'stamina', 0.5, '신라 금관', { k: 'silla', c: '#f6c445' }],
+  h28: ['hat', 0, 'power', 0.15, '주황 머리띠', { k: 'band', c: '#f6a23c' }], h29: ['hat', 0, 'spin', 0.15, '민트 머리띠', { k: 'band', c: '#9fe0c8' }],
+  h30: ['hat', 0, 'stamina', 0.15, '남색 머리띠', { k: 'band', c: '#3d4f9a' }], h31: ['hat', 0, 'reflex', 0.15, '땡땡이 두건', { k: 'bandana', c: '#3d8be0' }],
+  h32: ['hat', 1, 'stamina', 0.25, '이태리타월 머리띠', { k: 'towel', c: '#56b05a' }], h33: ['hat', 0, 'speed', 0.15, '볼보이 캡', { k: 'cap', c: '#3d4f9a' }],
+  h34: ['hat', 1, 'spin', 0.25, '신문지 고깔', { k: 'paper', c: '#f3ead6' }], h35: ['hat', 1, 'reflex', 0.25, '고무장갑 모자', { k: 'glove', c: '#e2574c' }],
+  h36: ['hat', 1, 'stamina', 0.25, '냄비 모자', { k: 'pot', c: '#c9ccd6' }], h37: ['hat', 1, 'spin', 0.25, '양머리 수건', { k: 'sheep', c: '#f1f3f7' }],
+  h38: ['hat', 1, 'speed', 0.25, '해녀 물안경', { k: 'diver', c: '#3b3340' }], h39: ['hat', 1, 'reflex', 0.25, '흰 테 고글', { k: 'goggle', c: '#ffffff' }],
+  h40: ['hat', 1, 'power', 0.25, '유건', { k: 'yugeon', c: '#3b3340' }], h41: ['hat', 1, 'speed', 0.25, '70년대 굵은 머리띠', { k: 'band70', c: '#ffffff' }],
+  h42: ['hat', 1, 'power', 0.25, '황제 헤어밴드', { k: 'tieband', c: '#ffffff' }], h43: ['hat', 2, 'spin', 0.35, '상모', { k: 'sangmo', c: '#3b3340' }],
+  h44: ['hat', 2, 'reflex', 0.35, '하회탈', { k: 'hahoe', c: '#d9822b' }], h45: ['hat', 2, 'speed', 0.35, '대나무 프로펠러', { k: 'copter', c: '#ffe45c' }],
+  h46: ['hat', 2, 'stamina', 0.35, '비행 고글 모자', { k: 'aviator', c: '#f5c96a' }], h47: ['hat', 1, 'spin', 0.25, '커다란 빨간 리본', { k: 'bow', c: '#e2574c' }],
+  h48: ['hat', 2, 'power', 0.35, '국가대표 야구모자', { k: 'kcap', c: '#1f2a52' }], h49: ['hat', 3, 'stamina', 0.5, '신라 금관', { k: 'silla', c: '#f6c445' }],
   h50: ['hat', 3, 'power', 0.5, '우승 트로피 모자', { k: 'trophy', c: '#f6c445' }], h51: ['hat', 3, 'reflex', 0.5, '긴고아', { k: 'geumgo', c: '#f6c445' }],
-  h52: ['hat', 1, 'speed', 0.2, '상투', { k: 'sangtu', c: '#3b3340' }], u26: ['uniform', 0, 'power', 0.1, '빨간 티셔츠', { c: ['#e2574c'] }],
-  u27: ['uniform', 0, 'stamina', 0.1, '남색 티셔츠', { c: ['#3d4f9a'] }], u28: ['uniform', 0, 'speed', 0.1, '연두 티셔츠', { c: ['#b5e07a'] }],
-  u29: ['uniform', 0, 'spin', 0.1, '보라 티셔츠', { c: ['#b48be8'] }], u30: ['uniform', 0, 'reflex', 0.1, '베이지 티셔츠', { c: ['#e8d3a8'] }],
-  u31: ['uniform', 0, 'spin', 0.1, '흙투성이 흰 셔츠', { k: 'muddy', c: ['#ffffff'] }], u32: ['uniform', 0, 'speed', 0.1, '난닝구', { k: 'singlet', c: ['#ffffff'] }],
-  u33: ['uniform', 1, 'stamina', 0.2, '찜질방 옷', { k: 'jjim', c: ['#f6a23c'] }], u34: ['uniform', 1, 'power', 0.2, '꽃무늬 몸빼바지', { k: 'momppe', c: ['#fff3e0'] }],
-  u35: ['uniform', 1, 'reflex', 0.2, '파자마', { k: 'pajama', c: ['#bfe3ff'] }], u36: ['uniform', 1, 'speed', 0.2, '유생복', { k: 'yusaeng', c: ['#ffffff'] }],
-  u37: ['uniform', 3, 'power', 0.5, '황룡포', { k: 'dragonrobe', c: ['#f6c445'] }], u38: ['uniform', 1, 'spin', 0.2, '70년대 줄무늬 폴로', { k: 'polo', c: ['#ffffff'], stripe: '#d0565a', thin: true }],
-  u39: ['uniform', 1, 'spin', 0.2, '볼보이 유니폼', { k: 'ballboy', c: ['#5b3e8a'] }], u40: ['uniform', 1, 'reflex', 0.2, '심판 블레이저', { k: 'blazer', c: ['#3d4f9a'] }],
-  u41: ['uniform', 2, 'stamina', 0.3, '황제 카디건', { k: 'cardigan', c: ['#f3ead6'] }], u42: ['uniform', 1, 'spin', 0.2, '발레복', { k: 'tutu', c: ['#f9b7c4'] }],
-  u43: ['uniform', 2, 'power', 0.3, '농악복', { k: 'nongak', c: ['#ffffff'] }], u44: ['uniform', 2, 'reflex', 0.3, '선비 도포', { k: 'dopo', c: ['#eef2f6'] }],
-  u45: ['uniform', 2, 'speed', 0.3, '얼음 드레스', { k: 'icedress', c: ['#9ad0ff'] }], u46: ['uniform', 1, 'stamina', 0.2, '교복', { k: 'school', c: ['#ffffff'] }],
-  u47: ['uniform', 2, 'power', 0.3, '화랑 무복', { k: 'hwarang', c: ['#3d6fb0'] }], u48: ['uniform', 2, 'reflex', 0.3, '윔블던 올화이트', { k: 'allwhite', c: ['#ffffff'] }],
-  u49: ['uniform', 3, 'speed', 0.5, '검은 두루마기', { k: 'reaper', c: ['#3b3340'] }], u50: ['uniform', 2, 'stamina', 0.3, '국가대표 야구 유니폼', { k: 'kbase', c: ['#1f2a52'] }],
-  s25: ['shoes', 0, 'speed', 0.1, '주황 캔버스화', { st: 'canvas', c: '#f6a23c' }], s26: ['shoes', 0, 'stamina', 0.1, '남색 테니스화', { st: 'court', c: '#3d4f9a' }],
-  s27: ['shoes', 0, 'reflex', 0.1, '연두 찍찍이 운동화', { st: 'velcro', c: '#b5e07a' }], s28: ['shoes', 0, 'spin', 0.1, '보라 캔버스화', { st: 'canvas', c: '#b48be8' }],
-  s29: ['shoes', 0, 'power', 0.1, '회색 슬립온', { st: 'slipon', c: '#b3b7c2' }], s30: ['shoes', 0, 'speed', 0.1, '민트 하이탑', { k: 'high', c: '#9fe0c8' }],
-  s31: ['shoes', 0, 'reflex', 0.1, '흙 묻은 운동화', { k: 'muddy', c: '#ffffff' }], s32: ['shoes', 1, 'speed', 0.2, '삼선 슬리퍼', { k: 'slipper', c: '#3b3340' }],
-  s33: ['shoes', 1, 'stamina', 0.2, '곰발바닥 슬리퍼', { k: 'paw', c: '#b07a52' }], s34: ['shoes', 1, 'power', 0.2, '오리발', { k: 'flipper', c: '#ffe45c' }],
-  s35: ['shoes', 1, 'reflex', 0.2, '양말에 샌들', { k: 'socks', c: '#3d8be0' }], s36: ['shoes', 1, 'spin', 0.2, '실내화', { k: 'indoor', c: '#ffffff' }],
-  s37: ['shoes', 1, 'spin', 0.2, '테니스공 신발', { k: 'ballshoe', c: '#d8ec4a' }], s38: ['shoes', 1, 'power', 0.2, '빨간 하이탑', { k: 'high', c: '#e2574c' }],
-  s39: ['shoes', 1, 'stamina', 0.2, '털부츠', { k: 'fur', c: '#c9a25e' }], s40: ['shoes', 2, 'reflex', 0.3, '태사혜', { k: 'taesa', c: '#3b3340' }],
-  s41: ['shoes', 1, 'spin', 0.2, '버선', { k: 'beoseon', c: '#ffffff' }], s42: ['shoes', 2, 'speed', 0.3, '빨간 반짝 구두', { k: 'ruby', c: '#d8243c' }],
-  s43: ['shoes', 1, 'power', 0.2, '하얀 고무신', { k: 'gomu', c: '#ffffff' }], s44: ['shoes', 1, 'reflex', 0.2, '잔디 운동화', { k: 'turf', c: '#ffffff' }],
-  s45: ['shoes', 2, 'stamina', 0.3, '개구리 장화', { k: 'frog', c: '#7cc85a' }], s46: ['shoes', 2, 'speed', 0.3, '목화', { k: 'mokhwa', c: '#3b3340' }],
+  h52: ['hat', 1, 'speed', 0.25, '상투', { k: 'sangtu', c: '#3b3340' }], u26: ['uniform', 0, 'power', 0.15, '빨간 티셔츠', { c: ['#e2574c'] }],
+  u27: ['uniform', 0, 'stamina', 0.15, '남색 티셔츠', { c: ['#3d4f9a'] }], u28: ['uniform', 0, 'speed', 0.15, '연두 티셔츠', { c: ['#b5e07a'] }],
+  u29: ['uniform', 0, 'spin', 0.15, '보라 티셔츠', { c: ['#b48be8'] }], u30: ['uniform', 0, 'reflex', 0.15, '베이지 티셔츠', { c: ['#e8d3a8'] }],
+  u31: ['uniform', 0, 'spin', 0.15, '흙투성이 흰 셔츠', { k: 'muddy', c: ['#ffffff'] }], u32: ['uniform', 0, 'speed', 0.15, '난닝구', { k: 'singlet', c: ['#ffffff'] }],
+  u33: ['uniform', 1, 'stamina', 0.25, '찜질방 옷', { k: 'jjim', c: ['#f6a23c'] }], u34: ['uniform', 1, 'power', 0.25, '꽃무늬 몸빼바지', { k: 'momppe', c: ['#fff3e0'] }],
+  u35: ['uniform', 1, 'reflex', 0.25, '파자마', { k: 'pajama', c: ['#bfe3ff'] }], u36: ['uniform', 1, 'speed', 0.25, '유생복', { k: 'yusaeng', c: ['#ffffff'] }],
+  u37: ['uniform', 3, 'power', 0.5, '황룡포', { k: 'dragonrobe', c: ['#f6c445'] }], u38: ['uniform', 1, 'spin', 0.25, '70년대 줄무늬 폴로', { k: 'polo', c: ['#ffffff'], stripe: '#d0565a', thin: true }],
+  u39: ['uniform', 1, 'spin', 0.25, '볼보이 유니폼', { k: 'ballboy', c: ['#5b3e8a'] }], u40: ['uniform', 1, 'reflex', 0.25, '심판 블레이저', { k: 'blazer', c: ['#3d4f9a'] }],
+  u41: ['uniform', 2, 'stamina', 0.35, '황제 카디건', { k: 'cardigan', c: ['#f3ead6'] }], u42: ['uniform', 1, 'spin', 0.25, '발레복', { k: 'tutu', c: ['#f9b7c4'] }],
+  u43: ['uniform', 2, 'power', 0.35, '농악복', { k: 'nongak', c: ['#ffffff'] }], u44: ['uniform', 2, 'reflex', 0.35, '선비 도포', { k: 'dopo', c: ['#eef2f6'] }],
+  u45: ['uniform', 2, 'speed', 0.35, '얼음 드레스', { k: 'icedress', c: ['#9ad0ff'] }], u46: ['uniform', 1, 'stamina', 0.25, '교복', { k: 'school', c: ['#ffffff'] }],
+  u47: ['uniform', 2, 'power', 0.35, '화랑 무복', { k: 'hwarang', c: ['#3d6fb0'] }], u48: ['uniform', 2, 'reflex', 0.35, '윔블던 올화이트', { k: 'allwhite', c: ['#ffffff'] }],
+  u49: ['uniform', 3, 'speed', 0.5, '검은 두루마기', { k: 'reaper', c: ['#3b3340'] }], u50: ['uniform', 2, 'stamina', 0.35, '국가대표 야구 유니폼', { k: 'kbase', c: ['#1f2a52'] }],
+  s25: ['shoes', 0, 'speed', 0.15, '주황 캔버스화', { st: 'canvas', c: '#f6a23c' }], s26: ['shoes', 0, 'stamina', 0.15, '남색 테니스화', { st: 'court', c: '#3d4f9a' }],
+  s27: ['shoes', 0, 'reflex', 0.15, '연두 찍찍이 운동화', { st: 'velcro', c: '#b5e07a' }], s28: ['shoes', 0, 'spin', 0.15, '보라 캔버스화', { st: 'canvas', c: '#b48be8' }],
+  s29: ['shoes', 0, 'power', 0.15, '회색 슬립온', { st: 'slipon', c: '#b3b7c2' }], s30: ['shoes', 0, 'speed', 0.15, '민트 하이탑', { k: 'high', c: '#9fe0c8' }],
+  s31: ['shoes', 0, 'reflex', 0.15, '흙 묻은 운동화', { k: 'muddy', c: '#ffffff' }], s32: ['shoes', 1, 'speed', 0.25, '삼선 슬리퍼', { k: 'slipper', c: '#3b3340' }],
+  s33: ['shoes', 1, 'stamina', 0.25, '곰발바닥 슬리퍼', { k: 'paw', c: '#b07a52' }], s34: ['shoes', 1, 'power', 0.25, '오리발', { k: 'flipper', c: '#ffe45c' }],
+  s35: ['shoes', 1, 'reflex', 0.25, '양말에 샌들', { k: 'socks', c: '#3d8be0' }], s36: ['shoes', 1, 'spin', 0.25, '실내화', { k: 'indoor', c: '#ffffff' }],
+  s37: ['shoes', 1, 'spin', 0.25, '테니스공 신발', { k: 'ballshoe', c: '#d8ec4a' }], s38: ['shoes', 1, 'power', 0.25, '빨간 하이탑', { k: 'high', c: '#e2574c' }],
+  s39: ['shoes', 1, 'stamina', 0.25, '털부츠', { k: 'fur', c: '#c9a25e' }], s40: ['shoes', 2, 'reflex', 0.35, '태사혜', { k: 'taesa', c: '#3b3340' }],
+  s41: ['shoes', 1, 'spin', 0.25, '버선', { k: 'beoseon', c: '#ffffff' }], s42: ['shoes', 2, 'speed', 0.35, '빨간 반짝 구두', { k: 'ruby', c: '#d8243c' }],
+  s43: ['shoes', 1, 'power', 0.25, '하얀 고무신', { k: 'gomu', c: '#ffffff' }], s44: ['shoes', 1, 'reflex', 0.25, '잔디 운동화', { k: 'turf', c: '#ffffff' }],
+  s45: ['shoes', 2, 'stamina', 0.35, '개구리 장화', { k: 'frog', c: '#7cc85a' }], s46: ['shoes', 2, 'speed', 0.35, '목화', { k: 'mokhwa', c: '#3b3340' }],
   s47: ['shoes', 3, 'stamina', 0.5, '황금 고무신', { k: 'gomu', c: '#f6c445', gold: true }], s48: ['shoes', 3, 'spin', 0.5, '은하수 운동화', { k: 'galaxy', c: '#2b2d5c' }],
-  s49: ['shoes', 3, 'power', 0.5, '불꽃 운동화', { k: 'fire', c: '#e2574c' }], r25: ['racket', 0, 'speed', 0.1, '주황 라켓', { c: '#f6a23c' }],
-  r26: ['racket', 0, 'stamina', 0.1, '남색 라켓', { c: '#3d4f9a' }], r27: ['racket', 0, 'power', 0.1, '빨간 라켓', { c: '#e2574c' }],
-  r28: ['racket', 0, 'reflex', 0.1, '민트 라켓', { c: '#9fe0c8' }], r29: ['racket', 0, 'spin', 0.1, '회색 라켓', { c: '#b3b7c2' }],
-  r30: ['racket', 0, 'power', 0.1, '부러진 라켓', { k: 'broken', c: '#3d8be0' }], r31: ['racket', 0, 'stamina', 0.1, '테이프 감은 라켓', { k: 'taped', c: '#b07a52' }],
-  r32: ['racket', 1, 'power', 0.2, '대파', { k: 'leek', c: '#56b05a' }], r33: ['racket', 1, 'reflex', 0.2, '효자손', { k: 'scratcher', c: '#c9a25e' }],
-  r34: ['racket', 1, 'stamina', 0.2, '뿅망치', { k: 'squeaky', c: '#e2574c' }], r35: ['racket', 1, 'speed', 0.2, '파리채', { k: 'swatter', c: '#4fc37a' }],
-  r36: ['racket', 1, 'spin', 0.2, '국자', { k: 'ladle', c: '#c9ccd6' }], r37: ['racket', 1, 'spin', 0.2, '바나나', { k: 'banana', c: '#ffe45c' }],
-  r38: ['racket', 1, 'speed', 0.2, '마법사 빗자루', { k: 'broom', c: '#c9a25e' }], r39: ['racket', 1, 'stamina', 0.2, '떡꼬치', { k: 'tteok', c: '#e0482e' }],
-  r40: ['racket', 2, 'power', 0.3, '소고', { k: 'sogo', c: '#e2574c' }], r41: ['racket', 2, 'reflex', 0.3, '합죽선', { k: 'folding', c: '#f3ead6' }],
-  r42: ['racket', 1, 'stamina', 0.2, '우산', { k: 'umbrella', c: '#e2574c' }], r43: ['racket', 3, 'reflex', 0.5, '상소문', { k: 'scroll', c: '#2f5fb0' }],
-  r44: ['racket', 2, 'spin', 0.3, '요술봉', { k: 'wand', c: '#f48aa4' }], r45: ['racket', 2, 'speed', 0.3, '파초선', { k: 'pacho', c: '#56b05a' }],
-  r46: ['racket', 2, 'spin', 0.3, '야구 방망이', { k: 'bat', c: '#c9a25e' }], r47: ['racket', 1, 'power', 0.2, '신문지', { k: 'news', c: '#f3ead6' }],
+  s49: ['shoes', 3, 'power', 0.5, '불꽃 운동화', { k: 'fire', c: '#e2574c' }], r25: ['racket', 0, 'speed', 0.15, '주황 라켓', { c: '#f6a23c' }],
+  r26: ['racket', 0, 'stamina', 0.15, '남색 라켓', { c: '#3d4f9a' }], r27: ['racket', 0, 'power', 0.15, '빨간 라켓', { c: '#e2574c' }],
+  r28: ['racket', 0, 'reflex', 0.15, '민트 라켓', { c: '#9fe0c8' }], r29: ['racket', 0, 'spin', 0.15, '회색 라켓', { c: '#b3b7c2' }],
+  r30: ['racket', 0, 'power', 0.15, '부러진 라켓', { k: 'broken', c: '#3d8be0' }], r31: ['racket', 0, 'stamina', 0.15, '테이프 감은 라켓', { k: 'taped', c: '#b07a52' }],
+  r32: ['racket', 1, 'power', 0.25, '대파', { k: 'leek', c: '#56b05a' }], r33: ['racket', 1, 'reflex', 0.25, '효자손', { k: 'scratcher', c: '#c9a25e' }],
+  r34: ['racket', 1, 'stamina', 0.25, '뿅망치', { k: 'squeaky', c: '#e2574c' }], r35: ['racket', 1, 'speed', 0.25, '파리채', { k: 'swatter', c: '#4fc37a' }],
+  r36: ['racket', 1, 'spin', 0.25, '국자', { k: 'ladle', c: '#c9ccd6' }], r37: ['racket', 1, 'spin', 0.25, '바나나', { k: 'banana', c: '#ffe45c' }],
+  r38: ['racket', 1, 'speed', 0.25, '마법사 빗자루', { k: 'broom', c: '#c9a25e' }], r39: ['racket', 1, 'stamina', 0.25, '떡꼬치', { k: 'tteok', c: '#e0482e' }],
+  r40: ['racket', 2, 'power', 0.35, '소고', { k: 'sogo', c: '#e2574c' }], r41: ['racket', 2, 'reflex', 0.35, '합죽선', { k: 'folding', c: '#f3ead6' }],
+  r42: ['racket', 1, 'stamina', 0.25, '우산', { k: 'umbrella', c: '#e2574c' }], r43: ['racket', 3, 'reflex', 0.5, '상소문', { k: 'scroll', c: '#2f5fb0' }],
+  r44: ['racket', 2, 'spin', 0.35, '요술봉', { k: 'wand', c: '#f48aa4' }], r45: ['racket', 2, 'speed', 0.35, '파초선', { k: 'pacho', c: '#56b05a' }],
+  r46: ['racket', 2, 'spin', 0.35, '야구 방망이', { k: 'bat', c: '#c9a25e' }], r47: ['racket', 1, 'power', 0.25, '신문지', { k: 'news', c: '#f3ead6' }],
   r48: ['racket', 3, 'speed', 0.5, '광선검', { k: 'saber', c: '#6ec1ff' }], r49: ['racket', 3, 'reflex', 0.5, '여의봉', { k: 'staff', c: '#3b3340' }],
 };
 const item = id => { const q = ITEMS[id]; return q && { id, slot: q[0], grade: q[1], stat: q[2], amt: q[3], name: q[4], look: q[5] }; };
