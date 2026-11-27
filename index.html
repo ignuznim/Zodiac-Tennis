@@ -1760,7 +1760,7 @@ function updatePlayer(p, inp, dt) {
   p.x = clamp(p.x + p.vx * dt, -courtW() - 1.5, courtW() + 1.5); p.y = p.side * clamp(p.side * (p.y + p.vy * dt), 0.7, 16.4);
   if (serving) { const sg = -m.boxX; p.x = sg * clamp(sg * p.x, 0.25, courtW()); } // never past the centre mark or the singles sideline
   const sp = Math.hypot(p.vx, p.vy);
-  if (m.phase === 'rally') p.stam -= sp / vfull * tune.stam_run * dt;
+  if (m.phase === 'rally') { const u = sp / vfull; p.stam -= (u <= tune.sprint_at ? tune.jog_cost * u / tune.sprint_at : tune.jog_cost + (1 - tune.jog_cost) * (u - tune.sprint_at) / (1 - tune.sprint_at)) * (p.ctrl === 'ai' ? tune.stam_run : tune.stam_run_user) * dt; } // a jog costs little, a sprint (past 70% of top speed) a lot; players run less dearly than the computer
   if (sp < 0.4) p.stam += tune.stam_rest * dt;
   p.at += dt;
   if (p.anim === 'idle' && sp > 1) p.anim = 'run'; else if (p.anim === 'run' && sp <= 1) p.anim = 'idle';
