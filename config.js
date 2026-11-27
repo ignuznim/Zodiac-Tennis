@@ -86,9 +86,9 @@ window.CONFIG = {
   charge_slow: { value: 0.45, min: 0.2, max: 1, step: 0.05 },// run speed kept while charging
   stam_base: { value: 55, min: 30, max: 100, step: 5 },      // stamina at stamina 0
   stam_per: { value: 15, min: 5, max: 30, step: 1 },         // stamina more per stamina point
-  stam_run: { value: 3.0, min: 0, max: 6, step: 0.1 },       // stamina a second of sprinting costs
-  stam_shot: { value: 1.9, min: 0, max: 5, step: 0.1 },      // stamina a shot costs
-  stam_power: { value: 9, min: 0, max: 15, step: 0.5 },      // stamina a full power shot costs
+  stam_run: { value: 3.2, min: 0, max: 6, step: 0.1 },       // stamina a second of sprinting costs
+  stam_shot: { value: 2.0, min: 0, max: 5, step: 0.1 },      // stamina a shot costs
+  stam_power: { value: 5, min: 0, max: 15, step: 0.5 },      // stamina a full power shot costs
   stam_rest: { value: 1.1, min: 0, max: 5, step: 0.1 },      // stamina a second of standing gives back
   stam_point: { value: 4, min: 0, max: 20, step: 1 },        // stamina back between points
   stam_set: { value: 22, min: 0, max: 60, step: 2 },         // stamina back between sets
@@ -96,7 +96,7 @@ window.CONFIG = {
   tired_at: { value: 0.3, min: 0.1, max: 0.6, step: 0.05 },   // 지친 상태 starts below this share of a player's stamina
   tired_charge: { value: 0.5, min: 0, max: 0.9, step: 0.05 }, // share of a power shot's gathering lost at zero stamina
   tired_timing: { value: 0.4, min: 0, max: 0.8, step: 0.05 }, // share of the '딱!' window lost at zero stamina
-  stam_smash: { value: 2.4, min: 0, max: 5, step: 0.1 },     // stamina a smash costs: a little more than a stroke (1.9), far less than it was (3.6)
+  stam_smash: { value: 2.4, min: 0, max: 5, step: 0.1 },     // stamina a smash costs: a little more than a stroke (2.0), far less than it was (3.6)
 
   // ---- The computer, three levels: 1 easy, 2 normal, 3 hard ----
   ai1_react: { value: 0.46, min: 0, max: 0.8, step: 0.02 },  // s before it starts to move
