@@ -3462,7 +3462,7 @@ function scrollView(S, v0, v1, key, height, draw, fade = '162,227,200') { // fad
   pullMark(S, v0);
   for (const h of S.rects) { const a = Math.max(h.y - eff + v0, v0), b = Math.min(h.y + h.h - eff + v0, v1); if (b > a) { const [mx, my, mw, mh] = hxMap(h.x, a, h.w, b - a); hot.push({ x: mx, y: my, w: mw, h: mh, fn: h.fn }); } }
   if (HX) { const q = hxMap(0, v0, 1, v1 - v0); S.v0 = q[1]; S.v1 = q[1] + q[3]; } // a scaled window: the drag band where it shows
-  if (S.scroll < S.max - 4) { const g = ctx.createLinearGradient(0, v1 - 36, 0, v1); g.addColorStop(0, `rgba(${fade},0)`); g.addColorStop(1, `rgba(${fade},0.9)`); ctx.fillStyle = g; ctx.fillRect(LY.m - 10, v1 - 36, LY.w + 20, 36); }
+  if (S.scroll < S.max - 4) { const g = ctx.createLinearGradient(0, v1 - 36, 0, v1); g.addColorStop(0, `rgba(${fade},0)`); g.addColorStop(1, `rgba(${fade},0.9)`); ctx.fillStyle = g; ctx.fillRect(LY.m + 3, v1 - 36, LY.w - 6, 36); } // inside the list's own edges, in the colour it sits on
 }
 const GHOSTS = new Map();
 function ghostOutline(id, s) { // traces an item's silhouette (marching squares) into smooth closed paths, centred on 0, 0
@@ -4392,7 +4392,7 @@ const scenes = {
         const st = clock.now() - Math.max(SCR.tier.at || 0, sceneAt);
         scrollView(SCR.tier, v0, v1, key, L.length * rh + 4, () => {
           L.forEach((r, i) => { const y = i * rh, mine = r.nick === nick; btn(LY.m + 12, y + 3, LY.w - 24, rh - 6, () => openProfile(r.nick)); row(r, i + 1, y, mine, mine ? '#fff3c4' : i % 2 === 0 ? 'rgba(234,223,210,0.45)' : 'rgba(255,255,255,0)'); });
-          return L.length * rh + 4; });
+          return L.length * rh + 4; }, '255,248,231');
         staggerList(SCR.tier, v0, v1, rh, st, '#fff8e7');
         if (pin) { ctx.save(); const pe = stagE(st, 0); ctx.globalAlpha = pe; ctx.translate(0, (1 - pe) * STAG.rise); const y = v1 + 10; ctx.fillStyle = '#e6dccd'; ctx.fillRect(LY.m + 20, y - 6, LY.w - 40, 2); btn(LY.m + 12, y + 3, LY.w - 24, rh - 6, () => openProfile(nick)); row(Object.assign({ nick, fav: null }, me), mi >= 0 ? mi + 1 : '-', y, true, '#fff3c4'); ctx.restore(); }
       }
@@ -4430,7 +4430,7 @@ const scenes = {
             { const cx = x + LY.w - pad - 10, cy = y + 18, up = !!news.open[n.id]; ctx.lineWidth = 3; ctx.strokeStyle = '#9a8b93'; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(cx - 8, cy + (up ? 4 : -4)); ctx.lineTo(cx, cy + (up ? -4 : 4)); ctx.lineTo(cx + 8, cy + (up ? 4 : -4)); ctx.stroke(); ctx.strokeStyle = OUT; } // a chevron: down to open, up to close
             c.title.forEach(t => { text(t, x + pad, y + 18, 27, INK, 'left', null, F_T); y += 36; });
             if (c.body.length) { y += 10; c.body.forEach(t => { text(t, x + pad, y + 16, 21, '#5d4f58', 'left', null, F_B); y += 32; }); } ctx.restore(); }
-          return height; }); }
+          return height; }, '255,250,240'); }
       ctx.restore(); HX = null; if (news.err && L) toast(news.err);
     },
   },
@@ -4675,7 +4675,7 @@ const scenes = {
             text(KINDS[r.kind] ? `${KINDS[r.kind].ko} · ${FORMATS[r.format] ? FORMATS[r.format].ko : '경기 길이 미정'}` : '모이면 방장이 경기 방식을 정해요', x + 92, y + 64, 20, '#7a6872', 'left', null, F_T);
             text(`${r.seats_taken}/${r.seats_total}명`, x + w - 132, y + 46, 22, '#3f9a5c', 'right', null, F_T);
             button('참가', x + w - 116, y + 16, 104, 58, () => joinRoom(r.code), { size: 24, fill: '#fff3c4' }); });
-          return L.length * rh + 4; }); }
+          return L.length * rh + 4; }, '255,248,231'); }
       sideBtn('뒤로', () => { scene = 'title'; });
       menuEnd('', '바로 참가: 빈자리가 있는 방에 바로 들어가요\n+: 방 만들기 · 코드: 친구의 방 코드로 참가'); if (codeBox.open) drawCodeBox();
     },
