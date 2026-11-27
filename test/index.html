@@ -3598,20 +3598,6 @@ function openCloset(back, a = null) { if (!acct.user) { toast('로그인하면 �
 function drawGachaTab(y0, end) { // the machine, as tall as the page allows: a lit sign, a glass globe where the capsules tumble, the body with its slot, crank and chute
   const G = acct.g, h = end - y0, MH = 624, k = Math.min((h - 8) / MH, (LY.w - 40) / 370);
   drawGachaMachine(G, W / 2, end - 4, k);
-  if (G.phase === 'reveal' && G.list && G.list.length > 1) { drawManyPrizes(G, y0, h); return; }
-  if (G.phase === 'reveal') { // the prize, opened
-    const r = G.res, it = item(r.item), c = GRADE[it.grade].c, py = y0 + 20, ph = Math.min(360, h - 110);
-    ctx.fillStyle = 'rgba(59,51,64,0.45)'; ctx.fillRect(LY.m - 8, y0 - 8, LY.w + 16, h + 16);
-    const gl = ctx.createRadialGradient(W / 2, py + ph * 0.42, 10, W / 2, py + ph * 0.42, 220); gl.addColorStop(0, c + 'cc'); gl.addColorStop(1, c + '00'); ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(W / 2, py + ph * 0.42, 220, 0, 7); ctx.fill();
-    rr(LY.m + 60, py, LY.w - 120, ph, 26, '#fffaf0', c, 6);
-    gradeChip(it.grade, W / 2 - 23, py + 22, 30);
-    if (r.new) { rr(W / 2 + 40, py + 22, 70, 30, 15, '#e2574c', null); text('NEW', W / 2 + 75, py + 38, 17, '#fff', 'center', null, F_T); }
-    itemIcon(r.item, W / 2, py + ph * 0.42, 130 * Math.min(1, G.t * 4));
-    text(it.name, W / 2, py + ph - 96, 34, INK, 'center', null, F_T);
-    text(`${SLOTS.find(s => s[0] === it.slot)[1]} · ${STAT_NAME[it.stat]} +${it.amt}`, W / 2, py + ph - 52, 23, c, 'center', null, F_T);
-    button('전체 아이템 보기', LY.m + LY.w - (textW('전체 아이템 보기', 24, F_T) + 56), py + ph + 18, textW('전체 아이템 보기', 24, F_T) + 56, 60, () => { G.phase = 'idle'; openCloset('wardrobe', null); }, { size: 24, fill: '#eef7ff' });
-    for (let i = 0; i < 8; i++) { const a = i / 8 * 6.283 + G.t, rr2 = 150 + Math.sin(G.t * 3 + i) * 10; star(W / 2 + Math.cos(a) * rr2, py + ph * 0.42 + Math.sin(a) * rr2 * 0.7, 9, i % 2 ? '#fff' : c); }
-  }
 }
 function drawGachaMachine(G, cx, base, k) { // 뽑기 기계 in soft clay, after a shop's square gumball machine: a red lid, a tall glass case of see-through capsules between two silver posts, a silver band, a red cabinet with the coin dial, a key, a label and a white door; from the floor (0) up to the lid (-612)
   ctx.save(); ctx.translate(cx, base); ctx.scale(k, k); ctx.lineJoin = 'round'; const now = clock.now(), turn = G.phase === 'turn';
@@ -3656,28 +3642,30 @@ function ball(x, y, r, c, a) { // a see-through capsule: a tinted sphere, its se
   ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(107,85,96,0.55)'; E(x, y, r, r, g); ctx.beginPath(); ctx.ellipse(x, y + 2, r - 1, r * 0.28, 0, 0, Math.PI); ctx.stroke();
   ctx.globalAlpha = (ctx.globalAlpha || 1); E(x - r * 0.38, y - r * 0.42, r * 0.22, r * 0.14, 'rgba(255,255,255,0.85)', -0.6, true); ctx.restore();
 }
-function drawManyPrizes(G, y0, h) { // five or ten prizes: a grid, best first; tap one to read it
-  const L = G.list, n = L.length, cols = 5, rows = Math.ceil(n / cols), x0 = LY.m + 20, pw = LY.w - 40, inner = pw - 48, gap = 10, cw = (inner - gap * (cols - 1)) / cols, chh = cw + 14;
-  const ph = 70 + rows * chh + (rows - 1) * gap + 16 + 88 + 22, py = y0 + Math.max(0, (h - 76 - ph) / 2);
-  ctx.fillStyle = 'rgba(59,51,64,0.45)'; ctx.fillRect(LY.m - 8, y0 - 8, LY.w + 16, h + 16);
-  rr(x0, py, pw, ph, 26, '#fffaf0', GRADE[L[0].grade].c, 6);
+function drawPrizeWin(G) { // what came out, one or five or ten: a window over the whole page, every prize at one size, best first; tap one to read it, tap outside to close
+  const L = G.list && G.list.length ? G.list : [G.res], n = L.length, cols = 5, rows = Math.ceil(n / cols), w = POP_M, pad = 24, inner = w - pad * 2, gap = 10, cw = (inner - gap * (cols - 1)) / cols, chh = cw + 14;
+  const kh = 56, h = 24 + 30 + 18 + rows * chh + (rows - 1) * gap + 16 + 88 + 20 + kh + 24, x0 = (W - w) / 2, S = popScale(w, h, POP_M), py = H / 2 - h / 2, PQ = popIn(G.t), k = PQ.k * S;
+  ctx.fillStyle = `rgba(59,51,64,${0.55 * PQ.a})`; ctx.fillRect(0, 0, W, H); btn(0, 0, W, H, () => { G.phase = 'idle'; }); // a tap outside closes it
+  HX = { cx: W / 2, cy: H / 2, s: S }; ctx.save(); ctx.translate(W / 2, H / 2); ctx.scale(k, k); ctx.translate(-W / 2, -H / 2); ctx.globalAlpha = PQ.a;
+  rr(x0, py + 6, w, h, 26, 'rgba(59,51,64,0.35)', null); rr(x0, py, w, h, 26, '#fffaf0', OUT, 3); btn(x0, py, w, h, () => {});
   const fresh = L.filter(r => r.new).length;
-  text(`${n}개를 뽑았어요`, x0 + 24, py + 37, 28, INK, 'left', null, F_T);
-  if (fresh) text(`새 아이템 ${fresh}개`, x0 + pw - 24, py + 37, 21, '#e2574c', 'right', null, F_T);
-  const gy = py + 70;
-  L.forEach((r, i) => { const it = item(r.item), c = GRADE[it.grade].c, x = x0 + 24 + (i % cols) * (cw + gap), y = gy + Math.floor(i / cols) * (chh + gap), on = G.sel === i, k = clamp(G.t * 6 - i * 0.5, 0, 1);
+  text(`${n}개를 뽑았어요`, x0 + pad, py + 24 + 15, 28, INK, 'left', null, F_T);
+  if (fresh) text(`새 아이템 ${fresh}개`, x0 + w - pad, py + 24 + 15, 21, '#e2574c', 'right', null, F_T);
+  const gy = py + 24 + 30 + 18, rowW = Math.min(n, cols) * cw + (Math.min(n, cols) - 1) * gap, gx = x0 + pad + (inner - rowW) / 2; // fewer than five: the row centred
+  L.forEach((r, i) => { const it = item(r.item), c = GRADE[it.grade].c, x = gx + (i % cols) * (cw + gap), y = gy + Math.floor(i / cols) * (chh + gap), on = (G.sel || 0) === i, kk = clamp(G.t * 6 - i * 0.5, 0, 1);
     btn(x, y, cw, chh, () => { G.sel = i; tone(880, 0.05, 'sine', 0.15); });
     rr(x, y, cw, chh, 16, on ? '#fff3c4' : '#ffffff', c, on ? 5 : 3);
-    if (k > 0) itemIcon(r.item, x + cw / 2, y + chh / 2 - 6, 62 * k);
+    if (kk > 0) itemIcon(r.item, x + cw / 2, y + chh / 2 - 6, 62 * kk);
     if (r.new) { rr(x + cw - 50, y + 6, 44, 24, 12, '#e2574c', null); text('NEW', x + cw - 28, y + 18, MIN_TEXT, '#fff', 'center', null, F_T); }
     rr(x + 10, y + chh - 16, cw - 20, 7, 3.5, c, null); }); // the grade's colour along the bottom
-  const r = L[G.sel] || L[0], it = item(r.item), c = GRADE[it.grade].c, dy = gy + rows * chh + (rows - 1) * gap + 16; // the chosen one, read out
-  rr(x0 + 24, dy, inner, 88, 18, '#fff8e7', '#e6d8c8', 2);
-  const gw = gradeChip(it.grade, x0 + 44, dy + 15, 28);
+  const r = L[G.sel || 0] || L[0], it = item(r.item), c = GRADE[it.grade].c, dy = gy + rows * chh + (rows - 1) * gap + 16; // the chosen one, read out
+  rr(x0 + pad, dy, inner, 88, 18, '#fff8e7', '#e6dccd', 2);
+  const gw = gradeChip(it.grade, x0 + pad + 20, dy + 15, 28);
   ctx.font = `26px ${F_T}`; const nw = ctx.measureText(it.name).width, room = inner - 40 - gw - 16;
-  text(it.name, x0 + 44 + gw + 14, dy + 29, Math.max(MIN_TEXT, nw > room ? 26 * room / nw : 26), INK, 'left', null, F_T);
-  text(`${SLOTS.find(s => s[0] === it.slot)[1]} · ${STAT_NAME[it.stat]} +${it.amt}`, x0 + 44, dy + 63, 21, c, 'left', null, F_T);
-  button('전체 아이템 보기', LY.m + LY.w - (textW('전체 아이템 보기', 24, F_T) + 56), py + ph + 14, textW('전체 아이템 보기', 24, F_T) + 56, 60, () => { G.phase = 'idle'; openCloset('wardrobe', null); }, { size: 24, fill: '#eef7ff' });
+  text(it.name, x0 + pad + 20 + gw + 14, dy + 29, Math.max(MIN_TEXT, nw > room ? 26 * room / nw : 26), INK, 'left', null, F_T);
+  text(`${SLOTS.find(s => s[0] === it.slot)[1]} · ${STAT_NAME[it.stat]} +${it.amt}`, x0 + pad + 20, dy + 63, 21, c, 'left', null, F_T);
+  popKey('전체 아이템 보기', x0 + w - pad, dy + 88 + 20, () => { G.phase = 'idle'; openCloset('wardrobe', null); }, false); // the window's own key, at its bottom right
+  ctx.restore(); HX = null;
 }
 function capsule(x, y, r, c, rot) { ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.lineWidth = 2.4; ctx.strokeStyle = OUT;
   ctx.beginPath(); ctx.arc(0, 0, r, Math.PI, 0); ctx.closePath(); ctx.fillStyle = c; ctx.fill(); ctx.stroke();
@@ -4500,8 +4488,9 @@ const scenes = {
       else drawAchTab(y0, end);
       sideBtn('뒤로', () => { acct.g.phase = 'idle'; scene = 'title'; });
       if (acct.prof && acct.wtab === 'gacha' && acct.g.phase === 'idle') { const kx = LY.m + LY.btnH + 12; iconKey(kx, LY.bot, LY.btnH, 'hanger', () => openCloset('wardrobe', null)); barL = kx + LY.btnH; } // 내 아이템: a key like the back key, beside it
-      if (acct.prof && acct.wtab === 'gacha') { if (acct.g.phase === 'idle') pullBtn(); else mainBtn(acct.g.phase === 'reveal' ? '확인' : '뽑는 중…', () => { if (acct.g.phase === 'reveal') acct.g.phase = 'idle'; }); }
+      if (acct.prof && acct.wtab === 'gacha') { if (acct.g.phase === 'idle') pullBtn(); else if (acct.g.phase !== 'reveal') mainBtn('뽑는 중…', () => {}); }
       menuEnd('', acct.wtab === 'gacha' ? `나올 확률: 일반 ${ODDS[0]}% · 희귀 ${ODDS[1]}% · 영웅 ${ODDS[2]}% · 전설 ${ODDS[3]}%\n뽑기권은 경기를 마치거나 업적을 달성하면 받아요` : '아이템은 선수 선택 화면의 옷장에서 입혀요\n모든 경기(랭킹 포함)에 적용돼요');
+      if (acct.prof && acct.wtab === 'gacha' && acct.g.phase === 'reveal') drawPrizeWin(acct.g); // over everything, the title and bottom rows too
     },
   },
   closet: {
