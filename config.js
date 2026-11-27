@@ -86,7 +86,7 @@ window.CONFIG = {
   charge_slow: { value: 0.45, min: 0.2, max: 1, step: 0.05 },// run speed kept while charging
   stam_base: { value: 55, min: 30, max: 100, step: 5 },      // stamina at stamina 0
   stam_per: { value: 15, min: 5, max: 30, step: 1 },         // stamina more per stamina point
-  stam_run: { value: 3.2, min: 0, max: 6, step: 0.1 },       // stamina a second of sprinting costs
+  stam_run: { value: 2.0, min: 0, max: 6, step: 0.1 },       // stamina a second of sprinting costs
   stam_run_user: { value: 2.0, min: 0, max: 6, step: 0.1 },  // the same for a person (the computer keeps stam_run)
   sprint_at: { value: 0.7, min: 0.3, max: 0.95, step: 0.05 }, // share of top speed above which running is a sprint
   jog_cost: { value: 0.2, min: 0, max: 1, step: 0.05 },      // share of the sprint's cost a run at sprint_at pays
