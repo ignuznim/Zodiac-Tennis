@@ -94,7 +94,7 @@ window.CONFIG = {
   stam_power: { value: 5, min: 0, max: 15, step: 0.5 },      // stamina a full power shot costs
   stam_rest: { value: 1.1, min: 0, max: 5, step: 0.1 },      // stamina a second of standing gives back
   stam_point: { value: 8, min: 0, max: 20, step: 1 },        // stamina back between points
-  stam_game: { value: 0, min: 0, max: 40, step: 1 },        // stamina back at the end of each game, on top of the point's (a set or a tiebreak gives stam_set instead)
+  stam_game: { value: 8, min: 0, max: 40, step: 1 },        // stamina back at the end of each game in 정규전 only, on top of the point's (a set or a tiebreak gives stam_set instead)
   stam_breathe: { value: 0.08, min: 0, max: 1, step: 0.01 }, // stamina a second of moving gives back in a rally
   stam_set: { value: 22, min: 0, max: 60, step: 2 },         // stamina back between sets
   tired_run: { value: 0.3, min: 0, max: 0.6, step: 0.02 },   // run speed lost at zero stamina (지친 상태 only: below tired_at)
