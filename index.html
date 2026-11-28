@@ -2817,7 +2817,7 @@ codeInline.addEventListener('input', () => { codeInline.value = codeInline.value
 codeInline.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); submitCode(); } else if (e.key === 'Escape') closeCode(); e.stopPropagation(); });
 codeInline.addEventListener('pointerdown', e => e.stopPropagation());
 // ---- 홈 화면에 추가: opened in a browser (not from the home screen), the title page shows once how to install it as an app ----
-const INSTALL_POP = ''; // draft on the test page only (?install=ios|ios18|android); shown on each visit in a phone's browser, once a load (not again on coming back to the title)
+const INSTALL_POP = 'auto'; // the phone is read from the browser (the test page can force ?install=ios|ios18|android); shown on each visit in a phone's browser, once a load (not again on coming back to the title)
 const installPop = { open: false, at: 0, os: 'ios' };
 function installStart() { const sa = window.matchMedia && matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; if (!INSTALL_POP || sa) return;
   const ua = navigator.userAgent; installPop.os = INSTALL_POP === 'ios' || INSTALL_POP === 'ios18' ? 'ios' : INSTALL_POP === 'android' ? 'android' : /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) ? 'ios' : /Android/.test(ua) ? 'android' : ''; if (!installPop.os) return; installPop.open = true; installPop.at = clock.now(); }
