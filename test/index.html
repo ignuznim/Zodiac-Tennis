@@ -4461,7 +4461,7 @@ const scenes = {
         { const g = 12, w2 = textW('로그아웃', 23, F_T) + 56, w1 = textW('닉네임 바꾸기', 23, F_T) + 56, xr = LY.m + LY.w - LY.pad; button('로그아웃', xr - w2, py + 250, w2, 60, signOut, { size: 23 }); button('닉네임 바꾸기', xr - w2 - g - w1, py + 250, w1, 60, () => openNick('profile'), { size: 23 }); } // side by side, each as wide as its words need
       }
       sideBtn('뒤로', () => { scene = 'title'; });
-      menuEnd('', acct.user ? '' : '처음 로그인하면 뽑기권 3장을 드려요');
+      menuEnd('', acct.user ? '' : '처음 로그인하면 뽑기권 100장을 드려요');
     },
   },
   wardrobe: { // equip / the gacha machine / achievements

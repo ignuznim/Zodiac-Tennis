@@ -248,12 +248,14 @@ on conflict (code) do update set reward = excluded.reward, daily = excluded.dail
 create table if not exists public.profiles (
   id         uuid primary key references auth.users (id) on delete cascade,
   nickname   text unique check (nickname is null or char_length(btrim(nickname)) between 1 and 8),
-  tickets    integer not null default 3 check (tickets >= 0),
+  tickets    integer not null default 100 check (tickets >= 0),
   equip      jsonb not null default '{}'::jsonb,
   progress   jsonb not null default '{}'::jsonb,
   claimed    jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
 );
+-- a new account starts with 100 tickets (since 2026-11-28; 3 before). Accounts already made keep what they have.
+alter table public.profiles alter column tickets set default 100;
 -- nicknames are 1 to 8 letters (no account has a longer one since 2026-11-19)
 alter table public.profiles drop constraint if exists profiles_nickname_check;
 alter table public.profiles add constraint profiles_nickname_check check (nickname is null or char_length(btrim(nickname)) between 1 and 8);
